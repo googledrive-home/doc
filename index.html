@@ -3,238 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CaveCraft — Block Sandbox</title>
+<title>Homebase Arcade</title>
 <style>
 :root{--bg:#07101a;--panel:#101b29;--line:#2a3b50;--text:#f5f7fb;--muted:#9eafc4;--accent:#67d7a1}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(#07101a,#050a11);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow:hidden}
-header{height:62px;border-bottom:1px solid #233247;background:#0a121ded;display:flex;align-items:center;padding:0 18px;gap:18px}
-.logo{font-weight:950;font-size:22px}.logo b{color:var(--accent)}.sub{color:#8293aa;font-size:12px}.spacer{flex:1}
-button{font:inherit;color:inherit;background:#172537;border:1px solid #33475e;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer}button:hover{border-color:#67d7a1}
-#wrap{height:calc(100vh - 62px);display:grid;grid-template-columns:1fr 250px}
-#game{position:relative;min-width:0;background:#182638}canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
-aside{background:#0c1521;border-left:1px solid #25354a;padding:14px;overflow:auto}
-h2{font-size:15px;margin:4px 0 12px}.panel{background:#101c2b;border:1px solid #263950;border-radius:12px;padding:11px;margin-bottom:12px}
-.row{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin:7px 0}.row b{color:#fff}
-#hotbar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.slot{aspect-ratio:1;border:1px solid #34485e;background:#152337;border-radius:9px;display:grid;place-items:center;position:relative;font-size:22px}.slot.active{outline:2px solid var(--accent);background:#1c3040}.slot small{position:absolute;right:4px;bottom:3px;font-size:10px;color:#cbd6e2}
-#msg{position:absolute;left:50%;top:18px;transform:translateX(-50%);background:#07101acc;border:1px solid #ffffff20;border-radius:999px;padding:8px 14px;font-size:12px;pointer-events:none;opacity:0;transition:.2s}
-#cross{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:#fff8}.cross:before{width:2px;height:18px;left:8px}.cross:after{height:2px;width:18px;top:8px}
-#help{line-height:1.55;color:var(--muted);font-size:12px}.key{color:#fff;background:#1a2a3d;border:1px solid #30445a;border-radius:5px;padding:2px 5px}
-@media(max-width:850px){#wrap{grid-template-columns:1fr}aside{display:none}header{height:54px}.sub{display:none}#wrap{height:calc(100vh - 54px)}}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#19304b,#07101a 55%);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+header{height:68px;border-bottom:1px solid #233247;background:#08121eeb;display:flex;align-items:center;padding:0 20px;gap:16px;position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.logo{font-weight:950;font-size:23px}.logo b{color:var(--accent)}.sub{color:#8293aa;font-size:12px}.spacer{flex:1}
+button,select{font:inherit;color:inherit;background:#172537;border:1px solid #33475e;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}button:hover{border-color:var(--accent);transform:translateY(-1px)}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 60px}.hero{padding:25px 0 22px}.hero h1{font-size:42px;line-height:1;margin:0 0 10px}.hero p{color:var(--muted);max-width:680px;margin:0;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{background:linear-gradient(145deg,#101d2d,#0c1623);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 16px 50px #0004}.card h2{margin:0 0 7px;font-size:20px}.card p{color:var(--muted);font-size:13px;line-height:1.5;min-height:40px}.tag{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#b9c9db;border:1px solid #31445b;border-radius:999px;padding:5px 8px;margin-bottom:10px}.card .game{height:270px;border-radius:13px;overflow:hidden;border:1px solid #273a50;background:#09121d;margin-bottom:13px;position:relative}
+#hockeyCanvas{width:100%;height:100%;display:block}.game .center{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.overlay{background:#07101ddd;border:1px solid #ffffff22;border-radius:14px;padding:16px 20px;text-align:center;pointer-events:auto}.hidden{display:none!important}
+.controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.score{font-weight:900;font-size:18px}.muted{color:var(--muted);font-size:12px}
+.reaction-box{height:270px;border-radius:13px;display:grid;place-items:center;background:#18202b;border:1px solid #293d52;cursor:pointer;user-select:none}.reaction-box.wait{background:#b53d46}.reaction-box.ready{background:#3db36d}.reaction-box.result{background:#2a4059}.reaction-text{text-align:center}.reaction-text strong{font-size:30px;display:block;margin-bottom:6px}.reaction-text span{color:#d9e5f2;font-size:13px}
+.cps-display{text-align:center;padding:25px 0 12px}.cps-number{font-size:64px;font-weight:950;line-height:1}.cps-unit{color:var(--muted)}.cps-click{height:125px;width:100%;font-size:24px;background:#20344b;border-color:#3f5975}.settings{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.settings label{font-size:12px;color:var(--muted)}
+.ext{background:linear-gradient(145deg,#17253a,#0e1825)}.ext .thumb{height:170px;border-radius:12px;margin-bottom:13px;display:grid;place-items:center;font-size:46px;font-weight:950;border:1px solid #31465f;background:linear-gradient(135deg,#182b40,#0b1521)}
+.ext-actions{display:flex;gap:9px;flex-wrap:wrap}.notice{font-size:11px;color:#8293aa;margin-top:9px;line-height:1.4}
+footer{text-align:center;color:#667b92;font-size:11px;padding:10px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.hero h1{font-size:34px}.card .game{height:250px}}
 </style>
 </head>
 <body>
-<header><div class="logo">CAVE<b>CRAFT</b></div><div class="sub" id="modeSub">original browser block sandbox</div><div class="spacer"></div><button id="caveBtn">CaveCraft</button><button id="hockeyBtn">Hockey</button><button id="save">Save world</button><button id="reset">New world</button></header>
-<div id="wrap">
-<div id="game"><canvas id="c"></canvas><div id="msg"></div><div id="cross" class="cross"></div><div id="hockeyMode" style="display:none;position:absolute;left:16px;top:16px;background:#07101acc;border:1px solid #ffffff20;border-radius:12px;padding:10px;font-size:12px"><b>HOCKEY</b> <span id="scoreText">0 - 0</span></div></div>
-<aside id="side">
-<h2 id="sideTitle">World</h2>
-<div class="panel"><div class="row"><span>Day</span><b id="day">1</b></div><div class="row"><span>Time</span><b id="time">Morning</b></div><div class="row"><span>Blocks mined</span><b id="mined">0</b></div></div>
-<h2>Selected block</h2>
-<div class="panel"><div id="selected">Grass</div><div class="row"><span>Count</span><b id="count">∞</b></div></div>
-<h2>Inventory</h2><div class="panel"><div id="hotbar"></div></div>
-<h2>Controls</h2>
-<div class="panel" id="help">
-<span class="key">WASD</span> move<br>
-<span class="key">Mouse</span> aim / mine<br>
-<span class="key">Right click</span> place block<br>
-<span class="key">1-8</span> select block<br>
-<span class="key">E</span> toggle inventory<br>
-<span class="key">R</span> save spawn<br>
-<span class="key">F</span> fullscreen
-</div>
-<div class="panel" id="sideInfo"><b>CaveCraft</b><br><br>Explore a procedurally generated block world, collect materials, build structures and discover underground caverns. This is a new game with its own rules and artwork.</div>
-</aside>
-</div>
+<header><div class="logo">HOMEBASE <b>ARCADE</b></div><div class="sub">games & quick tests</div><div class="spacer"></div><button onclick="document.documentElement.requestFullscreen?.()">Fullscreen</button></header>
+<main>
+<section class="hero"><h1>Pick a game.</h1><p>Hockey, reaction speed and click speed in one place. The two extra games open in a new tab through a fullscreen launcher.</p></section>
+<div class="grid">
+<section class="card"><span class="tag">2 player / vs cpu</span><h2>🏒 Hockey</h2><p>Play on the rink, use the goals at each end and race to 5. Switch between 1-player and local 2-player.</p>
+<div class="game"><canvas id="hockeyCanvas"></canvas><div class="center" id="hockeyStart"><div class="overlay"><strong>Hockey</strong><br><button onclick="startHockey()">Start game</button></div></div></div>
+<div class="controls"><span class="score" id="hScore">0 — 0</span><span class="muted">P1: WASD + F · P2: Arrows + L</span><button id="twoBtn" onclick="toggleTwo()">2 Player: OFF</button><button onclick="resetHockey()">Restart</button></div></section>
+
+<section class="card"><span class="tag">reaction test</span><h2>⚡ Reaction Game</h2><p>Start the round, wait for the box to turn green, then click as quickly as you can. Early clicks count as a false start.</p>
+<div class="reaction-box" id="reactionBox" onclick="reactionClick()"><div class="reaction-text"><strong id="reactionMain">Ready?</strong><span id="reactionSub">Press Start to begin</span></div></div>
+<div class="controls" style="margin-top:13px"><button onclick="reactionStart()">Start</button><button onclick="reactionReset()">Restart</button><span class="score" id="reactionScore">— ms</span></div></section>
+
+<section class="card"><span class="tag">click speed</span><h2>🖱 Click Test — clicks per second</h2><p>Choose a test length, press Start, then click the big button as many times as possible before the timer ends.</p>
+<div class="cps-display"><div class="cps-number" id="cpsValue">0.00</div><div class="cps-unit">clicks per second</div></div>
+<button class="cps-click" id="cpsClick" onclick="cpsClick()">CLICK</button>
+<div class="settings" style="margin-top:12px"><label>Test time <select id="cpsTime"><option value="1">1 second</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select></label><button onclick="cpsStart()">Start</button><button onclick="cpsReset()">Restart</button><span class="muted" id="cpsStatus">Not started</span></div></section>
+
+<section class="card ext"><span class="tag">new tab</span><h2>🏍 Moto X3M</h2><p>Open the supplied Internet Archive game in a separate tab using the site's fullscreen launcher.</p>
+<div class="thumb">MOTO<br>X3M</div><div class="ext-actions"><button onclick="openExternal('https://archive.org/details/moto-x3m_202309')">Open Moto X3M</button></div>
+<div class="notice">Browsers require a user gesture for true fullscreen, so the new tab has a fullscreen button rather than silently bypassing the browser.</div></section>
+
+<section class="card ext"><span class="tag">new tab</span><h2>✈️ Learn to Fly</h2><p>Open the supplied Internet Archive game in a separate tab using the site's fullscreen launcher.</p>
+<div class="thumb">LEARN<br>TO FLY</div><div class="ext-actions"><button onclick="openExternal('https://archive.org/details/learn-to-fly')">Open Learn to Fly</button></div>
+<div class="notice">The launcher provides a fullscreen button so the game can be made fullscreen after the new tab opens.</div></section>
+</div></main><footer>Homebase Arcade · Hockey + Reaction + Click Test</footer>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d'),wrap=document.getElementById('game');
-let W=0,H=0,T=28,cols=90,rows=54,world=[],player={x:45,y:26},spawn={x:45,y:26},cam={x:0,y:0},keys={},mouse={x:0,y:0},selected=0,day=1,time=0,mined=0,inventory={},paused=false;
-const blocks=[
- {id:'grass',name:'Grass',color:'#55a45e',dark:'#397546',solid:true,drop:'dirt'},
- {id:'dirt',name:'Dirt',color:'#8d633f',dark:'#62452f',solid:true},
- {id:'stone',name:'Stone',color:'#7d8792',dark:'#58616b',solid:true},
- {id:'sand',name:'Sand',color:'#d6c178',dark:'#a18e50',solid:true},
- {id:'water',name:'Water',color:'#4d8fc1',dark:'#32658e',solid:false},
- {id:'wood',name:'Wood',color:'#95663e',dark:'#644229',solid:true},
- {id:'leaf',name:'Leaf',color:'#4e9b58',dark:'#34703e',solid:false},
- {id:'crystal',name:'Crystal',color:'#9b82e8',dark:'#6352a4',solid:true}
-];
-const keysToBlock=['grass','dirt','stone','sand','water','wood','leaf','crystal'];
-function resize(){const r=wrap.getBoundingClientRect();W=c.width=Math.floor(r.width*devicePixelRatio);H=c.height=Math.floor(r.height*devicePixelRatio);ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=r.width;H=r.height}window.addEventListener('resize',resize);resize();
-function noise(x,y,s=1){let n=Math.sin(x*12.9898+y*78.233+s*37.719)*43758.5453;return n-Math.floor(n)}
-function makeWorld(){
- world=Array.from({length:rows},()=>Array(cols).fill(0));inventory={dirt:18,stone:12,sand:8,wood:10,leaf:8,crystal:0,grass:0,water:0};mined=0;day=1;time=0;
- for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
-   let v=2;
-   if(y<14)v=4;
-   else if(y<20)v=0;
-   else v=noise(x*.55,y*.37)>0.7?1:2;
-   if(y>37&&noise(x*.25,y*.22)>0.77)v=7;
-   world[y][x]=v;
- }
- for(let x=0;x<cols;x++){let h=16+Math.floor(Math.sin(x*.19)*3+Math.sin(x*.047)*5);for(let y=h;y<rows;y++)world[y][x]=y===h?0:(y<h+3?1:2)}
- for(let i=0;i<18;i++){let x=3+Math.floor(noise(i,2)* (cols-6)), y=14+Math.floor(noise(i,7)*20);for(let r=0;r<2+Math.floor(noise(i,9)*3);r++)for(let a=0;a<5;a++){let xx=x+Math.floor(noise(i,r*7+a)*7)-3,yy=y+r;if(xx>1&&xx<cols-2&&yy>18&&yy<rows-2)world[yy][xx]=4}}
- for(let x=4;x<cols-4;x+=4+Math.floor(noise(x,44)*5)){let h=16+Math.floor(Math.sin(x*.19)*3+Math.sin(x*.047)*5);if(noise(x,12)>.42){for(let y=h-4;y<h;y++)world[y][x]=5;for(let yy=h-6;yy<h-2;yy++)for(let xx=x-2;xx<=x+2;xx++)if(xx>=0&&xx<cols&&world[yy]?.[xx]===4)world[yy][xx]=6}}
- player={x:Math.floor(cols/2),y:12};spawn={...player};saveLocal();toast('New CaveCraft world generated');renderInv();
-}
-function saveLocal(){localStorage.setItem('cavecraft-world',JSON.stringify({world,player,spawn,inventory,day,time,mined}))}
-function loadLocal(){try{let s=JSON.parse(localStorage.getItem('cavecraft-world'));if(s&&s.world){({world,player,spawn,inventory,day,time,mined}=s);toast('World loaded');renderInv();return true}}catch(e){}return false}
-function toast(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.opacity=0,1200)}
-function solid(x,y){if(x<0||y<0||x>=cols||y>=rows)return true;return blocks[world[y][x]].solid}
-function screenToTile(px,py){return{x:Math.floor((px+cam.x)/T),y:Math.floor((py+cam.y)/T)}}
-function inRange(x,y){return Math.hypot(x-player.x,y-player.y)<5}
-function mine(tx,ty){
- if(tx<0||ty<0||tx>=cols||ty>=rows||!inRange(tx+.5,ty+.5))return;
- let id=blocks[world[ty][tx]].id;if(id==='water')return;
- if(world[ty][tx]===5||world[ty][tx]===6||world[ty][tx]===0||world[ty][tx]===1||world[ty][tx]===2||world[ty][tx]===3||world[ty][tx]===7){
-   let drop=blocks[world[ty][tx]].drop||id;inventory[drop]=(inventory[drop]||0)+1;world[ty][tx]=4;mined++;renderInv();toast('Collected '+blocks.find(b=>b.id===drop).name)
- }
-}
-function place(tx,ty){
- if(tx<0||ty<0||tx>=cols||ty>=rows||!inRange(tx+.5,ty+.5)||world[ty][tx]!==4)return;
- let id=keysToBlock[selected],name=id;if((inventory[id]||0)<=0){toast('None left');return}
- if(Math.hypot(tx+.5-player.x,ty+.5-player.y)<1.2)return;
- world[ty][tx]=blocks.findIndex(b=>b.id===id);inventory[id]--;renderInv();
-}
-c.addEventListener('contextmenu',e=>e.preventDefault());
-c.addEventListener('mousedown',e=>{const r=c.getBoundingClientRect(),p=screenToTile(e.clientX-r.left,e.clientY-r.top);if(e.button===0)mine(p.x,p.y);if(e.button===2)place(p.x,p.y)});
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key>='1'&&e.key<='8'){selected=+e.key-1;renderInv()}if(e.key.toLowerCase()==='e')paused=!paused;if(e.key.toLowerCase()==='r'){spawn={...player};toast('New spawn saved')}if(e.key.toLowerCase()==='f'){document.documentElement.requestFullscreen?.()}});
-window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-document.getElementById('save').onclick=()=>{saveLocal();toast('World saved')};
-document.getElementById('reset').onclick=()=>{if(confirm('Start a new CaveCraft world?'))makeWorld()};
-function move(){
- if(paused)return;
- let dx=(keys.d?1:0)-(keys.a?1:0),dy=(keys.s?1:0)-(keys.w?1:0),len=Math.hypot(dx,dy)||1,s=.095;
- let nx=player.x+dx/len*s,ny=player.y+dy/len*s;
- if(!solid(Math.floor(nx),Math.floor(player.y)))player.x=nx;
- if(!solid(Math.floor(player.x),Math.floor(ny)))player.y=ny;
- player.x=clamp(player.x,.5,cols-.5);player.y=clamp(player.y,.5,rows-.5);
-}
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function renderInv(){
- const hb=document.getElementById('hotbar');hb.innerHTML='';
- keysToBlock.forEach((id,i)=>{const b=blocks.find(x=>x.id===id),d=document.createElement('div');d.className='slot'+(i===selected?' active':'');d.innerHTML='<span>'+['🌿','🟫','🪨','🟨','💧','🪵','🍃','🔮'][i]+'</span><small>'+(inventory[id]||0)+'</small>';d.onclick=()=>{selected=i;renderInv()};hb.appendChild(d)});
- const b=blocks.find(x=>x.id===keysToBlock[selected]);document.getElementById('selected').textContent=b.name;document.getElementById('count').textContent=inventory[b.id]||0;
- document.getElementById('day').textContent=day;document.getElementById('mined').textContent=mined;document.getElementById('time').textContent=time<.25?'Morning':time<.5?'Afternoon':time<.75?'Evening':'Night';
-}
-function draw(){
- ctx.clearRect(0,0,W,H);
- const maxX=Math.ceil(W/T)+2,maxY=Math.ceil(H/T)+2;cam.x=clamp(player.x*T-W/2,0,cols*T-W);cam.y=clamp(player.y*T-H/2,0,rows*T-H);
- const night=Math.max(0,Math.sin(time*Math.PI*2-Math.PI/2)*.24);ctx.fillStyle=night>0?'#18263b':'#80b7d4';ctx.fillRect(0,0,W,H);
- for(let y=Math.max(0,Math.floor(cam.y/T));y<Math.min(rows,Math.floor(cam.y/T)+maxY);y++)for(let x=Math.max(0,Math.floor(cam.x/T));x<Math.min(cols,Math.floor(cam.x/T)+maxX);x++){
-  const b=blocks[world[y][x]],sx=x*T-cam.x,sy=y*T-cam.y;ctx.fillStyle=b.color;ctx.fillRect(sx,sy,T+1,T+1);
-  ctx.fillStyle=b.dark;ctx.fillRect(sx,sy+T-5,T,5);
-  if(b.id==='grass'){ctx.fillStyle='#72c46c';ctx.fillRect(sx,sy,T,4)}
-  if(b.id==='crystal'){ctx.fillStyle='#c7b9ff';ctx.fillRect(sx+8,sy+6,4,13)}
-  if(b.id==='water'){ctx.fillStyle='#8ac7ec55';ctx.fillRect(sx,sy+6,T,3)}
- }
- const px=player.x*T-cam.x,py=player.y*T-cam.y;ctx.fillStyle='#e9b38b';ctx.fillRect(px-8,py-13,16,13);ctx.fillStyle='#5c78d8';ctx.fillRect(px-9,py,18,13);ctx.fillStyle='#2c3340';ctx.fillRect(px-7,py+13,5,5);ctx.fillRect(px+2,py+13,5,5);
- const gx=Math.floor((mouse.x+cam.x)/T),gy=Math.floor((mouse.y+cam.y)/T);if(inRange(gx+.5,gy+.5)){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(gx*T-cam.x+2,gy*T-cam.y+2,T-4,T-4)}
- if(night>0){ctx.fillStyle='rgba(5,12,25,'+night+')';ctx.fillRect(0,0,W,H)}
-}
-function loop(){move();time+=.0009;if(time>=1){time=0;day++}if(Math.floor(time*100)%10===0)renderInv();draw();requestAnimationFrame(loop)}
-
-let mode='cave',hockeyRunning=false,hockeyTwoPlayer=false,hx=0,hy=0,hScale=1,hp1,hp2,hpuck,hs1=0,hs2=0,hLast=0;
-function hockeyLayout(){
- const r=wrap.getBoundingClientRect(); hx=r.width; hy=r.height; hScale=Math.min(hx/1100,hy/620);
-}
-function hockeyReset(){
- hockeyLayout();
- hp1={x:220,y:hy/2,vx:0,vy:0};
- hp2={x:hx-220,y:hy/2,vx:0,vy:0};
- hpuck={x:hx/2,y:hy/2,vx:0,vy:0};
-}
-function hockeyStart(){
- mode='hockey';hockeyRunning=true;
- document.getElementById('hockeyMode').style.display='block';
- document.getElementById('cross').style.display='none';
- document.getElementById('save').style.display='none';
- document.getElementById('reset').style.display='none';
- document.getElementById('modeSub').textContent='local arcade hockey';
- document.getElementById('sideTitle').textContent='Hockey';
- document.getElementById('side').querySelector('#day').closest('.panel').style.display='none';
- document.getElementById('side').querySelector('#selected').closest('.panel').style.display='none';
- document.getElementById('side').querySelector('#hotbar').closest('.panel').style.display='none';
- document.getElementById('side').querySelector('#help').innerHTML='<span class="key">WASD</span> Player 1 move<br><span class="key">F</span> Player 1 shoot<br><br><span class="key">Arrows</span> Player 2 move<br><span class="key">L</span> Player 2 shoot<br><br><button id="twoBtn">2 Player: '+(hockeyTwoPlayer?'ON':'OFF')+'</button><br><br>In 1-player mode, Player 2 is controlled by the computer.';
- document.getElementById('sideInfo').innerHTML='<b>Hockey</b><br><br>Score by getting the puck through the goals at the ends of the rink. First to 5 wins.';
- document.getElementById('twoBtn').onclick=()=>{hockeyTwoPlayer=!hockeyTwoPlayer;document.getElementById('twoBtn').textContent='2 Player: '+(hockeyTwoPlayer?'ON':'OFF');hockeyReset()};
- hockeyReset();hLast=performance.now();requestAnimationFrame(hockeyLoop);
-}
-function caveStart(){
- mode='cave';hockeyRunning=false;
- document.getElementById('hockeyMode').style.display='none';
- document.getElementById('cross').style.display='block';
- document.getElementById('save').style.display='inline-block';
- document.getElementById('reset').style.display='inline-block';
- document.getElementById('modeSub').textContent='original browser block sandbox';
- document.getElementById('sideTitle').textContent='World';
- document.getElementById('side').querySelector('#day').closest('.panel').style.display='block';
- document.getElementById('side').querySelector('#selected').closest('.panel').style.display='block';
- document.getElementById('side').querySelector('#hotbar').closest('.panel').style.display='block';
- document.getElementById('side').querySelector('#help').innerHTML='<span class="key">WASD</span> move<br><span class="key">Mouse</span> aim / mine<br><span class="key">Right click</span> place block<br><span class="key">1-8</span> select block<br><span class="key">E</span> toggle inventory<br><span class="key">R</span> save spawn<br><span class="key">F</span> fullscreen';
- document.getElementById('sideInfo').innerHTML='<b>CaveCraft</b><br><br>Explore a procedurally generated block world, collect materials, build structures and discover underground caverns. This is a new game with its own rules and artwork.';
-}
-function hockeyMove(p,up,down,left,right,dt){
- let dx=(keys[right]?1:0)-(keys[left]?1:0),dy=(keys[down]?1:0)-(keys[up]?1:0),len=Math.hypot(dx,dy)||1,s=300;
- p.vx+=dx/len*s*dt;p.vy+=dy/len*s*dt;
- p.vx*=Math.pow(.18,dt);p.vy*=Math.pow(.18,dt);
- p.x+=p.vx*dt;p.y+=p.vy*dt;
- p.x=clamp(p.x,95,hx-95);p.y=clamp(p.y,100,hy-100);
-}
-function hockeyAI(dt){
- const target=hpuck;
- let dx=target.x-hp2.x,dy=target.y-hp2.y,len=Math.hypot(dx,dy)||1;
- hp2.vx+=dx/len*230*dt;hp2.vy+=dy/len*230*dt;
- hp2.vx*=Math.pow(.16,dt);hp2.vy*=Math.pow(.16,dt);
- hp2.x+=hp2.vx*dt;hp2.y+=hp2.vy*dt;
- hp2.x=clamp(hp2.x,hx/2+35,hx-95);hp2.y=clamp(hp2.y,100,hy-100);
-}
-function hockeyHit(p,shoot){
- let dx=hpuck.x-p.x,dy=hpuck.y-p.y,d=Math.hypot(dx,dy)||1;
- if(d<54){let nx=dx/d,ny=dy/d,force=shoot?620:360;hpuck.x=p.x+nx*48;hpuck.y=p.y+ny*48;hpuck.vx=nx*force+p.vx;hpuck.vy=ny*force+p.vy}
-}
-function hockeyScore(){
- const goalTop=hy/2-105,goalBot=hy/2+105;
- if(hpuck.x<42&&hpuck.y>goalTop&&hpuck.y<goalBot){hs2++;hockeyPoint(2)}
- if(hpuck.x>hx-42&&hpuck.y>goalTop&&hpuck.y<goalBot){hs1++;hockeyPoint(1)}
-}
-function hockeyPoint(who){
- document.getElementById('scoreText').textContent=hs1+' - '+hs2;
- hpuck={x:hx/2,y:hy/2,vx:who===1?-180:180,vy:0};
- toast('Goal for Player '+who+'!');
- if(hs1>=5||hs2>=5){toast('Player '+who+' wins!');hs1=0;hs2=0}
-}
-function hockeyDraw(){
- ctx.clearRect(0,0,W,H);hockeyLayout();
- ctx.fillStyle='#bfe9f4';ctx.fillRect(0,0,hx,hy);
- ctx.fillStyle='#dff6fa';ctx.fillRect(35,70,hx-70,hy-140);
- ctx.strokeStyle='#b4dce7';ctx.lineWidth=4;ctx.strokeRect(35,70,hx-70,hy-140);
- ctx.beginPath();ctx.moveTo(hx/2,70);ctx.lineTo(hx/2,hy-70);ctx.stroke();
- ctx.beginPath();ctx.arc(hx/2,hy/2,72,0,Math.PI*2);ctx.stroke();
- const gt=hy/2-105,gb=hy/2+105;
- ctx.fillStyle='#ef8a8a';ctx.fillRect(18,gt,42,210);ctx.fillStyle='#d85d67';ctx.fillRect(hx-60,gt,42,210);
- ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(18,gt,42,210);ctx.strokeRect(hx-60,gt,42,210);
- function playerDraw(p,fill){ctx.beginPath();ctx.fillStyle=fill;ctx.arc(p.x,p.y,27,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText(p===hp1?'1':'2',p.x,p.y+5)}
- playerDraw(hp1,'#3f72d9');playerDraw(hp2,'#e35b64');
- ctx.beginPath();ctx.fillStyle='#171c22';ctx.arc(hpuck.x,hpuck.y,11,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#ffffffcc';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText('Player 1',120,38);ctx.fillText('Player 2',hx-120,38);
- ctx.font='bold 22px system-ui';ctx.fillText(hs1+'  —  '+hs2,hx/2,40);
-}
-function hockeyLoop(now){
- if(!hockeyRunning||mode!=='hockey')return;
- const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;
- hockeyMove(hp1,'w','s','a','d',dt);
- if(hockeyTwoPlayer)hockeyMove(hp2,'arrowup','arrowdown','arrowleft','arrowright',dt);else hockeyAI(dt);
- hockeyHit(hp1,keys.f);hockeyHit(hp2,keys.l);
- hpuck.x+=hpuck.vx*dt;hpuck.y+=hpuck.vy*dt;hpuck.vx*=Math.pow(.055,dt);hpuck.vy*=Math.pow(.055,dt);
- if(hpuck.y<82||hpuck.y>hy-82){hpuck.y=clamp(hpuck.y,82,hy-82);hpuck.vy*=-.82}
- const gt=hy/2-105,gb=hy/2+105;
- if((hpuck.x<65||hpuck.x>hx-65)&&!(hpuck.y>gt&&hpuck.y<gb)){hpuck.x=clamp(hpuck.x,65,hx-65);hpuck.vx*=-.82}
- hockeyScore();hockeyDraw();requestAnimationFrame(hockeyLoop);
-}
-document.getElementById('caveBtn').onclick=caveStart;
-document.getElementById('hockeyBtn').onclick=hockeyStart;
-
-if(!loadLocal())makeWorld();loop();
+const hc=document.getElementById('hockeyCanvas'),hctx=hc.getContext('2d');let hw=0,hh=0,hkeys={},hRunning=false,hTwo=false,hp1,hp2,hpuck,hscore1=0,hscore2=0,hLast=0;
+function hResize(){const r=hc.getBoundingClientRect(),d=devicePixelRatio;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}addEventListener('resize',hResize);hResize();
+addEventListener('keydown',e=>{hkeys[e.key.toLowerCase()]=true;if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault()});addEventListener('keyup',e=>hkeys[e.key.toLowerCase()]=false);
+const hClamp=(v,a,b)=>Math.max(a,Math.min(b,v));function hResetPositions(){hp1={x:85,y:hh/2,vx:0,vy:0};hp2={x:hw-85,y:hh/2,vx:0,vy:0};hpuck={x:hw/2,y:hh/2,vx:0,vy:0}}
+function startHockey(){hRunning=true;hockeyStart.classList.add('hidden');hResetPositions();hLast=performance.now();requestAnimationFrame(hLoop)}function resetHockey(){hscore1=0;hscore2=0;hScore.textContent='0 — 0';hResetPositions();if(!hRunning)hockeyStart.classList.remove('hidden')}function toggleTwo(){hTwo=!hTwo;twoBtn.textContent='2 Player: '+(hTwo?'ON':'OFF');hResetPositions()}
+function hMove(p,up,down,left,right,dt){let dx=(hkeys[right]?1:0)-(hkeys[left]?1:0),dy=(hkeys[down]?1:0)-(hkeys[up]?1:0),len=Math.hypot(dx,dy)||1;p.vx+=dx/len*420*dt;p.vy+=dy/len*420*dt;p.vx*=Math.pow(.08,dt);p.vy*=Math.pow(.08,dt);p.x+=p.vx*dt;p.y+=p.vy*dt;p.x=hClamp(p.x,38,hw-38);p.y=hClamp(p.y,45,hh-45)}
+function hAI(dt){let dx=hpuck.x-hp2.x,dy=hpuck.y-hp2.y,len=Math.hypot(dx,dy)||1;hp2.vx+=dx/len*300*dt;hp2.vy+=dy/len*300*dt;hp2.vx*=Math.pow(.1,dt);hp2.vy*=Math.pow(.1,dt);hp2.x+=hp2.vx*dt;hp2.y+=hp2.vy*dt;hp2.x=hClamp(hp2.x,hw/2+20,hw-38);hp2.y=hClamp(hp2.y,45,hh-45)}
+function hHit(p,shoot){let dx=hpuck.x-p.x,dy=hpuck.y-p.y,d=Math.hypot(dx,dy)||1;if(d<34){let nx=dx/d,ny=dy/d,f=shoot?650:330;hpuck.x=p.x+nx*30;hpuck.y=p.y+ny*30;hpuck.vx=nx*f+p.vx;hpuck.vy=ny*f+p.vy}}
+function hGoal(){let gt=hh/2-45,gb=hh/2+45;if(hpuck.x<8&&hpuck.y>gt&&hpuck.y<gb){hscore2++;hPoint()}else if(hpuck.x>hw-8&&hpuck.y>gt&&hpuck.y<gb){hscore1++;hPoint()}}
+function hPoint(){hScore.textContent=hscore1+' — '+hscore2;if(hscore1>=5||hscore2>=5){setTimeout(()=>alert((hscore1>=5?'Player 1':'Player 2')+' wins!'),20);hscore1=0;hscore2=0}hResetPositions()}
+function hDraw(){hctx.clearRect(0,0,hw,hh);hctx.fillStyle='#d9f4f8';hctx.fillRect(0,0,hw,hh);hctx.strokeStyle='#9dcbd7';hctx.lineWidth=3;hctx.strokeRect(12,22,hw-24,hh-44);hctx.beginPath();hctx.moveTo(hw/2,22);hctx.lineTo(hw/2,hh-22);hctx.stroke();hctx.beginPath();hctx.arc(hw/2,hh/2,40,0,Math.PI*2);hctx.stroke();let gt=hh/2-45;hctx.fillStyle='#e06a73';hctx.fillRect(0,gt,18,90);hctx.fillRect(hw-18,gt,18,90);function pd(p,n,fill){hctx.beginPath();hctx.fillStyle=fill;hctx.arc(p.x,p.y,19,0,Math.PI*2);hctx.fill();hctx.strokeStyle='#fff';hctx.lineWidth=2;hctx.stroke();hctx.fillStyle='#fff';hctx.font='bold 12px system-ui';hctx.textAlign='center';hctx.fillText(n,p.x,p.y+4)}pd(hp1,'1','#3f72d9');pd(hp2,'2','#e35b64');hctx.beginPath();hctx.fillStyle='#111820';hctx.arc(hpuck.x,hpuck.y,8,0,Math.PI*2);hctx.fill()}
+function hLoop(now){if(!hRunning)return;const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;hMove(hp1,'w','s','a','d',dt);if(hTwo)hMove(hp2,'arrowup','arrowdown','arrowleft','arrowright',dt);else hAI(dt);hHit(hp1,hkeys.f);hHit(hp2,hkeys.l);hpuck.x+=hpuck.vx*dt;hpuck.y+=hpuck.vy*dt;hpuck.vx*=Math.pow(.06,dt);hpuck.vy*=Math.pow(.06,dt);if(hpuck.y<30||hpuck.y>hh-30){hpuck.y=hClamp(hpuck.y,30,hh-30);hpuck.vy*=-.85}let gt=hh/2-45,gb=hh/2+45;if((hpuck.x<22||hpuck.x>hw-22)&&!(hpuck.y>gt&&hpuck.y<gb)){hpuck.x=hClamp(hpuck.x,22,hw-22);hpuck.vx*=-.85}hGoal();hDraw();requestAnimationFrame(hLoop)}
+let reactionState='idle',reactionTimer=null,reactionStartTime=0;
+function reactionStart(){clearTimeout(reactionTimer);reactionState='waiting';reactionBox.className='reaction-box wait';reactionMain.textContent='WAIT...';reactionSub.textContent='Clicking now is a false start';reactionTimer=setTimeout(()=>{reactionState='go';reactionStartTime=performance.now();reactionBox.className='reaction-box ready';reactionMain.textContent='CLICK!';reactionSub.textContent='Go!'},700+Math.random()*2600)}
+function reactionClick(){if(reactionState==='waiting'){clearTimeout(reactionTimer);reactionState='idle';reactionBox.className='reaction-box result';reactionMain.textContent='False start';reactionSub.textContent='Press Start to try again';reactionScore.textContent='— ms'}else if(reactionState==='go'){const ms=Math.round(performance.now()-reactionStartTime);reactionState='idle';reactionBox.className='reaction-box result';reactionMain.textContent=ms+' ms';reactionSub.textContent='Press Start for another round';reactionScore.textContent=ms+' ms'}}
+function reactionReset(){clearTimeout(reactionTimer);reactionState='idle';reactionBox.className='reaction-box';reactionMain.textContent='Ready?';reactionSub.textContent='Press Start to begin';reactionScore.textContent='— ms'}
+let cpsRunning=false,cpsStartTime=0,cpsCount=0,cpsDuration=3,cpsTimer=null;
+function cpsStart(){clearInterval(cpsTimer);cpsDuration=+cpsTime.value;cpsCount=0;cpsRunning=true;cpsStartTime=performance.now();cpsStatus.textContent='Go!';cpsValue.textContent='0.00';cpsTimer=setInterval(()=>{if((performance.now()-cpsStartTime)/1000>=cpsDuration)cpsFinish()},50)}
+function cpsClick(){if(!cpsRunning)return;cpsCount++;let elapsed=(performance.now()-cpsStartTime)/1000;cpsValue.textContent=(cpsCount/Math.max(elapsed,.001)).toFixed(2)}
+function cpsFinish(){if(!cpsRunning)return;cpsRunning=false;clearInterval(cpsTimer);cpsValue.textContent=(cpsCount/cpsDuration).toFixed(2);cpsStatus.textContent=cpsCount+' clicks in '+cpsDuration+' seconds'}
+function cpsReset(){clearInterval(cpsTimer);cpsRunning=false;cpsCount=0;cpsValue.textContent='0.00';cpsStatus.textContent='Not started'}
+function openExternal(url){window.open('fullscreen.html?url='+encodeURIComponent(url),'_blank','noopener,noreferrer')}
+hResetPositions();hDraw();reactionReset();cpsReset();
 </script>
-</body>
-</html>
+</body></html>
