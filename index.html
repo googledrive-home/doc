@@ -23,11 +23,11 @@ h2{font-size:15px;margin:4px 0 12px}.panel{background:#101c2b;border:1px solid #
 </style>
 </head>
 <body>
-<header><div class="logo">CAVE<b>CRAFT</b></div><div class="sub">original browser block sandbox</div><div class="spacer"></div><button id="save">Save world</button><button id="reset">New world</button></header>
+<header><div class="logo">CAVE<b>CRAFT</b></div><div class="sub" id="modeSub">original browser block sandbox</div><div class="spacer"></div><button id="caveBtn">CaveCraft</button><button id="hockeyBtn">Hockey</button><button id="save">Save world</button><button id="reset">New world</button></header>
 <div id="wrap">
-<div id="game"><canvas id="c"></canvas><div id="msg"></div><div id="cross" class="cross"></div></div>
-<aside>
-<h2>World</h2>
+<div id="game"><canvas id="c"></canvas><div id="msg"></div><div id="cross" class="cross"></div><div id="hockeyMode" style="display:none;position:absolute;left:16px;top:16px;background:#07101acc;border:1px solid #ffffff20;border-radius:12px;padding:10px;font-size:12px"><b>HOCKEY</b> <span id="scoreText">0 - 0</span></div></div>
+<aside id="side">
+<h2 id="sideTitle">World</h2>
 <div class="panel"><div class="row"><span>Day</span><b id="day">1</b></div><div class="row"><span>Time</span><b id="time">Morning</b></div><div class="row"><span>Blocks mined</span><b id="mined">0</b></div></div>
 <h2>Selected block</h2>
 <div class="panel"><div id="selected">Grass</div><div class="row"><span>Count</span><b id="count">∞</b></div></div>
@@ -42,7 +42,7 @@ h2{font-size:15px;margin:4px 0 12px}.panel{background:#101c2b;border:1px solid #
 <span class="key">R</span> save spawn<br>
 <span class="key">F</span> fullscreen
 </div>
-<div class="panel"><b>CaveCraft</b><br><br>Explore a procedurally generated block world, collect materials, build structures and discover underground caverns. This is a new game with its own rules and artwork.</div>
+<div class="panel" id="sideInfo"><b>CaveCraft</b><br><br>Explore a procedurally generated block world, collect materials, build structures and discover underground caverns. This is a new game with its own rules and artwork.</div>
 </aside>
 </div>
 <script>
@@ -132,6 +132,108 @@ function draw(){
  if(night>0){ctx.fillStyle='rgba(5,12,25,'+night+')';ctx.fillRect(0,0,W,H)}
 }
 function loop(){move();time+=.0009;if(time>=1){time=0;day++}if(Math.floor(time*100)%10===0)renderInv();draw();requestAnimationFrame(loop)}
+
+let mode='cave',hockeyRunning=false,hockeyTwoPlayer=false,hx=0,hy=0,hScale=1,hp1,hp2,hpuck,hs1=0,hs2=0,hLast=0;
+function hockeyLayout(){
+ const r=wrap.getBoundingClientRect(); hx=r.width; hy=r.height; hScale=Math.min(hx/1100,hy/620);
+}
+function hockeyReset(){
+ hockeyLayout();
+ hp1={x:220,y:hy/2,vx:0,vy:0};
+ hp2={x:hx-220,y:hy/2,vx:0,vy:0};
+ hpuck={x:hx/2,y:hy/2,vx:0,vy:0};
+}
+function hockeyStart(){
+ mode='hockey';hockeyRunning=true;
+ document.getElementById('hockeyMode').style.display='block';
+ document.getElementById('cross').style.display='none';
+ document.getElementById('save').style.display='none';
+ document.getElementById('reset').style.display='none';
+ document.getElementById('modeSub').textContent='local arcade hockey';
+ document.getElementById('sideTitle').textContent='Hockey';
+ document.getElementById('side').querySelector('#day').closest('.panel').style.display='none';
+ document.getElementById('side').querySelector('#selected').closest('.panel').style.display='none';
+ document.getElementById('side').querySelector('#hotbar').closest('.panel').style.display='none';
+ document.getElementById('side').querySelector('#help').innerHTML='<span class="key">WASD</span> Player 1 move<br><span class="key">F</span> Player 1 shoot<br><br><span class="key">Arrows</span> Player 2 move<br><span class="key">L</span> Player 2 shoot<br><br><button id="twoBtn">2 Player: '+(hockeyTwoPlayer?'ON':'OFF')+'</button><br><br>In 1-player mode, Player 2 is controlled by the computer.';
+ document.getElementById('sideInfo').innerHTML='<b>Hockey</b><br><br>Score by getting the puck through the goals at the ends of the rink. First to 5 wins.';
+ document.getElementById('twoBtn').onclick=()=>{hockeyTwoPlayer=!hockeyTwoPlayer;document.getElementById('twoBtn').textContent='2 Player: '+(hockeyTwoPlayer?'ON':'OFF');hockeyReset()};
+ hockeyReset();hLast=performance.now();requestAnimationFrame(hockeyLoop);
+}
+function caveStart(){
+ mode='cave';hockeyRunning=false;
+ document.getElementById('hockeyMode').style.display='none';
+ document.getElementById('cross').style.display='block';
+ document.getElementById('save').style.display='inline-block';
+ document.getElementById('reset').style.display='inline-block';
+ document.getElementById('modeSub').textContent='original browser block sandbox';
+ document.getElementById('sideTitle').textContent='World';
+ document.getElementById('side').querySelector('#day').closest('.panel').style.display='block';
+ document.getElementById('side').querySelector('#selected').closest('.panel').style.display='block';
+ document.getElementById('side').querySelector('#hotbar').closest('.panel').style.display='block';
+ document.getElementById('side').querySelector('#help').innerHTML='<span class="key">WASD</span> move<br><span class="key">Mouse</span> aim / mine<br><span class="key">Right click</span> place block<br><span class="key">1-8</span> select block<br><span class="key">E</span> toggle inventory<br><span class="key">R</span> save spawn<br><span class="key">F</span> fullscreen';
+ document.getElementById('sideInfo').innerHTML='<b>CaveCraft</b><br><br>Explore a procedurally generated block world, collect materials, build structures and discover underground caverns. This is a new game with its own rules and artwork.';
+}
+function hockeyMove(p,up,down,left,right,dt){
+ let dx=(keys[right]?1:0)-(keys[left]?1:0),dy=(keys[down]?1:0)-(keys[up]?1:0),len=Math.hypot(dx,dy)||1,s=300;
+ p.vx+=dx/len*s*dt;p.vy+=dy/len*s*dt;
+ p.vx*=Math.pow(.18,dt);p.vy*=Math.pow(.18,dt);
+ p.x+=p.vx*dt;p.y+=p.vy*dt;
+ p.x=clamp(p.x,95,hx-95);p.y=clamp(p.y,100,hy-100);
+}
+function hockeyAI(dt){
+ const target=hpuck;
+ let dx=target.x-hp2.x,dy=target.y-hp2.y,len=Math.hypot(dx,dy)||1;
+ hp2.vx+=dx/len*230*dt;hp2.vy+=dy/len*230*dt;
+ hp2.vx*=Math.pow(.16,dt);hp2.vy*=Math.pow(.16,dt);
+ hp2.x+=hp2.vx*dt;hp2.y+=hp2.vy*dt;
+ hp2.x=clamp(hp2.x,hx/2+35,hx-95);hp2.y=clamp(hp2.y,100,hy-100);
+}
+function hockeyHit(p,shoot){
+ let dx=hpuck.x-p.x,dy=hpuck.y-p.y,d=Math.hypot(dx,dy)||1;
+ if(d<54){let nx=dx/d,ny=dy/d,force=shoot?620:360;hpuck.x=p.x+nx*48;hpuck.y=p.y+ny*48;hpuck.vx=nx*force+p.vx;hpuck.vy=ny*force+p.vy}
+}
+function hockeyScore(){
+ const goalTop=hy/2-105,goalBot=hy/2+105;
+ if(hpuck.x<42&&hpuck.y>goalTop&&hpuck.y<goalBot){hs2++;hockeyPoint(2)}
+ if(hpuck.x>hx-42&&hpuck.y>goalTop&&hpuck.y<goalBot){hs1++;hockeyPoint(1)}
+}
+function hockeyPoint(who){
+ document.getElementById('scoreText').textContent=hs1+' - '+hs2;
+ hpuck={x:hx/2,y:hy/2,vx:who===1?-180:180,vy:0};
+ toast('Goal for Player '+who+'!');
+ if(hs1>=5||hs2>=5){toast('Player '+who+' wins!');hs1=0;hs2=0}
+}
+function hockeyDraw(){
+ ctx.clearRect(0,0,W,H);hockeyLayout();
+ ctx.fillStyle='#bfe9f4';ctx.fillRect(0,0,hx,hy);
+ ctx.fillStyle='#dff6fa';ctx.fillRect(35,70,hx-70,hy-140);
+ ctx.strokeStyle='#b4dce7';ctx.lineWidth=4;ctx.strokeRect(35,70,hx-70,hy-140);
+ ctx.beginPath();ctx.moveTo(hx/2,70);ctx.lineTo(hx/2,hy-70);ctx.stroke();
+ ctx.beginPath();ctx.arc(hx/2,hy/2,72,0,Math.PI*2);ctx.stroke();
+ const gt=hy/2-105,gb=hy/2+105;
+ ctx.fillStyle='#ef8a8a';ctx.fillRect(18,gt,42,210);ctx.fillStyle='#d85d67';ctx.fillRect(hx-60,gt,42,210);
+ ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(18,gt,42,210);ctx.strokeRect(hx-60,gt,42,210);
+ function playerDraw(p,fill){ctx.beginPath();ctx.fillStyle=fill;ctx.arc(p.x,p.y,27,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText(p===hp1?'1':'2',p.x,p.y+5)}
+ playerDraw(hp1,'#3f72d9');playerDraw(hp2,'#e35b64');
+ ctx.beginPath();ctx.fillStyle='#171c22';ctx.arc(hpuck.x,hpuck.y,11,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#ffffffcc';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText('Player 1',120,38);ctx.fillText('Player 2',hx-120,38);
+ ctx.font='bold 22px system-ui';ctx.fillText(hs1+'  —  '+hs2,hx/2,40);
+}
+function hockeyLoop(now){
+ if(!hockeyRunning||mode!=='hockey')return;
+ const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;
+ hockeyMove(hp1,'w','s','a','d',dt);
+ if(hockeyTwoPlayer)hockeyMove(hp2,'arrowup','arrowdown','arrowleft','arrowright',dt);else hockeyAI(dt);
+ hockeyHit(hp1,keys.f);hockeyHit(hp2,keys.l);
+ hpuck.x+=hpuck.vx*dt;hpuck.y+=hpuck.vy*dt;hpuck.vx*=Math.pow(.055,dt);hpuck.vy*=Math.pow(.055,dt);
+ if(hpuck.y<82||hpuck.y>hy-82){hpuck.y=clamp(hpuck.y,82,hy-82);hpuck.vy*=-.82}
+ const gt=hy/2-105,gb=hy/2+105;
+ if((hpuck.x<65||hpuck.x>hx-65)&&!(hpuck.y>gt&&hpuck.y<gb)){hpuck.x=clamp(hpuck.x,65,hx-65);hpuck.vx*=-.82}
+ hockeyScore();hockeyDraw();requestAnimationFrame(hockeyLoop);
+}
+document.getElementById('caveBtn').onclick=caveStart;
+document.getElementById('hockeyBtn').onclick=hockeyStart;
+
 if(!loadLocal())makeWorld();loop();
 </script>
 </body>
