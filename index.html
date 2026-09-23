@@ -20,7 +20,7 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 </style>
 </head>
 <body>
-<header><div class="logo">GOOGLE <span>DRIVE</span></div><div class="sub">Google Drive</div><div class="grow"></div><button class="btn" id="soundToggle">🔊 Sound On</button><div class="music-wrap"><button class="btn" id="playlistToggle">🎵 Playlist</button><div class="music-panel" id="musicPanel"><div class="music-head"><strong>🎵 Music Player</strong><div class="grow"></div><button class="tiny btn" id="playlistClose">✕</button></div><div class="music-now"><b id="musicTitle">Neon Drive</b><span id="musicArtist">Synth lead · Original track</span></div><div class="music-controls"><button class="btn" id="musicPrev">⏮ Prev</button><button class="btn" id="musicPlay">▶ Play</button><button class="btn" id="musicNext">Next ⏭</button></div><label class="music-volume">Volume <input id="musicVolume" type="range" min="0" max="100" value="48"><span id="musicVolumeText">48%</span></label><div class="playlist" id="playlist"></div></div></div></header>
+<header><div class="logo">GOOGLE <span>DRIVE</span></div><div class="sub">Google Drive</div><div class="grow"></div><button class="btn" id="soundToggle">🔊 Sound On</button><div class="music-wrap"><button class="btn" id="playlistToggle">🎵 Playlist</button><div class="music-panel" id="musicPanel"><div class="music-head"><strong>🎵 Music Player</strong><div class="grow"></div><button class="tiny btn" id="musicLoad">➕ Add My Songs</button><input id="musicFilePicker" type="file" accept="audio/*" multiple hidden><button class="tiny btn" id="playlistClose">✕</button></div><div class="music-now"><b id="musicTitle">Neon Drive</b><span id="musicArtist">Synth lead · Original track</span></div><div class="music-controls"><button class="btn" id="musicPrev">⏮ Prev</button><button class="btn" id="musicPlay">▶ Play</button><button class="btn" id="musicNext">Next ⏭</button></div><label class="music-volume">Volume <input id="musicVolume" type="range" min="0" max="100" value="48"><span id="musicVolumeText">48%</span></label><div class="playlist" id="playlist"></div></div></div></header>
 <main>
 <section class="hero"><h1>Google Drive</h1></section>
 <div class="grid">
@@ -38,7 +38,7 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 
 <script>
 const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null;
-let musicTimer=null,musicPlaying=false,musicStep=0,musicIndex=0,musicGain=null,musicVolume=0.48,musicAudio=null;
+let musicTimer=null,musicPlaying=false,musicStep=0,musicIndex=0,musicGain=null,musicVolume=0.48,musicAudio=null,localMusicFiles={};
 const SONGS=[
 {name:'Neon Drive',instrument:'Synth lead',wave:'sawtooth',tempo:118,notes:[261.63,329.63,392,493.88,392,329.63,293.66,349.23]},
 {name:'Midnight Arcade',instrument:'Piano',wave:'triangle',tempo:104,notes:[392,440,523.25,659.25,523.25,440,392,349.23]},
@@ -50,24 +50,24 @@ const SONGS=[
 {name:'Space Lanterns',instrument:'Bell',wave:'sine',tempo:86,notes:[329.63,415.30,493.88,622.25,493.88,415.30,369.99,440]},
 {name:'Stadium Lights',instrument:'Brass',wave:'sawtooth',tempo:112,notes:[174.61,220,261.63,293.66,349.23,293.66,261.63,220]},
 {name:'Skyline Sprint',instrument:'Electric Bass',wave:'square',tempo:124,notes:[110,146.83,164.81,196,164.81,146.83,123.47,146.83]},
-{name:'HeavySynth',instrument:'Your song · WAV',src:'music/HeavySynth.wav'},
-{name:'New Project',instrument:'Your song · WAV',src:'music/New_Project_1.wav'},
-{name:'BATIDAO FUNK',instrument:'Your song · MP3',src:'music/BATIDAO_FUNK.mp3'},
-{name:'MONTAGEM SANTA FE 2 - Slowed',instrument:'Your song · MP3',src:'music/MONTAGEM_SANTA_FE_2_-_Slowed.mp3'},
-{name:'MONTAGEM PEGADORA - Slowed',instrument:'Your song · MP3',src:'music/MONTAGEM_PEGADORA_-_Slowed.mp3'},
-{name:'MONTAGEM ALQUIMIA - SLOWED',instrument:'Your song · MP3',src:'music/MONTAGEM_ALQUIMIA_-_SLOWED.mp3'},
-{name:'Jerk It Out',instrument:'Your song · MP3',src:'music/Jerk_It_Out.mp3'}
+{name:'HeavySynth',instrument:'Your song · WAV',fileName:'HeavySynth.wav'},
+{name:'New Project',instrument:'Your song · WAV',fileName:'New_Project (1).wav'},
+{name:'BATIDAO FUNK',instrument:'Your song · MP3',fileName:'BATIDAO FUNK.mp3'},
+{name:'MONTAGEM SANTA FE 2 - Slowed',instrument:'Your song · MP3',fileName:'MONTAGEM SANTA FE 2 - Slowed.mp3'},
+{name:'MONTAGEM PEGADORA - Slowed',instrument:'Your song · MP3',fileName:'MONTAGEM PEGADORA - Slowed.mp3'},
+{name:'MONTAGEM ALQUIMIA - SLOWED',instrument:'Your song · MP3',fileName:'h6itam, n7san7os, Mc Menor Do Alvorada - MONTAGEM ALQUIMIA - SLOWED (SPOTISAVER).mp3'},
+{name:'Jerk It Out',instrument:'Your song · MP3',fileName:'Caesars Palace - Jerk It Out Official Video.mp3'}
 ];
 function ensureAudio(){audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();if(!musicGain){musicGain=audioCtx.createGain();musicGain.gain.value=musicVolume;musicGain.connect(audioCtx.destination)}return audioCtx}
 function musicNote(freq,d=.24,g=.075,type='triangle',offset=0){if(!sound||!musicPlaying)return;const a=ensureAudio(),o=a.createOscillator(),v=a.createGain();o.type=type;o.frequency.value=freq*Math.pow(2,offset);v.gain.setValueAtTime(.0001,a.currentTime);v.gain.exponentialRampToValueAtTime(g,a.currentTime+.018);v.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d);o.connect(v).connect(musicGain);o.start();o.stop(a.currentTime+d+.025)}
 function playMusicStep(){const song=SONGS[musicIndex],n=song.notes[musicStep%song.notes.length];musicNote(n,.26,.075,song.wave);if(musicStep%4===0)musicNote(n/2,.42,.035,'triangle');if(song.instrument==='Bell')musicNote(n*2,.38,.028,'sine',0);musicStep++}
-function startMusic(){if(!sound||musicPlaying)return;musicPlaying=true;const song=SONGS[musicIndex];clearInterval(musicTimer);if(song.src){musicAudio??=new Audio();musicAudio.src=song.src;musicAudio.loop=false;musicAudio.volume=musicVolume;musicAudio.onended=()=>nextMusic();musicAudio.play().catch(()=>{});updateMusicUI();return}ensureAudio();playMusicStep();const ms=60000/song.tempo/2;musicTimer=setInterval(playMusicStep,ms);updateMusicUI()}
+function startMusic(){if(!sound||musicPlaying)return;const song=SONGS[musicIndex];const localSrc=song.fileName?localMusicFiles[song.fileName]:song.src;if(song.fileName&&!localSrc){updateMusicUI();return}musicPlaying=true;clearInterval(musicTimer);if(localSrc){musicAudio??=new Audio();musicAudio.src=localSrc;musicAudio.loop=false;musicAudio.volume=musicVolume;musicAudio.onended=()=>nextMusic();musicAudio.play().catch(()=>{musicPlaying=false;updateMusicUI()});updateMusicUI();return}ensureAudio();playMusicStep();const ms=60000/song.tempo/2;musicTimer=setInterval(playMusicStep,ms);updateMusicUI()}
 function pauseMusic(){musicPlaying=false;clearInterval(musicTimer);musicTimer=null;if(musicAudio)musicAudio.pause();updateMusicUI()}
 function stopMusic(){pauseMusic()}
 function setMusicTrack(i,autoplay=true){pauseMusic();musicIndex=(i+SONGS.length)%SONGS.length;musicStep=0;updateMusicUI();if(autoplay)startMusic()}
 function nextMusic(){setMusicTrack(musicIndex+1,true)}function prevMusic(){setMusicTrack(musicIndex-1,true)}
-function updateMusicUI(){const s=SONGS[musicIndex];$('musicTitle').textContent=s.name;$('musicArtist').textContent=s.instrument+' · Original track';$('musicPlay').textContent=musicPlaying?'⏸ Pause':'▶ Play';$('musicVolume').value=Math.round(musicVolume*100);$('musicVolumeText').textContent=Math.round(musicVolume*100)+'%';document.querySelectorAll('.track').forEach((b,i)=>b.classList.toggle('active',i===musicIndex))}
-function buildPlaylist(){const p=$('playlist');p.innerHTML=SONGS.map((s,i)=>'<button class="track btn" data-track="'+i+'"><span class="tn"><b>'+s.name+'</b><small>'+s.instrument+' · '+s.tempo+' BPM</small></span><span>›</span></button>').join('');p.querySelectorAll('.track').forEach(b=>b.onclick=()=>setMusicTrack(+b.dataset.track,true));updateMusicUI()}
+function updateMusicUI(){const s=SONGS[musicIndex];$('musicTitle').textContent=s.name;$('musicArtist').textContent=s.fileName?(localMusicFiles[s.fileName]?'Your song · Ready to play':'Your song · Click “Add My Songs”'):s.instrument+' · Original track';$('musicPlay').textContent=musicPlaying?'⏸ Pause':'▶ Play';$('musicVolume').value=Math.round(musicVolume*100);$('musicVolumeText').textContent=Math.round(musicVolume*100)+'%';document.querySelectorAll('.track').forEach((b,i)=>b.classList.toggle('active',i===musicIndex))}
+function buildPlaylist(){const p=$('playlist');p.innerHTML=SONGS.map((s,i)=>'<button class="track btn" data-track="'+i+'"><span class="tn"><b>'+s.name+'</b><small>'+(s.fileName?(localMusicFiles[s.fileName]?'Your song · Ready':'Your song · Add file'):s.instrument+' · '+s.tempo+' BPM')+'</small></span><span>›</span></button>').join('');p.querySelectorAll('.track').forEach(b=>b.onclick=()=>setMusicTrack(+b.dataset.track,true));updateMusicUI()}
 function beep(freq=520,duration=.07,type='sine',gain=.045){if(!sound)return;try{const a=ensureAudio(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(gain,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+duration);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+duration)}catch(e){}}
 function clickSound(){beep(650,.045,'square',.025)}function beep(freq=520,duration=.07,type='sine',gain=.045){if(!sound)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(gain,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration)}catch(e){}}
 function clickSound(){beep(650,.045,'square',.025)}
@@ -78,6 +78,8 @@ $('playlistClose').onclick=()=>{$('musicPanel').classList.remove('open')};
 $('musicPlay').onclick=()=>musicPlaying?pauseMusic():startMusic();
 $('musicNext').onclick=()=>nextMusic();
 $('musicPrev').onclick=()=>prevMusic();
+$('musicLoad').onclick=()=>$('musicFilePicker').click();
+$('musicFilePicker').onchange=e=>{const files=[...e.target.files];let loaded=0;files.forEach(file=>{const match=SONGS.find(s=>s.fileName===file.name);if(match){if(localMusicFiles[file.name])URL.revokeObjectURL(localMusicFiles[file.name]);localMusicFiles[file.name]=URL.createObjectURL(file);loaded++}});buildPlaylist();if(loaded&&SONGS[musicIndex].fileName&&localMusicFiles[SONGS[musicIndex].fileName])startMusic();};
 $('musicVolume').oninput=e=>{musicVolume=+e.target.value/100;ensureAudio();musicGain.gain.value=musicVolume;if(musicAudio)musicAudio.volume=musicVolume;updateMusicUI()};
 buildPlaylist();
 $('fullscreenBtn').onclick=()=>toggleFullscreen();$('closeBtn').onclick=()=>closeGame();
@@ -114,6 +116,7 @@ function openExternal(url){window.open(url,'_blank','noopener,noreferrer')}
 $('gameModal').addEventListener('click',e=>{const rb=e.target.closest('#rb');if(rb)reactionBoxClick()});
 document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement){$('fullscreenBtn').textContent='⛶ Exit Fullscreen'}else{$('fullscreenBtn').textContent='⛶ Fullscreen'}});
 document.addEventListener('click',e=>{if(e.target.closest('button'))clickSound()});
+
 </script>
 </body>
 </html>
