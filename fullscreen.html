@@ -23,11 +23,11 @@ button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}
 </head>
 <body>
 <div id="bar"><div id="brand">GOOGLE <span>DRIVE</span></div><span id="url"></span><button id="sound">🔊</button><button class="secondary" id="fs">⛶ Fullscreen</button><button class="exit" id="exit">✕ Back</button></div>
-<div id="hint"><strong>Game Ready 🎮</strong><p>The game will fill this tab in fullscreen mode. Click play to start.</p><button id="start">PLAY FULLSCREEN ▶</button></div>
+<div id="hint"><strong>Google Drive</strong><p>The game will fill this tab in fullscreen mode. Click play to start.</p><button id="start">PLAY FULLSCREEN ▶</button></div>
 <iframe id="game" allow="fullscreen; autoplay" allowfullscreen loading="eager" referrerpolicy="no-referrer"></iframe>
 <script>
 const q=new URLSearchParams(location.search),u=q.get('url'),frame=document.getElementById('game'),hint=document.getElementById('hint');
-if(!u){document.getElementById('hint').innerHTML='<strong>No game selected</strong><p>Go back to Google Drive Games and choose a game.</p>'}
+if(!u){document.getElementById('hint').innerHTML='<strong>No game selected</strong><p>Go back to Google Drive and choose a game.</p>'}
 else{frame.src=u;document.getElementById('url').textContent=u}
 let sound=true,audioCtx=null;
 function beep(){if(!sound)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=620;g.gain.value=.03;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.05)}catch(e){}}
