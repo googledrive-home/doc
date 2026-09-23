@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Homebase Arcade</title>
+<title>Google Drive</title>
 <style>
 :root{--bg:#07101a;--panel:#101b29;--line:#2a3b50;--text:#f5f7fb;--muted:#9eafc4;--accent:#67d7a1}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#19304b,#07101a 55%);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh}
@@ -23,7 +23,7 @@ footer{text-align:center;color:#667b92;font-size:11px;padding:10px}
 </style>
 </head>
 <body>
-<header><div class="logo">HOMEBASE <b>ARCADE</b></div><div class="sub">games & quick tests</div><div class="spacer"></div><button onclick="document.documentElement.requestFullscreen?.()">Fullscreen</button></header>
+<header><div class="logo">GOOGLE <b>DRIVE</b></div><div class="sub">games & quick tests</div><div class="spacer"></div><button onclick="document.documentElement.requestFullscreen?.()">Fullscreen</button></header>
 <main>
 <section class="hero"><h1>Pick a game.</h1><p>Hockey, reaction speed and click speed in one place. The two extra games open in a new tab through a fullscreen launcher.</p></section>
 <div class="grid">
@@ -47,7 +47,7 @@ footer{text-align:center;color:#667b92;font-size:11px;padding:10px}
 <section class="card ext"><span class="tag">new tab</span><h2>✈️ Learn to Fly</h2><p>Open the supplied Internet Archive game in a separate tab using the site's fullscreen launcher.</p>
 <div class="thumb">LEARN<br>TO FLY</div><div class="ext-actions"><button onclick="openExternal('https://archive.org/details/learn-to-fly')">Open Learn to Fly</button></div>
 <div class="notice">The launcher provides a fullscreen button so the game can be made fullscreen after the new tab opens.</div></section>
-</div></main><footer>Homebase Arcade · Hockey + Reaction + Click Test</footer>
+</div></main><footer>Google Drive · Hockey + Reaction + Click Test</footer>
 <script>
 const hc=document.getElementById('hockeyCanvas'),hctx=hc.getContext('2d');let hw=0,hh=0,hkeys={},hRunning=false,hTwo=false,hp1,hp2,hpuck,hscore1=0,hscore2=0,hLast=0;
 function hResize(){const r=hc.getBoundingClientRect(),d=devicePixelRatio;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}addEventListener('resize',hResize);hResize();
