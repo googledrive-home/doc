@@ -1,20 +1,47 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Google Drive Game</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Google Drive Games</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061020;color:#fff;font-family:Inter,system-ui,sans-serif}iframe{width:100%;height:100%;border:0;display:block;background:#000}
-#bar{position:fixed;z-index:10;left:14px;right:14px;top:14px;display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:16px;background:#07162ae8;border:1px solid #ffffff20;backdrop-filter:blur(12px);transition:.2s}
-button{border:0;border-radius:11px;padding:10px 14px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#38d9ff,#b6f5ff);color:#04111c}button:hover{transform:translateY(-2px);filter:brightness(1.08)}.secondary{background:#193454;color:#e8f6ff;border:1px solid #ffffff18}.exit{background:#ff5c77;color:#26050d}
-#url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9db6d2;font-size:11px}.hint{position:fixed;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);padding:25px;border-radius:22px;text-align:center;background:#07162af2;border:1px solid #ffffff22;box-shadow:0 25px 80px #0009;max-width:420px}.hint strong{font-size:24px}.hint p{color:#abc0d7;font-size:13px;line-height:1.5}
-</style></head><body>
-<div id="bar"><strong>GOOGLE DRIVE</strong><span id="url"></span><button id="sound">🔊</button><button class="secondary" id="fs">⛶ Fullscreen</button><button class="exit" id="exit">✕ Close</button></div>
-<div class="hint" id="hint"><strong>Game Ready 🎮</strong><p>Press Fullscreen to make the game fill the screen. Your browser may also let you use Esc or F11 to leave fullscreen.</p><button id="start">PLAY FULLSCREEN ▶</button></div>
-<iframe id="game" allow="fullscreen; autoplay" allowfullscreen referrerpolicy="no-referrer"></iframe>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b16;color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}
+body{display:flex;flex-direction:column}
+#bar{height:54px;flex:0 0 54px;display:flex;align-items:center;gap:9px;padding:8px 12px;background:#07152b;border-bottom:1px solid #ffffff18}
+#brand{font-weight:1000;letter-spacing:-.5px}#brand span{color:#38d9ff}
+#url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8fa8c4;font-size:11px}
+button{border:0;border-radius:10px;padding:9px 12px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;background:#38d9ff;color:#04111c}
+button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}
+.secondary{background:#193454;color:#e8f6ff;border:1px solid #ffffff18}.exit{background:#ff5c77;color:#26050d}
+#game{display:block;flex:1;width:100%;height:calc(100% - 54px);border:0;background:#000}
+#hint{position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,90vw);padding:26px;border-radius:20px;text-align:center;background:#07162af5;border:1px solid #ffffff22;box-shadow:0 25px 70px #0009}
+#hint strong{font-size:24px}#hint p{color:#abc0d7;font-size:13px;line-height:1.5}
+:fullscreen #bar{display:none}:fullscreen #game{width:100%;height:100%}
+@media(max-width:650px){#url{display:none}#bar{height:50px;flex-basis:50px}#game{height:calc(100% - 50px)}button{padding:8px 10px}}
+</style>
+</head>
+<body>
+<div id="bar"><div id="brand">GOOGLE <span>DRIVE</span></div><span id="url"></span><button id="sound">🔊</button><button class="secondary" id="fs">⛶ Fullscreen</button><button class="exit" id="exit">✕ Back</button></div>
+<div id="hint"><strong>Game Ready 🎮</strong><p>The game will fill this tab in fullscreen mode. Click play to start.</p><button id="start">PLAY FULLSCREEN ▶</button></div>
+<iframe id="game" allow="fullscreen; autoplay" allowfullscreen loading="eager" referrerpolicy="no-referrer"></iframe>
 <script>
-const q=new URLSearchParams(location.search),u=q.get('url'),frame=document.getElementById('game'),hint=document.getElementById('hint'),bar=document.getElementById('bar');let sound=true,audioCtx;
-if(!u){hint.innerHTML='<strong>No game selected</strong><p>Close this tab and choose a game again.</p>'}else{frame.src=u;document.getElementById('url').textContent=u}
-function beep(){if(!sound)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=600;g.gain.value=.035;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.06)}catch(e){}}
-async function enterFS(){beep();try{await frame.requestFullscreen?.();hint.style.display='none';bar.style.opacity='.22'}catch(e){try{await document.documentElement.requestFullscreen();hint.style.display='none'}catch(e2){alert('Fullscreen is unavailable in this browser.')}}}
-function exitFS(){document.exitFullscreen?.();hint.style.display='block';bar.style.opacity='1'}
-document.getElementById('start').onclick=enterFS;document.getElementById('fs').onclick=()=>document.fullscreenElement?exitFS():enterFS();document.getElementById('exit').onclick=()=>history.length>1?history.back():window.close();document.getElementById('sound').onclick=()=>{sound=!sound;document.getElementById('sound').textContent=sound?'🔊':'🔇';beep()};
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){hint.style.display='block';bar.style.opacity='1'}else{hint.style.display='none';bar.style.opacity='.22'}});
-</script></body></html>
+const q=new URLSearchParams(location.search),u=q.get('url'),frame=document.getElementById('game'),hint=document.getElementById('hint');
+if(!u){document.getElementById('hint').innerHTML='<strong>No game selected</strong><p>Go back to Google Drive Games and choose a game.</p>'}
+else{frame.src=u;document.getElementById('url').textContent=u}
+let sound=true,audioCtx=null;
+function beep(){if(!sound)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=620;g.gain.value=.03;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.05)}catch(e){}}
+async function enterFS(){
+ beep();
+ try{if(document.fullscreenElement)return;await document.documentElement.requestFullscreen();hint.style.display='none'}
+ catch(e){hint.querySelector('p').textContent='Fullscreen was blocked by the browser. Use the browser fullscreen control, then play.'}
+}
+function exitFS(){if(document.fullscreenElement)document.exitFullscreen();else location.href='index.html'}
+document.getElementById('start').onclick=enterFS;
+document.getElementById('fs').onclick=()=>document.fullscreenElement?exitFS():enterFS();
+document.getElementById('exit').onclick=()=>location.href='index.html';
+document.getElementById('sound').onclick=()=>{sound=!sound;document.getElementById('sound').textContent=sound?'🔊':'🔇';beep()};
+document.addEventListener('fullscreenchange',()=>{const on=!!document.fullscreenElement;hint.style.display=on?'none':'block';document.getElementById('fs').textContent=on?'⛶ Exit Fullscreen':'⛶ Fullscreen'});
+</script>
+</body>
+</html>
