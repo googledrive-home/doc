@@ -156,13 +156,13 @@ function tennisPoint(){if($('ts'))$('ts').textContent=tScore1+' — '+tScore2;be
 function drawTennis(){tctx.clearRect(0,0,tw,th);tctx.fillStyle='#12375b';tctx.fillRect(0,0,tw,th);tctx.strokeStyle='#8edcff';tctx.lineWidth=3;tctx.strokeRect(18,18,tw-36,th-36);tctx.setLineDash([12,12]);tctx.beginPath();tctx.moveTo(tw/2,18);tctx.lineTo(tw/2,th-18);tctx.stroke();tctx.setLineDash([]);tctx.fillStyle='#e9fbff';tctx.fillRect(32,tp1.y-50,12,100);tctx.fillRect(tw-44,tp2.y-50,12,100);tctx.beginPath();tctx.fillStyle='#ffd34e';tctx.arc(tball.x,tball.y,13,0,Math.PI*2);tctx.fill();tctx.fillStyle='#d9efff';tctx.font='700 14px system-ui';tctx.textAlign='center';tctx.fillText(difficulty.toUpperCase(),tw/2,th-4)}
 function startHockey(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<canvas id="hc"></canvas><div class="hud"><span class="scorebig" id="hs">0 — 0</span><span>P1: WASD + F</span><span>P2: '+(mode==='two'?'Arrows + L':'Computer')+'</span><button class="tiny btn" id="restartH">Restart</button></div>';if(fs)enterGameFS();initHockey();$('restartH').onclick=()=>{hScore1=0;hScore2=0;resetHPos();$('hs').textContent='0 — 0';beep(300)}}
 let hctx,hc,hw=0,hh=0,hkeys={},h1,h2,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0;
-let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
+let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bEffectText='',bEffectTimer=0,bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
 let sctx,sc,sw=0,sh=0,sPlayer,sPipes=[],sParticles=[],sScore=0,sAnim=0,sLast=0,sPipeTimer=0,sReady=true,sStarted=false,sOver=false,sBest=0,sSkyTime=0,sBirdFrame=0,sGroundOffset=0,sBossActive=false,sBossTimer=0,sBossX=0,sBossY=0,sBossPulse=0,sBossOrbs=[],sBossCleared=false;
 
 function initHockey(){hc=$('hc');hctx=hc.getContext('2d');resizeH();resetHPos();hLast=performance.now();cancelAnimationFrame(hAnim);hAnim=requestAnimationFrame(hLoop);window.onresize=resizeH}
 function resizeH(){if(!hc)return;const r=hc.getBoundingClientRect(),d=devicePixelRatio||1;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}
 function resetHPos(){h1={x:90,y:hh/2,vx:0,vy:0};h2={x:hw-90,y:hh/2,vx:0,vy:0};puck={x:hw/2,y:hh/2,vx:0,vy:0}}
-addEventListener('keydown',e=>{if($('gameModal').classList.contains('open')){hkeys[e.key.toLowerCase()]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault()}});addEventListener('keyup',e=>hkeys[e.key.toLowerCase()]=false);
+addEventListener('keydown',e=>{if($('gameModal').classList.contains('open')){const k=e.key.toLowerCase();hkeys[k]=true;bkeys[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault()}});addEventListener('keyup',e=>{const k=e.key.toLowerCase();hkeys[k]=false;bkeys[k]=false});
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open'))tkeys[e.key.toLowerCase()]=true});addEventListener('keyup',e=>tkeys[e.key.toLowerCase()]=false);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function moveP(p,u,d,l,r,dt){let dx=(hkeys[r]?1:0)-(hkeys[l]?1:0),dy=(hkeys[d]?1:0)-(hkeys[u]?1:0),len=Math.hypot(dx,dy)||1;p.vx+=dx/len*650*dt;p.vy+=dy/len*650*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);const max=420;const sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}p.x=clamp(p.x+p.vx*dt,42,hw-42);p.y=clamp(p.y+p.vy*dt,50,hh-50)}
@@ -182,22 +182,22 @@ function cpsFinish(){if(!cpsRunning)return;cpsRunning=false;clearInterval(cpsTim
 function startBreaker(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="bc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="bs">0</span><span id="bl">Lives: 3</span><span id="blev">Level 1</span><span id="bcombo">Combo x0</span><button class="tiny btn" id="restartB">Restart</button></div></div>';
-  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};
+  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;bPaused=false;
   bc=$('bc');bctx=bc.getContext('2d');resizeBreaker();resetBreakerLevel();bLast=performance.now();cancelAnimationFrame(bAnim);bAnim=requestAnimationFrame(bLoop);window.onresize=resizeBreaker;
   bc.onpointermove=e=>{const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{if(bPaused){bPaused=false;bLast=performance.now();bAnim=requestAnimationFrame(bLoop)}};$('restartB').onclick=()=>startBreaker(false);
 }
 function resizeBreaker(){if(!bc)return;const r=bc.getBoundingClientRect(),d=devicePixelRatio||1;bc.width=r.width*d;bc.height=r.height*d;bctx.setTransform(d,0,0,d,0,0);bw=r.width;bh=r.height;if(bPaddle){bPaddle.y=bh-55;bPaddle.x=clamp(bPaddle.x||bw/2,bPaddle.w/2,bw-bPaddle.w/2)}}
 function breakerConfig(){return {easy:{speed:300,paddle:170,rows:6,cols:9},medium:{speed:365,paddle:145,rows:7,cols:10},hard:{speed:430,paddle:118,rows:8,cols:10}}[difficulty]||{speed:365,paddle:145,rows:7,cols:10}}
 function resetBreakerLevel(){
-  const cfg=breakerConfig();bPaddle.w=cfg.paddle;bPaddle.h=16;bPaddle.y=bh-55;bPaddle.x=bw/2;bBricks=[];bPopped=0;
+  const cfg=breakerConfig();bPaddle.w=cfg.paddle;bPaddle.h=16;bPaddle.y=bh-55;bPaddle.x=bw/2;bBricks=[];bPopped=0;bEffectText='';bEffectTimer=0;
   const colors=['#ff4fc3','#ffd34e','#38d9ff','#54e38e','#ff8a45','#a48bff'];
   const gap=8,left=26,top=46,brickH=25;const brickW=(bw-left*2-gap*(cfg.cols-1))/cfg.cols;
   for(let r=0;r<cfg.rows;r++)for(let col=0;col<cfg.cols;col++)bBricks.push({x:left+col*(brickW+gap),y:top+r*(brickH+gap),w:brickW,h:brickH,hp:(difficulty==='hard'&&r<2)?2:1,color:colors[r%colors.length],alive:true});
   const ang=(Math.random()<.5?-1:1)*(0.35+Math.random()*.45),sp=cfg.speed*(1+.08*(bLevel-1));
-  bBall={x:bw/2,y:bh-85,vx:Math.cos(ang)*sp,vy:-Math.abs(Math.sin(ang)*sp),r:9,balls:[]};bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};updateBreakerHud();
+  bBall={x:bw/2,y:bh-85,vx:Math.cos(ang)*sp,vy:-Math.abs(Math.sin(ang)*sp),r:9,balls:[]};bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;updateBreakerHud();
 }
-function spawnBreakerPower(x,y){const kinds=['wide','slow','multi','x2','x3','plus1','plus3','fire','bomb','magnet','shield','turbo'];const kind=kinds[Math.floor(Math.random()*kinds.length)];if(Math.random()>.34)return;bPowerups.push({x,y,w:22,h:22,vy:115,type:kind,rot:0,life:12})}
-function breakerExtraBall(){const a=Math.atan2(bBall.vy,bBall.vx)+(.45-Math.random()*.9);const sp=Math.hypot(bBall.vx,bBall.vy)*.9;bBall.balls.push({x:bBall.x,y:bBall.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8})}
+function spawnBreakerPower(x,y){const kinds=['wide','slow','multi','x2','x3','plus1','plus3','fire','bomb','magnet','shield','turbo'];const kind=kinds[Math.floor(Math.random()*kinds.length)];if(Math.random()>.60)return;bPowerups.push({x,y,w:26,h:26,vy:145,type:kind,rot:0,life:14})}
+function breakerExtraBall(){if(bBall.balls.length>=2)return;const base=Math.atan2(bBall.vy,bBall.vx),sp=Math.hypot(bBall.vx,bBall.vy)*.88;for(const off of [-.52,.52])if(bBall.balls.length<2)bBall.balls.push({x:bBall.x,y:bBall.y,vx:Math.cos(base+off)*sp,vy:Math.sin(base+off)*sp,r:8})}
 function breakerHitBall(ball,dt){
   ball.x+=ball.vx*dt*(bPowerTimers.slow>0?.66:1);ball.y+=ball.vy*dt*(bPowerTimers.slow>0?.66:1);
   if(ball.x<ball.r){ball.x=ball.r;ball.vx=Math.abs(ball.vx);beep(300,.02,'sine',.012)}
@@ -236,26 +236,33 @@ function breakerBomb(cx,cy){
   }
   if(hit)beep(980,.12,'sawtooth',.03);
 }
+function applyBreakerPower(t){
+  const names={wide:'WIDE PADDLE',slow:'SLOW BALL',multi:'MULTI-BALL',x2:'2X SCORE',x3:'3X SCORE',plus1:'+1 LIFE',plus3:'+3 LIVES',fire:'FIRE BALL',bomb:'BOMB BLAST',magnet:'MAGNET PADDLE',shield:'SHIELD SAVED',turbo:'TURBO BALL'};
+  if(t==='wide')bPowerTimers.wide=8;
+  if(t==='slow')bPowerTimers.slow=7;
+  if(t==='multi')breakerExtraBall();
+  if(t==='x2'){bPowerTimers.x2=9;bPowerTimers.x3=0}
+  if(t==='x3'){bPowerTimers.x3=7;bPowerTimers.x2=0}
+  if(t==='plus1')bLives=Math.min(12,bLives+1);
+  if(t==='plus3')bLives=Math.min(12,bLives+3);
+  if(t==='fire')bPowerTimers.fire=7;
+  if(t==='bomb')breakerBomb(bPaddle.x,bPaddle.y);
+  if(t==='magnet')bPowerTimers.magnet=8;
+  if(t==='shield')bPowerTimers.shield=1;
+  if(t==='turbo')bPowerTimers.turbo=7;
+  bEffectText=names[t]||'POWER UP';bEffectTimer=1.15;
+  bScore+=50;
+  beep(t==='x3'?980:t==='x2'?820:t==='plus3'?900:640,.08,'sine',.03);
+}
 function breakerCollect(dt){
   for(let i=bPowerups.length-1;i>=0;i--){
     const p=bPowerups[i];p.y+=p.vy*dt;p.rot+=dt*4;p.life-=dt;
     if(p.life<=0||p.y>bh+35){bPowerups.splice(i,1);continue}
-    if(p.y+11>=bPaddle.y&&p.y-11<=bPaddle.y+bPaddle.h&&p.x>bPaddle.x-bPaddle.w/2&&p.x<bPaddle.x+bPaddle.w/2){
-      const t=p.type;
-      if(t==='wide')bPowerTimers.wide=8;
-      if(t==='slow')bPowerTimers.slow=7;
-      if(t==='multi')breakerExtraBall();
-      if(t==='x2'){bPowerTimers.x2=9;bPowerTimers.x3=0}
-      if(t==='x3'){bPowerTimers.x3=7;bPowerTimers.x2=0}
-      if(t==='plus1')bLives=Math.min(12,bLives+1);
-      if(t==='plus3')bLives=Math.min(12,bLives+3);
-      if(t==='fire')bPowerTimers.fire=7;
-      if(t==='bomb')breakerBomb(p.x,p.y);
-      if(t==='magnet')bPowerTimers.magnet=8;
-      if(t==='shield')bPowerTimers.shield=1;
-      if(t==='turbo')bPowerTimers.turbo=7;
-      bScore+=50;bPowerups.splice(i,1);
-      beep(t==='x3'?980:t==='x2'?820:t==='plus3'?900:540,.08,'sine',.03);
+    const px=clamp(p.x,bPaddle.x-bPaddle.w/2,bPaddle.x+bPaddle.w/2);
+    const py=clamp(p.y,bPaddle.y,bPaddle.y+bPaddle.h);
+    if(Math.hypot(p.x-px,p.y-py)<=18){
+      applyBreakerPower(p.type);
+      bPowerups.splice(i,1);
     }
   }
 }
@@ -263,7 +270,9 @@ function bLoop(now){
   if(bPaused)return;
   const dt=Math.min(.033,(now-bLast)/1000||.016);bLast=now;const cfg=breakerConfig();
   for(const k of Object.keys(bPowerTimers))if(bPowerTimers[k]>0)bPowerTimers[k]=Math.max(0,bPowerTimers[k]-dt);
+  bEffectTimer=Math.max(0,bEffectTimer-dt);
   bPaddle.w=bPowerTimers.wide>0?Math.min(220,cfg.paddle*1.5):cfg.paddle;
+  const keyMove=(bkeys.d||bkeys.arrowright?1:0)-(bkeys.a||bkeys.arrowleft?1:0);if(keyMove)bPaddle.x=clamp(bPaddle.x+keyMove*520*dt,bPaddle.w/2,bw-bPaddle.w/2);
   let lost=breakerHitBall(bBall,dt);
   for(let i=bBall.balls.length-1;i>=0;i--)if(breakerHitBall(bBall.balls[i],dt))bBall.balls.splice(i,1);
   breakerCollect(dt);
@@ -288,10 +297,14 @@ function drawBreaker(){
   const balls=[bBall,...bBall.balls];for(const ball of balls){bctx.fillStyle='#ffd34e';bctx.shadowBlur=18;bctx.shadowColor='#ffd34e';bctx.beginPath();bctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);bctx.fill()}bctx.shadowBlur=0;
   for(const p of bPowerups){
     const colors={wide:'#38d9ff',slow:'#54e38e',multi:'#ff4fc3',x2:'#ffd34e',x3:'#ff8a45',plus1:'#8ee7ff',plus3:'#a48bff',fire:'#ff654f',bomb:'#ff315e',magnet:'#c77dff',shield:'#7cf7ff',turbo:'#fff06a'};
-    const labels={wide:'W',slow:'S',multi:'M',x2:'×2',x3:'×3',plus1:'+1',plus3:'+3',fire:'🔥',bomb:'B',magnet:'🧲',shield:'S',turbo:'⚡'};
-    bctx.save();bctx.translate(p.x,p.y);bctx.rotate(p.rot);bctx.fillStyle=colors[p.type]||'#fff';bctx.beginPath();bctx.roundRect(-11,-11,22,22,5);bctx.fill();bctx.fillStyle='#061522';bctx.font='900 10px system-ui';bctx.textAlign='center';bctx.fillText(labels[p.type]||'?',0,4);bctx.restore();
+    const labels={wide:'W',slow:'S',multi:'M',x2:'2X',x3:'3X',plus1:'+1',plus3:'+3',fire:'F',bomb:'B',magnet:'M',shield:'S',turbo:'T'};
+    bctx.save();bctx.translate(p.x,p.y);bctx.rotate(p.rot);bctx.shadowBlur=16;bctx.shadowColor=colors[p.type]||'#fff';bctx.fillStyle=colors[p.type]||'#fff';bctx.beginPath();bctx.roundRect(-13,-13,26,26,6);bctx.fill();bctx.shadowBlur=0;bctx.fillStyle='#061522';bctx.font='900 10px system-ui';bctx.textAlign='center';bctx.textBaseline='middle';bctx.fillText(labels[p.type]||'?',0,1);bctx.restore();
   }
-  bctx.fillStyle='#ffffffb0';bctx.font='700 13px system-ui';bctx.textAlign='left';bctx.fillText('BREAK EVERY BRICK • POWER-UPS DROP RANDOMLY',18,21);bctx.textAlign='right';bctx.fillText('WIDE '+(bPowerTimers.wide>0?Math.ceil(bPowerTimers.wide)+'s':'—')+'  SLOW '+(bPowerTimers.slow>0?Math.ceil(bPowerTimers.slow)+'s':'—'),bw-18,21);
+  bctx.fillStyle='#ffffffb0';bctx.font='700 13px system-ui';bctx.textAlign='left';bctx.fillText('BREAK EVERY BRICK • POWER-UPS DROP OFTEN',18,21);bctx.textAlign='right';bctx.fillText('WIDE '+(bPowerTimers.wide>0?Math.ceil(bPowerTimers.wide)+'s':'—')+'  SLOW '+(bPowerTimers.slow>0?Math.ceil(bPowerTimers.slow)+'s':'—'),bw-18,21);
+  if(bPowerTimers.fire>0){bctx.strokeStyle='#ff7b43';bctx.lineWidth=4;bctx.beginPath();bctx.arc(bBall.x,bBall.y,15,0,Math.PI*2);bctx.stroke()}
+  if(bPowerTimers.shield>0){bctx.strokeStyle='#7cf7ff';bctx.lineWidth=4;bctx.beginPath();bctx.roundRect(bPaddle.x-bPaddle.w/2-6,bPaddle.y-6,bPaddle.w+12,bPaddle.h+12,12);bctx.stroke()}
+  const active=[];if(bPowerTimers.x2>0)active.push('2X '+Math.ceil(bPowerTimers.x2)+'s');if(bPowerTimers.x3>0)active.push('3X '+Math.ceil(bPowerTimers.x3)+'s');if(bPowerTimers.magnet>0)active.push('MAG '+Math.ceil(bPowerTimers.magnet)+'s');if(bPowerTimers.turbo>0)active.push('TURBO '+Math.ceil(bPowerTimers.turbo)+'s');if(active.length){bctx.textAlign='left';bctx.fillStyle='#fff';bctx.font='900 12px system-ui';bctx.fillText(active.join('  •  '),18,bh-18)}
+  if(bEffectTimer>0){bctx.textAlign='center';bctx.font='900 28px system-ui';bctx.lineWidth=6;bctx.strokeStyle='#07101d';bctx.strokeText(bEffectText,bw/2,bh*.46);bctx.fillStyle='#fff';bctx.fillText(bEffectText,bw/2,bh*.46)}
 }
 addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')){const key=e.key.toLowerCase();if(key===' '||key==='arrowup'||key==='w'){e.preventDefault();if(!e.repeat)skyFlap()}}});
 function startSkyDash(fs){
