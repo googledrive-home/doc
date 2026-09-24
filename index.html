@@ -156,7 +156,7 @@ function tennisPoint(){if($('ts'))$('ts').textContent=tScore1+' — '+tScore2;be
 function drawTennis(){tctx.clearRect(0,0,tw,th);tctx.fillStyle='#12375b';tctx.fillRect(0,0,tw,th);tctx.strokeStyle='#8edcff';tctx.lineWidth=3;tctx.strokeRect(18,18,tw-36,th-36);tctx.setLineDash([12,12]);tctx.beginPath();tctx.moveTo(tw/2,18);tctx.lineTo(tw/2,th-18);tctx.stroke();tctx.setLineDash([]);tctx.fillStyle='#e9fbff';tctx.fillRect(32,tp1.y-50,12,100);tctx.fillRect(tw-44,tp2.y-50,12,100);tctx.beginPath();tctx.fillStyle='#ffd34e';tctx.arc(tball.x,tball.y,13,0,Math.PI*2);tctx.fill();tctx.fillStyle='#d9efff';tctx.font='700 14px system-ui';tctx.textAlign='center';tctx.fillText(difficulty.toUpperCase(),tw/2,th-4)}
 function startHockey(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<canvas id="hc"></canvas><div class="hud"><span class="scorebig" id="hs">0 — 0</span><span>P1: WASD + F</span><span>P2: '+(mode==='two'?'Arrows + L':'Computer')+'</span><button class="tiny btn" id="restartH">Restart</button></div>';if(fs)enterGameFS();initHockey();$('restartH').onclick=()=>{hScore1=0;hScore2=0;resetHPos();$('hs').textContent='0 — 0';beep(300)}}
 let hctx,hc,hw=0,hh=0,hkeys={},h1,h2,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0;
-let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bEffectText='',bEffectTimer=0,bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
+let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bEffectText='',bEffectTimer=0,bGameOver=false,bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
 let sctx,sc,sw=0,sh=0,sPlayer,sPipes=[],sParticles=[],sScore=0,sAnim=0,sLast=0,sPipeTimer=0,sReady=true,sStarted=false,sOver=false,sBest=0,sSkyTime=0,sBirdFrame=0,sGroundOffset=0,sBossActive=false,sBossTimer=0,sBossX=0,sBossY=0,sBossPulse=0,sBossOrbs=[],sBossCleared=false;
 
 function initHockey(){hc=$('hc');hctx=hc.getContext('2d');resizeH();resetHPos();hLast=performance.now();cancelAnimationFrame(hAnim);hAnim=requestAnimationFrame(hLoop);window.onresize=resizeH}
@@ -182,9 +182,9 @@ function cpsFinish(){if(!cpsRunning)return;cpsRunning=false;clearInterval(cpsTim
 function startBreaker(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="bc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="bs">0</span><span id="bl">Lives: 3</span><span id="blev">Level 1</span><span id="bcombo">Combo x0</span><button class="tiny btn" id="restartB">Restart</button></div></div>';
-  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;bPaused=false;
+  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;bGameOver=false;bPaused=false;
   bc=$('bc');bctx=bc.getContext('2d');resizeBreaker();resetBreakerLevel();bLast=performance.now();cancelAnimationFrame(bAnim);bAnim=requestAnimationFrame(bLoop);window.onresize=resizeBreaker;
-  bc.onpointermove=e=>{const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{if(bPaused){bPaused=false;bLast=performance.now();bAnim=requestAnimationFrame(bLoop)}};$('restartB').onclick=()=>startBreaker(false);
+  bc.onpointermove=e=>{if(bGameOver)return;const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{if(bPaused&&!bGameOver){bPaused=false;bLast=performance.now();bAnim=requestAnimationFrame(bLoop)}};$('restartB').onclick=()=>startBreaker(false);
 }
 function resizeBreaker(){if(!bc)return;const r=bc.getBoundingClientRect(),d=devicePixelRatio||1;bc.width=r.width*d;bc.height=r.height*d;bctx.setTransform(d,0,0,d,0,0);bw=r.width;bh=r.height;if(bPaddle){bPaddle.y=bh-55;bPaddle.x=clamp(bPaddle.x||bw/2,bPaddle.w/2,bw-bPaddle.w/2)}}
 function breakerConfig(){return {easy:{speed:300,paddle:170,rows:6,cols:9},medium:{speed:365,paddle:145,rows:7,cols:10},hard:{speed:430,paddle:118,rows:8,cols:10}}[difficulty]||{speed:365,paddle:145,rows:7,cols:10}}
@@ -267,7 +267,7 @@ function breakerCollect(dt){
   }
 }
 function bLoop(now){
-  if(bPaused)return;
+  if(bPaused||bGameOver)return;
   const dt=Math.min(.033,(now-bLast)/1000||.016);bLast=now;const cfg=breakerConfig();
   for(const k of Object.keys(bPowerTimers))if(bPowerTimers[k]>0)bPowerTimers[k]=Math.max(0,bPowerTimers[k]-dt);
   bEffectTimer=Math.max(0,bEffectTimer-dt);
@@ -279,7 +279,7 @@ function bLoop(now){
   if(lost){
     if(bBall.balls.length){const extra=bBall.balls.pop();bBall.x=extra.x;bBall.y=extra.y;bBall.vx=extra.vx;bBall.vy=extra.vy}
     else if(bPowerTimers.shield>0){bPowerTimers.shield=0;bBall.x=bw/2;bBall.y=bh-85;bBall.vx=(Math.random()<.5?-1:1)*cfg.speed;bBall.vy=-cfg.speed*.72;beep(760,.1,'triangle',.03)}
-    else{bLives--;bCombo=0;beep(120,.12,'sawtooth',.03);if(bLives<=0){bPaused=true;setTimeout(()=>{alert('Neon Breaker over! Score: '+bScore);bPaused=false;bLives=3;bScore=0;bLevel=1;resetBreakerLevel();bLast=performance.now();bAnim=requestAnimationFrame(bLoop)},80);return}else resetBreakerLevel()}}
+    else{bLives--;bCombo=0;beep(120,.12,'sawtooth',.03);if(bLives<=0){bGameOver=true;bPaused=true;updateBreakerHud();drawBreaker();return}else resetBreakerLevel()}}
   if(bPopped>=bBricks.length){bLevel++;bScore+=500;beep(980,.12,'triangle',.04);resetBreakerLevel()}
   updateBreakerHud();drawBreaker();bAnim=requestAnimationFrame(bLoop);
 }
@@ -304,7 +304,17 @@ function drawBreaker(){
   if(bPowerTimers.fire>0){bctx.strokeStyle='#ff7b43';bctx.lineWidth=4;bctx.beginPath();bctx.arc(bBall.x,bBall.y,15,0,Math.PI*2);bctx.stroke()}
   if(bPowerTimers.shield>0){bctx.strokeStyle='#7cf7ff';bctx.lineWidth=4;bctx.beginPath();bctx.roundRect(bPaddle.x-bPaddle.w/2-6,bPaddle.y-6,bPaddle.w+12,bPaddle.h+12,12);bctx.stroke()}
   const active=[];if(bPowerTimers.x2>0)active.push('2X '+Math.ceil(bPowerTimers.x2)+'s');if(bPowerTimers.x3>0)active.push('3X '+Math.ceil(bPowerTimers.x3)+'s');if(bPowerTimers.magnet>0)active.push('MAG '+Math.ceil(bPowerTimers.magnet)+'s');if(bPowerTimers.turbo>0)active.push('TURBO '+Math.ceil(bPowerTimers.turbo)+'s');if(active.length){bctx.textAlign='left';bctx.fillStyle='#fff';bctx.font='900 12px system-ui';bctx.fillText(active.join('  •  '),18,bh-18)}
-  if(bEffectTimer>0){bctx.textAlign='center';bctx.font='900 28px system-ui';bctx.lineWidth=6;bctx.strokeStyle='#07101d';bctx.strokeText(bEffectText,bw/2,bh*.46);bctx.fillStyle='#fff';bctx.fillText(bEffectText,bw/2,bh*.46)}
+  if(bEffectTimer>0&&!bGameOver){bctx.textAlign='center';bctx.font='900 28px system-ui';bctx.lineWidth=6;bctx.strokeStyle='#07101d';bctx.strokeText(bEffectText,bw/2,bh*.46);bctx.fillStyle='#fff';bctx.fillText(bEffectText,bw/2,bh*.46)}
+  if(bGameOver){
+    bctx.fillStyle='#07101ddd';bctx.fillRect(0,0,bw,bh);
+    bctx.textAlign='center';
+    bctx.font='900 48px system-ui';
+    bctx.lineWidth=7;bctx.strokeStyle='#050914';bctx.strokeText('GAME OVER',bw/2,bh*.42);
+    bctx.fillStyle='#fff';bctx.fillText('GAME OVER',bw/2,bh*.42);
+    bctx.font='800 20px system-ui';bctx.fillStyle='#ffd34e';bctx.fillText('FINAL SCORE: '+bScore,bw/2,bh*.42+42);
+    bctx.font='700 16px system-ui';bctx.fillStyle='#dcecff';bctx.fillText('Press RESTART below to play again',bw/2,bh*.42+72);
+  }
+}
 }
 addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')){const key=e.key.toLowerCase();if(key===' '||key==='arrowup'||key==='w'){e.preventDefault();if(!e.repeat)skyFlap()}}});
 function startSkyDash(fs){
