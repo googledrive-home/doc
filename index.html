@@ -248,7 +248,7 @@ function spawnRandomSpecialBrick(){
   if(!candidates.length)return;
   const brick=candidates[Math.floor(Math.random()*candidates.length)];
   brick.kind=breakerRandomSpecialKind();brick.spawned=true;brick.flash=1;
-  for(let i=0;i<8;i++)bPowerups.push({x:brick.x+brick.w/2+(Math.random()-.5)*brick.w,y:brick.y+brick.h/2+(Math.random()-.5)*brick.h,w:2,h:2,vy:0,type:'spark',rot:Math.random()*6.28,life:.45});
+  for(let i=0;i<8;i++)bPowerups.push({x:brick.x+brick.w/2+(Math.random()-.5)*brick.w,y:brick.y+brick.h/2+(Math.random()-.5)*brick.h,w:2,h:2,vx:(Math.random()-.5)*120,vy:(Math.random()-.5)*120,type:'spark',rot:Math.random()*6.28,life:.45});
   beep(780,.05,'triangle',.018);
 }
 function spawnBreakerPower(x,y,forced){
