@@ -45,7 +45,7 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 <section class="card" style="--accent:var(--pink)"><span class="tag">Reaction Game</span><h2>Reaction Game</h2><p>Wait for the signal, hit the screen fast and get your exact reaction time in milliseconds.</p><div class="play-card"><div class="icon">⚡</div><div><strong>Reaction Game</strong><span>Fullscreen test + instant results</span></div><button class="btn" onclick="openGame('reaction')">PLAY →</button></div></section>
 <section class="card" style="--accent:var(--yellow)"><span class="tag">Click Test</span><h2>Click Test</h2><p>Pick 1, 3, 5 or 10 seconds, then see how many clicks per second you can get.</p><div class="play-card"><div class="icon">🖱️</div><div><strong>Click Test</strong><span>Custom timer + live CPS</span></div><button class="btn" onclick="openGame('click')">PLAY →</button></div></section>
 <section class="card" style="--accent:#ff6b9d"><span class="tag">Neon Breaker</span><h2>Neon Breaker</h2><p>Smash colorful bricks, stack combos and grab power-ups across increasingly tricky levels.</p><div class="play-card"><div class="icon">🧱</div><div><strong>Neon Breaker</strong><span>3 difficulties · dense grids · upgrades</span></div><button class="btn" onclick="openGame('breaker')">PLAY →</button></div></section>
-<section class="card" style="--accent:#7ee7ff"><span class="tag">Sky Dash</span><h2>Sky Dash</h2><p>Climb through a changing sky full of moving gates, coins and challenge patterns while the pace ramps up.</p><div class="play-card"><div class="icon">☁️</div><div><strong>Sky Dash</strong><span>3 difficulties · coins · shields · high score</span></div><button class="btn" onclick="openGame('skydash')">PLAY →</button></div></section>
+<section class="card" style="--accent:#7ee7ff"><span class="tag">Flappy Bird</span><h2>Flappy Bird</h2><p>Classic tap-to-flap gameplay with green pipes, bright sky scenery, a blocky score display and a final boss at 999.</p><div class="play-card"><div class="icon">🐤</div><div><strong>Flappy Bird</strong><span>3 difficulties · pipes · boss at 999</span></div><button class="btn" onclick="openGame('skydash')">PLAY →</button></div></section>
 <section class="card external wide" style="--accent:var(--orange)"><span class="tag">Moto X3M</span><h2>Moto X3M</h2><p>Open Moto X3M directly in a separate tab.</p><div class="play-card"><div class="icon">🏍️</div><div><strong>Moto X3M</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://archive.org/details/moto-x3m_202309')">OPEN →</button></div></section>
 <section class="card external wide" style="--accent:var(--green)" onclick="openExternal('https://archive.org/details/learn-to-fly')"><span class="tag">Learn to Fly</span><h2>Learn to Fly</h2><p>Open Learn to Fly directly in a separate tab.</p><div class="play-card"><div class="icon">✈️</div><div><strong>Learn to Fly</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://archive.org/details/learn-to-fly')">OPEN →</button></div></section>
 <section class="card external wide" style="--accent:var(--cyan)" onclick="openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')"><span class="tag">Garden Gnomes</span><h2>Garden Gnomes</h2><p>Open the Google Garden Gnomes game directly in a separate tab.</p><div class="play-card"><div class="icon">🧑‍🌾</div><div><strong>Garden Gnomes</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')">OPEN →</button></div></section>
@@ -137,12 +137,12 @@ function toggleFullscreen(){const el=$('gameShell');if(!document.fullscreenEleme
 async function openGame(type){current=type;stopTimers();hkeys={};tkeys={};$('stage').innerHTML='';$('stage').classList.remove('active');$('setup').style.display='block';$('gameModal').classList.add('open');document.body.style.overflow='hidden';renderSetup();beep(420,.09,'triangle',.04);await enterGameFS()}
 async function closeGame(){stopTimers();hkeys={};tkeys={};$('setup').style.display='block';if(document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}$('gameModal').classList.remove('open');document.body.style.overflow='';$('stage').innerHTML='';$('stage').classList.remove('active');current=''}
 function stopTimers(){clearTimeout(reactionTimer);clearInterval(cpsTimer);cpsRunning=false;reactionState='idle';cancelAnimationFrame(hAnim);cancelAnimationFrame(tAnim);cancelAnimationFrame(bAnim);cancelAnimationFrame(sAnim);window.onresize=null}
-function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='block';stage.classList.remove('active');stage.innerHTML='';$('gameTitle').textContent=current==='hockey'?'Hockey':current==='reaction'?'Reaction Game':current==='click'?'Click Test':current==='breaker'?'Neon Breaker':current==='skydash'?'Sky Dash':'Tennis Rally';
+function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='block';stage.classList.remove('active');stage.innerHTML='';$('gameTitle').textContent=current==='hockey'?'Hockey':current==='reaction'?'Reaction Game':current==='click'?'Click Test':current==='breaker'?'Neon Breaker':current==='skydash'?'Flappy Bird':'Tennis Rally';
 if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🎾</div><h1>Tennis Rally</h1><p>Return the ball and race to 7 points. Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Gentle CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast CPU</small></button></div><p class="hint">P1: W/S · P2: Arrow Keys</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startTennis(true)}} 
 else if(current==='hockey'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Human-like</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Pro-level challenge</small></button></div><p class="hint">P1: WASD + F to shoot · P2: Arrow Keys + L</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startHockey(true)}} 
 else if(current==='reaction'){s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Wait for green. Click as fast as you can. False starts are counted.</p><div class="options"><button class="option selected btn">🎯 Classic<br><small>Random signal</small></button></div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';$('startSetup').onclick=()=>{clickSound();startReaction(true)}}
 else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break every brick, build combos and catch lots of upgrades: ×2, ×3, +1, +3, fire, bomb, shield, magnet, turbo, multi-ball and more.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced speed</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast ball · tighter paddle</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
-else if(current==='skydash'){s.innerHTML='<div class="bigicon">☁️</div><h1>Sky Dash</h1><p>Guide your glider through moving gates, collect coins and keep your run alive as the sky gets faster.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wide gaps · slower pace</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Mixed patterns</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Narrow gaps · fast pace</small></button></div><p class="hint">Fly: Space / ↑ / click / tap · Collect coins for bonus points</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
+else if(current==='skydash'){s.innerHTML='<div class="bigicon">🐤</div><h1>Flappy Bird</h1><p>Tap to flap through green pipes. Reach 999 to unlock the Final Sky Boss.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wider gaps · gentler gravity</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Classic pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Tighter gaps · faster pipes</small></button></div><p class="hint">Space · ↑ · click · tap to flap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Lab</h1><p>Choose your test length, then smash the button.</p><div class="options">'+[1,3,5,10].map(n=>'<button class="option '+(n===3?'selected ':'')+'btn" data-sec="'+n+'">'+n+' SECOND'+(n>1?'S':'')+'</button>').join('')+'</div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('.option').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}
 async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
 function startTennis(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="tennis-stage"><canvas id="tc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="ts">0 — 0</span><span>P1: W/S</span><span>P2: '+(mode==='two'?'↑/↓':'Computer')+'</span><button class="tiny btn" id="restartT">Restart</button></div></div>';if(fs)enterGameFS();initTennis();$('restartT').onclick=()=>{tScore1=0;tScore2=0;resetTennis();$('ts').textContent='0 — 0';beep(300)}}
@@ -157,7 +157,7 @@ function drawTennis(){tctx.clearRect(0,0,tw,th);tctx.fillStyle='#12375b';tctx.fi
 function startHockey(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<canvas id="hc"></canvas><div class="hud"><span class="scorebig" id="hs">0 — 0</span><span>P1: WASD + F</span><span>P2: '+(mode==='two'?'Arrows + L':'Computer')+'</span><button class="tiny btn" id="restartH">Restart</button></div>';if(fs)enterGameFS();initHockey();$('restartH').onclick=()=>{hScore1=0;hScore2=0;resetHPos();$('hs').textContent='0 — 0';beep(300)}}
 let hctx,hc,hw=0,hh=0,hkeys={},h1,h2,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0;
 let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
-let sctx,sc,sw=0,sh=0,sPlayer,sObstacles=[],sCoins=[],sParticles=[],sScore=0,sLives=3,sShields=0,sInvuln=0,sAnim=0,sLast=0,sSpawn=0,sDistance=0,sOver=false,sBest=0,sSkyTime=0,sBoostHeld=false,sTrailTimer=0,sComboFlash=0;
+let sctx,sc,sw=0,sh=0,sPlayer,sPipes=[],sParticles=[],sScore=0,sAnim=0,sLast=0,sPipeTimer=0,sReady=true,sStarted=false,sOver=false,sBest=0,sSkyTime=0,sBirdFrame=0,sGroundOffset=0,sBossActive=false,sBossTimer=0,sBossX=0,sBossY=0,sBossPulse=0,sBossOrbs=[],sBossCleared=false;
 
 function initHockey(){hc=$('hc');hctx=hc.getContext('2d');resizeH();resetHPos();hLast=performance.now();cancelAnimationFrame(hAnim);hAnim=requestAnimationFrame(hLoop);window.onresize=resizeH}
 function resizeH(){if(!hc)return;const r=hc.getBoundingClientRect(),d=devicePixelRatio||1;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}
@@ -296,317 +296,244 @@ function drawBreaker(){
 addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')&&[' ','arrowup','w'].includes(e.key.toLowerCase())){e.preventDefault();sBoostHeld=true;skyBoost()}});addEventListener('keyup',e=>{if([' ','arrowup','w'].includes(e.key.toLowerCase()))sBoostHeld=false});
 function startSkyDash(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
-  $('stage').innerHTML='<div class="tennis-stage"><canvas id="sc" class="tennis-canvas" aria-label="Sky Dash game"></canvas><div class="hud"><span class="scorebig" id="ss">0</span><span id="sl">Lives: 3</span><span id="sh">Shield: 0</span><span id="sd">0 m</span><button class="tiny btn" id="restartS">Restart</button></div></div>';
+  $('stage').innerHTML='<div class="tennis-stage"><canvas id="sc" class="tennis-canvas" aria-label="Flappy Bird game"></canvas><div class="hud"><span class="scorebig" id="ss">0</span><span id="fbState">GET READY</span><button class="tiny btn" id="restartS">Restart</button></div></div>';
   if(fs)enterGameFS();
-  sScore=0;sLives=3;sShields=0;sInvuln=0;sDistance=0;sObstacles=[];sCoins=[];sParticles=[];sSpawn=.55;sOver=false;sSkyTime=0;sBoostHeld=false;sTrailTimer=0;sComboFlash=0;
+  sScore=0;sPipes=[];sParticles=[];sPipeTimer=.7;sReady=true;sStarted=false;sOver=false;sSkyTime=0;sBirdFrame=0;sGroundOffset=0;sBossActive=false;sBossTimer=0;sBossX=0;sBossY=0;sBossPulse=0;sBossOrbs=[];sBossCleared=false;
+  sBest=Math.max(0,sBest||0);
   sc=$('sc');sctx=sc.getContext('2d');resizeSky();
-  sPlayer={x:sw*.22,y:sh*.5,vy:0,targetVy:0,angle:0,targetAngle:0,r:18,boost:0,bank:0};
+  sPlayer={x:sw*.28,y:sh*.43,vy:0,r:16,angle:0,flapAnim:0};
   sLast=performance.now();cancelAnimationFrame(sAnim);sAnim=requestAnimationFrame(sLoop);window.onresize=resizeSky;
-  sc.onpointerdown=()=>{if(sOver){startSkyDash(false)}else skyBoost()};
+  const flap=()=>{if(sOver){startSkyDash(false);return}skyFlap()};
+  sc.onpointerdown=flap;
+  window.onkeydown=null;
   $('restartS').onclick=()=>startSkyDash(false);
 }
 function resizeSky(){if(!sc)return;const r=sc.getBoundingClientRect(),d=devicePixelRatio||1;sc.width=r.width*d;sc.height=r.height*d;sctx.setTransform(d,0,0,d,0,0);sw=r.width;sh=r.height}
 function skyConfig(){
   return {
-    easy:{speed:215,gap:188,spawn:1.14,gravity:1450,rise:360,fall:650},
-    medium:{speed:280,gap:158,spawn:.91,gravity:1525,rise:390,fall:690},
-    hard:{speed:350,gap:130,spawn:.75,gravity:1600,rise:420,fall:735}
-  }[difficulty]||{speed:280,gap:158,spawn:.91,gravity:1525,rise:390,fall:690}
+    easy:{speed:175,gap:190,spawn:1.45,gravity:1080,flap:-365},
+    medium:{speed:205,gap:166,spawn:1.35,gravity:1180,flap:-390},
+    hard:{speed:240,gap:145,spawn:1.22,gravity:1260,flap:-410}
+  }[difficulty]||{speed:205,gap:166,spawn:1.35,gravity:1180,flap:-390}
 }
-function spawnSkyObstacle(){
-  const cfg=skyConfig();
-  const gapY=86+Math.random()*(Math.max(120,sh-172-cfg.gap));
-  const heightTop=gapY,heightBottom=sh-(gapY+cfg.gap);
-  const towerTheme=Math.floor(Math.random()*4);
-  sObstacles.push({
-    x:sw+85,w:86,gapY,gap:cfg.gap,phase:Math.random()*Math.PI*2,
-    drift:0,passed:false,
-    seed:Math.random()*9999,theme:towerTheme,age:0,topH:heightTop,bottomH:heightBottom
-  });
-  if(Math.random()<.78){
-    const coinY=gapY+cfg.gap/2+(Math.random()-.5)*cfg.gap*.52;
-    sCoins.push({x:sw+145,y:coinY,r:10,spin:0,phase:Math.random()*Math.PI*2});
-  }
-}
-function skyBoost(){
+function skyFlap(){
   if(sOver)return;
+  if(sReady){sReady=false;sStarted=true}
+  if(sBossActive){
+    sPlayer.vy=skyConfig().flap;
+    sPlayer.flapAnim=1;
+    beep(680,.035,'square',.018);
+    return;
+  }
+  sPlayer.vy=skyConfig().flap;
+  sPlayer.flapAnim=1;
+  for(let i=0;i<3;i++)sParticles.push({x:sPlayer.x-15,y:sPlayer.y+5,vx:-35-i*12,vy:(Math.random()-.5)*35,life:.2,max:.2,size:2.5,type:'puff'});
+  beep(680,.035,'square',.018);
+}
+function spawnFlappyPipe(){
   const cfg=skyConfig();
-  sPlayer.targetVy=-cfg.rise;
-  sPlayer.vy=Math.max(sPlayer.vy-80,-cfg.rise);
-  sPlayer.boost=.22;
-  for(let i=0;i<7;i++)sParticles.push({x:sPlayer.x-18+Math.random()*8,y:sPlayer.y+(Math.random()-.5)*8,vx:-90-Math.random()*90,vy:(Math.random()-.5)*90,life:.35+Math.random()*.25,max:.5,size:2+Math.random()*4,type:'boost'});
-  beep(680,.04,'square',.018);
+  const ground=sh-58;
+  const minGapY=58,maxGapY=Math.max(70,ground-cfg.gap-58);
+  const gapY=minGapY+Math.random()*(maxGapY-minGapY);
+  sPipes.push({x:sw+36,w:64,gapY,gap:cfg.gap,passed:false,seed:Math.random()*9999});
 }
-function skyCircleRect(o){
-  const gy=o.gapY;
-  return sPlayer.x+sPlayer.r>o.x&&sPlayer.x-sPlayer.r<o.x+o.w&&(sPlayer.y-sPlayer.r<gy||sPlayer.y+sPlayer.r>gy+o.gap)
+function flappyPipeHit(p){
+  const b=sPlayer,r=b.r;
+  const withinX=b.x+r>p.x&&b.x-r<p.x+p.w;
+  if(!withinX)return false;
+  const top=p.gapY,bottom=p.gapY+p.gap;
+  return b.y-r<top||b.y+r>bottom;
 }
-function skyEnd(){
-  sOver=true;
-  sPlayer.targetVy=0;
-  beep(130,.16,'sawtooth',.04);
-  sBest=Math.max(sBest,Math.floor(sScore));
-  for(let i=0;i<18;i++)sParticles.push({x:sPlayer.x,y:sPlayer.y,vx:(Math.random()-.5)*280,vy:(Math.random()-.5)*280,life:.5+Math.random()*.5,max:1,size:3+Math.random()*5,type:'spark'});
-  setTimeout(()=>{if(!$('stage').classList.contains('active')||current!=='skydash')return;alert('Sky Dash over! Score: '+Math.floor(sScore)+' · Distance: '+Math.floor(sDistance)+'m · Best: '+sBest)},50)
+function flappyEnd(){
+  if(sOver)return;
+  sOver=true;sReady=false;sStarted=false;
+  sBest=Math.max(sBest,sScore);
+  for(let i=0;i<14;i++)sParticles.push({x:sPlayer.x,y:sPlayer.y,vx:(Math.random()-.5)*180,vy:(Math.random()-.5)*180,life:.45+Math.random()*.35,max:1,size:2+Math.random()*3,type:'hit'});
+  beep(130,.14,'sawtooth',.035);
+  $('fbState').textContent='GAME OVER';
+}
+function startFinalBoss(){
+  sBossActive=true;sBossTimer=18;sBossX=sw+180;sBossY=sh*.45;sBossPulse=0;sBossOrbs=[];sBossCleared=false;
+  sPipes=[];sPipeTimer=999;
+  $('fbState').textContent='FINAL BOSS';
+  for(let i=0;i<12;i++)sParticles.push({x:sw*.82+(Math.random()-.5)*100,y:sh*.4+(Math.random()-.5)*100,vx:(Math.random()-.5)*45,vy:(Math.random()-.5)*45,life:1,max:1,size:3+Math.random()*5,type:'storm'});
+  beep(180,.18,'sawtooth',.045);
+}
+function spawnBossOrb(){
+  const y=85+Math.random()*(Math.max(90,sh-185));
+  sBossOrbs.push({x:sw+30,y,r:11,spin:0});
+}
+function finishBoss(){
+  sBossCleared=true;sBossActive=false;sOver=true;
+  $('fbState').textContent='BOSS CLEARED!';
+  sBest=Math.max(sBest,999);
+  beep(980,.18,'triangle',.05);
+  for(let i=0;i<28;i++)sParticles.push({x:sPlayer.x,y:sPlayer.y,vx:(Math.random()-.5)*320,vy:(Math.random()-.5)*320,life:.8+Math.random()*.7,max:1.4,size:2+Math.random()*5,type:'win'});
 }
 function sLoop(now){
   if(sOver){drawSky(now);return}
-  const dt=Math.min(.033,(now-sLast)/1000||.016);sLast=now;sSkyTime+=dt*1000;
-  const cfg=skyConfig();
-  sDistance+=cfg.speed*dt*.045;
-  sScore+=dt*3;
-  sSpawn-=dt;
-  sInvuln=Math.max(0,sInvuln-dt);
-  sComboFlash=Math.max(0,sComboFlash-dt);
-  if(sSpawn<=0){spawnSkyObstacle();sSpawn=cfg.spawn*(.86+Math.random()*.30)}
-
-  const steer=sBoostHeld?-1:0;
-  sPlayer.targetVy=steer ? -cfg.rise : Math.min(cfg.fall,sPlayer.vy+cfg.gravity*dt);
-  const response=steer?4.2:7.5;
-  sPlayer.vy+=(sPlayer.targetVy-sPlayer.vy)*(1-Math.exp(-response*dt));
-  sPlayer.vy=clamp(sPlayer.vy,-cfg.rise,cfg.fall);
-  sPlayer.y+=sPlayer.vy*dt;
-  sPlayer.targetAngle=clamp(sPlayer.vy/620,-.45,.5);
-  sPlayer.angle+=(sPlayer.targetAngle-sPlayer.angle)*(1-Math.exp(-7.5*dt));
-  sPlayer.bank+=(clamp((sPlayer.targetVy-sPlayer.vy)/760,-.2,.2)-sPlayer.bank)*(1-Math.exp(-6*dt));
-  sPlayer.boost=Math.max(0,sPlayer.boost-dt);
-
-  if(sPlayer.y<sPlayer.r+8||sPlayer.y>sh-sPlayer.r-8){
-    if(sInvuln<=0){
-      sLives--;sInvuln=1.05;sPlayer.y=clamp(sPlayer.y,58,sh-58);sPlayer.vy=0;
-      for(let i=0;i<9;i++)sParticles.push({x:sPlayer.x,y:sPlayer.y,vx:(Math.random()-.5)*170,vy:(Math.random()-.5)*170,life:.3+Math.random()*.3,max:.55,size:2+Math.random()*3,type:'spark'});
-      beep(180,.1,'sawtooth',.03);
-      if(sLives<=0){skyEnd();return}
-    }else{sPlayer.y=clamp(sPlayer.y,58,sh-58);sPlayer.vy=0}
+  const dt=Math.min(.033,(now-sLast)/1000||.016);sLast=now;sSkyTime+=dt*1000;sBirdFrame+=dt;sGroundOffset=(sGroundOffset+(skyConfig().speed*.72)*dt)%24;
+  const cfg=skyConfig(),ground=sh-58;
+  if(sReady){
+    sPlayer.y=sh*.43+Math.sin(now/260)*6;sPlayer.angle=-.04;sPlayer.flapAnim=Math.max(0,sPlayer.flapAnim-dt*5);
+    drawSky(now);sAnim=requestAnimationFrame(sLoop);return;
   }
 
-  for(let i=sObstacles.length-1;i>=0;i--){
-    const o=sObstacles[i];o.x-=cfg.speed*dt;o.age+=dt;
-    const mover=Math.sin(sSkyTime/900+o.phase)*9;o.gapY=clamp(o.gapY,70,Math.max(72,sh-70-o.gap));
-    if(o.x+o.w<-30)sObstacles.splice(i,1);
-    else{
-      if(!o.passed&&o.x+o.w<sPlayer.x){o.passed=true;sScore+=100;sComboFlash=.35;
-        for(let j=0;j<5;j++)sParticles.push({x:sPlayer.x+18,y:sPlayer.y,vx:50+Math.random()*100,vy:(Math.random()-.5)*90,life:.25+Math.random()*.2,max:.45,size:2+Math.random()*3,type:'spark'});
-        beep(520,.025,'triangle',.015)
-      }
-      if(o.x<sPlayer.x+45&&o.x+o.w>sPlayer.x-45&&skyCircleRect(o)){
-        if(sShields>0){sShields--;o.x=-240;sInvuln=.8;beep(360,.08,'sine',.025)}
-        else if(sInvuln<=0){sLives--;sInvuln=1.35;o.x=-240;sPlayer.y=sh*.5;sPlayer.vy=0;beep(180,.1,'sawtooth',.03);if(sLives<=0){skyEnd();return}}
-      }
+  if(!sBossActive){
+    sPlayer.vy+=cfg.gravity*dt;sPlayer.vy=clamp(sPlayer.vy,-520,620);sPlayer.y+=sPlayer.vy*dt;
+    sPlayer.angle+=(clamp(sPlayer.vy/550,-.5,.9)-sPlayer.angle)*(1-Math.exp(-10*dt));
+    sPlayer.flapAnim=Math.max(0,sPlayer.flapAnim-dt*5);
+    sPipeTimer-=dt;
+    if(sPipeTimer<=0){spawnFlappyPipe();sPipeTimer=cfg.spawn}
+    for(let i=sPipes.length-1;i>=0;i--){
+      const p=sPipes[i];p.x-=cfg.speed*dt;
+      if(!p.passed&&p.x+p.w<sPlayer.x){p.passed=true;sScore++;sComboFlash=.2;beep(520,.025,'square',.01);if(sScore===999){startFinalBoss();break}}
+      if(p.x+p.w<-20)sPipes.splice(i,1);
+      else if(flappyPipeHit(p)){flappyEnd();return}
     }
-  }
-
-  for(let i=sCoins.length-1;i>=0;i--){
-    const co=sCoins[i];co.x-=cfg.speed*dt;co.spin+=dt*6;
-    if(co.x<-25)sCoins.splice(i,1);
-    else if(Math.hypot(co.x-sPlayer.x,co.y-sPlayer.y)<co.r+sPlayer.r+5){
-      sCoins.splice(i,1);sScore+=250;sComboFlash=.45;
-      if(Math.random()<.23)sShields=Math.min(2,sShields+1);
-      for(let j=0;j<7;j++)sParticles.push({x:co.x,y:co.y,vx:(Math.random()-.5)*130,vy:(Math.random()-.5)*130,life:.35+Math.random()*.25,max:.6,size:2+Math.random()*4,type:'coin'});
-      beep(860,.06,'sine',.024)
+    if(sPlayer.y-sPlayer.r<0||sPlayer.y+sPlayer.r>ground){flappyEnd();return}
+  }else{
+    // Final boss: original storm-bird silhouette with moving wings and collectible sky rings.
+    sBossTimer-=dt;sBossX+=(sw*.73-sBossX)*(1-Math.exp(-2.8*dt));sBossY+=(sh*.42+Math.sin(now/420)*55-sBossY)*(1-Math.exp(-2.2*dt));sBossPulse+=dt;
+    sPlayer.vy+=cfg.gravity*.82*dt;sPlayer.vy=clamp(sPlayer.vy,-480,560);sPlayer.y+=sPlayer.vy*dt;sPlayer.angle+=(clamp(sPlayer.vy/520,-.55,.85)-sPlayer.angle)*(1-Math.exp(-9*dt));
+    if(sBossOrbs.length<2&&Math.random()<dt*.7)spawnBossOrb();
+    for(let i=sBossOrbs.length-1;i>=0;i--){const o=sBossOrbs[i];o.x-=cfg.speed*1.05*dt;o.spin+=dt*4;if(o.x<-20)sBossOrbs.splice(i,1);else if(Math.hypot(o.x-sPlayer.x,o.y-sPlayer.y)<o.r+sPlayer.r+4){sBossOrbs.splice(i,1);sScore++;beep(820,.05,'triangle',.02);if(sScore>=1004){finishBoss();break}}}
+    if(sPlayer.y-sPlayer.r<0||sPlayer.y+sPlayer.r>ground){flappyEnd();return}
+    if(sBossActive){
+      const bwid=108,bhgt=86;
+      const bx=sBossX,by=sBossY;
+      const bossBody={x:bx-bwid*.45,y:by-bhgt*.35,w:bwid*.9,h:bhgt*.7};
+      if(sPlayer.x+sPlayer.r>bossBody.x&&sPlayer.x-sPlayer.r<bossBody.x+bossBody.w&&sPlayer.y+sPlayer.r>bossBody.y&&sPlayer.y-sPlayer.r<bossBody.y+bossBody.h){flappyEnd();return}
     }
+    if(sBossTimer<=0){finishBoss();return}
   }
 
-  sTrailTimer-=dt;
-  if(sTrailTimer<=0){sTrailTimer=.035;sParticles.push({x:sPlayer.x-14,y:sPlayer.y+(Math.random()-.5)*7,vx:-55,vy:(Math.random()-.5)*25,life:.28,max:.28,size:2+Math.random()*3,type:'trail'})}
-  for(let i=sParticles.length-1;i>=0;i--){const p=sParticles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=40*dt;if(p.life<=0)sParticles.splice(i,1)}
-
+  for(let i=sParticles.length-1;i>=0;i--){const p=sParticles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=18*dt;if(p.life<=0)sParticles.splice(i,1)}
   drawSky(now);
-  $('ss').textContent=Math.floor(sScore);
-  $('sl').textContent='Lives: '+sLives;
-  $('sh').textContent='Shield: '+sShields;
-  $('sd').textContent=Math.floor(sDistance)+' m';
+  $('ss').textContent=sScore;
+  $('fbState').textContent=sBossCleared?'BOSS CLEARED!':sBossActive?'FINAL BOSS':'';
   sAnim=requestAnimationFrame(sLoop);
 }
 function drawSky(now){
-  const t=now/1000;
-  const g=sctx.createLinearGradient(0,0,0,sh);
-  g.addColorStop(0,'#273b83');g.addColorStop(.42,'#4ab9e8');g.addColorStop(.72,'#8ee2d5');g.addColorStop(1,'#f4bf78');
-  sctx.fillStyle=g;sctx.fillRect(0,0,sw,sh);
+  const t=now/1000,ground=sh-58;
+  // Bright blue sky
+  const sky=sctx.createLinearGradient(0,0,0,ground);
+  sky.addColorStop(0,'#63c8ff');sky.addColorStop(.72,'#9ee8ff');sky.addColorStop(1,'#d6f6ff');
+  sctx.fillStyle=sky;sctx.fillRect(0,0,sw,sh);
 
-  const sun=sctx.createRadialGradient(sw*.72,sh*.18,10,sw*.72,sh*.18,180);
-  sun.addColorStop(0,'#fff7cf');sun.addColorStop(.28,'#fff3a844');sun.addColorStop(1,'transparent');
-  sctx.fillStyle=sun;sctx.fillRect(0,0,sw,sh);
-
-  // Distant skyline
-  sctx.save();
-  sctx.globalAlpha=.28;
-  for(let i=0;i<9;i++){
-    const x=((i*170-t*18)%(sw+220))-110;
-    const h=45+(i%4)*18;
-    sctx.fillStyle=i%2?'#214b6d':'#355579';
-    sctx.fillRect(x,sh-76-h,75,h+76);
-    sctx.beginPath();sctx.moveTo(x,sh-76-h);sctx.lineTo(x+37,sh-96-h);sctx.lineTo(x+75,sh-76-h);sctx.closePath();sctx.fill();
-  }
-  sctx.restore();
-
-  // Soft parallax clouds
-  for(let i=0;i<8;i++){
-    const x=((i*185+t*12*(i%2?-1:1))%(sw+230))-115;
-    const y=48+(i*67)%Math.max(1,sh-130);
-    const r=18+(i%3)*7;
-    sctx.fillStyle=i%2?'#ffffff32':'#dff8ff2a';
-    sctx.beginPath();sctx.arc(x,y,r,0,Math.PI*2);sctx.arc(x+r*.9,y-4,r*1.15,0,Math.PI*2);sctx.arc(x+r*1.8,y+3,r*.78,0,Math.PI*2);sctx.fill();
+  // Soft white clouds
+  for(let i=0;i<7;i++){
+    const x=((i*210-t*(10+i%3*4))%(sw+260))-130;
+    const y=46+(i*63)%Math.max(1,ground-100),r=18+(i%3)*5;
+    sctx.fillStyle='#fff';
+    sctx.beginPath();sctx.arc(x,y,r,0,Math.PI*2);sctx.arc(x+r*.85,y-7,r*1.25,0,Math.PI*2);sctx.arc(x+r*1.7,y+2,r*.9,0,Math.PI*2);sctx.fill();
   }
 
-  // Brick-and-stone towers
-  for(const o of sObstacles){
-    const gy=o.gapY;
-    drawSkyTower(o.x,0,o.w,gy,true,o.seed,o.theme);
-    drawSkyTower(o.x,gy+o.gap,o.w,sh-(gy+o.gap),false,o.seed+19,o.theme);
+  // Far green hills
+  sctx.fillStyle='#87c96b';sctx.beginPath();sctx.moveTo(0,ground-72);
+  for(let x=0;x<=sw+80;x+=80)sctx.quadraticCurveTo(x+40,ground-120-(x%160?0:18),x+80,ground-72);
+  sctx.lineTo(sw,ground);sctx.lineTo(0,ground);sctx.closePath();sctx.fill();
+
+  // Green pipes with highlights and chunky caps.
+  for(const p of sPipes){
+    drawFlappyPipe(p.x,-10,p.w,p.gapY+10,true);
+    drawFlappyPipe(p.x,p.gapY+p.gap,p.w,ground-(p.gapY+p.gap)+10,false);
   }
 
-  // Coins
-  for(const co of sCoins){
-    sctx.save();sctx.translate(co.x,co.y);sctx.rotate(co.spin);
-    const cg=sctx.createRadialGradient(-3,-4,2,0,0,co.r);
-    cg.addColorStop(0,'#fff7a8');cg.addColorStop(.4,'#ffd34e');cg.addColorStop(1,'#e99321');
-    sctx.fillStyle=cg;sctx.strokeStyle='#fff8';sctx.lineWidth=2.5;
-    sctx.beginPath();sctx.arc(0,0,co.r,0,Math.PI*2);sctx.fill();sctx.stroke();
-    sctx.fillStyle='#8c5a0b';sctx.font='900 11px system-ui';sctx.textAlign='center';sctx.fillText('★',0,4);
-    sctx.restore();
+  // Ground strip
+  sctx.fillStyle='#ded08a';sctx.fillRect(0,ground,sw,58);
+  sctx.fillStyle='#72bd45';sctx.fillRect(0,ground,sw,10);
+  sctx.fillStyle='#4d9d36';sctx.fillRect(0,ground+8,sw,5);
+  sctx.fillStyle='#c4ad68';
+  for(let x=-24-(sGroundOffset%24);x<sw+24;x+=24)sctx.fillRect(x,ground+18,14,7);
+
+  // Original pixel-like score display.
+  if(!sBossActive||sScore<999){
+    sctx.textAlign='center';sctx.textBaseline='top';
+    sctx.font='900 54px monospace';
+    sctx.lineWidth=8;sctx.strokeStyle='#315b75';sctx.strokeText(String(sScore),sw/2,22);
+    sctx.fillStyle='#fff';sctx.fillText(String(sScore),sw/2,22);
   }
 
-  // Particle effects
+  // Bird: original side-view yellow bird with two-frame wing flap.
+  drawFlappyBird(sPlayer.x,sPlayer.y,sPlayer.angle,sBirdFrame,sPlayer.flapAnim);
+
+  // Final boss: original storm bird, clearly distinct from normal player.
+  if(sBossActive){
+    drawBossBird(sBossX,sBossY,sBossPulse);
+    for(const o of sBossOrbs){
+      sctx.save();sctx.translate(o.x,o.y);sctx.rotate(o.spin);
+      sctx.fillStyle='#ffe56b';sctx.strokeStyle='#fff';sctx.lineWidth=2;
+      sctx.beginPath();sctx.arc(0,0,o.r,0,Math.PI*2);sctx.fill();sctx.stroke();
+      sctx.fillStyle='#8a6a25';sctx.font='900 12px monospace';sctx.textAlign='center';sctx.textBaseline='middle';sctx.fillText('★',0,1);
+      sctx.restore();
+    }
+    sctx.fillStyle='#fff';sctx.font='900 26px monospace';sctx.textAlign='center';sctx.textBaseline='top';sctx.fillText('FINAL BOSS',sw/2,74);
+    sctx.font='700 13px monospace';sctx.fillText('COLLECT 5 SKY STARS',sw/2,108);
+  }
+
   for(const p of sParticles){
     const a=clamp(p.life/p.max,0,1);sctx.globalAlpha=a;
-    sctx.fillStyle=p.type==='coin'?'#ffd34e':p.type==='boost'?'#e8fbff':p.type==='spark'?'#fff':'#ffffff99';
+    sctx.fillStyle=p.type==='win'?'#fff3a1':p.type==='hit'?'#fff':p.type==='storm'?'#d7f2ff':'#fff';
     sctx.beginPath();sctx.arc(p.x,p.y,p.size*(.7+.3*a),0,Math.PI*2);sctx.fill();
   }
   sctx.globalAlpha=1;
 
-  // Detailed side-view stunt plane: thin fuselage, broad wings, tail, canopy and propeller.
-  sctx.save();
-  sctx.globalAlpha=sInvuln>0&&Math.floor(now/70)%2===0?.35:1;
-  sctx.translate(sPlayer.x,sPlayer.y);
-  sctx.rotate(sPlayer.angle+sPlayer.bank*.28);
-
-  // Exhaust / engine trail
-  if(sPlayer.boost>0){
-    const flame=sctx.createLinearGradient(-46,0,-4,0);
-    flame.addColorStop(0,'transparent');flame.addColorStop(.35,'#6ee7ff');flame.addColorStop(.7,'#ffd34e');flame.addColorStop(1,'#fff');
-    sctx.fillStyle=flame;
-    sctx.beginPath();sctx.moveTo(-49,0);sctx.quadraticCurveTo(-27,-6,-5,0);sctx.quadraticCurveTo(-27,6,-49,0);sctx.closePath();sctx.fill();
+  if(sReady){
+    sctx.fillStyle='#fff';sctx.textAlign='center';sctx.font='900 31px monospace';sctx.lineWidth=5;sctx.strokeStyle='#315b75';sctx.strokeText('GET READY!',sw/2,sh*.28);sctx.fillText('GET READY!',sw/2,sh*.28);
+    sctx.font='700 16px monospace';sctx.fillStyle='#315b75';sctx.fillText('CLICK OR PRESS SPACE',sw/2,sh*.28+44);
   }
-
-  // Far wing, darker and slightly offset to sell the side perspective.
-  const farWing=sctx.createLinearGradient(-4,-18,28,-4);
-  farWing.addColorStop(0,'#4c78af');farWing.addColorStop(1,'#284f86');
-  sctx.fillStyle=farWing;
-  sctx.beginPath();
-  sctx.moveTo(2,-4);sctx.lineTo(40,-24);sctx.lineTo(49,-19);sctx.lineTo(9,-1);sctx.closePath();sctx.fill();
-
-  // Main broad wing.
-  const wing=sctx.createLinearGradient(-5,-27,32,18);
-  wing.addColorStop(0,'#e7f8ff');wing.addColorStop(.35,'#64c5ef');wing.addColorStop(1,'#2a62ad');
-  sctx.fillStyle=wing;
-  sctx.beginPath();
-  sctx.moveTo(7,-2);sctx.lineTo(44,-31);sctx.lineTo(51,-27);sctx.lineTo(18,3);sctx.lineTo(52,25);sctx.lineTo(44,29);sctx.lineTo(5,6);sctx.closePath();
-  sctx.fill();
-  sctx.strokeStyle='#173f6f';sctx.lineWidth=1.2;sctx.stroke();
-
-  // Thin aircraft fuselage.
-  const body=sctx.createLinearGradient(-27,-7,34,7);
-  body.addColorStop(0,'#f8fdff');body.addColorStop(.28,'#79c9ee');body.addColorStop(.72,'#3779bd');body.addColorStop(1,'#1c477f');
-  sctx.fillStyle=body;
-  sctx.beginPath();
-  sctx.moveTo(37,0);
-  sctx.quadraticCurveTo(29,-7,15,-7);
-  sctx.lineTo(-18,-5);
-  sctx.quadraticCurveTo(-27,-3,-30,0);
-  sctx.quadraticCurveTo(-27,3,-18,5);
-  sctx.lineTo(15,7);
-  sctx.quadraticCurveTo(29,7,37,0);
-  sctx.closePath();
-  sctx.fill();
-  sctx.strokeStyle='#ffffffc0';sctx.lineWidth=1.4;sctx.stroke();
-
-  // Tailplane and vertical tail fin.
-  sctx.fillStyle='#2f68ac';
-  sctx.beginPath();sctx.moveTo(-16,-3);sctx.lineTo(-31,-13);sctx.lineTo(-24,-2);sctx.closePath();sctx.fill();
-  sctx.beginPath();sctx.moveTo(-16,3);sctx.lineTo(-31,13);sctx.lineTo(-24,2);sctx.closePath();sctx.fill();
-  sctx.beginPath();sctx.moveTo(-20,-4);sctx.lineTo(-24,-18);sctx.lineTo(-11,-7);sctx.closePath();sctx.fill();
-
-  // Cockpit canopy.
-  const canopy=sctx.createLinearGradient(-1,-8,14,1);
-  canopy.addColorStop(0,'#ffffff');canopy.addColorStop(.28,'#bff5ff');canopy.addColorStop(1,'#24557f');
-  sctx.fillStyle=canopy;
-  sctx.beginPath();sctx.moveTo(-1,-6);sctx.quadraticCurveTo(8,-13,16,-6);sctx.lineTo(19,-1);sctx.lineTo(2,-1);sctx.closePath();sctx.fill();
-  sctx.strokeStyle='#16446d';sctx.lineWidth=1;sctx.stroke();
-
-  // Engine pod below the wing.
-  const engine=sctx.createLinearGradient(4,5,22,11);
-  engine.addColorStop(0,'#dceef7');engine.addColorStop(.5,'#6795bc');engine.addColorStop(1,'#244f80');
-  sctx.fillStyle=engine;
-  sctx.beginPath();sctx.ellipse(17,10,10,3.7,0,0,Math.PI*2);sctx.fill();
-
-  // Nose propeller makes the airplane instantly recognizable.
-  sctx.strokeStyle='#dbeeff';sctx.lineWidth=2;
-  sctx.beginPath();sctx.moveTo(40,-11);sctx.lineTo(40,11);sctx.stroke();
-  sctx.beginPath();sctx.moveTo(34,0);sctx.lineTo(46,0);sctx.stroke();
-  sctx.beginPath();sctx.arc(40,0,3,0,Math.PI*2);sctx.fillStyle='#f8fdff';sctx.fill();
-
-  // Nose and wing lights.
-  sctx.fillStyle='#fff2a0';sctx.shadowBlur=8;sctx.shadowColor='#fff2a0';
-  sctx.beginPath();sctx.arc(34,0,2.5,0,Math.PI*2);sctx.fill();
-  sctx.shadowBlur=0;
-  sctx.fillStyle='#ff536f';sctx.beginPath();sctx.arc(43,-25,2,0,Math.PI*2);sctx.fill();
-
-  sctx.restore();
-  if(sComboFlash>0){
-    sctx.globalAlpha=sComboFlash/.45;
-    sctx.fillStyle='#fff';sctx.font='900 22px system-ui';sctx.textAlign='center';sctx.fillText('+BONUS',sPlayer.x+54,sPlayer.y-34);sctx.globalAlpha=1;
+  if(sOver&&!sBossCleared){
+    sctx.fillStyle='#fff';sctx.textAlign='center';sctx.font='900 38px monospace';sctx.lineWidth=6;sctx.strokeStyle='#315b75';sctx.strokeText('GAME OVER',sw/2,sh*.38);sctx.fillText('GAME OVER',sw/2,sh*.38);
+    sctx.font='700 16px monospace';sctx.fillStyle='#315b75';sctx.fillText('PRESS RESTART OR TAP',sw/2,sh*.38+44);
+    sctx.font='900 20px monospace';sctx.fillText('SCORE '+sScore,sw/2,sh*.38+78);
   }
-
-  sctx.fillStyle='#06213a';sctx.font='900 13px system-ui';sctx.textAlign='left';sctx.fillText('SPACE / CLICK / TAP TO BOOST',18,24);
-  sctx.textAlign='right';sctx.fillText(difficulty.toUpperCase()+' · COINS +250 · TOWERS +100',sw-18,24);
 }
-function drawSkyTower(x,y,w,h,top,seed,theme){
-  if(h<=10)return;
-  const palettes=[['#7f8fa8','#52657f','#d0d7df'],['#b67854','#744b38','#e1b089'],['#6c7897','#414963','#aab5cf'],['#8d7b63','#5d5142','#d0bb8f']];
-  const p=palettes[theme%palettes.length];
-  sctx.save();
-  sctx.translate(x,y);
-  const wall=sctx.createLinearGradient(0,0,w,0);wall.addColorStop(0,p[1]);wall.addColorStop(.22,p[0]);wall.addColorStop(.75,p[0]);wall.addColorStop(1,p[1]);
-  sctx.fillStyle=wall;sctx.fillRect(0,0,w,h);
-  sctx.strokeStyle='#1b304555';sctx.lineWidth=2;sctx.strokeRect(1,1,w-2,h-2);
-
-  // stone blocks / brick courses
-  const rows=Math.max(1,Math.floor(h/18)),rowH=h/rows,offset=Math.abs(Math.floor(seed))%2;
-  for(let r=0;r<rows;r++){
-    const yy=r*rowH;
-    sctx.strokeStyle='#2d405566';sctx.lineWidth=1.2;
-    sctx.beginPath();sctx.moveTo(0,yy);sctx.lineTo(w,yy);sctx.stroke();
-    const blocks=4+(r%2);
-    for(let b=0;b<blocks;b++){
-      const bw=w/blocks;
-      const xx=b*bw+((r+offset)%2?bw*.5:0);
-      sctx.beginPath();sctx.moveTo(xx,yy);sctx.lineTo(xx,yy+rowH);sctx.stroke();
-    }
-  }
-
-  // windows
-  const cols=2, rowsWin=Math.max(1,Math.floor(h/48));
-  for(let rr=0;rr<rowsWin;rr++)for(let cc=0;cc<cols;cc++){
-    const wx=16+cc*(w-32)/(cols-.0); const wy=18+rr*48;
-    if(wy+18>h-8)continue;
-    sctx.fillStyle='#142a45';
-    sctx.fillRect(wx,wy,14,20);
-    sctx.fillStyle='#7de5ff88';
-    sctx.fillRect(wx+2,wy+3,4,6);sctx.fillRect(wx+8,wy+3,4,6);
-    sctx.fillStyle='#ffffff22';sctx.fillRect(wx+2,wy+12,10,3);
-  }
-
+function drawFlappyPipe(x,y,w,h,top){
+  if(h<=0)return;
+  const capH=20,capExtra=8;
+  sctx.fillStyle='#58b947';sctx.fillRect(x,y,w,h);
+  sctx.fillStyle='#7bd05a';sctx.fillRect(x+7,y,7,h);
+  sctx.fillStyle='#3a8f36';sctx.fillRect(x+w-8,y,8,h);
   if(top){
-    // parapet and roofline
-    sctx.fillStyle=p[1];sctx.fillRect(-6,h-8,w+12,8);
-    for(let i=0;i<Math.ceil(w/18);i++)sctx.fillRect(i*18-4,h-15,11,7);
-    sctx.fillStyle=p[2];sctx.beginPath();sctx.moveTo(-8,h-15);sctx.lineTo(w/2,h-28);sctx.lineTo(w+8,h-15);sctx.closePath();sctx.fill();
+    const cy=y+h-capH;
+    sctx.fillStyle='#4ca83f';sctx.fillRect(x-capExtra,cy,w+capExtra*2,capH);
+    sctx.fillStyle='#76cf56';sctx.fillRect(x-capExtra+7,cy+3,8,capH-6);
+    sctx.fillStyle='#337c32';sctx.fillRect(x+w+capExtra-8,cy,8,capH);
   }else{
-    // bottom ledge
-    sctx.fillStyle=p[2];sctx.fillRect(-7,0,w+14,7);
-    sctx.fillStyle=p[1];sctx.fillRect(-10,7,w+20,7);
+    sctx.fillStyle='#4ca83f';sctx.fillRect(x-capExtra,y,w+capExtra*2,capH);
+    sctx.fillStyle='#76cf56';sctx.fillRect(x-capExtra+7,y+3,8,capH-6);
+    sctx.fillStyle='#337c32';sctx.fillRect(x+w+capExtra-8,y,8,capH);
   }
+}
+function drawFlappyBird(x,y,angle,t,flap){
+  sctx.save();sctx.translate(x,y);sctx.rotate(angle*.45);
+  // shadow/body outline
+  sctx.fillStyle='#d49b22';sctx.beginPath();sctx.ellipse(0,1,19,15,0,0,Math.PI*2);sctx.fill();
+  // body
+  const body=sctx.createLinearGradient(-12,-12,14,12);body.addColorStop(0,'#ffe85a');body.addColorStop(1,'#f3b628');sctx.fillStyle=body;
+  sctx.beginPath();sctx.ellipse(-1,0,17,14,0,0,Math.PI*2);sctx.fill();
+  // wing animation
+  const wy=flap>0?8:-2;
+  sctx.fillStyle='#e6a623';sctx.beginPath();sctx.ellipse(-6,wy,10,6,-.35,0,Math.PI*2);sctx.fill();
+  // white chest
+  sctx.fillStyle='#fff3c4';sctx.beginPath();sctx.ellipse(-3,4,8,7,0,0,Math.PI*2);sctx.fill();
+  // eye
+  sctx.fillStyle='#fff';sctx.beginPath();sctx.arc(7,-6,5,0,Math.PI*2);sctx.fill();sctx.fillStyle='#17202b';sctx.beginPath();sctx.arc(9,-6,2,0,Math.PI*2);sctx.fill();
+  // orange beak
+  sctx.fillStyle='#f59a2f';sctx.beginPath();sctx.moveTo(14,-1);sctx.lineTo(27,2);sctx.lineTo(14,7);sctx.closePath();sctx.fill();sctx.fillStyle='#d77b21';sctx.fillRect(18,2,8,2);
+  // tiny tail
+  sctx.fillStyle='#dca323';sctx.beginPath();sctx.moveTo(-15,-1);sctx.lineTo(-25,-7);sctx.lineTo(-21,2);sctx.closePath();sctx.fill();
+  sctx.restore();
+}
+function drawBossBird(x,y,pulse){
+  sctx.save();sctx.translate(x,y);
+  const flap=Math.sin(pulse*8)*10;
+  sctx.fillStyle='#4e6d8e';sctx.beginPath();sctx.ellipse(0,0,48,36,0,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#36516f';sctx.beginPath();sctx.ellipse(-25,-8,35,12,-.2,0,Math.PI*2);sctx.fill();sctx.beginPath();sctx.ellipse(-25,12,35,12,.2,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#21364d';sctx.beginPath();sctx.ellipse(10,-30-flap*.18,38,12,-.15,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#ffdf5c';sctx.beginPath();sctx.arc(16,-7,11,0,Math.PI*2);sctx.fill();sctx.fillStyle='#162334';sctx.beginPath();sctx.arc(18,-8,4,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#f29c32';sctx.beginPath();sctx.moveTo(44,0);sctx.lineTo(68,6);sctx.lineTo(44,13);sctx.closePath();sctx.fill();
   sctx.restore();
 }
 function openExternal(url){window.open(url,'_blank','noopener,noreferrer')}
