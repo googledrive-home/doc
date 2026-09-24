@@ -202,13 +202,26 @@ function startBreaker(fs){
   bc.onpointermove=e=>{if(bGameOver)return;const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{};$('restartB').onclick=()=>startBreaker(false);
 }
 function resizeBreaker(){if(!bc)return;const r=bc.getBoundingClientRect(),d=devicePixelRatio||1;bc.width=r.width*d;bc.height=r.height*d;bctx.setTransform(d,0,0,d,0,0);bw=r.width;bh=r.height;if(bPaddle){bPaddle.y=bh-55;bPaddle.x=clamp(bPaddle.x||bw/2,bPaddle.w/2,bw-bPaddle.w/2)}}
-function breakerConfig(){return {easy:{speed:300,paddle:170,rows:6,cols:9},medium:{speed:365,paddle:145,rows:7,cols:10},hard:{speed:430,paddle:118,rows:8,cols:10}}[difficulty]||{speed:365,paddle:145,rows:7,cols:10}}
+function breakerConfig(){return {easy:{speed:220,paddle:170,rows:6,cols:9},medium:{speed:245,paddle:145,rows:7,cols:10},hard:{speed:270,paddle:118,rows:8,cols:10}}[difficulty]||{speed:245,paddle:145,rows:7,cols:10}}
+function breakerSpeedTarget(){
+  const cfg=breakerConfig();
+  const total=Math.max(1,bBricks.length);
+  const progress=clamp(bPopped/Math.max(1,total-1),0,1);
+  return cfg.speed*(1+0.55*progress);
+}
+function breakerMatchBallSpeed(ball){
+  const len=Math.hypot(ball.vx,ball.vy)||1;
+  let target=breakerSpeedTarget();
+  if(bPowerTimers.turbo>0)target*=1.08;
+  ball.vx=ball.vx/len*target;
+  ball.vy=ball.vy/len*target;
+}
 function resetBreakerLevel(){
   const cfg=breakerConfig();bPaddle.w=cfg.paddle;bPaddle.h=16;bPaddle.y=bh-55;bPaddle.x=bw/2;bBricks=[];bPopped=0;bEffectText='';bEffectTimer=0;
   const colors=['#ff4fc3','#ffd34e','#38d9ff','#54e38e','#ff8a45','#a48bff'];
   const gap=8,left=26,top=46,brickH=25;const brickW=(bw-left*2-gap*(cfg.cols-1))/cfg.cols;
   for(let r=0;r<cfg.rows;r++)for(let col=0;col<cfg.cols;col++)bBricks.push({x:left+col*(brickW+gap),y:top+r*(brickH+gap),w:brickW,h:brickH,hp:(difficulty==='hard'&&r<2)?2:1,color:colors[r%colors.length],alive:true});
-  const ang=(Math.random()<.5?-1:1)*(0.35+Math.random()*.45),sp=cfg.speed*(1+.08*(bLevel-1));
+  const ang=(Math.random()<.5?-1:1)*(0.35+Math.random()*.45),sp=cfg.speed;bBall=null;
   bBall={x:bw/2,y:bh-85,vx:Math.cos(ang)*sp,vy:-Math.abs(Math.sin(ang)*sp),r:9,balls:[]};bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;updateBreakerHud();
 }
 function spawnBreakerPower(x,y){const kinds=['wide','slow','multi','x2','x3','plus1','plus3','fire','bomb','magnet','shield','turbo'];const kind=kinds[Math.floor(Math.random()*kinds.length)];if(Math.random()>.60)return;bPowerups.push({x,y,w:26,h:26,vy:145,type:kind,rot:0,life:14})}
@@ -222,7 +235,7 @@ function breakerHitBall(ball,dt){
     ball.y=p.y-ball.r;
     const hit=(ball.x-p.x)/(p.w/2);
     const baseSpeed=Math.hypot(ball.vx,ball.vy);
-    const speed=Math.min(820,baseSpeed*(bPowerTimers.turbo>0?1.18:1.045));
+    const speed=breakerSpeedTarget()*(bPowerTimers.turbo>0?1.08:1);
     const ang=(bPowerTimers.magnet>0?hit*.9:hit*1.12)-Math.PI/2;
     ball.vx=Math.cos(ang)*speed;ball.vy=Math.sin(ang)*speed;bCombo++;beep(620,.035,'square',.018);
   }
@@ -293,7 +306,7 @@ function bLoop(now){
   breakerCollect(dt);
   if(lost){
     if(bBall.balls.length){const extra=bBall.balls.pop();bBall.x=extra.x;bBall.y=extra.y;bBall.vx=extra.vx;bBall.vy=extra.vy}
-    else if(bPowerTimers.shield>0){bPowerTimers.shield=0;bBall.x=bw/2;bBall.y=bh-85;bBall.vx=(Math.random()<.5?-1:1)*cfg.speed;bBall.vy=-cfg.speed*.72;beep(760,.1,'triangle',.03)}
+    else if(bPowerTimers.shield>0){bPowerTimers.shield=0;bBall.x=bw/2;bBall.y=bh-85;bBall.vx=(Math.random()<.5?-1:1)*cfg.speed;bBall.vy=-cfg.speed*.72;breakerMatchBallSpeed(bBall);beep(760,.1,'triangle',.03)}
     else{bLives--;bCombo=0;beep(120,.12,'sawtooth',.03);if(bLives<=0){bGameOver=true;bPaused=true;cancelAnimationFrame(bAnim);updateBreakerHud();drawBreaker();return}else resetBreakerLevel()}}
   if(bPopped>=bBricks.length){bLevel++;bScore+=500;beep(980,.12,'triangle',.04);resetBreakerLevel()}
   updateBreakerHud();drawBreaker();bAnim=requestAnimationFrame(bLoop);
