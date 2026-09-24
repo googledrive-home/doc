@@ -249,9 +249,9 @@ function startSkyDash(fs){
 function resizeSky(){if(!sc)return;const r=sc.getBoundingClientRect(),d=devicePixelRatio||1;sc.width=r.width*d;sc.height=r.height*d;sctx.setTransform(d,0,0,d,0,0);sw=r.width;sh=r.height}
 function skyConfig(){
   return {
-    easy:{speed:215,gap:188,spawn:1.14,gravity:850,lift:515},
-    medium:{speed:280,gap:158,spawn:.91,gravity:900,lift:535},
-    hard:{speed:350,gap:130,spawn:.75,gravity:960,lift:555}
+    easy:{speed:215,gap:188,spawn:1.14,gravity:1250,lift:680},
+    medium:{speed:280,gap:158,spawn:.91,gravity:1325,lift:700},
+    hard:{speed:350,gap:130,spawn:.75,gravity:1400,lift:720}
   }[difficulty]||{speed:280,gap:158,spawn:.91,gravity:900,lift:535}
 }
 function spawnSkyObstacle(){
@@ -261,7 +261,7 @@ function spawnSkyObstacle(){
   const towerTheme=Math.floor(Math.random()*4);
   sObstacles.push({
     x:sw+85,w:86,gapY,gap:cfg.gap,phase:Math.random()*Math.PI*2,
-    drift:(Math.random()<.5?-1:1)*(8+Math.random()*16),passed:false,
+    drift:0,passed:false,
     seed:Math.random()*9999,theme:towerTheme,age:0,topH:heightTop,bottomH:heightBottom
   });
   if(Math.random()<.78){
@@ -273,14 +273,13 @@ function skyBoost(){
   if(sOver)return;
   const cfg=skyConfig();
   sPlayer.targetVy=-cfg.lift;
-  sPlayer.vy-=125;
+  sPlayer.vy-=210;
   sPlayer.boost=.22;
   for(let i=0;i<7;i++)sParticles.push({x:sPlayer.x-18+Math.random()*8,y:sPlayer.y+(Math.random()-.5)*8,vx:-90-Math.random()*90,vy:(Math.random()-.5)*90,life:.35+Math.random()*.25,max:.5,size:2+Math.random()*4,type:'boost'});
   beep(680,.04,'square',.018);
 }
 function skyCircleRect(o){
-  const gapMove=Math.sin(sSkyTime/900+o.phase)*9;
-  const gy=o.gapY+gapMove;
+  const gy=o.gapY;
   return sPlayer.x+sPlayer.r>o.x&&sPlayer.x-sPlayer.r<o.x+o.w&&(sPlayer.y-sPlayer.r<gy||sPlayer.y+sPlayer.r>gy+o.gap)
 }
 function skyEnd(){
@@ -303,10 +302,10 @@ function sLoop(now){
   if(sSpawn<=0){spawnSkyObstacle();sSpawn=cfg.spawn*(.86+Math.random()*.30)}
 
   const steer=sBoostHeld?-1:0;
-  sPlayer.targetVy=steer? -cfg.lift : cfg.gravity*.16;
-  const response=steer?10:7;
+  sPlayer.targetVy=steer? -cfg.lift : Math.min(620,sPlayer.vy+cfg.gravity*dt);
+  const response=steer?12:6;
   sPlayer.vy+=(sPlayer.targetVy-sPlayer.vy)*(1-Math.exp(-response*dt));
-  sPlayer.vy=clamp(sPlayer.vy,-560,640);
+  sPlayer.vy=clamp(sPlayer.vy,-cfg.lift,cfg.lift);
   sPlayer.y+=sPlayer.vy*dt;
   sPlayer.targetAngle=clamp(sPlayer.vy/680,-.55,.55);
   sPlayer.angle+=(sPlayer.targetAngle-sPlayer.angle)*(1-Math.exp(-10*dt));
@@ -324,7 +323,7 @@ function sLoop(now){
 
   for(let i=sObstacles.length-1;i>=0;i--){
     const o=sObstacles[i];o.x-=cfg.speed*dt;o.age+=dt;
-    const mover=Math.sin(sSkyTime/900+o.phase)*9;o.gapY=clamp(o.gapY+Math.sin(sSkyTime/1500+o.phase)*o.drift*dt,70,Math.max(72,sh-70-o.gap));
+    const mover=Math.sin(sSkyTime/900+o.phase)*9;o.gapY=clamp(o.gapY,70,Math.max(72,sh-70-o.gap));
     if(o.x+o.w<-30)sObstacles.splice(i,1);
     else{
       if(!o.passed&&o.x+o.w<sPlayer.x){o.passed=true;sScore+=100;sComboFlash=.35;
@@ -393,8 +392,7 @@ function drawSky(now){
 
   // Brick-and-stone towers
   for(const o of sObstacles){
-    const mover=Math.sin(sSkyTime/900+o.phase)*9;
-    const gy=o.gapY+mover;
+    const gy=o.gapY;
     drawSkyTower(o.x,0,o.w,gy,true,o.seed,o.theme);
     drawSkyTower(o.x,gy+o.gap,o.w,sh-(gy+o.gap),false,o.seed+19,o.theme);
   }
@@ -418,41 +416,68 @@ function drawSky(now){
   }
   sctx.globalAlpha=1;
 
-  // Detailed little sky glider
+  // Detailed little aircraft — thin fuselage, wide swept wings, same side perspective.
   sctx.save();
   sctx.globalAlpha=sInvuln>0&&Math.floor(now/70)%2===0?.35:1;
-  sctx.translate(sPlayer.x,sPlayer.y);sctx.rotate(sPlayer.angle+sPlayer.bank*.5);
-  sctx.shadowBlur=18;sctx.shadowColor='#17365e66';
+  sctx.translate(sPlayer.x,sPlayer.y);
+  sctx.rotate(sPlayer.angle+sPlayer.bank*.38);
+  sctx.shadowBlur=16;sctx.shadowColor='#17365e55';
 
-  // rear flame / boost
+  // Jet exhaust / boost flame
   if(sPlayer.boost>0){
-    const fg=sctx.createLinearGradient(-38,0,-8,0);fg.addColorStop(0,'transparent');fg.addColorStop(.35,'#7cecff');fg.addColorStop(.75,'#ffd34e');fg.addColorStop(1,'#fff');
-    sctx.fillStyle=fg;sctx.beginPath();sctx.moveTo(-42,0);sctx.quadraticCurveTo(-25,-8,-8,0);sctx.quadraticCurveTo(-25,8,-42,0);sctx.fill();
+    const flame=sctx.createLinearGradient(-58,0,-7,0);
+    flame.addColorStop(0,'transparent');flame.addColorStop(.28,'#79ecff');flame.addColorStop(.62,'#ffd34e');flame.addColorStop(1,'#fff');
+    sctx.fillStyle=flame;
+    sctx.beginPath();
+    sctx.moveTo(-58,0);
+    sctx.quadraticCurveTo(-35,-7,-8,0);
+    sctx.quadraticCurveTo(-35,7,-58,0);
+    sctx.closePath();sctx.fill();
   }
 
-  // wings
-  const wingGrad=sctx.createLinearGradient(-7,-18,30,-2);wingGrad.addColorStop(0,'#7be5ff');wingGrad.addColorStop(1,'#3473d8');
+  // Wide upper/lower wings
+  const wingGrad=sctx.createLinearGradient(-4,-34,28,10);
+  wingGrad.addColorStop(0,'#b9f3ff');wingGrad.addColorStop(.45,'#5bc8f0');wingGrad.addColorStop(1,'#275fae');
   sctx.fillStyle=wingGrad;
-  sctx.beginPath();sctx.moveTo(-4,-10);sctx.lineTo(27,-25);sctx.lineTo(18,-3);sctx.lineTo(3,1);sctx.closePath();sctx.fill();
-  sctx.beginPath();sctx.moveTo(-4,10);sctx.lineTo(27,25);sctx.lineTo(18,3);sctx.lineTo(3,-1);sctx.closePath();sctx.fill();
+  sctx.beginPath();
+  sctx.moveTo(3,-6);sctx.lineTo(44,-36);sctx.lineTo(12,-1);sctx.lineTo(-10,2);sctx.closePath();sctx.fill();
+  sctx.beginPath();
+  sctx.moveTo(3,6);sctx.lineTo(44,36);sctx.lineTo(12,1);sctx.lineTo(-10,-2);sctx.closePath();sctx.fill();
+  sctx.strokeStyle='#ffffff9a';sctx.lineWidth=1.3;sctx.stroke();
 
-  // main hull
-  const hull=sctx.createLinearGradient(-20,-12,24,12);hull.addColorStop(0,'#eafaff');hull.addColorStop(.45,'#63c9ed');hull.addColorStop(1,'#2768ba');
-  sctx.fillStyle=hull;sctx.beginPath();sctx.moveTo(29,0);sctx.quadraticCurveTo(18,-14,-3,-12);sctx.lineTo(-20,-8);sctx.quadraticCurveTo(-27,0,-20,8);sctx.lineTo(-3,12);sctx.quadraticCurveTo(18,14,29,0);sctx.closePath();sctx.fill();
-  sctx.strokeStyle='#ffffffcc';sctx.lineWidth=1.8;sctx.stroke();
+  // Thin central fuselage
+  const hull=sctx.createLinearGradient(-25,-6,34,6);
+  hull.addColorStop(0,'#f2fbff');hull.addColorStop(.38,'#80d7f5');hull.addColorStop(.78,'#397fc4');hull.addColorStop(1,'#1f4f92');
+  sctx.fillStyle=hull;
+  sctx.beginPath();
+  sctx.moveTo(34,0);
+  sctx.quadraticCurveTo(22,-7,4,-6);
+  sctx.lineTo(-19,-4);
+  sctx.quadraticCurveTo(-28,-2,-31,0);
+  sctx.quadraticCurveTo(-28,2,-19,4);
+  sctx.lineTo(4,6);
+  sctx.quadraticCurveTo(22,7,34,0);
+  sctx.closePath();sctx.fill();
+  sctx.strokeStyle='#ffffffbf';sctx.lineWidth=1.5;sctx.stroke();
 
-  // cockpit
-  const glass=sctx.createRadialGradient(1,-5,1,3,-2,11);glass.addColorStop(0,'#ffffff');glass.addColorStop(.2,'#b6f4ff');glass.addColorStop(1,'#265987');
-  sctx.fillStyle=glass;sctx.beginPath();sctx.ellipse(5,-3,10,7,0,0,Math.PI*2);sctx.fill();sctx.strokeStyle='#1b4b77';sctx.stroke();
+  // Tailplane
+  sctx.fillStyle='#4d93d4';
+  sctx.beginPath();sctx.moveTo(-19,-3);sctx.lineTo(-31,-13);sctx.lineTo(-25,-2);sctx.closePath();sctx.fill();
+  sctx.beginPath();sctx.moveTo(-19,3);sctx.lineTo(-31,13);sctx.lineTo(-25,2);sctx.closePath();sctx.fill();
 
-  // nose light
-  sctx.fillStyle='#fff3a1';sctx.beginPath();sctx.arc(25,0,3.5,0,Math.PI*2);sctx.fill();
-  // tail fins
-  sctx.fillStyle='#ff6b9d';sctx.beginPath();sctx.moveTo(-17,-7);sctx.lineTo(-27,-15);sctx.lineTo(-23,-3);sctx.closePath();sctx.fill();
-  sctx.beginPath();sctx.moveTo(-17,7);sctx.lineTo(-27,15);sctx.lineTo(-23,3);sctx.closePath();sctx.fill();
+  // Cockpit / canopy
+  const glass=sctx.createLinearGradient(-5,-6,13,4);
+  glass.addColorStop(0,'#f8ffff');glass.addColorStop(.3,'#b9f2ff');glass.addColorStop(1,'#28618f');
+  sctx.fillStyle=glass;
+  sctx.beginPath();sctx.ellipse(7,-2.5,10,5,0,0,Math.PI*2);sctx.fill();
+  sctx.strokeStyle='#1c4b73';sctx.lineWidth=1;sctx.stroke();
 
-  sctx.shadowBlur=0;sctx.restore();
+  // Engine nacelle and nose lamp
+  sctx.fillStyle='#234f88';sctx.beginPath();sctx.ellipse(-13,0,5,3.5,0,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#fff4a0';sctx.shadowBlur=9;sctx.shadowColor='#fff4a0';
+  sctx.beginPath();sctx.arc(31,0,3,0,Math.PI*2);sctx.fill();sctx.shadowBlur=0;
 
+  sctx.restore();
   if(sComboFlash>0){
     sctx.globalAlpha=sComboFlash/.45;
     sctx.fillStyle='#fff';sctx.font='900 22px system-ui';sctx.textAlign='center';sctx.fillText('+BONUS',sPlayer.x+54,sPlayer.y-34);sctx.globalAlpha=1;
