@@ -142,7 +142,7 @@ if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="b
 else if(current==='hockey'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Human-like</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Pro-level challenge</small></button></div><p class="hint">P1: WASD + F to shoot · P2: Arrow Keys + L</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startHockey(true)}} 
 else if(current==='reaction'){s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Wait for green. Click as fast as you can. False starts are counted.</p><div class="options"><button class="option selected btn">🎯 Classic<br><small>Random signal</small></button></div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';$('startSetup').onclick=()=>{clickSound();startReaction(true)}}
 else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break every brick, build combos and catch lots of upgrades: ×2, ×3, +1, +3, fire, bomb, shield, magnet, turbo, multi-ball and more.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced speed</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast ball · tighter paddle</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
-else if(current==='skydash'){s.innerHTML='<div class="bigicon">🐤</div><h1>Flappy Bird</h1><p>Tap to flap through green pipes. Reach 999 to unlock the Final Sky Boss.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wider gaps · gentler gravity</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Classic pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Tighter gaps · faster pipes</small></button></div><p class="hint">Space · ↑ · click · tap to flap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
+else if(current==='skydash'){s.innerHTML='<div class="bigicon">🐤</div><h1>Flappy Bird</h1><p>Tap to flap through green pipes. Reach 999 to unlock the Final Sky Boss.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wider gaps · gentler gravity</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Classic pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Tighter gaps · faster pipes</small></button></div><p class="hint">Space · Arrow Up · W · click · tap to flap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Lab</h1><p>Choose your test length, then smash the button.</p><div class="options">'+[1,3,5,10].map(n=>'<button class="option '+(n===3?'selected ':'')+'btn" data-sec="'+n+'">'+n+' SECOND'+(n>1?'S':'')+'</button>').join('')+'</div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('.option').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}
 async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
 function startTennis(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="tennis-stage"><canvas id="tc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="ts">0 — 0</span><span>P1: W/S</span><span>P2: '+(mode==='two'?'↑/↓':'Computer')+'</span><button class="tiny btn" id="restartT">Restart</button></div></div>';if(fs)enterGameFS();initTennis();$('restartT').onclick=()=>{tScore1=0;tScore2=0;resetTennis();$('ts').textContent='0 — 0';beep(300)}}
@@ -293,7 +293,7 @@ function drawBreaker(){
   }
   bctx.fillStyle='#ffffffb0';bctx.font='700 13px system-ui';bctx.textAlign='left';bctx.fillText('BREAK EVERY BRICK • POWER-UPS DROP RANDOMLY',18,21);bctx.textAlign='right';bctx.fillText('WIDE '+(bPowerTimers.wide>0?Math.ceil(bPowerTimers.wide)+'s':'—')+'  SLOW '+(bPowerTimers.slow>0?Math.ceil(bPowerTimers.slow)+'s':'—'),bw-18,21);
 }
-addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')&&[' ','arrowup','w'].includes(e.key.toLowerCase())){e.preventDefault();skyFlap()}});
+addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')){const key=e.key.toLowerCase();if(key===' '||key==='arrowup'||key==='w'){e.preventDefault();if(!e.repeat)skyFlap()}}});
 function startSkyDash(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="sc" class="tennis-canvas" aria-label="Flappy Bird game"></canvas><div class="hud"><span class="scorebig" id="ss">0</span><span id="fbState">GET READY</span><button class="tiny btn" id="restartS">Restart</button></div></div>';
@@ -450,9 +450,10 @@ function drawSky(now){
   // Original pixel-like score display.
   if(!sBossActive||sScore<999){
     sctx.textAlign='center';sctx.textBaseline='top';
-    sctx.font='900 54px monospace';
-    sctx.lineWidth=8;sctx.strokeStyle='#315b75';sctx.strokeText(String(sScore),sw/2,22);
-    sctx.fillStyle='#fff';sctx.fillText(String(sScore),sw/2,22);
+    sctx.font='900 54px "Arial Black",Arial,sans-serif';
+    sctx.lineJoin='round';
+    sctx.lineWidth=6;sctx.strokeStyle='#2f5c75';sctx.strokeText(String(sScore),sw/2,20);
+    sctx.fillStyle='#fff';sctx.fillText(String(sScore),sw/2,20);
   }
 
   // Bird: original side-view yellow bird with two-frame wing flap.
@@ -481,7 +482,7 @@ function drawSky(now){
 
   if(sReady){
     sctx.fillStyle='#fff';sctx.textAlign='center';sctx.font='900 31px monospace';sctx.lineWidth=5;sctx.strokeStyle='#315b75';sctx.strokeText('GET READY!',sw/2,sh*.28);sctx.fillText('GET READY!',sw/2,sh*.28);
-    sctx.font='700 16px monospace';sctx.fillStyle='#315b75';sctx.fillText('CLICK OR PRESS SPACE',sw/2,sh*.28+44);
+    sctx.font='700 16px monospace';sctx.fillStyle='#315b75';sctx.fillText('CLICK OR PRESS SPACE / ↑ / W',sw/2,sh*.28+44);
   }
   if(sOver&&!sBossCleared){
     sctx.fillStyle='#fff';sctx.textAlign='center';sctx.font='900 38px monospace';sctx.lineWidth=6;sctx.strokeStyle='#315b75';sctx.strokeText('GAME OVER',sw/2,sh*.38);sctx.fillText('GAME OVER',sw/2,sh*.38);
@@ -507,23 +508,49 @@ function drawFlappyPipe(x,y,w,h,top){
   }
 }
 function drawFlappyBird(x,y,angle,t,flap){
-  sctx.save();sctx.translate(x,y);sctx.rotate(angle*.45);
-  // shadow/body outline
-  sctx.fillStyle='#d49b22';sctx.beginPath();sctx.ellipse(0,1,19,15,0,0,Math.PI*2);sctx.fill();
-  // body
-  const body=sctx.createLinearGradient(-12,-12,14,12);body.addColorStop(0,'#ffe85a');body.addColorStop(1,'#f3b628');sctx.fillStyle=body;
-  sctx.beginPath();sctx.ellipse(-1,0,17,14,0,0,Math.PI*2);sctx.fill();
-  // wing animation
-  const wy=flap>0?8:-2;
-  sctx.fillStyle='#e6a623';sctx.beginPath();sctx.ellipse(-6,wy,10,6,-.35,0,Math.PI*2);sctx.fill();
-  // white chest
-  sctx.fillStyle='#fff3c4';sctx.beginPath();sctx.ellipse(-3,4,8,7,0,0,Math.PI*2);sctx.fill();
-  // eye
-  sctx.fillStyle='#fff';sctx.beginPath();sctx.arc(7,-6,5,0,Math.PI*2);sctx.fill();sctx.fillStyle='#17202b';sctx.beginPath();sctx.arc(9,-6,2,0,Math.PI*2);sctx.fill();
-  // orange beak
-  sctx.fillStyle='#f59a2f';sctx.beginPath();sctx.moveTo(14,-1);sctx.lineTo(27,2);sctx.lineTo(14,7);sctx.closePath();sctx.fill();sctx.fillStyle='#d77b21';sctx.fillRect(18,2,8,2);
-  // tiny tail
-  sctx.fillStyle='#dca323';sctx.beginPath();sctx.moveTo(-15,-1);sctx.lineTo(-25,-7);sctx.lineTo(-21,2);sctx.closePath();sctx.fill();
+  sctx.save();
+  sctx.translate(Math.round(x),Math.round(y));
+  sctx.rotate(angle*.42);
+
+  // Dark pixel-style outline.
+  sctx.fillStyle='#4b371d';
+  sctx.beginPath();
+  sctx.moveTo(-17,-8);sctx.lineTo(-10,-16);sctx.lineTo(4,-18);sctx.lineTo(13,-13);sctx.lineTo(17,-6);
+  sctx.lineTo(28,-4);sctx.lineTo(31,2);sctx.lineTo(25,5);sctx.lineTo(17,5);
+  sctx.lineTo(14,12);sctx.lineTo(5,17);sctx.lineTo(-7,15);sctx.lineTo(-15,10);sctx.closePath();sctx.fill();
+
+  // Bright yellow body with simple pixel-like edges.
+  const body=sctx.createLinearGradient(-13,-14,14,14);
+  body.addColorStop(0,'#fff06a');body.addColorStop(.45,'#ffd53b');body.addColorStop(1,'#e6a820');
+  sctx.fillStyle=body;
+  sctx.beginPath();
+  sctx.moveTo(-14,-7);sctx.lineTo(-9,-14);sctx.lineTo(4,-15);sctx.lineTo(11,-10);sctx.lineTo(14,-2);
+  sctx.lineTo(13,8);sctx.lineTo(5,13);sctx.lineTo(-6,12);sctx.lineTo(-13,7);sctx.closePath();sctx.fill();
+
+  // White belly.
+  sctx.fillStyle='#fff6d2';
+  sctx.beginPath();sctx.moveTo(-6,-1);sctx.lineTo(7,0);sctx.lineTo(9,8);sctx.lineTo(3,12);sctx.lineTo(-5,9);sctx.closePath();sctx.fill();
+
+  // Wing with a two-frame flap.
+  const wingY=flap>0?7:1;
+  sctx.fillStyle='#e9aa22';
+  sctx.beginPath();
+  sctx.moveTo(-11,wingY-2);sctx.lineTo(-2,wingY-6);sctx.lineTo(7,wingY-2);sctx.lineTo(4,wingY+7);sctx.lineTo(-6,wingY+8);sctx.closePath();sctx.fill();
+  sctx.strokeStyle='#a97816';sctx.lineWidth=1.5;sctx.stroke();
+
+  // Eye, beak and lower beak line.
+  sctx.fillStyle='#fff';sctx.beginPath();sctx.arc(8,-7,6,0,Math.PI*2);sctx.fill();
+  sctx.fillStyle='#171c22';sctx.beginPath();sctx.arc(10,-7,2.4,0,Math.PI*2);sctx.fill();
+
+  sctx.fillStyle='#f59b2f';
+  sctx.beginPath();sctx.moveTo(11,-2);sctx.lineTo(29,1);sctx.lineTo(23,6);sctx.lineTo(12,4);sctx.closePath();sctx.fill();
+  sctx.strokeStyle='#b96b1c';sctx.lineWidth=1;sctx.beginPath();sctx.moveTo(14,2);sctx.lineTo(25,3);sctx.stroke();
+
+  // Tail feathers.
+  sctx.fillStyle='#d99f1f';
+  sctx.beginPath();sctx.moveTo(-12,-2);sctx.lineTo(-23,-9);sctx.lineTo(-18,0);sctx.closePath();sctx.fill();
+  sctx.beginPath();sctx.moveTo(-12,5);sctx.lineTo(-22,11);sctx.lineTo(-18,3);sctx.closePath();sctx.fill();
+
   sctx.restore();
 }
 function drawBossBird(x,y,pulse){
