@@ -182,7 +182,7 @@ function cpsFinish(){if(!cpsRunning)return;cpsRunning=false;clearInterval(cpsTim
 function startBreaker(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="bc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="bs">0</span><span id="bl">Lives: 3</span><span id="blev">Level 1</span><span id="bcombo">Combo x0</span><button class="tiny btn" id="restartB">Restart</button></div></div>';
-  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0};
+  if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};
   bc=$('bc');bctx=bc.getContext('2d');resizeBreaker();resetBreakerLevel();bLast=performance.now();cancelAnimationFrame(bAnim);bAnim=requestAnimationFrame(bLoop);window.onresize=resizeBreaker;
   bc.onpointermove=e=>{const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{if(bPaused){bPaused=false;bLast=performance.now();bAnim=requestAnimationFrame(bLoop)}};$('restartB').onclick=()=>startBreaker(false);
 }
