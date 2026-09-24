@@ -315,7 +315,6 @@ function drawBreaker(){
     bctx.font='700 16px system-ui';bctx.fillStyle='#dcecff';bctx.fillText('Press RESTART below to play again',bw/2,bh*.42+72);
   }
 }
-}
 addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')){const key=e.key.toLowerCase();if(key===' '||key==='arrowup'||key==='w'){e.preventDefault();if(!e.repeat)skyFlap()}}});
 function startSkyDash(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
