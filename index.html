@@ -22,10 +22,53 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 
 #gameModal{display:none;position:fixed;inset:0;z-index:100;background:#020713ee;backdrop-filter:blur(10px)}#gameModal.open{display:block}.game-shell{width:100%;height:100%;min-height:100vh;background:radial-gradient(circle at 50% 0,#173e68,#050c19 70%);position:relative;overflow:auto}.game-shell:fullscreen{background:#050b16}.topbar{position:sticky;z-index:20;top:14px;margin:14px 16px 0;display:flex;gap:9px;align-items:center;background:#06101ff5;border:1px solid #ffffff1d;border-radius:16px;padding:10px 12px;backdrop-filter:blur(10px);box-shadow:0 8px 24px #0006}.topbar h2{margin:0;font-size:16px}.topbar .spacer{flex:1}.tiny{padding:9px 12px;font-size:12px;background:#17304f;color:#eaf6ff;border:1px solid #ffffff1a}.music-wrap{position:relative}.music-panel{position:absolute;right:0;top:calc(100% + 10px);width:min(360px,calc(100vw - 28px));padding:15px;border-radius:18px;background:#071426f7;border:1px solid #ffffff20;box-shadow:0 25px 70px #0009;backdrop-filter:blur(18px);display:none;z-index:50}.music-panel.open{display:block;animation:panelIn .16s ease-out}@keyframes panelIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}.music-head{display:flex;align-items:center;gap:10px}.music-head strong{font-size:14px}.music-now{margin:12px 0;padding:11px;border-radius:13px;background:#ffffff0a;border:1px solid #ffffff12}.music-now b{display:block}.music-now span{display:block;color:var(--muted);font-size:11px;margin-top:3px}.music-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.music-controls button{padding:9px;background:#183554;color:#eaf6ff}.music-seek{margin:12px 0 5px}.music-seek input{width:100%;accent-color:var(--cyan);cursor:pointer}.music-times{display:flex;justify-content:space-between;color:#8fa9c4;font-size:10px;margin-top:3px}.music-controls{margin:8px 0 0}.music-volume{display:flex;align-items:center;gap:9px;font-size:11px;color:#b9cee5}.music-volume input{flex:1;accent-color:var(--cyan)}.library-bar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px}.library-tab.active{background:linear-gradient(135deg,#38d9ff,#83f1ff);color:#04111e}.custom-playlists{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.library-note{font-size:10px;color:#7894b2;margin:5px 0 7px}.playlist{max-height:190px;overflow:auto;margin-top:10px;display:grid;gap:6px}.track{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border-radius:11px;background:#0e233d;color:#dff3ff;text-align:left;border:1px solid transparent}.track:hover{background:#163454}.track.active{border-color:#38d9ff66;background:#143b5c}.track small{display:block;color:#87a5c4;font-size:10px}.track .tn{flex:1}.track .delete-track{display:none;min-width:30px;padding:5px 8px;background:#ff5c77;color:#21050d}.playlist.editing .delete-track{display:block}.playlist::-webkit-scrollbar{width:6px}.playlist::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:10px}.close{background:#ff5c77;color:#21050d}.game-area{min-height:100vh;display:grid;place-items:center;padding:85px 25px 35px}.setup{width:min(720px,94vw);padding:34px;border-radius:28px;background:linear-gradient(145deg,#132f51,#0b1930);border:1px solid #ffffff20;box-shadow:0 30px 90px #0008;text-align:center}.setup .bigicon{font-size:62px}.setup h1{font-size:42px;margin:8px 0}.setup p{color:var(--muted)}.options{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:22px 0}.option{min-width:170px;padding:17px;border-radius:16px;background:#102642;color:#dbeeff;border:1px solid #315174}.option.selected{background:linear-gradient(135deg,var(--cyan),#83f1ff);color:#04111e;border-color:transparent;box-shadow:0 0 0 3px #38d9ff33}.startbig{font-size:18px;padding:15px 24px;background:linear-gradient(135deg,var(--yellow),#ff9d52)}.game-stage{display:none;width:min(1120px,96vw);position:relative}.game-stage.active{display:block}.game-stage canvas{width:100%;height:min(66vh,560px);display:block;border-radius:24px;border:2px solid #ffffff20;background:#081522;box-shadow:0 25px 70px #0008}.hud{display:flex;justify-content:center;gap:18px;align-items:center;margin:13px 0;color:#dcecff;flex-wrap:wrap}.hud .scorebig{font-size:28px;font-weight:1000}.tennis-stage{width:min(900px,94vw);text-align:center}.tennis-canvas{width:100%;height:min(58vh,500px);display:block;border-radius:24px;border:2px solid #ffffff20;background:#102642;box-shadow:0 25px 70px #0008}.reaction-full{width:min(800px,94vw);height:min(58vh,520px);display:grid;place-items:center;border-radius:28px;border:2px solid #ffffff20;background:#1b2a40;cursor:pointer;user-select:none}.reaction-full.wait{background:#b9364d}.reaction-full.ready{background:#39c878}.reaction-full.result{background:#254667}.reaction-full strong{font-size:clamp(42px,8vw,82px);display:block}.reaction-full span{color:#dcecff}.click-full{text-align:center;width:min(800px,94vw)}.cps-number{font-size:clamp(70px,12vw,130px);font-weight:1000}.click-button{width:100%;height:min(38vh,300px);font-size:44px;background:linear-gradient(135deg,var(--pink),#7e68ff);color:white;border-radius:30px;box-shadow:0 20px 50px #ff4fc333}.selectbox{padding:12px 14px;border-radius:12px;background:#122944;color:white;border:1px solid #355474}.hint{font-size:12px;color:#7f98b3}.soundOn{color:var(--green)}
 .mm-card{min-width:0}.mm-card:hover{filter:brightness(1.12)}#shootBtn{touch-action:none;user-select:none}@media(max-width:820px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.hero-art{display:none}.setup{padding:25px 17px}.setup h1{font-size:34px}.game-area{padding-left:12px;padding-right:12px}}
+<style id="settingsStyles">
+:root{--grid-cols:2;--art-scale:1}
+.grid{grid-template-columns:repeat(var(--grid-cols),minmax(0,1fr))}
+.settings-modal{display:none;position:fixed;inset:0;z-index:300;background:#020713d9;backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px}
+.settings-modal.open{display:flex}
+.settings-panel{width:min(900px,96vw);max-height:88vh;overflow:auto;padding:24px;border-radius:24px;background:#09192d;border:1px solid #ffffff22;box-shadow:0 30px 100px #0009}
+.settings-head{display:flex;gap:12px;align-items:center;position:sticky;top:0;background:#09192df7;padding-bottom:12px;z-index:2}
+.settings-head h2{margin:0;font-size:24px}.settings-head .grow{flex:1}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:15px}
+.settings-section{padding:16px;border:1px solid #ffffff14;border-radius:16px;background:#ffffff07}
+.settings-section.wide{grid-column:1/-1}
+.settings-section h3{margin:0 0 10px;font-size:14px}
+.setting-row{display:grid;grid-template-columns:1fr 170px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #ffffff0c}
+.setting-row:last-child{border-bottom:0}.setting-row label{font-size:13px}.setting-row small{display:block;color:#8ca5c0;font-size:10px;margin-top:2px}
+.settings-control{width:100%;padding:9px 10px;border-radius:10px;background:#102843;color:#eef7ff;border:1px solid #31506f}
+.settings-control[type="range"]{padding:0;accent-color:var(--cyan)}
+.settings-control[type="checkbox"]{width:20px;height:20px;justify-self:end;accent-color:var(--cyan)}
+.settings-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.settings-note{color:#8da8c2;font-size:11px;margin-top:6px}
+body[data-theme="slate"]{background:#121820}
+body[data-theme="slate"] header{background:#101820ee}
+body[data-theme="slate"] .card{background:#1b2633}
+body[data-theme="slate"] .setup{background:#1a2532}
+body[data-theme="light"]{color:#17263a;background:#e8eef4}
+body[data-theme="light"] header{background:#f7fbffff;border-bottom-color:#b6c8d8}
+body[data-theme="light"] .logo{color:#14263d}body[data-theme="light"] .sub{color:#5f748a}
+body[data-theme="light"] .card{background:#ffffff;border-color:#b9ccdc;box-shadow:0 12px 30px #6b82991c}
+body[data-theme="light"] .card p,body[data-theme="light"] .play-card span{color:#5b7085}
+body[data-theme="light"] button.tiny{background:#e4edf5;color:#1b3046;border-color:#b9c9d8}
+body[data-theme="light"] .settings-panel{background:#f7fbff;color:#17263a;border-color:#b7c9d9}
+body[data-theme="light"] .settings-head{background:#f7fbfff7}
+body[data-theme="light"] .settings-section{background:#e9f0f6;border-color:#c0d0dd}
+body[data-theme="light"] .settings-control{background:#fff;color:#17263a;border-color:#b7c9d9}
+body[data-art-scale="small"] .art-icon{width:56px;height:56px}
+body[data-art-scale="large"] .art-icon{width:76px;height:76px}
+body[data-motion="off"] *{animation:none!important;transition:none!important}
+body[data-decor="off"] #bgDecor{display:none}
+body[data-decor="low"] #bgDecor .bg-shape:nth-child(n+7){display:none}
+body[data-decor="medium"] #bgDecor .bg-shape:nth-child(n+13){display:none}
+body[data-decor="high"] #bgDecor .bg-shape{display:grid}
+@media(max-width:760px){.settings-grid{grid-template-columns:1fr}.settings-section.wide{grid-column:auto}.setting-row{grid-template-columns:1fr}.settings-control[type="checkbox"]{justify-self:start}}
+@media(max-width:820px){.grid{grid-template-columns:1fr!important}}
+</style>
 </style>
 </head>
 <body><div class="bg-decor" id="bgDecor" aria-hidden="true"></div>
-<header><div class="logo">GOOGLE <span>DRIVE</span></div><div class="sub">Google Drive</div><div class="grow"></div><button class="btn" id="soundToggle">🔊 Sound On</button><div class="music-wrap"><button class="btn" id="playlistToggle">🎵 Playlist</button><div class="music-panel" id="musicPanel"><div class="music-head"><strong>🎵 Music Player</strong><div class="grow"></div><button class="tiny btn" id="musicLoad">➕ Add Songs</button><input id="musicFilePicker" type="file" accept="audio/*" multiple hidden><button class="tiny btn" id="musicEdit">✏️ Edit</button><button class="tiny btn" id="playlistClose">✕</button></div><div class="library-bar"><button class="tiny btn library-tab active" data-library="games">🎮 Game Playlist</button><button class="tiny btn library-tab" data-library="uploads">📥 Uploaded</button><button class="tiny btn" id="createPlaylist">＋ Create Playlist</button></div><div class="custom-playlists" id="customPlaylists"></div><div class="library-note" id="libraryNote">Built-in game music. Your uploaded songs stay on this browser.</div><div class="music-now"><b id="musicTitle">Neon Drive</b><span id="musicArtist">Synth lead · Original track</span></div><div class="music-volume">Volume <input id="musicVolume" type="range" min="0" max="100" value="48"><span id="musicVolumeText">48%</span></div><div class="playlist" id="playlist"></div><div class="music-seek"><input id="musicSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Song progress"><div class="music-times"><span id="musicElapsed">0:00</span><span id="musicLeft">-0:00</span></div></div><div class="music-controls"><button class="btn" id="musicPrev">⏮ Prev</button><button class="btn" id="musicPlay">▶ Play</button><button class="btn" id="musicNext">Next ⏭</button></div><div class="music-controls"><button class="btn" id="musicShuffle">🔀 Shuffle Off</button></div></div></div></header>
+<header><div class="logo">GOOGLE <span>DRIVE</span></div><div class="sub">Google Drive</div><div class="grow"></div><button class="btn" id="settingsMainBtn">⚙ Settings</button><button class="btn" id="soundToggle">🔊 Sound On</button><div class="music-wrap"><button class="btn" id="playlistToggle">🎵 Playlist</button><div class="music-panel" id="musicPanel"><div class="music-head"><strong>🎵 Music Player</strong><div class="grow"></div><button class="tiny btn" id="musicLoad">➕ Add Songs</button><input id="musicFilePicker" type="file" accept="audio/*" multiple hidden><button class="tiny btn" id="musicEdit">✏️ Edit</button><button class="tiny btn" id="playlistClose">✕</button></div><div class="library-bar"><button class="tiny btn library-tab active" data-library="games">🎮 Game Playlist</button><button class="tiny btn library-tab" data-library="uploads">📥 Uploaded</button><button class="tiny btn" id="createPlaylist">＋ Create Playlist</button></div><div class="custom-playlists" id="customPlaylists"></div><div class="library-note" id="libraryNote">Built-in game music. Your uploaded songs stay on this browser.</div><div class="music-now"><b id="musicTitle">Neon Drive</b><span id="musicArtist">Synth lead · Original track</span></div><div class="music-volume">Volume <input id="musicVolume" type="range" min="0" max="100" value="48"><span id="musicVolumeText">48%</span></div><div class="playlist" id="playlist"></div><div class="music-seek"><input id="musicSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Song progress"><div class="music-times"><span id="musicElapsed">0:00</span><span id="musicLeft">-0:00</span></div></div><div class="music-controls"><button class="btn" id="musicPrev">⏮ Prev</button><button class="btn" id="musicPlay">▶ Play</button><button class="btn" id="musicNext">Next ⏭</button></div><div class="music-controls"><button class="btn" id="musicShuffle">🔀 Shuffle Off</button></div></div></div></header>
 <main>
 <section class="hero"><h1>Google Drive</h1></section>
 <div class="grid">
@@ -46,10 +89,10 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 <section class="card external wide" style="--accent:var(--cyan)" onclick="openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')"><span class="tag">Garden Gnomes</span><h2>Garden Gnomes</h2><p>Open the Google Garden Gnomes game directly in a separate tab.</p><div class="play-card"><div class="icon art-icon" data-art="Garden Gnomes"></div><div><strong>Garden Gnomes</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')">OPEN →</button></div></section></section>
 </div></main><footer>Google Drive · bright UI · fullscreen play · sound effects</footer>
 
-<div id="gameModal"><div class="game-shell" id="gameShell"><div class="topbar"><h2 id="gameTitle">Game</h2><div class="spacer"></div><button class="tiny btn" id="soundGame">🔊</button><button class="tiny btn" id="fullscreenBtn">⛶ Fullscreen</button><button class="tiny btn close" id="closeBtn">✕ Exit</button></div><div class="game-area">
+<div id="gameModal"><div class="game-shell" id="gameShell"><div class="topbar"><h2 id="gameTitle">Game</h2><div class="spacer"></div><button class="tiny btn" id="soundGame">🔊</button><button class="tiny btn" id="gameSettingsBtn">⚙ Game Settings</button><button class="tiny btn" id="fullscreenBtn">⛶ Fullscreen</button><button class="tiny btn close" id="closeBtn">✕ Exit</button></div><div class="game-area">
 <div class="setup" id="setup"></div>
 <div class="game-stage" id="stage"></div>
-</div></div></div>
+</div></div></div><div class="settings-modal" id="settingsModal" aria-hidden="true"><div class="settings-panel"><div class="settings-head"><h2 id="settingsTitle">Settings</h2><div class="grow"></div><button class="tiny btn" id="settingsClose">✕ Close</button></div><div id="settingsBody"></div></div></div>
 
 <script>
 const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null;
@@ -1151,6 +1194,130 @@ function mountBackgroundDecor(){
 }
 mountGameArt();
 mountBackgroundDecor();
+
+let siteSettings={
+theme:'midnight',gridCols:2,artScale:'normal',decor:'high',motion:true,sfx:true,sfxVolume:.75,music:true,musicVolume:.48,fullscreen:true
+};
+const siteSettingDefaults={...siteSettings};
+let reactionDelay='normal',breakerPace='normal';
+
+function loadSiteSettings(){
+  try{const saved=JSON.parse(localStorage.getItem('googleDriveArcadeSettings')||'null');if(saved)siteSettings={...siteSettings,...saved}}catch(e){}
+  sound=siteSettings.sfx;
+  musicVolume=siteSettings.musicVolume;
+  applySiteSettings();
+}
+function saveSiteSettings(){
+  try{localStorage.setItem('googleDriveArcadeSettings',JSON.stringify(siteSettings))}catch(e){}
+}
+function applySiteSettings(){
+  document.body.dataset.theme=siteSettings.theme==='slate'?'slate':siteSettings.theme==='light'?'light':'midnight';
+  document.body.dataset.artScale=siteSettings.artScale;
+  document.body.dataset.decor=siteSettings.decor;
+  document.body.dataset.motion=siteSettings.motion?'on':'off';
+  document.documentElement.style.setProperty('--grid-cols',String(siteSettings.gridCols));
+  const root=document.documentElement;
+  const accents={cyan:'#38d9ff',pink:'#ff4fc3',green:'#54e38e',gold:'#ffd34e'};
+  if(siteSettings.accent)root.style.setProperty('--cyan',accents[siteSettings.accent]||'#38d9ff');
+  sound=!!siteSettings.sfx;
+  const st=$('soundToggle');if(st)st.textContent=sound?'🔊 Sound On':'🔇 Sound Off';
+  const sg=$('soundGame');if(sg)sg.textContent=sound?'🔊':'🔇';
+  if($('musicVolume')){$('musicVolume').value=Math.round(siteSettings.musicVolume*100);$('musicVolumeText').textContent=Math.round(siteSettings.musicVolume*100)+'%'}
+  musicVolume=siteSettings.musicVolume;
+  if(musicGain)musicGain.gain.value=musicVolume;
+  if(musicAudio)musicAudio.volume=musicVolume;
+  if(!siteSettings.music)stopMusic();
+}
+function settingsGameName(){
+  return current==='tennis'?'Tennis Rally':current==='hockey'?'Hockey':current==='reaction'?'Reaction Game':current==='click'?'Click Test':current==='breaker'?'Neon Breaker':current==='skydash'?'Flappy Bird':current==='snake'?'Neon Snake':current==='defender'?'Space Defender':current==='runner'?'Neon Runner':current==='vehicle'?'Tank Arena':current==='memory'?'Memory Match':'Game';
+}
+function selectHTML(id,label,opts,value,note=''){
+  return '<div class="setting-row"><label>'+label+(note?'<small>'+note+'</small>':'')+'</label><select class="settings-control" id="'+id+'">'+opts.map(o=>'<option value="'+o[0]+'" '+(String(o[0])===String(value)?'selected':'')+'>'+o[1]+'</option>').join('')+'</select></div>'
+}
+function checkHTML(id,label,value,note=''){
+  return '<div class="setting-row"><label>'+label+(note?'<small>'+note+'</small>':'')+'</label><input class="settings-control" type="checkbox" id="'+id+'" '+(value?'checked':'')+'></div>'
+}
+function rangeHTML(id,label,value,min,max,note=''){
+  return '<div class="setting-row"><label>'+label+(note?'<small>'+note+'</small>':'')+'</label><input class="settings-control" type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+value+'"></div>'
+}
+function gameSpecificSettings(){
+  if(current==='tennis'||current==='hockey'){
+    return '<div class="settings-section"><h3>Match</h3>'+selectHTML('gsMode','Match mode',[['cpu','1 Player vs CPU'],['two','2 Players']],mode)+selectHTML('gsDiff','CPU difficulty',[['easy','Easy'],['medium','Medium'],['hard','Hard']],difficulty)+'</div>';
+  }
+  if(current==='breaker'){
+    return '<div class="settings-section"><h3>Neon Breaker</h3>'+selectHTML('gsDiff','Difficulty',[['easy','Easy'],['medium','Medium'],['hard','Hard']],difficulty)+selectHTML('gsPace','Ball pace',[['slow','Slow start'],['normal','Normal start'],['fast','Fast start']],breakerPace)+'</div>';
+  }
+  if(current==='skydash'||current==='snake'||current==='defender'||current==='runner'){
+    return '<div class="settings-section"><h3>'+settingsGameName()+'</h3>'+selectHTML('gsDiff','Difficulty',[['easy','Easy'],['medium','Medium'],['hard','Hard']],difficulty)+'</div>';
+  }
+  if(current==='vehicle'){
+    const vnames=VA_VEHICLES.map((v,i)=>[i,v.name]);
+    const maps=VA_MAPS.map((m,i)=>[i,m.name]);
+    return '<div class="settings-section wide"><h3>Tank Arena</h3>'+selectHTML('gsMode','Match mode',[['cpu','1 Player vs CPU'],['two','2 Players']],mode)+selectHTML('gsDiff','CPU difficulty',[['easy','Easy'],['medium','Medium'],['hard','Hard']],difficulty)+selectHTML('gsV1','Player 1 tank',vnames,vaVehicle1)+selectHTML('gsV2','Player 2 / CPU tank',vnames,vaVehicle2)+selectHTML('gsMap','Map',maps,vaMap)+'</div>';
+  }
+  if(current==='memory'){
+    return '<div class="settings-section"><h3>Memory Match</h3>'+selectHTML('gsDiff','Board difficulty',[['easy','Easy · 4 × 4'],['medium','Medium · 5 × 4'],['hard','Hard · 6 × 6']],difficulty)+'</div>';
+  }
+  if(current==='click'){
+    return '<div class="settings-section"><h3>Click Test</h3>'+selectHTML('gsDuration','Test length',[[1,'1 second'],[3,'3 seconds'],[5,'5 seconds'],[10,'10 seconds']],cpsDuration)+'</div>';
+  }
+  if(current==='reaction'){
+    return '<div class="settings-section"><h3>Reaction Game</h3>'+selectHTML('gsReactionDelay','Signal timing',[['fast','Fast · 0.5–1.5s'],['normal','Normal · 0.7–3.2s'],['slow','Slow · 1.5–4.0s']],reactionDelay)+'</div>';
+  }
+  return '<div class="settings-section"><h3>Game options</h3><div class="settings-note">This game has no additional setup options beyond its controls.</div></div>';
+}
+function renderSettings(scope){
+  const isGame=scope==='game'&&!!current;
+  $('settingsTitle').textContent=isGame?settingsGameName()+' Settings':'Main Settings';
+  let html='<div class="settings-grid">';
+  html+='<div class="settings-section"><h3>Audio</h3>'+checkHTML('setSfx','Sound effects',siteSettings.sfx)+rangeHTML('setSfxVol','Sound volume',Math.round(siteSettings.sfxVolume*100),0,100)+checkHTML('setMusic','Music',siteSettings.music)+rangeHTML('setMusicVol','Music volume',Math.round(siteSettings.musicVolume*100),0,100)+'</div>';
+  html+='<div class="settings-section"><h3>Display & Controls</h3>'+checkHTML('setMotion','Animations',siteSettings.motion)+checkHTML('setFullscreen','Open games in fullscreen',siteSettings.fullscreen)+selectHTML('setDecor','Background game-shape density',[['off','Off'],['low','Low'],['medium','Medium'],['high','High']],siteSettings.decor)+checkHTML('setHints','Show control hints',siteSettings.hints!==false)+'</div>';
+  if(!isGame){
+    html+='<div class="settings-section wide"><h3>Homepage</h3>'+selectHTML('setTheme','Theme',[['midnight','Midnight'],['slate','Slate'],['light','Light']],siteSettings.theme)+selectHTML('setGrid','Games per row',[['2','2'],['3','3'],['4','4']],siteSettings.gridCols)+selectHTML('setArt','Game artwork size',[['small','Small'],['normal','Normal'],['large','Large']],siteSettings.artScale)+selectHTML('setAccent','Accent color',[['cyan','Cyan'],['pink','Pink'],['green','Green'],['gold','Gold']],siteSettings.accent||'cyan')+'</div>';
+  }else html+=gameSpecificSettings();
+  html+='</div>';
+  html+='<div class="settings-note">Settings are saved in this browser. Some game-specific changes take effect when the game starts or restarts. Your uploaded music remains local to this browser.</div>';
+  html+='<div class="settings-actions"><button class="tiny btn" id="settingsReset">'+(isGame?'Reset game options':'Reset all settings')+'</button><button class="startbig btn" id="settingsApply">Save & Close</button></div>';
+  $('settingsBody').innerHTML=html;
+  $('settingsModal').classList.add('open');$('settingsModal').setAttribute('aria-hidden','false');
+  wireSettings(scope);
+}
+function wireSettings(scope){
+  $('setSfx').onchange=e=>{siteSettings.sfx=e.target.checked;sound=siteSettings.sfx;applySiteSettings()};
+  $('setSfxVol').oninput=e=>{siteSettings.sfxVolume=+e.target.value/100;if(audioCtx){/* beep reads this value */}applySiteSettings()};
+  $('setMusic').onchange=e=>{siteSettings.music=e.target.checked;if(siteSettings.music){startMusic()}else stopMusic();applySiteSettings()};
+  $('setMusicVol').oninput=e=>{siteSettings.musicVolume=+e.target.value/100;applySiteSettings()};
+  $('setMotion').onchange=e=>{siteSettings.motion=e.target.checked;applySiteSettings()};
+  $('setFullscreen').onchange=e=>{siteSettings.fullscreen=e.target.checked;saveSiteSettings()};
+  $('setDecor').onchange=e=>{siteSettings.decor=e.target.value;applySiteSettings()};
+  $('setHints').onchange=e=>{siteSettings.hints=e.target.checked;applySiteSettings()};
+  if(scope==='main'){
+    $('setTheme').onchange=e=>{siteSettings.theme=e.target.value;applySiteSettings()};
+    $('setGrid').onchange=e=>{siteSettings.gridCols=+e.target.value;applySiteSettings()};
+    $('setArt').onchange=e=>{siteSettings.artScale=e.target.value;applySiteSettings()};
+    $('setAccent').onchange=e=>{siteSettings.accent=e.target.value;applySiteSettings()};
+  }
+  $('settingsApply').onclick=()=>{saveSiteSettings();closeSettings()};
+  $('settingsReset').onclick=()=>{
+    if(scope==='main'){siteSettings={...siteSettingDefaults};reactionDelay='normal';breakerPace='normal';saveSiteSettings();applySiteSettings();renderSettings('main')}
+    else{reactionDelay='normal';breakerPace='normal';difficulty='easy';mode='cpu';vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
+  };
+}
+function openSettings(scope='main'){renderSettings(scope);clickSound()}
+function closeSettings(){$('settingsModal').classList.remove('open');$('settingsModal').setAttribute('aria-hidden','true')}
+$('settingsMainBtn').onclick=()=>openSettings('main');
+$('gameSettingsBtn').onclick=()=>openSettings('game');
+$('settingsClose').onclick=closeSettings;
+$('settingsModal').addEventListener('click',e=>{if(e.target===$('settingsModal'))closeSettings()});
+loadSiteSettings();
+
+// Apply SFX master volume to all procedural effects without changing their pitch/timing.
+const originalBeep=beep;
+beep=function(freq=520,duration=.07,type='sine',gain=.045){if(!sound)return;return originalBeep(freq,duration,type,gain*Math.max(0,Math.min(1,siteSettings.sfxVolume)))};
+
+// Respect fullscreen preference when a game is opened.
+const originalOpenGame=openGame;
+openGame=async function(type){await originalOpenGame(type);if(!siteSettings.fullscreen&&document.fullscreenElement){try{await document.exitFullscreen()}catch(e){}}};
 </script>
 </body>
 </html>
