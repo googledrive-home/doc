@@ -443,10 +443,10 @@ function startSkyDash(fs){
 function resizeSky(){if(!sc)return;const r=sc.getBoundingClientRect(),d=devicePixelRatio||1;sc.width=r.width*d;sc.height=r.height*d;sctx.setTransform(d,0,0,d,0,0);sw=r.width;sh=r.height}
 function skyConfig(){
   return {
-    easy:{speed:215,gap:188,spawn:1.14,gravity:1250,lift:680},
-    medium:{speed:280,gap:158,spawn:.91,gravity:1325,lift:700},
-    hard:{speed:350,gap:130,spawn:.75,gravity:1400,lift:720}
-  }[difficulty]||{speed:280,gap:158,spawn:.91,gravity:900,lift:535}
+    easy:{speed:215,gap:188,spawn:1.14,gravity:1450,rise:360,fall:650},
+    medium:{speed:280,gap:158,spawn:.91,gravity:1525,rise:390,fall:690},
+    hard:{speed:350,gap:130,spawn:.75,gravity:1600,rise:420,fall:735}
+  }[difficulty]||{speed:280,gap:158,spawn:.91,gravity:1525,rise:390,fall:690}
 }
 function spawnSkyObstacle(){
   const cfg=skyConfig();
@@ -466,8 +466,8 @@ function spawnSkyObstacle(){
 function skyBoost(){
   if(sOver)return;
   const cfg=skyConfig();
-  sPlayer.targetVy=-cfg.lift;
-  sPlayer.vy-=210;
+  sPlayer.targetVy=-cfg.rise;
+  sPlayer.vy=Math.max(sPlayer.vy-80,-cfg.rise);
   sPlayer.boost=.22;
   for(let i=0;i<7;i++)sParticles.push({x:sPlayer.x-18+Math.random()*8,y:sPlayer.y+(Math.random()-.5)*8,vx:-90-Math.random()*90,vy:(Math.random()-.5)*90,life:.35+Math.random()*.25,max:.5,size:2+Math.random()*4,type:'boost'});
   beep(680,.04,'square',.018);
@@ -496,14 +496,14 @@ function sLoop(now){
   if(sSpawn<=0){spawnSkyObstacle();sSpawn=cfg.spawn*(.86+Math.random()*.30)}
 
   const steer=sBoostHeld?-1:0;
-  sPlayer.targetVy=steer? -cfg.lift : Math.min(620,sPlayer.vy+cfg.gravity*dt);
-  const response=steer?12:6;
+  sPlayer.targetVy=steer ? -cfg.rise : Math.min(cfg.fall,sPlayer.vy+cfg.gravity*dt);
+  const response=steer?4.2:7.5;
   sPlayer.vy+=(sPlayer.targetVy-sPlayer.vy)*(1-Math.exp(-response*dt));
-  sPlayer.vy=clamp(sPlayer.vy,-cfg.lift,cfg.lift);
+  sPlayer.vy=clamp(sPlayer.vy,-cfg.rise,cfg.fall);
   sPlayer.y+=sPlayer.vy*dt;
-  sPlayer.targetAngle=clamp(sPlayer.vy/680,-.55,.55);
-  sPlayer.angle+=(sPlayer.targetAngle-sPlayer.angle)*(1-Math.exp(-10*dt));
-  sPlayer.bank+=(clamp((sPlayer.targetVy-sPlayer.vy)/850,-.25,.25)-sPlayer.bank)*(1-Math.exp(-8*dt));
+  sPlayer.targetAngle=clamp(sPlayer.vy/620,-.45,.5);
+  sPlayer.angle+=(sPlayer.targetAngle-sPlayer.angle)*(1-Math.exp(-7.5*dt));
+  sPlayer.bank+=(clamp((sPlayer.targetVy-sPlayer.vy)/760,-.2,.2)-sPlayer.bank)*(1-Math.exp(-6*dt));
   sPlayer.boost=Math.max(0,sPlayer.boost-dt);
 
   if(sPlayer.y<sPlayer.r+8||sPlayer.y>sh-sPlayer.r-8){
@@ -610,66 +610,82 @@ function drawSky(now){
   }
   sctx.globalAlpha=1;
 
-  // Detailed little aircraft — thin fuselage, wide swept wings, same side perspective.
+  // Detailed side-view stunt plane: thin fuselage, broad wings, tail, canopy and propeller.
   sctx.save();
   sctx.globalAlpha=sInvuln>0&&Math.floor(now/70)%2===0?.35:1;
   sctx.translate(sPlayer.x,sPlayer.y);
-  sctx.rotate(sPlayer.angle+sPlayer.bank*.38);
-  sctx.shadowBlur=16;sctx.shadowColor='#17365e55';
+  sctx.rotate(sPlayer.angle+sPlayer.bank*.28);
 
-  // Jet exhaust / boost flame
+  // Exhaust / engine trail
   if(sPlayer.boost>0){
-    const flame=sctx.createLinearGradient(-58,0,-7,0);
-    flame.addColorStop(0,'transparent');flame.addColorStop(.28,'#79ecff');flame.addColorStop(.62,'#ffd34e');flame.addColorStop(1,'#fff');
+    const flame=sctx.createLinearGradient(-46,0,-4,0);
+    flame.addColorStop(0,'transparent');flame.addColorStop(.35,'#6ee7ff');flame.addColorStop(.7,'#ffd34e');flame.addColorStop(1,'#fff');
     sctx.fillStyle=flame;
-    sctx.beginPath();
-    sctx.moveTo(-58,0);
-    sctx.quadraticCurveTo(-35,-7,-8,0);
-    sctx.quadraticCurveTo(-35,7,-58,0);
-    sctx.closePath();sctx.fill();
+    sctx.beginPath();sctx.moveTo(-49,0);sctx.quadraticCurveTo(-27,-6,-5,0);sctx.quadraticCurveTo(-27,6,-49,0);sctx.closePath();sctx.fill();
   }
 
-  // Wide upper/lower wings
-  const wingGrad=sctx.createLinearGradient(-4,-34,28,10);
-  wingGrad.addColorStop(0,'#b9f3ff');wingGrad.addColorStop(.45,'#5bc8f0');wingGrad.addColorStop(1,'#275fae');
-  sctx.fillStyle=wingGrad;
+  // Far wing, darker and slightly offset to sell the side perspective.
+  const farWing=sctx.createLinearGradient(-4,-18,28,-4);
+  farWing.addColorStop(0,'#4c78af');farWing.addColorStop(1,'#284f86');
+  sctx.fillStyle=farWing;
   sctx.beginPath();
-  sctx.moveTo(3,-6);sctx.lineTo(44,-36);sctx.lineTo(12,-1);sctx.lineTo(-10,2);sctx.closePath();sctx.fill();
+  sctx.moveTo(2,-4);sctx.lineTo(40,-24);sctx.lineTo(49,-19);sctx.lineTo(9,-1);sctx.closePath();sctx.fill();
+
+  // Main broad wing.
+  const wing=sctx.createLinearGradient(-5,-27,32,18);
+  wing.addColorStop(0,'#e7f8ff');wing.addColorStop(.35,'#64c5ef');wing.addColorStop(1,'#2a62ad');
+  sctx.fillStyle=wing;
   sctx.beginPath();
-  sctx.moveTo(3,6);sctx.lineTo(44,36);sctx.lineTo(12,1);sctx.lineTo(-10,-2);sctx.closePath();sctx.fill();
-  sctx.strokeStyle='#ffffff9a';sctx.lineWidth=1.3;sctx.stroke();
+  sctx.moveTo(7,-2);sctx.lineTo(44,-31);sctx.lineTo(51,-27);sctx.lineTo(18,3);sctx.lineTo(52,25);sctx.lineTo(44,29);sctx.lineTo(5,6);sctx.closePath();
+  sctx.fill();
+  sctx.strokeStyle='#173f6f';sctx.lineWidth=1.2;sctx.stroke();
 
-  // Thin central fuselage
-  const hull=sctx.createLinearGradient(-25,-6,34,6);
-  hull.addColorStop(0,'#f2fbff');hull.addColorStop(.38,'#80d7f5');hull.addColorStop(.78,'#397fc4');hull.addColorStop(1,'#1f4f92');
-  sctx.fillStyle=hull;
+  // Thin aircraft fuselage.
+  const body=sctx.createLinearGradient(-27,-7,34,7);
+  body.addColorStop(0,'#f8fdff');body.addColorStop(.28,'#79c9ee');body.addColorStop(.72,'#3779bd');body.addColorStop(1,'#1c477f');
+  sctx.fillStyle=body;
   sctx.beginPath();
-  sctx.moveTo(34,0);
-  sctx.quadraticCurveTo(22,-7,4,-6);
-  sctx.lineTo(-19,-4);
-  sctx.quadraticCurveTo(-28,-2,-31,0);
-  sctx.quadraticCurveTo(-28,2,-19,4);
-  sctx.lineTo(4,6);
-  sctx.quadraticCurveTo(22,7,34,0);
-  sctx.closePath();sctx.fill();
-  sctx.strokeStyle='#ffffffbf';sctx.lineWidth=1.5;sctx.stroke();
+  sctx.moveTo(37,0);
+  sctx.quadraticCurveTo(29,-7,15,-7);
+  sctx.lineTo(-18,-5);
+  sctx.quadraticCurveTo(-27,-3,-30,0);
+  sctx.quadraticCurveTo(-27,3,-18,5);
+  sctx.lineTo(15,7);
+  sctx.quadraticCurveTo(29,7,37,0);
+  sctx.closePath();
+  sctx.fill();
+  sctx.strokeStyle='#ffffffc0';sctx.lineWidth=1.4;sctx.stroke();
 
-  // Tailplane
-  sctx.fillStyle='#4d93d4';
-  sctx.beginPath();sctx.moveTo(-19,-3);sctx.lineTo(-31,-13);sctx.lineTo(-25,-2);sctx.closePath();sctx.fill();
-  sctx.beginPath();sctx.moveTo(-19,3);sctx.lineTo(-31,13);sctx.lineTo(-25,2);sctx.closePath();sctx.fill();
+  // Tailplane and vertical tail fin.
+  sctx.fillStyle='#2f68ac';
+  sctx.beginPath();sctx.moveTo(-16,-3);sctx.lineTo(-31,-13);sctx.lineTo(-24,-2);sctx.closePath();sctx.fill();
+  sctx.beginPath();sctx.moveTo(-16,3);sctx.lineTo(-31,13);sctx.lineTo(-24,2);sctx.closePath();sctx.fill();
+  sctx.beginPath();sctx.moveTo(-20,-4);sctx.lineTo(-24,-18);sctx.lineTo(-11,-7);sctx.closePath();sctx.fill();
 
-  // Cockpit / canopy
-  const glass=sctx.createLinearGradient(-5,-6,13,4);
-  glass.addColorStop(0,'#f8ffff');glass.addColorStop(.3,'#b9f2ff');glass.addColorStop(1,'#28618f');
-  sctx.fillStyle=glass;
-  sctx.beginPath();sctx.ellipse(7,-2.5,10,5,0,0,Math.PI*2);sctx.fill();
-  sctx.strokeStyle='#1c4b73';sctx.lineWidth=1;sctx.stroke();
+  // Cockpit canopy.
+  const canopy=sctx.createLinearGradient(-1,-8,14,1);
+  canopy.addColorStop(0,'#ffffff');canopy.addColorStop(.28,'#bff5ff');canopy.addColorStop(1,'#24557f');
+  sctx.fillStyle=canopy;
+  sctx.beginPath();sctx.moveTo(-1,-6);sctx.quadraticCurveTo(8,-13,16,-6);sctx.lineTo(19,-1);sctx.lineTo(2,-1);sctx.closePath();sctx.fill();
+  sctx.strokeStyle='#16446d';sctx.lineWidth=1;sctx.stroke();
 
-  // Engine nacelle and nose lamp
-  sctx.fillStyle='#234f88';sctx.beginPath();sctx.ellipse(-13,0,5,3.5,0,0,Math.PI*2);sctx.fill();
-  sctx.fillStyle='#fff4a0';sctx.shadowBlur=9;sctx.shadowColor='#fff4a0';
-  sctx.beginPath();sctx.arc(31,0,3,0,Math.PI*2);sctx.fill();sctx.shadowBlur=0;
+  // Engine pod below the wing.
+  const engine=sctx.createLinearGradient(4,5,22,11);
+  engine.addColorStop(0,'#dceef7');engine.addColorStop(.5,'#6795bc');engine.addColorStop(1,'#244f80');
+  sctx.fillStyle=engine;
+  sctx.beginPath();sctx.ellipse(17,10,10,3.7,0,0,Math.PI*2);sctx.fill();
+
+  // Nose propeller makes the airplane instantly recognizable.
+  sctx.strokeStyle='#dbeeff';sctx.lineWidth=2;
+  sctx.beginPath();sctx.moveTo(40,-11);sctx.lineTo(40,11);sctx.stroke();
+  sctx.beginPath();sctx.moveTo(34,0);sctx.lineTo(46,0);sctx.stroke();
+  sctx.beginPath();sctx.arc(40,0,3,0,Math.PI*2);sctx.fillStyle='#f8fdff';sctx.fill();
+
+  // Nose and wing lights.
+  sctx.fillStyle='#fff2a0';sctx.shadowBlur=8;sctx.shadowColor='#fff2a0';
+  sctx.beginPath();sctx.arc(34,0,2.5,0,Math.PI*2);sctx.fill();
+  sctx.shadowBlur=0;
+  sctx.fillStyle='#ff536f';sctx.beginPath();sctx.arc(43,-25,2,0,Math.PI*2);sctx.fill();
 
   sctx.restore();
   if(sComboFlash>0){
