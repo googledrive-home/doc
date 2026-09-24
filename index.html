@@ -47,7 +47,7 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 <section class="card" style="--accent:#ff6b9d"><span class="tag">Neon Breaker</span><h2>Neon Breaker</h2><p>Smash colorful bricks, stack combos and grab power-ups across increasingly tricky levels.</p><div class="play-card"><div class="icon">🧱</div><div><strong>Neon Breaker</strong><span>3 difficulties · dense grids · upgrades</span></div><button class="btn" onclick="openGame('breaker')">PLAY →</button></div></section>
 <section class="card" style="--accent:#7ee7ff"><span class="tag">Flappy Bird</span><h2>Flappy Bird</h2><p>Classic tap-to-flap gameplay with green pipes, bright sky scenery, a blocky score display and a final boss at 999.</p><div class="play-card"><div class="icon">🐤</div><div><strong>Flappy Bird</strong><span>3 difficulties · pipes · boss at 999</span></div><button class="btn" onclick="openGame('skydash')">PLAY →</button></div></section>
 <section class="card" style="--accent:#39ffb6"><span class="tag">Neon Snake</span><h2>Neon Snake</h2><p>Classic grid snake with fruit, growing length, score, neon styling and three difficulty levels.</p><div class="play-card"><div class="icon">🐍</div><div><strong>Neon Snake</strong><span>3 difficulties · fruit · fixed arena</span></div><button class="btn" onclick="openGame('snake')">PLAY →</button></div></section>
-<section class="card" style="--accent:#7b8cff"><span class="tag">Space Defender</span><h2>Space Defender</h2><p>Defend your ship through waves and levels, upgrade your firepower and shoot whenever you are ready.</p><div class="play-card"><div class="icon">🛸</div><div><strong>Space Defender</strong><span>3 difficulties · waves · levels · SHOOT button</span></div><button class="btn" onclick="openGame('defender')">PLAY →</button></div></section>
+<section class="card" style="--accent:#7b8cff"><span class="tag">Space Defender</span><h2>Space Defender</h2><p>Defend your ship through waves and levels, face 12 different alien types and build combos with your energy pulse.</p><div class="play-card"><div class="icon">🛸</div><div><strong>Space Defender</strong><span>3 difficulties · waves · levels · 12 alien types · PULSE</span></div><button class="btn" onclick="openGame('defender')">PLAY →</button></div></section>
 <section class="card" style="--accent:#ffcc4d"><span class="tag">Neon Runner</span><h2>Neon Runner</h2><p>Auto-run through a glowing city, jump obstacles, collect coins and keep going until you crash.</p><div class="play-card"><div class="icon">🏃</div><div><strong>Neon Runner</strong><span>3 difficulties · coins · power-ups · endless run</span></div><button class="btn" onclick="openGame('runner')">PLAY →</button></div></section>
 <section class="card" style="--accent:#c88cff"><span class="tag">Memory Match</span><h2>Memory Match</h2><p>Flip cards, remember their positions and match every pair using as few moves as possible.</p><div class="play-card"><div class="icon">🧠</div><div><strong>Memory Match</strong><span>3 difficulties · combos · move counter</span></div><button class="btn" onclick="openGame('memory')">PLAY →</button></div></section>
 <section class="card external wide" style="--accent:var(--orange)"><span class="tag">Moto X3M</span><h2>Moto X3M</h2><p>Open Moto X3M directly in a separate tab.</p><div class="play-card"><div class="icon">🏍️</div><div><strong>Moto X3M</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://archive.org/details/moto-x3m_202309')">OPEN →</button></div></section>
@@ -148,7 +148,7 @@ else if(current==='reaction'){s.innerHTML='<div class="bigicon">⚡</div><h1>Rea
 else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break every brick, build combos and catch lots of upgrades: ×2, ×3, +1, +3, fire, bomb, shield, magnet, turbo, multi-ball and more.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced speed</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast ball · tighter paddle</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
 else if(current==='skydash'){s.innerHTML='<div class="bigicon">🐤</div><h1>Flappy Bird</h1><p>Tap to flap through green pipes. Reach 999 to unlock the Final Sky Boss.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wider gaps · gentler gravity</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Classic pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Tighter gaps · faster pipes</small></button></div><p class="hint">Space · Arrow Up · W · click · tap to flap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else if(current==='snake'){s.innerHTML='<div class="bigicon">🐍</div><h1>Neon Snake</h1><p>Classic fruit-eating grid snake with a fixed arena, score, growing body and three difficulty levels.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower snake · no obstacles</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Faster snake · a few blocks</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast snake · more blocks</small></button></div><p class="hint">WASD · Arrow Keys · touch the game area</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startNeonSnake(true)}}
-else if(current==='defender'){s.innerHTML='<div class="bigicon">🛸</div><h1>Space Defender</h1><p>Defend your ship through waves and levels and survive the boss waves.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Gentler waves</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced enemies</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast waves · tougher boss</small></button></div><p class="hint">Move: A/D or ←/→ · Shoot: Space or SHOOT button</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSpaceDefender(true)}}
+else if(current==='defender'){s.innerHTML='<div class="bigicon">🛸</div><h1>Space Defender</h1><p>Defend your ship through waves and levels and survive the boss waves.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Gentler waves</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced enemies</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast waves · tougher boss</small></button></div><p class="hint">Move: A/D or ←/→ · Hold Space or hold the PULSE button</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSpaceDefender(true)}}
 else if(current==='runner'){s.innerHTML='<div class="bigicon">🏃</div><h1>Neon Runner</h1><p>Run automatically, jump obstacles, collect coins and grab power-ups without stopping.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower speed · wider timing</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast speed · tight timing</small></button></div><p class="hint">Jump: Space · W · Arrow Up · click / tap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startNeonRunner(true)}}
 else if(current==='memory'){s.innerHTML='<div class="bigicon">🧠</div><h1>Memory Match</h1><p>Flip matching pairs and clear the board with as few moves as possible.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>4 × 4 board</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>5 × 4 board</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>6 × 6 board</small></button></div><p class="hint">Click or tap cards to flip them</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startMemoryMatch(true)}}
 else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Lab</h1><p>Choose your test length, then smash the button.</p><div class="options">'+[1,3,5,10].map(n=>'<button class="option '+(n===3?'selected ':'')+'btn" data-sec="'+n+'">'+n+' SECOND'+(n>1?'S':'')+'</button>').join('')+'</div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('.option').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}
@@ -167,7 +167,7 @@ let hctx,hc,hw=0,hh=0,hkeys={},h1,h2,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0;
 let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bEffectText='',bEffectTimer=0,bGameOver=false,bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
 let sctx,sc,sw=0,sh=0,sPlayer,sPipes=[],sParticles=[],sScore=0,sAnim=0,sLast=0,sPipeTimer=0,sReady=true,sStarted=false,sOver=false,sBest=0,sSkyTime=0,sBirdFrame=0,sGroundOffset=0,sBossActive=false,sBossTimer=0,sBossX=0,sBossY=0,sBossPulse=0,sBossOrbs=[],sBossCleared=false;
 let nsnakeCtx,nsnakeCanvas,nsw=0,nsh=0,nsnakeAnim=0,nsnakeLast=0,nsnakeRunning=false,nsnakeOver=false,nsnakeDir={x:1,y:0},nsnakeNextDir={x:1,y:0},nsnakeBody=[],nsnakeFruit={x:0,y:0},nsnakeScore=0,nsnakeTick=0,nsnakeTime=0,nsnakeFruitPulse=0,nsnakeBest=0;
-let defCtx,defCanvas,defw=0,defh=0,defAnim=0,defLast=0,defRunning=false,defOver=false,defPlayer=null,defBullets=[],defEnemies=[],defStars=[],defScore=0,defWave=1,defLevel=1,defWaveTimer=0,defSpawnTimer=0,defShotTimer=0,defFlash=0,defBoss=null;
+let defCtx,defCanvas,defw=0,defh=0,defAnim=0,defLast=0,defRunning=false,defOver=false,defPlayer=null,defBullets=[],defEnemies=[],defStars=[],defScore=0,defWave=1,defLevel=1,defWaveTimer=0,defSpawnTimer=0,defShotTimer=0,defFlash=0,defBoss=null,defPulseHeld=false,defCombo=0,defComboTimer=0,defShield=0,defOverdrive=0;
 let runCtx,runCanvas,runw=0,runh=0,runAnim=0,runLast=0,runRunning=false,runOver=false,runPlayer=null,runObstacles=[],runCoins=[],runPowers=[],runScore=0,runDistance=0,runSpeed=0,runSpawnTimer=0,runCoinTimer=0,runPowerTimer=0,runShield=0,runMagnet=0,runDouble=0,runJumpLock=0,runGround=0,runBest=0;
 let memoryTimer=null,memoryRunning=false,memoryOver=false,memoryCards=[],memoryFirst=null,memoryLock=false,memoryMoves=0,memoryMatches=0,memorySeconds=0,memoryTotal=0;
 
@@ -337,13 +337,16 @@ addEventListener('keydown',e=>{
   if(current==='defender'&&!defOver){
     if(k==='a'||k==='arrowleft'){defPlayer.vx=-1;e.preventDefault()}
     if(k==='d'||k==='arrowright'){defPlayer.vx=1;e.preventDefault()}
-    if(k===' '){defShoot();e.preventDefault()}
+    if(k===' '){defPulseHeld=true;e.preventDefault()}
   }
   if(current==='runner'&&!runOver&&[' ','w','arrowup'].includes(k)){runJump();e.preventDefault()}
 });
 addEventListener('keyup',e=>{
   const k=e.key.toLowerCase();
-  if(current==='defender'&&defPlayer&&['a','d','arrowleft','arrowright'].includes(k))defPlayer.vx=0;
+  if(current==='defender'&&defPlayer){
+    if(['a','d','arrowleft','arrowright'].includes(k))defPlayer.vx=0;
+    if(k===' ')defPulseHeld=false;
+  }
 });
 function snakeConfig(){return {easy:{tick:155,obstacles:0},medium:{tick:125,obstacles:4},hard:{tick:95,obstacles:8}}[difficulty]||{tick:125,obstacles:4}}
 function startNeonSnake(fs){
@@ -380,53 +383,163 @@ function drawNeonSnake(){
   if(nsnakeOver){nsnakeCtx.fillStyle='#06101ddd';nsnakeCtx.fillRect(0,0,nsw,nsh);nsnakeCtx.textAlign='center';nsnakeCtx.font='900 44px system-ui';nsnakeCtx.fillStyle='#fff';nsnakeCtx.fillText('GAME OVER',nsw/2,nsh*.42);nsnakeCtx.font='800 19px system-ui';nsnakeCtx.fillStyle='#ffd34e';nsnakeCtx.fillText('SCORE: '+nsnakeScore,nsw/2,nsh*.42+40);nsnakeCtx.font='700 15px system-ui';nsnakeCtx.fillStyle='#d9efff';nsnakeCtx.fillText('Press RESTART or tap to play again',nsw/2,nsh*.42+70)}
 }
 
-function defenderConfig(){return {easy:{enemySpeed:42,spawn:.85,health:1,playerSpeed:330,fireRate:.18},medium:{enemySpeed:52,spawn:.68,health:1,playerSpeed:370,fireRate:.16},hard:{enemySpeed:62,spawn:.55,health:2,playerSpeed:410,fireRate:.14}}[difficulty]||{enemySpeed:52,spawn:.68,health:1,playerSpeed:370,fireRate:.16}}
+function defenderConfig(){return {
+  easy:{enemySpeed:40,spawn:.92,health:1,playerSpeed:320,fireRate:.16,count:5},
+  medium:{enemySpeed:50,spawn:.72,health:1,playerSpeed:360,fireRate:.13,count:6},
+  hard:{enemySpeed:61,spawn:.56,health:2,playerSpeed:405,fireRate:.10,count:7}
+}[difficulty]||{enemySpeed:50,spawn:.72,health:1,playerSpeed:360,fireRate:.13,count:6}}
 function startSpaceDefender(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
-  $('stage').innerHTML='<div class="tennis-stage"><canvas id="dc" class="tennis-canvas" style="touch-action:none"></canvas><div class="hud"><span class="scorebig" id="ds">0</span><span id="dwave">Wave 1</span><span id="dlevel">Level 1</span><span id="dlive">Lives: 3</span><button class="tiny btn" id="shootBtn" style="background:#ff5c77;color:#fff;min-width:110px">SHOOT</button><button class="tiny btn" id="restartD">Restart</button></div></div>';
-  if(fs)enterGameFS();cancelAnimationFrame(defAnim);defRunning=true;defOver=false;defScore=0;defWave=1;defLevel=1;defBullets=[];defEnemies=[];defStars=[];defWaveTimer=1.5;defSpawnTimer=.5;defShotTimer=0;defFlash=0;defBoss=null;defPlayer={x:0,y:0,vx:0,lives:3,shotBoost:0,rapid:0};
+  $('stage').innerHTML='<div class="tennis-stage"><canvas id="dc" class="tennis-canvas" style="touch-action:none"></canvas><div class="hud"><span class="scorebig" id="ds">0</span><span id="dwave">Wave 1</span><span id="dlevel">Level 1</span><span id="dlive">Lives: 3</span><span id="dcombo">Combo x0</span><button class="tiny btn" id="shootBtn" style="background:#38d9ff;color:#061522;min-width:110px">PULSE</button><button class="tiny btn" id="restartD">Restart</button></div></div>';
+  if(fs)enterGameFS();
+  cancelAnimationFrame(defAnim);defRunning=true;defOver=false;defScore=0;defWave=1;defLevel=1;defBullets=[];defEnemies=[];defStars=[];defWaveTimer=1.5;defSpawnTimer=.4;defShotTimer=0;defFlash=0;defBoss=null;defPulseHeld=false;defCombo=0;defComboTimer=0;defShield=0;defOverdrive=0;
+  defPlayer={x:0,y:0,vx:0,lives:3};
   defCanvas=$('dc');defCtx=defCanvas.getContext('2d');resizeDefender();defPlayer.x=defw/2;defPlayer.y=defh-65;defLast=performance.now();defAnim=requestAnimationFrame(defenderLoop);window.onresize=resizeDefender;
-  defCanvas.onpointermove=e=>{if(defOver)return;const r=defCanvas.getBoundingClientRect();defPlayer.x=clamp(e.clientX-r.left,28,defw-28)};
-  defCanvas.onpointerdown=()=>defShoot();$('shootBtn').onpointerdown=e=>{e.preventDefault();defShoot()};$('restartD').onclick=()=>startSpaceDefender(false);
+  defCanvas.onpointermove=e=>{if(defOver)return;const r=defCanvas.getBoundingClientRect();defPlayer.x=clamp(e.clientX-r.left,30,defw-30)};
+  defCanvas.onpointerdown=()=>{if(!defOver){defPulseHeld=true;defShoot()}};
+  defCanvas.onpointerup=()=>defPulseHeld=false;defCanvas.onpointerleave=()=>defPulseHeld=false;defCanvas.onpointercancel=()=>defPulseHeld=false;
+  const pb=$('shootBtn');pb.onpointerdown=e=>{e.preventDefault();defPulseHeld=true;defShoot()};pb.onpointerup=e=>{e.preventDefault();defPulseHeld=false};pb.onpointerleave=e=>{e.preventDefault();defPulseHeld=false};pb.onpointercancel=e=>{e.preventDefault();defPulseHeld=false};
+  $('restartD').onclick=()=>startSpaceDefender(false);
 }
-function resizeDefender(){if(!defCanvas)return;const r=defCanvas.getBoundingClientRect(),d=devicePixelRatio||1;defCanvas.width=r.width*d;defCanvas.height=r.height*d;defCtx.setTransform(d,0,0,d,0,0);defw=r.width;defh=r.height;if(defPlayer){defPlayer.y=defh-65;defPlayer.x=clamp(defPlayer.x,28,defw-28)}}
-function defShoot(){if(!defRunning||defOver||!defPlayer)return;const cfg=defenderConfig();if(defShotTimer>0)return;defBullets.push({x:defPlayer.x,y:defPlayer.y-20,vx:0,vy:-650,life:2.2});if(defPlayer.shotBoost>0)defBullets.push({x:defPlayer.x-13,y:defPlayer.y-16,vx:-80,vy:-630,life:2.2},{x:defPlayer.x+13,y:defPlayer.y-16,vx:80,vy:-630,life:2.2});defShotTimer=defPlayer.rapid>0?.06:cfg.fireRate;beep(760,.035,'square',.018)}
-function spawnDefEnemy(){
-  const cfg=defenderConfig(),isBoss=defWave%5===0&&defWaveTimer<.7&&!defBoss;
-  if(isBoss){defBoss={x:defw/2,y:95,w:120,h:58,hp:Math.round(16+defLevel*4),maxHp:Math.round(16+defLevel*4),vx:90};return}
-  const hp=cfg.health+(defLevel>=3?1:0),x=30+Math.random()*Math.max(1,defw-60),type=Math.random()<.25?'zig':'normal';defEnemies.push({x:x,y:40,vx:type==='zig'?55:0,vy:cfg.enemySpeed+(defLevel-1)*7,w:34+Math.random()*12,h:22+Math.random()*8,hp:hp,maxHp:hp,phase:Math.random()*7,points:type==='zig'?18:10,type:type});
+function resizeDefender(){if(!defCanvas)return;const r=defCanvas.getBoundingClientRect(),d=devicePixelRatio||1;defCanvas.width=r.width*d;defCanvas.height=r.height*d;defCtx.setTransform(d,0,0,d,0,0);defw=r.width;defh=r.height;if(defPlayer){defPlayer.y=defh-65;defPlayer.x=clamp(defPlayer.x,30,defw-30)}}
+const DEF_TYPES=['scout','tank','zigzag','spinner','diamond','orbiter','healer','splitter','stealth','comet','ring','crystal'];
+function makeDefEnemy(){
+  const cfg=defenderConfig(),type=DEF_TYPES[Math.floor(Math.random()*DEF_TYPES.length)],x=35+Math.random()*Math.max(1,defw-70);
+  const base=cfg.enemySpeed+(defLevel-1)*5;
+  const stats={
+    scout:{hp:1,speed:1.25,w:28,h:20,points:10},
+    tank:{hp:3,speed:.72,w:46,h:28,points:24},
+    zigzag:{hp:1,speed:1.0,w:34,h:25,points:16},
+    spinner:{hp:2,speed:.9,w:32,h:32,points:20},
+    diamond:{hp:2,speed:1.05,w:30,h:30,points:22},
+    orbiter:{hp:2,speed:.82,w:38,h:38,points:26},
+    healer:{hp:2,speed:.66,w:40,h:26,points:28},
+    splitter:{hp:2,speed:.88,w:40,h:28,points:30},
+    stealth:{hp:1,speed:1.15,w:32,h:24,points:34},
+    comet:{hp:1,speed:1.42,w:24,h:38,points:20},
+    ring:{hp:2,speed:.95,w:40,h:40,points:32},
+    crystal:{hp:3,speed:.58,w:44,h:34,points:38}
+  }[type];
+  return {x:x,y:36,type:type,vx:(Math.random()<.5?-1:1)*(type==='zigzag'?70:type==='orbiter'?45:0),vy:base*stats.speed,w:stats.w,h:stats.h,hp:stats.hp+(cfg.health-1),maxHp:stats.hp+(cfg.health-1),phase:Math.random()*Math.PI*2,points:stats.points,flash:0,children:0};
 }
-function defenderNextWave(){defWave++;if(defWave>5){defLevel++;defWave=1;defPlayer.lives=Math.min(3,defPlayer.lives+1)}defWaveTimer=1.6;defSpawnTimer=.2;defEnemies=[];defBoss=null;beep(1040,.1,'triangle',.04)}
-function defenderDamage(){defPlayer.lives--;defFlash=.45;beep(120,.12,'sawtooth',.04);if(defPlayer.lives<=0){defOver=true;defRunning=false;cancelAnimationFrame(defAnim);drawDefender();return}defEnemies=[];defBoss=null;defPlayer.x=defw/2;defWaveTimer=.8}
+function defShoot(){
+  if(!defRunning||defOver||!defPlayer||defShotTimer>0)return;
+  const spread=defOverdrive>0?.16:.08;
+  defBullets.push({x:defPlayer.x,y:defPlayer.y-22,vx:0,vy:-690,life:2.1,r:4});
+  if(defOverdrive>0){defBullets.push({x:defPlayer.x-10,y:defPlayer.y-16,vx:-95,vy:-640,life:2.1,r:3},{x:defPlayer.x+10,y:defPlayer.y-16,vx:95,vy:-640,life:2.1,r:3})}
+  defShotTimer=defOverdrive>0?.055:defenderConfig().fireRate;
+  beep(760,.028,'square',.015);
+}
+function defenderSpawnWaveEnemy(){
+  if(defEnemies.length>=defenderConfig().count+Math.min(5,defLevel))return;
+  defEnemies.push(makeDefEnemy());
+}
+function defenderNextWave(){
+  defWave++;
+  if(defWave>5){defLevel++;defWave=1;defPlayer.lives=Math.min(3,defPlayer.lives+1);defShield=4;beep(1160,.12,'triangle',.04)}
+  else beep(1040,.08,'triangle',.035);
+  defWaveTimer=1.4;defSpawnTimer=.2;defEnemies=[];defBoss=null;defCombo=Math.min(defCombo,8);
+}
+function defenderMakeBoss(){
+  return {x:defw/2,y:86,w:138,h:66,hp:18+defLevel*5,maxHp:18+defLevel*5,vx:105,phase:0};
+}
+function defenderDamage(){
+  if(defShield>0){defShield=0;beep(960,.08,'triangle',.03);return}
+  defPlayer.lives--;defFlash=.45;defCombo=0;beep(120,.12,'sawtooth',.04);
+  if(defPlayer.lives<=0){defOver=true;defRunning=false;defPulseHeld=false;cancelAnimationFrame(defAnim);drawDefender();return}
+  defEnemies=[];defBoss=null;defPlayer.x=defw/2;defWaveTimer=.9;defShield=2.5;
+}
+function defCollectStar(p){
+  if(p.type==='shield')defShield=6;
+  if(p.type==='overdrive')defOverdrive=7;
+  if(p.type==='bonus')defScore+=100;
+  defStars.splice(defStars.indexOf(p),1);
+  beep(860,.07,'triangle',.03);
+}
 function defenderLoop(now){
   if(!defRunning){drawDefender();return}
-  const dt=Math.min(.033,(now-defLast)/1000||.016);defLast=now;const cfg=defenderConfig();defFlash=Math.max(0,defFlash-dt);defShotTimer=Math.max(0,defShotTimer-dt);defWaveTimer=Math.max(0,defWaveTimer-dt);
-  defPlayer.x=clamp(defPlayer.x+defPlayer.vx*cfg.playerSpeed*dt,28,defw-28);
-  if(defPlayer.shotBoost>0)defPlayer.shotBoost=Math.max(0,defPlayer.shotBoost-dt);if(defPlayer.rapid>0)defPlayer.rapid=Math.max(0,defPlayer.rapid-dt);
-  if(defWaveTimer<=0&&!defBoss&&defEnemies.length<5+defLevel){defSpawnTimer-=dt;if(defSpawnTimer<=0){spawnDefEnemy();defSpawnTimer=cfg.spawn}}
-  if(defWaveTimer<=0&&defEnemies.length===0&&!defBoss&&defSpawnTimer>cfg.spawn*.9&&defScore>0)defenderNextWave();
-  for(let i=defBullets.length-1;i>=0;i--){const b=defBullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.y<-20||b.life<=0){defBullets.splice(i,1);continue}let hit=false;
-    for(let j=defEnemies.length-1;j>=0;j--){const en=defEnemies[j];if(Math.abs(b.x-en.x)<en.w/2+4&&Math.abs(b.y-en.y)<en.h/2+6){en.hp--;defBullets.splice(i,1);hit=true;defScore+=en.hp<=0?en.points:3;if(en.hp<=0){defStars.push({x:en.x,y:en.y,vy:90,type:Math.random()<.5?'double':'shield',life:7});defEnemies.splice(j,1);beep(620,.035,'triangle',.018)}break}}
+  const dt=Math.min(.033,(now-defLast)/1000||.016);defLast=now;
+  const cfg=defenderConfig();defFlash=Math.max(0,defFlash-dt);defShotTimer=Math.max(0,defShotTimer-dt);defWaveTimer=Math.max(0,defWaveTimer-dt);defComboTimer=Math.max(0,defComboTimer-dt);defShield=Math.max(0,defShield-dt);defOverdrive=Math.max(0,defOverdrive-dt);
+  defPlayer.x=clamp(defPlayer.x+defPlayer.vx*cfg.playerSpeed*dt,30,defw-30);
+  if(defPulseHeld)defShoot();
+  if(defWaveTimer<=0&&!defBoss&&defEnemies.length<cfg.count+Math.min(5,defLevel)){defSpawnTimer-=dt;if(defSpawnTimer<=0){defenderSpawnWaveEnemy();defSpawnTimer=cfg.spawn*(.78+Math.random()*.42)}}
+  if(defWaveTimer<=0&&defEnemies.length===0&&!defBoss&&defSpawnTimer>cfg.spawn*.9&&defScore>0){if(defWave%5===0)defBoss=defenderMakeBoss();else defenderNextWave()}
+  for(let i=defBullets.length-1;i>=0;i--){
+    const b=defBullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;if(b.y<-24||b.life<=0){defBullets.splice(i,1);continue}
+    let hit=false;
+    for(let j=defEnemies.length-1;j>=0;j--){
+      const en=defEnemies[j];en.flash=Math.max(0,en.flash-dt);
+      if(Math.abs(b.x-en.x)<en.w/2+4&&Math.abs(b.y-en.y)<en.h/2+6){
+        en.hp--;en.flash=.12;defBullets.splice(i,1);hit=true;
+        if(en.hp<=0){
+          const pts=en.points+Math.min(40,defCombo*2);defScore+=pts;defCombo++;defComboTimer=2.2;
+          defStars.push({x:en.x,y:en.y,vy:85,type:Math.random()<.34?'shield':Math.random()<.5?'overdrive':'bonus',life:6});
+          if(en.type==='splitter'&&en.children<1){for(let k=0;k<2;k++)defEnemies.push({x:en.x+(k?12:-12),y:en.y,vx:(k?55:-55),vy:en.vy*1.12,w:18,h:18,hp:1,maxHp:1,phase:0,type:'scout',points:8,flash:0,children:1})}
+          defEnemies.splice(j,1);beep(620+Math.min(defCombo,10)*28,.035,'triangle',.018)
+        }else beep(420,.02,'square',.012);
+        break
+      }
+    }
     if(hit)continue;
-    if(defBoss&&Math.abs(b.x-defBoss.x)<defBoss.w/2&&Math.abs(b.y-defBoss.y)<defBoss.h/2){defBoss.hp--;defBullets.splice(i,1);defScore+=8;if(defBoss.hp<=0){defScore+=250;defBoss=null;defenderNextWave()}else beep(500,.025,'square',.012)}
+    if(defBoss&&Math.abs(b.x-defBoss.x)<defBoss.w/2&&Math.abs(b.y-defBoss.y)<defBoss.h/2){
+      defBoss.hp--;defBullets.splice(i,1);defScore+=8;defBoss.phase+=.35;
+      if(defBoss.hp<=0){defScore+=300+defLevel*50;defBoss=null;defWaveTimer=1.2;defEnemies=[];defCombo+=5;beep(1200,.18,'triangle',.05)}else beep(520,.025,'square',.012)
+    }
   }
-  for(let i=defEnemies.length-1;i>=0;i--){const en=defEnemies[i];en.phase+=dt;en.x+=Math.sin(en.phase*2.1)*en.vx*dt*.1;en.y+=en.vy*dt;if(en.y>defh-85){defEnemies.splice(i,1);defenderDamage()}}
-  if(defBoss){defBoss.x+=defBoss.vx*dt;if(defBoss.x<70||defBoss.x>defw-70)defBoss.vx*=-1;if(Math.random()<dt*.6)defStars.push({x:defBoss.x,y:defBoss.y+42,vy:95,type:'rapid',life:6})}
-  for(let i=defStars.length-1;i>=0;i--){const p=defStars[i];p.y+=p.vy*dt;p.life-=dt;if(p.life<=0||p.y>defh+20){defStars.splice(i,1);continue}if(Math.hypot(p.x-defPlayer.x,p.y-defPlayer.y)<30){if(p.type==='double')defPlayer.shotBoost=8;if(p.type==='rapid')defPlayer.rapid=8;if(p.type==='shield')defPlayer.lives=Math.min(3,defPlayer.lives+1);defStars.splice(i,1);beep(860,.07,'triangle',.03)}}
-  $('ds').textContent=defScore;$('dwave').textContent='Wave '+defWave;$('dlevel').textContent='Level '+defLevel;$('dlive').textContent='Lives: '+defPlayer.lives;drawDefender();defAnim=requestAnimationFrame(defenderLoop);
+  for(let i=defEnemies.length-1;i>=0;i--){
+    const en=defEnemies[i];en.phase+=dt;
+    if(en.type==='zigzag')en.x+=Math.sin(en.phase*3.2)*en.vx*dt*.16;
+    else if(en.type==='orbiter')en.x+=Math.cos(en.phase*2.4)*en.vx*dt*.1;
+    else if(en.type==='spinner')en.x+=Math.sin(en.phase*4)*35*dt;
+    else if(en.type==='stealth')en.x+=Math.sin(en.phase*2.8)*45*dt;
+    en.x=clamp(en.x,24,defw-24);en.y+=en.vy*dt;
+    if(en.type==='healer'&&Math.random()<dt*.55){const near=defEnemies.find(q=>q!==en&&Math.hypot(q.x-en.x,q.y-en.y)<95);if(near)near.hp=Math.min(near.maxHp,near.hp+1)}
+    if(en.type==='comet')en.vy+=(defLevel*3)*dt;
+    if(en.type==='crystal')en.vy*=1+dt*.02;
+    if(en.y>defh-88){defEnemies.splice(i,1);defenderDamage()}
+  }
+  if(defBoss){defBoss.phase+=dt;defBoss.x+=defBoss.vx*dt;if(defBoss.x<75||defBoss.x>defw-75)defBoss.vx*=-1}
+  for(let i=defStars.length-1;i>=0;i--){const p=defStars[i];p.y+=p.vy*dt;p.life-=dt;if(p.life<=0||p.y>defh+24){defStars.splice(i,1);continue}if(Math.hypot(p.x-defPlayer.x,p.y-defPlayer.y)<32)defCollectStar(p)}
+  if(defComboTimer<=0)defCombo=0;
+  $('ds').textContent=defScore;$('dwave').textContent='Wave '+defWave;$('dlevel').textContent='Level '+defLevel;$('dlive').textContent='Lives: '+defPlayer.lives;$('dcombo').textContent='Combo x'+defCombo;
+  drawDefender();defAnim=requestAnimationFrame(defenderLoop);
 }
 function drawDefender(){
-  defCtx.clearRect(0,0,defw,defh);const bg=defCtx.createLinearGradient(0,0,0,defh);bg.addColorStop(0,'#050a22');bg.addColorStop(1,'#102a48');defCtx.fillStyle=bg;defCtx.fillRect(0,0,defw,defh);
-  for(let i=0;i<40;i++){defCtx.fillStyle=i%2?'#fff':'#38d9ff';defCtx.globalAlpha=.12;defCtx.fillRect((i*79)%defw,(i*47+defWave*4)%defh,2,2)}defCtx.globalAlpha=1;
-  defCtx.save();defCtx.translate(defPlayer.x,defPlayer.y);defCtx.fillStyle='#67e8ff';defCtx.shadowBlur=20;defCtx.shadowColor='#38d9ff';defCtx.beginPath();defCtx.moveTo(0,-22);defCtx.lineTo(20,18);defCtx.lineTo(6,13);defCtx.lineTo(0,23);defCtx.lineTo(-6,13);defCtx.lineTo(-20,18);defCtx.closePath();defCtx.fill();defCtx.restore();
-  for(const b of defBullets){defCtx.fillStyle='#ffe34d';defCtx.fillRect(b.x-3,b.y-12,6,18)}
-  for(const en of defEnemies){defCtx.fillStyle=en.type==='zig'?'#ff5c9b':'#9c7bff';defCtx.shadowBlur=12;defCtx.shadowColor=en.type==='zig'?'#ff5c9b':'#9c7bff';defCtx.fillRect(en.x-en.w/2,en.y-en.h/2,en.w,en.h);defCtx.fillStyle='#10172b';defCtx.fillRect(en.x-10,en.y-4,5,5);defCtx.fillRect(en.x+5,en.y-4,5,5)}
-  if(defBoss){defCtx.fillStyle='#ff6b6b';defCtx.shadowBlur=20;defCtx.shadowColor='#ff4f6d';defCtx.beginPath();defCtx.roundRect(defBoss.x-defBoss.w/2,defBoss.y-defBoss.h/2,defBoss.w,defBoss.h,18);defCtx.fill();defCtx.fillStyle='#fff';defCtx.font='900 14px system-ui';defCtx.textAlign='center';defCtx.fillText('BOSS',defBoss.x,defBoss.y+5);defCtx.fillStyle='#1c1020';defCtx.fillRect(defBoss.x-defBoss.w/2,defBoss.y-defBoss.h/2-12,defBoss.w,5);defCtx.fillStyle='#54e38e';defCtx.fillRect(defBoss.x-defBoss.w/2,defBoss.y-defBoss.h/2-12,defBoss.w*(defBoss.hp/defBoss.maxHp),5)}
-  for(const p of defStars){defCtx.fillStyle=p.type==='shield'?'#7cf7ff':p.type==='rapid'?'#fff06a':'#ffd34e';defCtx.beginPath();defCtx.arc(p.x,p.y,7,0,Math.PI*2);defCtx.fill()}
-  if(defFlash>0){defCtx.fillStyle='#ff4f6d44';defCtx.fillRect(0,0,defw,defh)}
+  defCtx.clearRect(0,0,defw,defh);
+  const bg=defCtx.createLinearGradient(0,0,0,defh);bg.addColorStop(0,'#050a22');bg.addColorStop(1,'#102a48');defCtx.fillStyle=bg;defCtx.fillRect(0,0,defw,defh);
+  for(let i=0;i<60;i++){defCtx.fillStyle=i%3===0?'#fff':i%3===1?'#38d9ff':'#8c7bff';defCtx.globalAlpha=.13;defCtx.fillRect((i*79+defWave*17)%defw,(i*47+defLevel*29)%defh,2,2)}defCtx.globalAlpha=1;
+  defCtx.save();defCtx.translate(defPlayer.x,defPlayer.y);defCtx.fillStyle=defOverdrive>0?'#fff36a':'#67e8ff';defCtx.shadowBlur=22;defCtx.shadowColor=defOverdrive>0?'#fff36a':'#38d9ff';
+  defCtx.beginPath();defCtx.moveTo(0,-25);defCtx.lineTo(30,18);defCtx.lineTo(11,12);defCtx.lineTo(0,27);defCtx.lineTo(-11,12);defCtx.lineTo(-30,18);defCtx.closePath();defCtx.fill();
+  defCtx.fillStyle='#d9faff';defCtx.fillRect(-7,-11,14,8);defCtx.restore();
+  if(defShield>0){defCtx.strokeStyle='#7cf7ff';defCtx.lineWidth=4;defCtx.beginPath();defCtx.arc(defPlayer.x,defPlayer.y,34,0,Math.PI*2);defCtx.stroke()}
+  for(const b of defBullets){defCtx.fillStyle='#ffe34d';defCtx.shadowBlur=12;defCtx.shadowColor='#ffe34d';defCtx.beginPath();defCtx.arc(b.x,b.y,b.r,0,Math.PI*2);defCtx.fill();defCtx.shadowBlur=0}
+  for(const en of defEnemies){
+    const f=en.flash>0;defCtx.save();defCtx.translate(en.x,en.y);defCtx.rotate(en.type==='spinner'?en.phase*2:en.type==='ring'?en.phase:0);defCtx.shadowBlur=14;defCtx.shadowColor=f?'#fff':enemyColor(en.type);defCtx.fillStyle=f?'#fff':enemyColor(en.type);drawEnemyShape(defCtx,en.type,en.w,en.h);defCtx.restore();
+    if(en.hp>1){defCtx.fillStyle='#08101e';defCtx.fillRect(en.x-en.w/2,en.y-en.h/2-8,en.w,4);defCtx.fillStyle='#54e38e';defCtx.fillRect(en.x-en.w/2,en.y-en.h/2-8,en.w*(en.hp/en.maxHp),4)}
+  }
+  if(defBoss){defCtx.save();defCtx.translate(defBoss.x,defBoss.y);defCtx.fillStyle='#ff5f72';defCtx.shadowBlur=24;defCtx.shadowColor='#ff4f6d';defCtx.beginPath();defCtx.roundRect(-69,-33,138,66,20);defCtx.fill();defCtx.fillStyle='#10172b';defCtx.beginPath();defCtx.arc(-34,-2,7,0,Math.PI*2);defCtx.arc(34,-2,7,0,Math.PI*2);defCtx.fill();defCtx.fillStyle='#fff';defCtx.font='900 12px system-ui';defCtx.textAlign='center';defCtx.fillText('BOSS',0,5);defCtx.restore();defCtx.fillStyle='#111';defCtx.fillRect(defBoss.x-69,defBoss.y-45,138,5);defCtx.fillStyle='#54e38e';defCtx.fillRect(defBoss.x-69,defBoss.y-45,138*(defBoss.hp/defBoss.maxHp),5)}
+  for(const p of defStars){defCtx.fillStyle=p.type==='shield'?'#7cf7ff':p.type==='overdrive'?'#fff36a':'#ffd34e';defCtx.shadowBlur=10;defCtx.shadowColor=defCtx.fillStyle;defCtx.beginPath();defCtx.arc(p.x,p.y,7+Math.sin(p.life*5)*1.5,0,Math.PI*2);defCtx.fill();defCtx.shadowBlur=0}
+  if(defOverdrive>0){defCtx.fillStyle='#fff36a';defCtx.font='900 13px system-ui';defCtx.textAlign='left';defCtx.fillText('OVERDRIVE '+Math.ceil(defOverdrive)+'s',18,22)}
+  defCtx.fillStyle='#d7ecff';defCtx.font='700 12px system-ui';defCtx.textAlign='right';defCtx.fillText('12 ALIEN TYPES',defw-18,22);
+  if(defFlash>0){defCtx.fillStyle='#ff4f6d33';defCtx.fillRect(0,0,defw,defh)}
   if(defOver){defCtx.fillStyle='#06101ded';defCtx.fillRect(0,0,defw,defh);defCtx.fillStyle='#fff';defCtx.textAlign='center';defCtx.font='900 46px system-ui';defCtx.fillText('GAME OVER',defw/2,defh*.42);defCtx.font='800 19px system-ui';defCtx.fillStyle='#ffd34e';defCtx.fillText('FINAL SCORE: '+defScore,defw/2,defh*.42+42);defCtx.font='700 15px system-ui';defCtx.fillStyle='#dcecff';defCtx.fillText('Press RESTART to play again',defw/2,defh*.42+72)}
 }
-
+function enemyColor(type){return {scout:'#38d9ff',tank:'#ff6b6b',zigzag:'#ff4fc3',spinner:'#ffd34e',diamond:'#8e7dff',orbiter:'#54e38e',healer:'#72d7ff',splitter:'#ff8a45',stealth:'#a7b3ff',comet:'#fff06a',ring:'#b78cff',crystal:'#8ff0ff'}[type]||'#fff'}
+function drawEnemyShape(ctx,type,w,h){
+  const x=-w/2,y=-h/2;
+  if(type==='scout'){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w/2,h/2);ctx.lineTo(0,h/4);ctx.lineTo(-w/2,h/2);ctx.closePath();ctx.fill()}
+  else if(type==='tank'){ctx.beginPath();ctx.roundRect(x,y,w,h,8);ctx.fill();ctx.fillStyle='#152238';ctx.fillRect(x+7,y+6,w-14,5)}
+  else if(type==='zigzag'){ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(-w/5,-h/2);ctx.lineTo(0,0);ctx.lineTo(w/5,-h/2);ctx.lineTo(w/2,0);ctx.lineTo(w/5,h/2);ctx.lineTo(0,0);ctx.lineTo(-w/5,h/2);ctx.closePath();ctx.fill()}
+  else if(type==='spinner'){ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?h/2:Math.min(w,h)/4;const px=Math.cos(a)*r,py=Math.sin(a)*r;i===0?ctx.moveTo(px,py):ctx.lineTo(px,py)}ctx.closePath();ctx.fill()}
+  else if(type==='diamond'){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w/2,0);ctx.lineTo(0,h/2);ctx.lineTo(-w/2,0);ctx.closePath();ctx.fill()}
+  else if(type==='orbiter'){ctx.beginPath();ctx.arc(0,0,Math.min(w,h)*.35,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,0,w*.45,h*.18,0,0,Math.PI*2);ctx.stroke()}
+  else if(type==='healer'){ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(-4,-h*.3,8,h*.6);ctx.fillRect(-w*.22,-4,w*.44,8)}
+  else if(type==='splitter'){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w/2,h*.25);ctx.lineTo(w*.2,h/2);ctx.lineTo(-w*.2,h/2);ctx.lineTo(-w/2,h*.25);ctx.closePath();ctx.fill();ctx.fillStyle='#141a2d';ctx.fillRect(-2,-5,4,10)}
+  else if(type==='stealth'){ctx.beginPath();ctx.moveTo(-w/2,h/2);ctx.lineTo(0,y);ctx.lineTo(w/2,h/2);ctx.lineTo(0,h*.15);ctx.closePath();ctx.fill();ctx.globalAlpha=.5;ctx.fillStyle='#fff';ctx.fillRect(-w*.28,-2,w*.56,4);ctx.globalAlpha=1}
+  else if(type==='comet'){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w/2,0);ctx.lineTo(0,h/2);ctx.lineTo(-w/2,0);ctx.closePath();ctx.fill();ctx.globalAlpha=.5;ctx.fillStyle='#fff';ctx.fillRect(-3,h*.12,6,h*.65);ctx.globalAlpha=1}
+  else if(type==='ring'){ctx.beginPath();ctx.arc(0,0,Math.min(w,h)*.3,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(0,0,Math.min(w,h)*.13,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-over'}
+  else if(type==='crystal'){ctx.beginPath();ctx.moveTo(-w*.45,h*.25);ctx.lineTo(-w*.2,y);ctx.lineTo(w*.1,-h*.1);ctx.lineTo(w*.45,h*.2);ctx.lineTo(w*.2,h*.5);ctx.closePath();ctx.fill()}
+}
 function runnerConfig(){return {easy:{speed:280,gravity:1500,jump:-560,spawn:1.3},medium:{speed:340,gravity:1650,jump:-610,spawn:1.08},hard:{speed:405,gravity:1800,jump:-650,spawn:.88}}[difficulty]||{speed:340,gravity:1650,jump:-610,spawn:1.08}}
 function startNeonRunner(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
