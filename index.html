@@ -157,7 +157,7 @@ function drawTennis(){tctx.clearRect(0,0,tw,th);tctx.fillStyle='#12375b';tctx.fi
 function startHockey(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<canvas id="hc"></canvas><div class="hud"><span class="scorebig" id="hs">0 — 0</span><span>P1: WASD + F</span><span>P2: '+(mode==='two'?'Arrows + L':'Computer')+'</span><button class="tiny btn" id="restartH">Restart</button></div>';if(fs)enterGameFS();initHockey();$('restartH').onclick=()=>{hScore1=0;hScore2=0;resetHPos();$('hs').textContent='0 — 0';beep(300)}}
 let hctx,hc,hw=0,hh=0,hkeys={},h1,h2,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0;
 let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0},bAnim=0,bLast=0,bPaused=false;
-let sctx,sc,sw=0,sh=0,sPlayer,sObstacles=[],sCoins=[],sParticles=[],sScore=0,sLives=3,sShields=0,sAnim=0,sLast=0,sSpawn=0,sDistance=0,sOver=false,sBest=0;
+let sctx,sc,sw=0,sh=0,sPlayer,sObstacles=[],sCoins=[],sParticles=[],sScore=0,sLives=3,sShields=0,sInvuln=0,sAnim=0,sLast=0,sSpawn=0,sDistance=0,sOver=false,sBest=0;
 
 function initHockey(){hc=$('hc');hctx=hc.getContext('2d');resizeH();resetHPos();hLast=performance.now();cancelAnimationFrame(hAnim);hAnim=requestAnimationFrame(hLoop);window.onresize=resizeH}
 function resizeH(){if(!hc)return;const r=hc.getBoundingClientRect(),d=devicePixelRatio||1;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}
@@ -237,7 +237,7 @@ function drawBreaker(){
 function startSkyDash(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="sc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="ss">0</span><span id="sl">Lives: 3</span><span id="sh">Shield: 0</span><span id="sd">0 m</span><button class="tiny btn" id="restartS">Restart</button></div></div>';
-  if(fs)enterGameFS();sScore=0;sLives=3;sShields=0;sDistance=0;sObstacles=[];sCoins=[];sParticles=[];sSpawn=0;sOver=false;
+  if(fs)enterGameFS();sScore=0;sLives=3;sShields=0;sInvuln=0;sDistance=0;sObstacles=[];sCoins=[];sParticles=[];sSpawn=0;sOver=false;
   sc=$('sc');sctx=sc.getContext('2d');resizeSky();sPlayer={x:sw*.22,y:sh*.5,vy:0,r:17,boost:0};sLast=performance.now();cancelAnimationFrame(sAnim);sAnim=requestAnimationFrame(sLoop);window.onresize=resizeSky;
   sc.onpointerdown=()=>{if(sOver){startSkyDash(false)}else{sPlayer.vy=-410;sPlayer.boost=.18;beep(680,.04,'square',.018)}};
   $('restartS').onclick=()=>startSkyDash(false);
@@ -252,18 +252,19 @@ function skyBoost(){if(sOver)return;sPlayer.vy=-410;sPlayer.boost=.18;beep(650,.
 function skyCircleRect(o){return sPlayer.x+sPlayer.r>o.x&&sPlayer.x-sPlayer.r<o.x+o.w&&(sPlayer.y-sPlayer.r<o.gapY||sPlayer.y+sPlayer.r>o.gapY+o.gap)}
 function skyEnd(){sOver=true;beep(130,.16,'sawtooth',.04);sBest=Math.max(sBest,sScore);setTimeout(()=>{if(!$('stage').classList.contains('active')||current!=='skydash')return;alert('Sky Dash over! Score: '+sScore+' · Distance: '+Math.floor(sDistance)+'m')},50)}
 function sLoop(now){
-  if(sOver)return;const dt=Math.min(.033,(now-sLast)/1000||.016);sLast=now;const cfg=skyConfig();sDistance+=cfg.speed*dt*.045;sScore+=dt*3; sSpawn-=dt;if(sSpawn<=0){spawnSkyObstacle();sSpawn=cfg.spawn*(.86+Math.random()*.32)}
-  sPlayer.vy+=cfg.gravity*dt;sPlayer.vy=clamp(sPlayer.vy,-500,620);sPlayer.y+=sPlayer.vy*dt;if(sPlayer.y<sPlayer.r+5||sPlayer.y>sh-sPlayer.r-5)skyEnd();
-  for(let i=sObstacles.length-1;i>=0;i--){const o=sObstacles[i];o.x-=cfg.speed*dt;o.gapY+=Math.sin(now/900+o.phase)*o.drift*dt;if(o.x+o.w<-20)sObstacles.splice(i,1);else{if(!o.passed&&o.x+o.w<sPlayer.x){o.passed=true;sScore+=100;beep(520,.025,'triangle',.015)}if(o.x<sPlayer.x+45&&o.x+o.w>sPlayer.x-45&&skyCircleRect(o)){if(sShields>0){sShields--;o.x=-200;beep(360,.08,'sine',.025)}else skyEnd()}}}
+  if(sOver)return;const dt=Math.min(.033,(now-sLast)/1000||.016);sLast=now;const cfg=skyConfig();sDistance+=cfg.speed*dt*.045;sScore+=dt*3;sSpawn-=dt;sInvuln=Math.max(0,sInvuln-dt);if(sSpawn<=0){spawnSkyObstacle();sSpawn=cfg.spawn*(.86+Math.random()*.32)}
+  sPlayer.vy+=cfg.gravity*dt;sPlayer.vy=clamp(sPlayer.vy,-500,620);sPlayer.y+=sPlayer.vy*dt;
+  if(sPlayer.y<sPlayer.r+5||sPlayer.y>sh-sPlayer.r-5){if(sInvuln<=0){sLives--;sInvuln=1.1;sPlayer.y=clamp(sPlayer.y,55,sh-55);sPlayer.vy=0;beep(180,.1,'sawtooth',.03);if(sLives<=0){skyEnd();return}}else{sPlayer.y=clamp(sPlayer.y,55,sh-55);sPlayer.vy=0}}
+  for(let i=sObstacles.length-1;i>=0;i--){const o=sObstacles[i];o.x-=cfg.speed*dt;o.gapY+=Math.sin(now/900+o.phase)*o.drift*dt;if(o.x+o.w<-20)sObstacles.splice(i,1);else{if(!o.passed&&o.x+o.w<sPlayer.x){o.passed=true;sScore+=100;beep(520,.025,'triangle',.015)}if(o.x<sPlayer.x+45&&o.x+o.w>sPlayer.x-45&&skyCircleRect(o)){if(sShields>0){sShields--;o.x=-200;beep(360,.08,'sine',.025)}else if(sInvuln<=0){sLives--;sInvuln=1.35;o.x=-200;sPlayer.y=sh*.5;sPlayer.vy=0;beep(180,.1,'sawtooth',.03);if(sLives<=0){skyEnd();return}}}}}
   for(let i=sCoins.length-1;i>=0;i--){const co=sCoins[i];co.x-=cfg.speed*dt;co.spin+=dt*8;if(co.x<-20)sCoins.splice(i,1);else if(Math.hypot(co.x-sPlayer.x,co.y-sPlayer.y)<co.r+sPlayer.r){sCoins.splice(i,1);sScore+=250;if(Math.random()<.18)sShields=Math.min(2,sShields+1);beep(860,.06,'sine',.024)}}
-  if(sPlayer.boost>0)sPlayer.boost-=dt;drawSky();$('ss').textContent=Math.floor(sScore);$('sl').textContent='Lives: '+(sOver?0:sLives);$('sh').textContent='Shield: '+sShields;$('sd').textContent=Math.floor(sDistance)+' m';sAnim=requestAnimationFrame(sLoop);
+  if(sPlayer.boost>0)sPlayer.boost-=dt;drawSky();$('ss').textContent=Math.floor(sScore);$('sl').textContent='Lives: '+sLives;$('sh').textContent='Shield: '+sShields;$('sd').textContent=Math.floor(sDistance)+' m';sAnim=requestAnimationFrame(sLoop);
 }
 function drawSky(){
   const g=sctx.createLinearGradient(0,0,0,sh);g.addColorStop(0,'#5e7bff');g.addColorStop(.52,'#55d8ff');g.addColorStop(1,'#ffd87a');sctx.fillStyle=g;sctx.fillRect(0,0,sw,sh);
   for(let i=0;i<9;i++){const x=((i*170+performance.now()/22)% (sw+160))-80,y=55+(i*71)%Math.max(1,sh-110),r=16+(i%3)*8;sctx.fillStyle='#fff7';sctx.beginPath();sctx.arc(x,y,r,0,Math.PI*2);sctx.arc(x+r*.9,y+2,r*1.15,0,Math.PI*2);sctx.arc(x+r*1.8,y+5,r*.8,0,Math.PI*2);sctx.fill()}
   for(const o of sObstacles){const mover=Math.sin(performance.now()/900+o.phase)*9;sctx.fillStyle='#6d4cff';sctx.shadowBlur=18;sctx.shadowColor='#3b22b866';sctx.fillRect(o.x,0,o.w,o.gapY+mover);sctx.fillRect(o.x,o.gapY+o.gap+mover,o.w,sh-(o.gapY+o.gap+mover));sctx.shadowBlur=0}
   for(const co of sCoins){sctx.save();sctx.translate(co.x,co.y);sctx.rotate(co.spin);sctx.fillStyle='#ffd34e';sctx.strokeStyle='#fff8';sctx.lineWidth=3;sctx.beginPath();sctx.arc(0,0,co.r,0,Math.PI*2);sctx.fill();sctx.stroke();sctx.fillStyle='#7a4b00';sctx.font='900 11px system-ui';sctx.textAlign='center';sctx.fillText('★',0,4);sctx.restore()}
-  sctx.save();sctx.translate(sPlayer.x,sPlayer.y);sctx.rotate(clamp(sPlayer.vy/600,-.45,.45));sctx.fillStyle='#ff4fc3';sctx.beginPath();sctx.moveTo(24,0);sctx.lineTo(-15,-12);sctx.lineTo(-8,0);sctx.lineTo(-15,12);sctx.closePath();sctx.fill();sctx.fillStyle='#ffd34e';sctx.beginPath();sctx.arc(2,0,7,0,Math.PI*2);sctx.fill();sctx.restore();
+  sctx.save();sctx.globalAlpha=sInvuln>0&&Math.floor(performance.now()/80)%2===0?.35:1;sctx.translate(sPlayer.x,sPlayer.y);sctx.rotate(clamp(sPlayer.vy/600,-.45,.45));sctx.fillStyle='#ff4fc3';sctx.beginPath();sctx.moveTo(24,0);sctx.lineTo(-15,-12);sctx.lineTo(-8,0);sctx.lineTo(-15,12);sctx.closePath();sctx.fill();sctx.fillStyle='#ffd34e';sctx.beginPath();sctx.arc(2,0,7,0,Math.PI*2);sctx.fill();sctx.restore();
   sctx.fillStyle='#06213a';sctx.font='900 13px system-ui';sctx.textAlign='left';sctx.fillText('SPACE / CLICK TO BOOST',18,24);sctx.textAlign='right';sctx.fillText(difficulty.toUpperCase()+' · COINS +250 · GATE +100',sw-18,24);
 }
 
