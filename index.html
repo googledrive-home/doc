@@ -141,7 +141,7 @@ function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='bloc
 if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🎾</div><h1>Tennis Rally</h1><p>Return the ball and race to 7 points. Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Gentle CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast CPU</small></button></div><p class="hint">P1: W/S · P2: Arrow Keys</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startTennis(true)}} 
 else if(current==='hockey'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Human-like</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Pro-level challenge</small></button></div><p class="hint">P1: WASD + F to shoot · P2: Arrow Keys + L</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startHockey(true)}} 
 else if(current==='reaction'){s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Wait for green. Click as fast as you can. False starts are counted.</p><div class="options"><button class="option selected btn">🎯 Classic<br><small>Random signal</small></button></div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';$('startSetup').onclick=()=>{clickSound();startReaction(true)}}
-else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break a huge square-block field, find special patterns and catch upgrades like x2, x3, +3, multi-ball, slow and wide paddle.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Dense + faster</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Dense + armored blocks</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
+else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break a huge square-block field, find special patterns and catch upgrades like x2, x3, +3, multi-ball, slow and wide paddle.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>70 × 22 · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>85 × 28 · denser</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>100 × 35 · maximum density</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
 else if(current==='skydash'){s.innerHTML='<div class="bigicon">☁️</div><h1>Sky Dash</h1><p>Guide your glider through moving gates, collect coins and keep your run alive as the sky gets faster.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wide gaps · slower pace</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Mixed patterns</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Narrow gaps · fast pace</small></button></div><p class="hint">Fly: Space / ↑ / click / tap · Collect coins for bonus points</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Lab</h1><p>Choose your test length, then smash the button.</p><div class="options">'+[1,3,5,10].map(n=>'<button class="option '+(n===3?'selected ':'')+'btn" data-sec="'+n+'">'+n+' SECOND'+(n>1?'S':'')+'</button>').join('')+'</div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('.option').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}
 async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
@@ -196,10 +196,10 @@ function resizeBreaker(){
 }
 function breakerConfig(){
   return {
-    easy:{speed:300,paddle:172,cols:30,rows:15},
-    medium:{speed:370,paddle:146,cols:30,rows:15},
-    hard:{speed:440,paddle:120,cols:30,rows:15}
-  }[difficulty]||{speed:370,paddle:146,cols:30,rows:15};
+    easy:{speed:300,paddle:172,cols:70,rows:22},
+    medium:{speed:370,paddle:146,cols:85,rows:28},
+    hard:{speed:440,paddle:120,cols:100,rows:35}
+  }[difficulty]||{speed:370,paddle:146,cols:85,rows:28};
 }
 function breakerPattern(){
   return ['checkerboard','diamond','cross','fortress','zigzag','clusters'][Math.floor(Math.random()*6)];
@@ -227,16 +227,20 @@ function resetBreakerLevel(){
   bPaddle.w=cfg.paddle;bPaddle.h=16;bPaddle.y=bh-55;bPaddle.x=bw/2;bBricks=[];bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0};bScoreMult=1;bMultTimer=0;
   bPattern=breakerPattern();
   const colors=['#ff4fc3','#ffd34e','#38d9ff','#54e38e','#ff8a45','#a48bff','#73f6ff','#ff78e5'];
-  const gap=2,left=18,top=46,brickH=Math.max(22,Math.min(29,(bh-110)/cfg.rows));
-  const brickW=(bw-left*2-gap*(cfg.cols-1))/cfg.cols;
+  const gap=1,left=12,top=42;
+  const blockSize=Math.max(4,Math.floor((bw-left*2-gap*(cfg.cols-1))/cfg.cols));
+  const brickW=blockSize,brickH=blockSize;
   const specialCells=breakerSpecialCells(bPattern,cfg.rows,cfg.cols);
   for(let r=0;r<cfg.rows;r++){
     for(let col=0;col<cfg.cols;col++){
       const key=r+':'+col;
       let kind='normal';
-      if(specialCells.has(key)||Math.random()<(difficulty==='hard'?.055:difficulty==='medium'?.04:.028))kind=breakerRandomSpecialKind();
+      if(specialCells.has(key)||Math.random()<(difficulty==='hard'?.035:difficulty==='medium'?.025:.018))kind=breakerRandomSpecialKind();
       const hp=kind==='armored'||(difficulty==='hard'&&Math.random()<.035)?2:1;
-      bBricks.push({x:left+col*(brickW+gap),y:top+r*(brickH+gap),w:brickW,h:brickH,hp,maxHp:hp,color:colors[(r*2+col)%colors.length],kind,alive:true,spawned:false,flash:0});
+      bBricks.push({
+        x:left+col*(brickW+gap),y:top+r*(brickH+gap),w:brickW,h:brickH,
+        hp,maxHp:hp,color:colors[(r*2+col)%colors.length],kind,alive:true,spawned:false,flash:0
+      });
     }
   }
   const ang=(Math.random()<.5?-1:1)*(0.35+Math.random()*.52),sp=cfg.speed*(1+.06*(bLevel-1));
