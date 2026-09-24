@@ -293,7 +293,7 @@ function drawBreaker(){
   }
   bctx.fillStyle='#ffffffb0';bctx.font='700 13px system-ui';bctx.textAlign='left';bctx.fillText('BREAK EVERY BRICK • POWER-UPS DROP RANDOMLY',18,21);bctx.textAlign='right';bctx.fillText('WIDE '+(bPowerTimers.wide>0?Math.ceil(bPowerTimers.wide)+'s':'—')+'  SLOW '+(bPowerTimers.slow>0?Math.ceil(bPowerTimers.slow)+'s':'—'),bw-18,21);
 }
-addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')&&[' ','arrowup','w'].includes(e.key.toLowerCase())){e.preventDefault();sBoostHeld=true;skyBoost()}});addEventListener('keyup',e=>{if([' ','arrowup','w'].includes(e.key.toLowerCase()))sBoostHeld=false});
+addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')&&[' ','arrowup','w'].includes(e.key.toLowerCase())){e.preventDefault();skyFlap()}});
 function startSkyDash(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="sc" class="tennis-canvas" aria-label="Flappy Bird game"></canvas><div class="hud"><span class="scorebig" id="ss">0</span><span id="fbState">GET READY</span><button class="tiny btn" id="restartS">Restart</button></div></div>';
