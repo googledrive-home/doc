@@ -331,6 +331,7 @@ function reactionTargetHit(){
 function reactionBoxClick(){
   if(reactionState==='wait'){clearTimeout(reactionTimer);reactionState='idle';$('rm').textContent='FALSE START';$('rs').textContent='Wait for the signal';$('rr').textContent='—';$('rb').className='reaction-full result';beep(140,.14,'sawtooth',.04);return}
   if(reactionState!=='go')return;
+  if((reactionMode==='target'||reactionMode==='sequence')&&event?.target?.id!=='reactionTarget')return;
   const ms=Math.round(performance.now()-reactionStartTime);reactionTimes.push(ms);reactionState='idle';reactionClearTarget();beep(760,.07,'triangle',.03);
   if(reactionMode==='challenge' && reactionRound<4){
     reactionRound++;$('rm').textContent='ROUND '+reactionRound+' DONE';$('rs').textContent=ms+' ms';$('rprogress').textContent='Round '+(reactionRound+1)+' / 5';reactionTimer=setTimeout(reactionStartSignal,520);return;
@@ -348,15 +349,11 @@ function startClick(fs){
   setTimeout(cpsStart,120);
 }
 function cpsStart(){
-  clearInterval(cpsTimer);cpsCount=0;cpsRunning=true;cpsStartTime=performance.now();clickMisses=0;
+  clearInterval(cpsTimer);cpsCount=0;clickTimes=[];cpsRunning=true;cpsStartTime=performance.now();clickMisses=0;
   const duration=clickMode==='sprint3'?3:clickMode==='sprint10'?10:clickMode==='endurance'?30:clickMode==='consistency'?10:999;
   $('ct').textContent=clickMode==='twenty'?'GO! Reach 20 clicks':'GO! '+duration+' seconds';$('cv').textContent='0.00';$('cb').textContent='CLICK!';
-  window.__clickSecondCounts=[];window.__clickNextSecond=1;
   cpsTimer=setInterval(()=>{
     const elapsed=(performance.now()-cpsStartTime)/1000;
-    while(elapsed>=window.__clickNextSecond && window.__clickSecondCounts.length<(clickMode==='endurance'||clickMode==='consistency'?30:10)){
-      const sec=window.__clickNextSecond;window.__clickSecondCounts.push({second:sec,count:Math.max(0,cpsCount-(window.__clickSecondCounts.reduce((a,b)=>a+b.count,0)))});window.__clickNextSecond++;
-    }
     const finish=clickMode==='twenty'&&cpsCount>=20 || clickMode!=='twenty'&&elapsed>=duration;
     if(finish)cpsFinish();
   },40);
@@ -373,7 +370,7 @@ function cpsFinish(){
     const cps=total/used;
     $('cv').textContent=cps.toFixed(2);
     if(clickMode==='consistency'){
-      const counts=[];for(let s=1;s<=used;s++){const before=window.__clickSecondCounts.filter(x=>x.second===s).reduce((a,b)=>a+b.count,0);counts.push(before)}
+      const counts=Array.from({length:used},()=>0);for(const t of clickTimes){const sec=Math.min(used-1,Math.floor((t-cpsStartTime)/1000));if(sec>=0)counts[sec]++}
       const avg=counts.reduce((a,b)=>a+b,0)/counts.length;const variance=counts.reduce((a,b)=>a+Math.pow(b-avg,2),0)/counts.length;const spread=Math.sqrt(variance);
       $('clickMetric').textContent='Average '+cps.toFixed(2)+' CPS · spread ±'+spread.toFixed(2);
       $('ct').textContent='Lower spread = steadier clicking';
