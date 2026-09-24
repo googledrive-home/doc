@@ -57,7 +57,7 @@ body[data-theme="light"] .settings-section{background:#e9f0f6;border-color:#c0d0
 body[data-theme="light"] .settings-control{background:#fff;color:#17263a;border-color:#b7c9d9}
 body[data-art-scale="small"] .art-icon{width:56px;height:56px}
 body[data-art-scale="large"] .art-icon{width:76px;height:76px}
-body[data-motion="off"] *{animation:none!important;transition:none!important}
+body[data-motion="off"] *{animation:none!important;transition:none!important}body[data-hints="off"] .hint{display:none}
 body[data-decor="off"] #bgDecor{display:none}
 body[data-decor="low"] #bgDecor .bg-shape:nth-child(n+7){display:none}
 body[data-decor="medium"] #bgDecor .bg-shape:nth-child(n+13){display:none}
@@ -262,7 +262,7 @@ function goal(){if($('hs'))$('hs').textContent=hScore1+' — '+hScore2;beep(110,
 function drawH(){hctx.clearRect(0,0,hw,hh);hctx.fillStyle='#dff9ff';hctx.fillRect(0,0,hw,hh);hctx.strokeStyle='#76bfd0';hctx.lineWidth=3;hctx.strokeRect(12,24,hw-24,hh-48);hctx.beginPath();hctx.moveTo(hw/2,24);hctx.lineTo(hw/2,hh-24);hctx.stroke();hctx.beginPath();hctx.arc(hw/2,hh/2,52,0,Math.PI*2);hctx.stroke();let gt=hh/2-58;hctx.fillStyle='#ff5570';hctx.fillRect(0,gt,22,116);hctx.fillRect(hw-22,gt,22,116);function player(p,n,c){hctx.beginPath();hctx.fillStyle=c;hctx.arc(p.x,p.y,21,0,Math.PI*2);hctx.fill();hctx.strokeStyle='#fff';hctx.lineWidth=3;hctx.stroke();hctx.fillStyle='#fff';hctx.font='900 13px system-ui';hctx.textAlign='center';hctx.fillText(n,p.x,p.y+5)}player(h1,'1','#2979ff');player(h2,'2','#ff426d');hctx.beginPath();hctx.fillStyle='#111';hctx.arc(puck.x,puck.y,9,0,Math.PI*2);hctx.fill()}
 function startReaction(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="reaction-full" id="rb"><div><strong id="rm">READY?</strong><span id="rs">Press Start Below</span></div></div><div class="hud"><button class="tiny btn" id="reactionStartBtn">Start Round</button><button class="tiny btn" id="reactionRestartBtn">Restart</button><span class="scorebig" id="rr">— ms</span></div>';if(fs)enterGameFS();reactionReset();$('reactionStartBtn').onclick=reactionStartRound;$('reactionRestartBtn').onclick=reactionReset}
 function reactionReset(){clearTimeout(reactionTimer);reactionState='idle';const b=$('rb');if(!b)return;b.className='reaction-full';$('rm').textContent='READY?';$('rs').textContent='Press Start Round';$('rr').textContent='— ms'}
-function reactionStartRound(){clearTimeout(reactionTimer);reactionState='wait';$('rb').className='reaction-full wait';$('rm').textContent='WAIT...';$('rs').textContent='Do not click yet';beep(260,.06);reactionTimer=setTimeout(()=>{reactionState='go';reactionStartTime=performance.now();$('rb').className='reaction-full ready';$('rm').textContent='CLICK!';$('rs').textContent='NOW!';beep(880,.1,'square',.05)},700+Math.random()*2500)}
+function reactionStartRound(){clearTimeout(reactionTimer);reactionState='wait';$('rb').className='reaction-full wait';$('rm').textContent='WAIT...';$('rs').textContent='Do not click yet';beep(260,.06);const delayRange=reactionDelay==='fast'?[500,1500]:reactionDelay==='slow'?[1500,4000]:[700,3200];reactionTimer=setTimeout(()=>{reactionState='go';reactionStartTime=performance.now();$('rb').className='reaction-full ready';$('rm').textContent='CLICK!';$('rs').textContent='NOW!';beep(880,.1,'square',.05)},delayRange[0]+Math.random()*(delayRange[1]-delayRange[0]))}
 function reactionBoxClick(){if(reactionState==='wait'){clearTimeout(reactionTimer);reactionState='idle';$('rb').className='reaction-full result';$('rm').textContent='FALSE START';$('rs').textContent='Try again';beep(140,.16,'sawtooth',.04)}else if(reactionState==='go'){const ms=Math.round(performance.now()-reactionStartTime);reactionState='idle';$('rb').className='reaction-full result';$('rm').textContent=ms+' MS';$('rs').textContent='Press Start Round';$('rr').textContent=ms+' ms';beep(760,.1,'triangle',.04)}}
 function startClick(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="click-full"><div class="cps-number" id="cv">0.00</div><div style="color:#9db4cf;margin-bottom:15px">CLICKS PER SECOND</div><button class="click-button btn" id="cb">CLICK!</button><div class="hud"><span id="ct">Ready</span><button class="tiny btn" id="cr">Restart</button></div></div>';if(fs)enterGameFS();$('cb').onclick=()=>{if(!cpsRunning)return;cpsCount++;const e=(performance.now()-cpsStartTime)/1000;$('cv').textContent=(cpsCount/Math.max(e,.001)).toFixed(2);beep(620+Math.min(cpsCount,12)*18,.025,'square',.018)};$('cr').onclick=()=>startClick(false);setTimeout(cpsStart,120)}
 function cpsStart(){clearInterval(cpsTimer);cpsCount=0;cpsRunning=true;cpsStartTime=performance.now();$('ct').textContent='GO! '+cpsDuration+' seconds';$('cv').textContent='0.00';beep(700,.08);cpsTimer=setInterval(()=>{if((performance.now()-cpsStartTime)/1000>=cpsDuration)cpsFinish()},30)}
@@ -276,7 +276,7 @@ function startBreaker(fs){
   bc.onpointermove=e=>{if(bGameOver)return;const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{};$('restartB').onclick=()=>startBreaker(false);
 }
 function resizeBreaker(){if(!bc)return;const r=bc.getBoundingClientRect(),d=devicePixelRatio||1;bc.width=r.width*d;bc.height=r.height*d;bctx.setTransform(d,0,0,d,0,0);bw=r.width;bh=r.height;if(bPaddle){bPaddle.y=bh-55;bPaddle.x=clamp(bPaddle.x||bw/2,bPaddle.w/2,bw-bPaddle.w/2)}}
-function breakerConfig(){return {easy:{speed:220,paddle:170,rows:6,cols:9},medium:{speed:245,paddle:145,rows:7,cols:10},hard:{speed:270,paddle:118,rows:8,cols:10}}[difficulty]||{speed:245,paddle:145,rows:7,cols:10}}
+function breakerConfig(){const base={easy:{speed:220,paddle:170,rows:6,cols:9},medium:{speed:245,paddle:145,rows:7,cols:10},hard:{speed:270,paddle:118,rows:8,cols:10}}[difficulty]||{speed:245,paddle:145,rows:7,cols:10};const mul=breakerPace==='slow'?.84:breakerPace==='fast'?1.16:1;return {...base,speed:base.speed*mul}}
 function breakerSpeedTarget(){
   const cfg=breakerConfig();
   const total=Math.max(1,bBricks.length);
@@ -1214,7 +1214,7 @@ function applySiteSettings(){
   document.body.dataset.theme=siteSettings.theme==='slate'?'slate':siteSettings.theme==='light'?'light':'midnight';
   document.body.dataset.artScale=siteSettings.artScale;
   document.body.dataset.decor=siteSettings.decor;
-  document.body.dataset.motion=siteSettings.motion?'on':'off';
+  document.body.dataset.motion=siteSettings.motion?'on':'off';document.body.dataset.hints=siteSettings.hints===false?'off':'on';
   document.documentElement.style.setProperty('--grid-cols',String(siteSettings.gridCols));
   const root=document.documentElement;
   const accents={cyan:'#38d9ff',pink:'#ff4fc3',green:'#54e38e',gold:'#ffd34e'};
@@ -1299,8 +1299,8 @@ function wireSettings(scope){
   }
   $('settingsApply').onclick=()=>{saveSiteSettings();closeSettings()};
   $('settingsReset').onclick=()=>{
-    if(scope==='main'){siteSettings={...siteSettingDefaults};reactionDelay='normal';breakerPace='normal';saveSiteSettings();applySiteSettings();renderSettings('main')}
-    else{reactionDelay='normal';breakerPace='normal';difficulty='easy';mode='cpu';vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
+    if(scope==='main'){siteSettings={...siteSettingDefaults};reactionDelay='normal';breakerPace='normal';cpsDuration=3;saveSiteSettings();applySiteSettings();renderSettings('main')}
+    else{reactionDelay='normal';breakerPace='normal';difficulty='easy';mode='cpu';cpsDuration=3;vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
   };
 }
 function openSettings(scope='main'){renderSettings(scope);clickSound()}
