@@ -44,7 +44,7 @@ main{max-width:1220px;margin:auto;padding:34px 20px 70px}.hero{display:block;mar
 <section class="card" style="--accent:var(--cyan)"><span class="tag">Hockey</span><h2>Hockey</h2><p>Choose your match type, then play on a full rink with goals, puck physics, scoring and controls.</p><div class="play-card"><div class="icon">🏒</div><div><strong>Hockey</strong><span>1 Player vs Computer or 2 Players</span></div><button class="btn" onclick="openGame('hockey')">PLAY →</button></div></section>
 <section class="card" style="--accent:var(--pink)"><span class="tag">Reaction Game</span><h2>Reaction Game</h2><p>Wait for the signal, hit the screen fast and get your exact reaction time in milliseconds.</p><div class="play-card"><div class="icon">⚡</div><div><strong>Reaction Game</strong><span>Fullscreen test + instant results</span></div><button class="btn" onclick="openGame('reaction')">PLAY →</button></div></section>
 <section class="card" style="--accent:var(--yellow)"><span class="tag">Click Test</span><h2>Click Test</h2><p>Pick 1, 3, 5 or 10 seconds, then see how many clicks per second you can get.</p><div class="play-card"><div class="icon">🖱️</div><div><strong>Click Test</strong><span>Custom timer + live CPS</span></div><button class="btn" onclick="openGame('click')">PLAY →</button></div></section>
-<section class="card" style="--accent:#ff6b9d"><span class="tag">Neon Breaker</span><h2>Neon Breaker</h2><p>Smash a dense grid of tiny square blocks, discover changing structures and collect random x2, x3, +3 and special upgrades.</p><div class="play-card"><div class="icon">🧱</div><div><strong>Neon Breaker</strong><span>3 difficulties · dense grids · upgrades</span></div><button class="btn" onclick="openGame('breaker')">PLAY →</button></div></section>
+<section class="card" style="--accent:#ff6b9d"><span class="tag">Neon Breaker</span><h2>Neon Breaker</h2><p>Smash colorful rounded blocks, discover changing structures and collect random x2, x3, +3 and special upgrades.</p><div class="play-card"><div class="icon">🧱</div><div><strong>Neon Breaker</strong><span>3 difficulties · dense grids · upgrades</span></div><button class="btn" onclick="openGame('breaker')">PLAY →</button></div></section>
 <section class="card" style="--accent:#7ee7ff"><span class="tag">Sky Dash</span><h2>Sky Dash</h2><p>Climb through a changing sky full of moving gates, coins and challenge patterns while the pace ramps up.</p><div class="play-card"><div class="icon">☁️</div><div><strong>Sky Dash</strong><span>3 difficulties · coins · shields · high score</span></div><button class="btn" onclick="openGame('skydash')">PLAY →</button></div></section>
 <section class="card external wide" style="--accent:var(--orange)"><span class="tag">Moto X3M</span><h2>Moto X3M</h2><p>Open Moto X3M directly in a separate tab.</p><div class="play-card"><div class="icon">🏍️</div><div><strong>Moto X3M</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://archive.org/details/moto-x3m_202309')">OPEN →</button></div></section>
 <section class="card external wide" style="--accent:var(--green)" onclick="openExternal('https://archive.org/details/learn-to-fly')"><span class="tag">Learn to Fly</span><h2>Learn to Fly</h2><p>Open Learn to Fly directly in a separate tab.</p><div class="play-card"><div class="icon">✈️</div><div><strong>Learn to Fly</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://archive.org/details/learn-to-fly')">OPEN →</button></div></section>
@@ -141,7 +141,7 @@ function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='bloc
 if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🎾</div><h1>Tennis Rally</h1><p>Return the ball and race to 7 points. Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Gentle CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast CPU</small></button></div><p class="hint">P1: W/S · P2: Arrow Keys</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startTennis(true)}} 
 else if(current==='hockey'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Human-like</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Pro-level challenge</small></button></div><p class="hint">P1: WASD + F to shoot · P2: Arrow Keys + L</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startHockey(true)}} 
 else if(current==='reaction'){s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Wait for green. Click as fast as you can. False starts are counted.</p><div class="options"><button class="option selected btn">🎯 Classic<br><small>Random signal</small></button></div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';$('startSetup').onclick=()=>{clickSound();startReaction(true)}}
-else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break a huge square-block field, find special patterns and catch upgrades like x2, x3, +3, multi-ball, slow and wide paddle.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>30 × 17 · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>30 × 17 · faster ball</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>30 × 17 · armored blocks</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
+else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break a huge square-block field, find special patterns and catch upgrades like x2, x3, +3, multi-ball, slow and wide paddle.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced speed</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast ball · tighter paddle</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
 else if(current==='skydash'){s.innerHTML='<div class="bigicon">☁️</div><h1>Sky Dash</h1><p>Guide your glider through moving gates, collect coins and keep your run alive as the sky gets faster.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wide gaps · slower pace</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Mixed patterns</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Narrow gaps · fast pace</small></button></div><p class="hint">Fly: Space / ↑ / click / tap · Collect coins for bonus points</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Lab</h1><p>Choose your test length, then smash the button.</p><div class="options">'+[1,3,5,10].map(n=>'<button class="option '+(n===3?'selected ':'')+'btn" data-sec="'+n+'">'+n+' SECOND'+(n>1?'S':'')+'</button>').join('')+'</div><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('.option').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}
 async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
@@ -196,10 +196,10 @@ function resizeBreaker(){
 }
 function breakerConfig(){
   return {
-    easy:{speed:300,paddle:172,cols:30,rows:17},
-    medium:{speed:370,paddle:146,cols:30,rows:17},
-    hard:{speed:440,paddle:120,cols:30,rows:17}
-  }[difficulty]||{speed:370,paddle:146,cols:30,rows:17};
+    easy:{speed:300,paddle:172,cols:30,rows:15},
+    medium:{speed:370,paddle:146,cols:30,rows:15},
+    hard:{speed:440,paddle:120,cols:30,rows:15}
+  }[difficulty]||{speed:370,paddle:146,cols:30,rows:15};
 }
 function breakerPattern(){
   return ['checkerboard','diamond','cross','fortress','zigzag','clusters'][Math.floor(Math.random()*6)];
@@ -227,11 +227,8 @@ function resetBreakerLevel(){
   bPaddle.w=cfg.paddle;bPaddle.h=16;bPaddle.y=bh-55;bPaddle.x=bw/2;bBricks=[];bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0};bScoreMult=1;bMultTimer=0;
   bPattern=breakerPattern();
   const colors=['#ff4fc3','#ffd34e','#38d9ff','#54e38e','#ff8a45','#a48bff','#73f6ff','#ff78e5'];
-  const gap=2,left=18,top=44;
-  const squareW=(bw-left*2-gap*(cfg.cols-1))/cfg.cols;
-  const squareH=(bh-118-gap*(cfg.rows-1))/cfg.rows;
-  const blockSize=Math.max(10,Math.floor(Math.min(squareW,squareH)));
-  const brickW=blockSize,brickH=blockSize;
+  const gap=8,left=26,top=46,brickH=25;
+  const brickW=(bw-left*2-gap*(cfg.cols-1))/cfg.cols;
   const specialCells=breakerSpecialCells(bPattern,cfg.rows,cfg.cols);
   for(let r=0;r<cfg.rows;r++){
     for(let col=0;col<cfg.cols;col++){
@@ -400,37 +397,35 @@ function drawSpecialMark(brick){
 }
 function drawBreaker(){
   bctx.clearRect(0,0,bw,bh);
-  const bg=bctx.createLinearGradient(0,0,bw,bh);bg.addColorStop(0,'#12092f');bg.addColorStop(.5,'#092944');bg.addColorStop(1,'#27102f');bctx.fillStyle=bg;bctx.fillRect(0,0,bw,bh);
-  for(let i=0;i<34;i++){bctx.fillStyle=['#38d9ff18','#ff4fc318','#ffd34e18','#54e38e18'][i%4];bctx.beginPath();bctx.arc((i*97)%bw,35+(i*53)%Math.max(1,bh-55),1.5+(i%3),0,Math.PI*2);bctx.fill()}
+  const bg=bctx.createLinearGradient(0,0,bw,bh);bg.addColorStop(0,'#160b3a');bg.addColorStop(.5,'#092946');bg.addColorStop(1,'#2a1035');bctx.fillStyle=bg;bctx.fillRect(0,0,bw,bh);
+  for(let i=0;i<28;i++){bctx.fillStyle=['#38d9ff22','#ff4fc322','#ffd34e22','#54e38e22'][i%4];bctx.beginPath();bctx.arc((i*97)%bw,50+(i*61)%Math.max(1,bh-70),2+(i%3),0,Math.PI*2);bctx.fill()}
 
   for(const brick of bBricks)if(brick.alive){
     const a=brick.flash>0?1+.18*Math.sin(brick.flash*55):1;
     bctx.save();bctx.translate(brick.x+brick.w/2,brick.y+brick.h/2);bctx.scale(a,a);
     bctx.fillStyle=breakerBlockStyle(brick);
-    bctx.fillRect(-brick.w/2,-brick.h/2,brick.w,brick.h);
-    bctx.strokeStyle=brick.kind==='normal'?'#ffffff30':'#ffffffaa';bctx.lineWidth=brick.kind==='normal'?1:2;bctx.strokeRect(-brick.w/2+.5,-brick.h/2+.5,brick.w-1,brick.h-1);
+    bctx.beginPath();bctx.roundRect(-brick.w/2,-brick.h/2,brick.w,brick.h,8);bctx.fill();
+    bctx.strokeStyle=brick.kind==='normal'?'#ffffff28':'#ffffffaa';bctx.lineWidth=brick.kind==='normal'?1:2;
+    bctx.stroke();
     bctx.restore();
-    if(brick.hp>1){bctx.strokeStyle='#fff';bctx.lineWidth=2;bctx.strokeRect(brick.x+2,brick.y+2,brick.w-4,brick.h-4)}
+    if(brick.hp>1){bctx.strokeStyle='#fff';bctx.lineWidth=2;bctx.beginPath();bctx.roundRect(brick.x+2,brick.y+2,brick.w-4,brick.h-4,6);bctx.stroke()}
     if(brick.kind!=='normal')drawSpecialMark(brick);
   }
 
-  // Paddle
   bctx.fillStyle='#fff';bctx.shadowBlur=22;bctx.shadowColor='#38d9ff';
-  bctx.fillRect(bPaddle.x-bPaddle.w/2,bPaddle.y,bPaddle.w,bPaddle.h);bctx.shadowBlur=0;
-  bctx.fillStyle='#38d9ff';bctx.fillRect(bPaddle.x-bPaddle.w/2+5,bPaddle.y+4,bPaddle.w-10,3);
+  bctx.beginPath();bctx.roundRect(bPaddle.x-bPaddle.w/2,bPaddle.y,bPaddle.w,bPaddle.h,9);bctx.fill();bctx.shadowBlur=0;
 
-  // Balls
   const balls=[bBall,...bBall.balls];
-  for(const ball of balls){
-    bctx.fillStyle='#ffd34e';bctx.shadowBlur=18;bctx.shadowColor='#ffd34e';bctx.beginPath();bctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);bctx.fill();
-  }bctx.shadowBlur=0;
+  for(const ball of balls){bctx.fillStyle='#ffd34e';bctx.shadowBlur=18;bctx.shadowColor='#ffd34e';bctx.beginPath();bctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);bctx.fill()}
+  bctx.shadowBlur=0;
 
   for(const p of bPowerups){
     if(p.type==='spark'){const a=clamp(p.life/.55,0,1);bctx.globalAlpha=a;bctx.fillStyle='#fff';bctx.fillRect(p.x-2,p.y-2,4,4);bctx.globalAlpha=1;continue}
     const colors={wide:'#38d9ff',slow:'#54e38e',multi:'#ff4fc3',x2:'#ffd34e',x3:'#ff8a45',plus3:'#a48bff'};
-    bctx.save();bctx.translate(p.x,p.y);bctx.rotate(p.rot);bctx.fillStyle=colors[p.type]||'#fff';bctx.fillRect(-12,-12,24,24);bctx.fillStyle='#071421';bctx.font='900 11px system-ui';bctx.textAlign='center';bctx.textBaseline='middle';bctx.fillText(p.type==='plus3'?'+3':p.type.toUpperCase(),0,1);bctx.restore();
+    bctx.save();bctx.translate(p.x,p.y);bctx.rotate(p.rot);bctx.fillStyle=colors[p.type]||'#fff';bctx.beginPath();bctx.roundRect(-12,-12,24,24,6);bctx.fill();bctx.fillStyle='#071421';bctx.font='900 11px system-ui';bctx.textAlign='center';bctx.textBaseline='middle';bctx.fillText(p.type==='plus3'?'+3':p.type.toUpperCase(),0,1);bctx.restore();
   }
-  bctx.fillStyle='#ffffffc0';bctx.font='700 12px system-ui';bctx.textAlign='left';bctx.fillText('DENSE SQUARE GRID · RANDOM SPECIALS',18,21);
+
+  bctx.fillStyle='#ffffffc0';bctx.font='700 12px system-ui';bctx.textAlign='left';bctx.fillText('COLORFUL BLOCK GRID · RANDOM SPECIALS',18,21);
   bctx.textAlign='right';bctx.fillText(bPattern.toUpperCase()+' · x2 / x3 / +3 / SPECIALS',bw-18,21);
 }
 addEventListener('keydown',e=>{if(current==='skydash'&&$('gameModal').classList.contains('open')&&[' ','arrowup','w'].includes(e.key.toLowerCase())){e.preventDefault();sBoostHeld=true;skyBoost()}});addEventListener('keyup',e=>{if([' ','arrowup','w'].includes(e.key.toLowerCase()))sBoostHeld=false});
