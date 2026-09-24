@@ -181,9 +181,51 @@ addEventListener('keydown',e=>{if($('gameModal').classList.contains('open')){con
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open'))tkeys[e.key.toLowerCase()]=true});addEventListener('keyup',e=>tkeys[e.key.toLowerCase()]=false);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function moveP(p,u,d,l,r,dt){let dx=(hkeys[r]?1:0)-(hkeys[l]?1:0),dy=(hkeys[d]?1:0)-(hkeys[u]?1:0),len=Math.hypot(dx,dy)||1;p.vx+=dx/len*650*dt;p.vy+=dy/len*650*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);const max=420;const sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}p.x=clamp(p.x+p.vx*dt,42,hw-42);p.y=clamp(p.y+p.vy*dt,50,hh-50)}
-function ai(dt){const cfg={easy:{speed:245,predict:.05,turn:.055,attack:.18,aim:95},medium:{speed:390,predict:.13,turn:.09,attack:.34,aim:70},hard:{speed:520,predict:.22,turn:.13,attack:.58,aim:42}}[difficulty]||{speed:390,predict:.13,turn:.09,attack:.34,aim:70};const incoming=puck.vx>20;const time=Math.max(.05,Math.min(1.1,(hw-55-puck.x)/Math.max(80,puck.vx)));const lead=Math.max(0,puck.vx)*cfg.predict;const targetX=clamp(puck.x+lead,hw/2+38,hw-55);const targetY=clamp(puck.y+puck.vy*(cfg.predict+time*.06),55,hh-55);let dx=targetX-h2.x,dy=targetY-h2.y,len=Math.hypot(dx,dy)||1;h2.vx+=dx/len*cfg.speed*dt;h2.vy+=dy/len*cfg.speed*dt;h2.vx*=Math.pow(cfg.turn,dt);h2.vy*=Math.pow(cfg.turn,dt);h2.x=clamp(h2.x+h2.vx*dt,hw/2+18,hw-42);h2.y=clamp(h2.y+h2.vy*dt,50,hh-50);if(puck.x>hw*(.62-cfg.attack*.08)&&Math.abs(puck.y-h2.y)<cfg.aim&&Math.abs(puck.x-h2.x)<105){h2.vx+=cfg.speed*.65*dt;if(Math.abs(puck.y-h2.y)<cfg.aim*.65&&incoming){h2.vy+=(puck.y-h2.y)*.8*dt}}}
-function hit(p,shoot){let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;if(d<38){let nx=dx/d,ny=dy/d,f=shoot?720:360;puck.x=p.x+nx*34;puck.y=p.y+ny*34;puck.vx=nx*f+p.vx;puck.vy=ny*f+p.vy;beep(shoot?880:520,.045,'square',.018)}}
-function hLoop(now){const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;moveP(h1,'w','s','a','d',dt);mode==='two'?moveP(h2,'arrowup','arrowdown','arrowleft','arrowright',dt):ai(dt);hit(h1,hkeys.f);hit(h2,hkeys.l);puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.35,dt);puck.vy*=Math.pow(.35,dt);if(puck.y<34||puck.y>hh-34){puck.y=clamp(puck.y,34,hh-34);puck.vy*=-.88;beep(240,.03,'sine',.018)}let gt=hh/2-58,gb=hh/2+58;if((puck.x<25||puck.x>hw-25)&&!(puck.y>gt&&puck.y<gb)){puck.x=clamp(puck.x,25,hw-25);puck.vx*=-.88}if(puck.x<6&&puck.y>gt&&puck.y<gb){hScore2++;goal()}if(puck.x>hw-6&&puck.y>gt&&puck.y<gb){hScore1++;goal()}drawH();hAnim=requestAnimationFrame(hLoop)}
+function ai(dt){
+  const cfg={easy:{speed:245,predict:.05,turn:.055,attack:.18,aim:95},medium:{speed:390,predict:.13,turn:.09,attack:.34,aim:70},hard:{speed:520,predict:.22,turn:.13,attack:.58,aim:42}}[difficulty]||{speed:390,predict:.13,turn:.09,attack:.34,aim:70};
+  const safeLeft=hw/2+52,safeRight=hw-68,safeTop=74,safeBottom=hh-74;
+  const puckNearCorner=(puck.x>hw-105&&(puck.y<92||puck.y>hh-92));
+  const aiNearCorner=(h2.x>hw-78&&(h2.y<92||h2.y>hh-92));
+  const needEscape=aiNearCorner&&!puckNearCorner;
+  let targetX,targetY;
+  if(needEscape){
+    targetX=safeRight-50;
+    targetY=clamp(hh/2,120,hh-120);
+  }else{
+    const incoming=puck.vx>20;
+    const travelTime=Math.max(.05,Math.min(1.0,(hw-60-puck.x)/Math.max(100,puck.vx)));
+    const lead=Math.max(0,puck.vx)*cfg.predict;
+    targetX=clamp(puck.x+lead,hw/2+70,safeRight);
+    targetY=clamp(puck.y+puck.vy*(cfg.predict+travelTime*.06),safeTop,safeBottom);
+    if(puckNearCorner){
+      targetX=safeRight-34;
+      targetY=puck.y<hh/2?hh*.39:hh*.61;
+    }
+  }
+  let dx=targetX-h2.x,dy=targetY-h2.y,len=Math.hypot(dx,dy)||1;
+  h2.vx+=dx/len*cfg.speed*dt;h2.vy+=dy/len*cfg.speed*dt;
+  h2.vx*=Math.pow(cfg.turn,dt);h2.vy*=Math.pow(cfg.turn,dt);
+  h2.x=clamp(h2.x+h2.vx*dt,hw/2+18,hw-48);
+  h2.y=clamp(h2.y+h2.vy*dt,58,hh-58);
+  // Never allow the computer to park against the right wall for long.
+  if(h2.x>hw-62){h2.x=hw-62;h2.vx=Math.min(h2.vx,-35)}
+  if(h2.y<66){h2.y=66;h2.vy=Math.max(h2.vy,35)}
+  if(h2.y>hh-66){h2.y=hh-66;h2.vy=Math.min(h2.vy,-35)}
+  if(puck.x>hw*(.62-cfg.attack*.08)&&Math.abs(puck.y-h2.y)<cfg.aim&&Math.abs(puck.x-h2.x)<105){
+    h2.vx+=cfg.speed*.65*dt;
+    if(Math.abs(puck.y-h2.y)<cfg.aim*.65&&puck.vx>20){h2.vy+=(puck.y-h2.y)*.8*dt}
+  }
+}function hit(p,shoot){let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;if(d<38){let nx=dx/d,ny=dy/d,f=shoot?720:360;puck.x=p.x+nx*34;puck.y=p.y+ny*34;puck.vx=nx*f+p.vx;puck.vy=ny*f+p.vy;beep(shoot?880:520,.045,'square',.018)}}
+function unstickPuck(){
+  const margin=38,goalTop=hh/2-58,goalBottom=hh/2+58;
+  const topLeft=puck.x<margin&&puck.y<margin;
+  const topRight=puck.x>hw-margin&&puck.y<margin;
+  const bottomLeft=puck.x<margin&&puck.y>hh-margin;
+  const bottomRight=puck.x>hw-margin&&puck.y>hh-margin;
+  if(topRight||bottomRight){puck.x=hw-42;puck.vx=-Math.max(190,Math.abs(puck.vx));puck.vy=(puck.y<hh/2?1:-1)*Math.max(90,Math.abs(puck.vy));}
+  if(topLeft||bottomLeft){puck.x=42;puck.vx=Math.max(190,Math.abs(puck.vx));puck.vy=(puck.y<hh/2?1:-1)*Math.max(90,Math.abs(puck.vy));}
+}
+function hLoop(now){const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;unstickPuck();moveP(h1,'w','s','a','d',dt);mode==='two'?moveP(h2,'arrowup','arrowdown','arrowleft','arrowright',dt):ai(dt);hit(h1,hkeys.f);hit(h2,hkeys.l);puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.35,dt);puck.vy*=Math.pow(.35,dt);if(puck.y<34||puck.y>hh-34){puck.y=clamp(puck.y,34,hh-34);puck.vy*=-.88;beep(240,.03,'sine',.018)}let gt=hh/2-58,gb=hh/2+58;if((puck.x<25||puck.x>hw-25)&&!(puck.y>gt&&puck.y<gb)){puck.x=clamp(puck.x,25,hw-25);puck.vx*=-.88}if(puck.x<6&&puck.y>gt&&puck.y<gb){hScore2++;goal()}if(puck.x>hw-6&&puck.y>gt&&puck.y<gb){hScore1++;goal()}drawH();hAnim=requestAnimationFrame(hLoop)}
 function goal(){if($('hs'))$('hs').textContent=hScore1+' — '+hScore2;beep(110,.18,'sawtooth',.05);setTimeout(()=>beep(440,.12,'triangle',.04),90);if(hScore1>=5||hScore2>=5){const winner=hScore1>=5?'Player 1':'Player 2';setTimeout(()=>alert(winner+' wins!'),30);hScore1=0;hScore2=0}resetHPos()}
 function drawH(){hctx.clearRect(0,0,hw,hh);hctx.fillStyle='#dff9ff';hctx.fillRect(0,0,hw,hh);hctx.strokeStyle='#76bfd0';hctx.lineWidth=3;hctx.strokeRect(12,24,hw-24,hh-48);hctx.beginPath();hctx.moveTo(hw/2,24);hctx.lineTo(hw/2,hh-24);hctx.stroke();hctx.beginPath();hctx.arc(hw/2,hh/2,52,0,Math.PI*2);hctx.stroke();let gt=hh/2-58;hctx.fillStyle='#ff5570';hctx.fillRect(0,gt,22,116);hctx.fillRect(hw-22,gt,22,116);function player(p,n,c){hctx.beginPath();hctx.fillStyle=c;hctx.arc(p.x,p.y,21,0,Math.PI*2);hctx.fill();hctx.strokeStyle='#fff';hctx.lineWidth=3;hctx.stroke();hctx.fillStyle='#fff';hctx.font='900 13px system-ui';hctx.textAlign='center';hctx.fillText(n,p.x,p.y+5)}player(h1,'1','#2979ff');player(h2,'2','#ff426d');hctx.beginPath();hctx.fillStyle='#111';hctx.arc(puck.x,puck.y,9,0,Math.PI*2);hctx.fill()}
 function startReaction(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="reaction-full" id="rb"><div><strong id="rm">READY?</strong><span id="rs">Press Start Below</span></div></div><div class="hud"><button class="tiny btn" id="reactionStartBtn">Start Round</button><button class="tiny btn" id="reactionRestartBtn">Restart</button><span class="scorebig" id="rr">— ms</span></div>';if(fs)enterGameFS();reactionReset();$('reactionStartBtn').onclick=reactionStartRound;$('reactionRestartBtn').onclick=reactionReset}
