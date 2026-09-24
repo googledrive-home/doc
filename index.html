@@ -95,7 +95,7 @@ body[data-decor="high"] #bgDecor .bg-shape{display:grid}
 </div></div></div><div id="settingsPortal"><div class="settings-modal" id="settingsModal" aria-hidden="true"><div class="settings-panel"><div class="settings-head"><h2 id="settingsTitle">Settings</h2><div class="grow"></div><button class="tiny btn" id="settingsClose">✕ Close</button></div><div id="settingsBody"></div></div></div></div>
 
 <script>
-const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,reactionMode='classic',reactionTarget='',cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null,clickMode='standard',clickMisses=0;
+const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,reactionMode='classic',reactionTarget='',reactionRound=0,reactionTimes=[],reactionSequence=0,reactionSequenceTotal=5,cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null,clickMode='standard',clickMisses=0;
 let musicTimer=null,musicPlaying=false,musicStep=0,musicIndex=0,musicGain=null,musicVolume=0.48,musicAudio=null,localMusicFiles={},musicShuffle=false,musicNoiseBuffer=null,userMusicDb=null,musicStartedAt=0,musicProceduralDuration=0,musicSeeking=false;
 const userMusicMeta=[];
 
@@ -178,7 +178,7 @@ function stopTimers(){clearTimeout(reactionTimer);clearInterval(cpsTimer);cpsRun
 function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='block';stage.classList.remove('active');stage.innerHTML='';$('gameTitle').textContent=current==='hockey'?'Hockey':current==='reaction'?'Reaction Game':current==='click'?'Click Test':current==='breaker'?'Neon Breaker':current==='skydash'?'Flappy Bird':current==='snake'?'Neon Snake':current==='defender'?'Space Defender':current==='runner'?'Neon Runner':current==='vehicle'?'Tank Arena':current==='memory'?'Memory Match':'Tennis Rally';
 if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🎾</div><h1>Tennis Rally</h1><p>Return the ball and race to 7 points. Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Gentle CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast CPU</small></button></div><p class="hint">P1: W/S · P2: Arrow Keys</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startTennis(true)}} 
 else if(current==='hockey'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Human-like</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Pro-level challenge</small></button></div><p class="hint">P1: WASD + F to shoot · P2: Arrow Keys + L</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startHockey(true)}} 
-else if(current==='reaction'){reactionMode='classic';reactionDelay='normal';s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Choose from several reaction tests and track your response time.</p><div class="options"><button class="option selected btn" data-rmode="classic">🟢 Classic Light<br><small>Wait for the green signal</small></button><button class="option btn" data-rmode="sound">🔊 Sound Cue<br><small>React to a beep instead</small></button><button class="option btn" data-rmode="gonogo">🛑 Go / No-Go<br><small>Click GO, ignore WAIT</small></button><button class="option btn" data-rmode="color">🎨 Color Match<br><small>Pick the matching color</small></button><button class="option btn" data-rmode="choice">🎯 Choice Test<br><small>Pick the highlighted target</small></button></div><div class="options" style="margin-top:6px"><button class="option btn" data-rdelay="fast">⚡ Fast</button><button class="option selected btn" data-rdelay="normal">⏱ Normal</button><button class="option btn" data-rdelay="slow">🐢 Slow</button></div><p class="hint">Click or tap the test area. Color and Choice use on-screen buttons.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-rmode]').forEach(b=>b.onclick=()=>{reactionMode=b.dataset.rmode;s.querySelectorAll('[data-rmode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-rdelay]').forEach(b=>b.onclick=()=>{reactionDelay=b.dataset.rdelay;s.querySelectorAll('[data-rdelay]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startReaction(true)}} 
+else if(current==='reaction'){reactionMode='classic';reactionDelay='normal';s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Real reaction challenges with a clear goal and a final result.</p><div class="options"><button class="option selected btn" data-rmode="classic">⚡ Classic<br><small>One clean reaction time</small></button><button class="option btn" data-rmode="target">🎯 Target Hunt<br><small>Click the target that appears</small></button><button class="option btn" data-rmode="challenge">🏁 5-Round Challenge<br><small>Build an average across 5 rounds</small></button><button class="option btn" data-rmode="sequence">🔢 Sequence<br><small>React to 5 targets in a row</small></button></div><div class="options" style="margin-top:6px"><button class="option btn" data-rdelay="fast">FAST</button><button class="option selected btn" data-rdelay="normal">NORMAL</button><button class="option btn" data-rdelay="slow">SLOW</button></div><p class="hint">Targets always appear inside the safe play area. Your result shows reaction time, average, and consistency where relevant.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-rmode]').forEach(b=>b.onclick=()=>{reactionMode=b.dataset.rmode;s.querySelectorAll('[data-rmode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-rdelay]').forEach(b=>b.onclick=()=>{reactionDelay=b.dataset.rdelay;s.querySelectorAll('[data-rdelay]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startReaction(true)}} 
 else if(current==='breaker'){s.innerHTML='<div class="bigicon">🧱</div><h1>Neon Breaker</h1><p>Break every brick, build combos and catch lots of upgrades: ×2, ×3, +1, +3, fire, bomb, shield, magnet, turbo, multi-ball and more.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower ball · wider paddle</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced speed</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast ball · tighter paddle</small></button></div><p class="hint">Move: A/D or ←/→ · Mouse/touch also works</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startBreaker(true)}} 
 else if(current==='skydash'){s.innerHTML='<div class="bigicon">🐤</div><h1>Flappy Bird</h1><p>Tap to flap through green pipes. Reach 999 to unlock the Final Sky Boss.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Wider gaps · gentler gravity</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Classic pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Tighter gaps · faster pipes</small></button></div><p class="hint">Space · Arrow Up · W · click · tap to flap</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startSkyDash(true)}} 
 else if(current==='snake'){s.innerHTML='<div class="bigicon">🐍</div><h1>Neon Snake</h1><p>Classic fruit-eating grid snake with a fixed arena, score, growing body and three difficulty levels.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower snake · no obstacles</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Faster snake · a few blocks</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast snake · more blocks</small></button></div><p class="hint">WASD · Arrow Keys · touch the game area</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startNeonSnake(true)}}
@@ -186,7 +186,7 @@ else if(current==='defender'){s.innerHTML='<div class="bigicon">🛸</div><h1>Sp
 else if(current==='runner'){s.innerHTML='<div class="bigicon">🏃</div><h1>Neon Runner</h1><p>Run automatically, jump obstacles, collect coins and grab power-ups without stopping.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>Slower speed · wider timing</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>Balanced pace</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast speed · tight timing</small></button></div><p class="hint">Jump: Space · W · Arrow Up · click / tap · Crouch: S / Arrow Down</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startNeonRunner(true)}}
 else if(current==='vehicle'){mode='cpu';difficulty='medium';vaVehicle1=0;vaVehicle2=1;vaMap=0;s.innerHTML='<div class="bigicon">🛡️</div><h1>Tank Arena</h1><p>Grounded arcade tanks use a non-weapon tag pulse: each pulse can remove one hit, with 3 hits per round and first to 5 points.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Slower CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Active CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Smarter CPU</small></button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left"><div><strong>PLAYER 1 VEHICLE</strong><div class="options" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0"><button class="option selected btn" data-va-v1="0" style="min-width:0;padding:10px;font-size:11px"><b>⚡ Dash</b><br><small>Fast, nimble</small></button><button class="option btn" data-va-v1="1" style="min-width:0;padding:10px;font-size:11px"><b>🛡️ Bulwark</b><br><small>Heavy, steady</small></button><button class="option btn" data-va-v1="2" style="min-width:0;padding:10px;font-size:11px"><b>🪶 Glider</b><br><small>Smooth turning</small></button><button class="option btn" data-va-v1="3" style="min-width:0;padding:10px;font-size:11px"><b>☄️ Comet</b><br><small>Quick acceleration</small></button><button class="option btn" data-va-v1="4" style="min-width:0;padding:10px;font-size:11px"><b>💫 Pulse</b><br><small>Tight handling</small></button><button class="option btn" data-va-v1="5" style="min-width:0;padding:10px;font-size:11px"><b>✨ Nova</b><br><small>Balanced</small></button><button class="option btn" data-va-v1="6" style="min-width:0;padding:10px;font-size:11px"><b>🌀 Orbit</b><br><small>High turn rate</small></button><button class="option btn" data-va-v1="7" style="min-width:0;padding:10px;font-size:11px"><b>👻 Phantom</b><br><small>Small and slippery</small></button><button class="option btn" data-va-v1="8" style="min-width:0;padding:10px;font-size:11px"><b>🚀 Rocket</b><br><small>Fast top speed</small></button><button class="option btn" data-va-v1="9" style="min-width:0;padding:10px;font-size:11px"><b>🔷 Vector</b><br><small>Precise controls</small></button></div></div><div><strong>PLAYER 2 / CPU VEHICLE</strong><div class="options" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0"><button class="option btn" data-va-v2="0" style="min-width:0;padding:10px;font-size:11px"><b>⚡ Dash</b><br><small>Fast, nimble</small></button><button class="option selected btn" data-va-v2="1" style="min-width:0;padding:10px;font-size:11px"><b>🛡️ Bulwark</b><br><small>Heavy, steady</small></button><button class="option btn" data-va-v2="2" style="min-width:0;padding:10px;font-size:11px"><b>🪶 Glider</b><br><small>Smooth turning</small></button><button class="option btn" data-va-v2="3" style="min-width:0;padding:10px;font-size:11px"><b>☄️ Comet</b><br><small>Quick acceleration</small></button><button class="option btn" data-va-v2="4" style="min-width:0;padding:10px;font-size:11px"><b>💫 Pulse</b><br><small>Tight handling</small></button><button class="option btn" data-va-v2="5" style="min-width:0;padding:10px;font-size:11px"><b>✨ Nova</b><br><small>Balanced</small></button><button class="option btn" data-va-v2="6" style="min-width:0;padding:10px;font-size:11px"><b>🌀 Orbit</b><br><small>High turn rate</small></button><button class="option btn" data-va-v2="7" style="min-width:0;padding:10px;font-size:11px"><b>👻 Phantom</b><br><small>Small and slippery</small></button><button class="option btn" data-va-v2="8" style="min-width:0;padding:10px;font-size:11px"><b>🚀 Rocket</b><br><small>Fast top speed</small></button><button class="option btn" data-va-v2="9" style="min-width:0;padding:10px;font-size:11px"><b>🔷 Vector</b><br><small>Precise controls</small></button></div></div></div><div style="margin-top:14px"><strong>CHOOSE MAP</strong><div class="options" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:8px 0"><button class="option selected btn" data-va-map="0" style="min-width:0;padding:9px;font-size:10px">1. Neon Grid</button><button class="option btn" data-va-map="1" style="min-width:0;padding:9px;font-size:10px">2. Desert Docks</button><button class="option btn" data-va-map="2" style="min-width:0;padding:9px;font-size:10px">3. Frozen Circuit</button><button class="option btn" data-va-map="3" style="min-width:0;padding:9px;font-size:10px">4. Forest Maze</button><button class="option btn" data-va-map="4" style="min-width:0;padding:9px;font-size:10px">5. Crystal Caves</button><button class="option btn" data-va-map="5" style="min-width:0;padding:9px;font-size:10px">6. Sky Bridge</button><button class="option btn" data-va-map="6" style="min-width:0;padding:9px;font-size:10px">7. Factory Floor</button><button class="option btn" data-va-map="7" style="min-width:0;padding:9px;font-size:10px">8. City Blocks</button><button class="option btn" data-va-map="8" style="min-width:0;padding:9px;font-size:10px">9. Lava Loops</button><button class="option btn" data-va-map="9" style="min-width:0;padding:9px;font-size:10px">10. Mega Arena</button></div></div><p class="hint">P1: W/S move · A/D rotate · Space tag pulse &nbsp; · &nbsp; P2: ↑/↓ move · ←/→ rotate · Enter tag pulse</p><p class="hint">First to 5 points. Lose a round after 3 hits. Pickups: BOOST · SHIELD · REPAIR.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-va-v1]').forEach(b=>b.onclick=()=>{vaVehicle1=+b.dataset.vaV1;s.querySelectorAll('[data-va-v1]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-va-v2]').forEach(b=>b.onclick=()=>{vaVehicle2=+b.dataset.vaV2;s.querySelectorAll('[data-va-v2]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-va-map]').forEach(b=>b.onclick=()=>{vaMap=+b.dataset.vaMap;s.querySelectorAll('[data-va-map]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startVehicleArena(true)}}
 else if(current==='memory'){s.innerHTML='<div class="bigicon">🧠</div><h1>Memory Match</h1><p>Flip matching pairs and clear the board with as few moves as possible.</p><div class="options"><button class="option selected btn" data-diff="easy">🟢 Easy<br><small>4 × 4 board</small></button><button class="option btn" data-diff="medium">🟡 Medium<br><small>5 × 4 board</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>6 × 6 board</small></button></div><p class="hint">Click or tap cards to flip them</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';difficulty='easy';s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startMemoryMatch(true)}}
-else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Speed Lab</h1><p>Choose the kind of click-per-second test you want to run.</p><div class="options"><button class="option selected btn" data-cmode="standard">🖱 Standard CPS<br><small>Clicks per second</small></button><button class="option btn" data-cmode="burst">💥 Burst 10<br><small>Time your first 10 clicks</small></button><button class="option btn" data-cmode="endurance">⏱ Endurance<br><small>30-second CPS test</small></button><button class="option btn" data-cmode="target">🎯 Target CPS<br><small>Click only when the target is active</small></button></div><div class="options" id="clickLengthOptions"><button class="option btn" data-sec="1">1 SEC</button><button class="option selected btn" data-sec="3">3 SEC</button><button class="option btn" data-sec="5">5 SEC</button><button class="option btn" data-sec="10">10 SEC</button></div><p class="hint">Standard and Target use the chosen time. Burst ends at 10 clicks. Endurance runs for 30 seconds.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';clickMode='standard';cpsDuration=3;s.querySelectorAll('[data-cmode]').forEach(b=>b.onclick=()=>{clickMode=b.dataset.cmode;s.querySelectorAll('[data-cmode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('clickLengthOptions').style.opacity=(clickMode==='burst'||clickMode==='endurance')?'.5':'1';beep(500)});s.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{cpsDuration=+b.dataset.sec;s.querySelectorAll('[data-sec]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
+else{s.innerHTML='<div class="bigicon">🖱️</div><h1>Click Speed Lab</h1><p>Different tests for speed, stamina, and consistency.</p><div class="options"><button class="option selected btn" data-cmode="sprint3">⚡ 3-Second Sprint<br><small>Fast CPS burst</small></button><button class="option btn" data-cmode="sprint10">⏱ 10-Second Average<br><small>More stable CPS score</small></button><button class="option btn" data-cmode="endurance">🏃 30-Second Endurance<br><small>Hold your pace</small></button><button class="option btn" data-cmode="twenty">🚀 20-Click Sprint<br><small>Time to 20 clicks</small></button><button class="option btn" data-cmode="consistency">📊 Consistency<br><small>Average CPS + spread</small></button></div><p class="hint">Press the large button as fast as you can. Consistency tracks your one-second pace from start to finish.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';clickMode='sprint3';cpsDuration=3;s.querySelectorAll('[data-cmode]').forEach(b=>b.onclick=()=>{clickMode=b.dataset.cmode;s.querySelectorAll('[data-cmode]').forEach(x=>x.classList.remove('selected'));beep(500)});$('startSetup').onclick=()=>{clickSound();startClick(true)}}}async function enterGameFS(){try{if(document.fullscreenElement&&document.fullscreenElement!==$('gameShell'))await document.exitFullscreen();if(!document.fullscreenElement)await $('gameShell').requestFullscreen()}catch(e){console.warn('Fullscreen unavailable:',e)}}
 function startTennis(fs){$('setup').style.display='none';$('stage').classList.add('active');$('stage').innerHTML='<div class="tennis-stage"><canvas id="tc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="ts">0 — 0</span><span>P1: W/S</span><span>P2: '+(mode==='two'?'↑/↓':'Computer')+'</span><button class="tiny btn" id="restartT">Restart</button></div></div>';if(fs)enterGameFS();initTennis();$('restartT').onclick=()=>{tScore1=0;tScore2=0;resetTennis();$('ts').textContent='0 — 0';beep(300)}}
 let tctx,tc,tw=0,th=0,tkeys={},tp1,tp2,tball,tScore1=0,tScore2=0,tAnim=0,tLast=0;
 function initTennis(){tc=$('tc');tctx=tc.getContext('2d');resizeTennis();resetTennis();tLast=performance.now();cancelAnimationFrame(tAnim);tAnim=requestAnimationFrame(tLoop);window.onresize=resizeTennis}
@@ -264,95 +264,127 @@ function reactionChoicesHTML(type){
   const arr=type==='color'?['red','blue','green','yellow']:['A','B','C','D'];
   return '<div id="reactionChoices" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">'+arr.map(x=>'<button class="tiny btn reaction-choice" data-choice="'+x+'" disabled>'+x.toUpperCase()+'</button>').join('')+'</div>';
 }
-function startReaction(fs){
-  $('setup').style.display='none';$('stage').classList.add('active');
-  const choiceMarkup=(reactionMode==='color'||reactionMode==='choice')?reactionChoicesHTML(reactionMode):'';
-  $('stage').innerHTML='<div class="reaction-full" id="rb"><div><strong id="rm">READY?</strong><span id="rs">Press Start Round</span>'+choiceMarkup+'</div></div><div class="hud"><button class="tiny btn" id="reactionStartBtn">Start Round</button><button class="tiny btn" id="reactionRestartBtn">Restart</button><span class="scorebig" id="rr">— ms</span></div>';
-  if(fs)enterGameFS();reactionReset();$('reactionStartBtn').onclick=reactionStartRound;$('reactionRestartBtn').onclick=reactionReset;
-  const b=$('rb');b.onclick=e=>{const btn=e.target.closest('.reaction-choice');if(btn)reactionChoiceClick(btn.dataset.choice);else reactionBoxClick()};
+
+function reactionPlayfieldMarkup(){
+  return '<div class="reaction-full" id="rb"><div class="reaction-message"><strong id="rm">READY?</strong><span id="rs">Press Start Round</span><span id="rprogress"></span></div></div>';
 }
-function reactionReset(){
-  clearTimeout(reactionTimer);reactionState='idle';reactionTarget='';
-  const b=$('rb');if(!b)return;b.className='reaction-full';b.style.background='';$('rm').textContent='READY?';$('rs').textContent='Press Start Round';$('rr').textContent='— ms';
-  document.querySelectorAll('.reaction-choice').forEach(x=>{x.disabled=true;x.style.outline='';});
+function reactionMakeTarget(){
+  const b=$('rb');if(!b)return;
+  const target=document.createElement('button');target.type='button';target.id='reactionTarget';target.className='reaction-target';target.setAttribute('aria-label','Reaction target');
+  target.textContent='';
+  const left=18+Math.random()*64,top=18+Math.random()*54;
+  target.style.left=left+'%';target.style.top=top+'%';
+  target.onclick=e=>{e.stopPropagation();reactionTargetHit()};
+  b.appendChild(target);
 }
-function reactionStartRound(){
-  clearTimeout(reactionTimer);reactionState='wait';reactionTarget='';
-  const b=$('rb');if(!b)return;b.className='reaction-full wait';b.style.background='';$('rm').textContent='WAIT...';$('rs').textContent='Do not respond yet';beep(260,.06);
-  const range=reactionDelay==='fast'?[500,1500]:reactionDelay==='slow'?[1500,4000]:[700,3200];
+function reactionClearTarget(){const t=$('reactionTarget');if(t)t.remove()}
+function reactionRoundDelay(){return reactionDelay==='fast'?[500,1300]:reactionDelay==='slow'?[1500,3600]:[800,2600]}
+function reactionStartSignal(){
+  clearTimeout(reactionTimer);reactionState='wait';reactionClearTarget();
+  const b=$('rb');b.className='reaction-full wait';b.style.background='';$('rm').textContent='WAIT...';$('rs').textContent='Get ready';
+  const range=reactionRoundDelay();
   reactionTimer=setTimeout(()=>{
-    reactionStartTime=performance.now();reactionState='go';
-    document.querySelectorAll('.reaction-choice').forEach(x=>x.disabled=false);
-    if(reactionMode==='sound'){
-      b.className='reaction-full ready';$('rm').textContent='LISTEN!';$('rs').textContent='CLICK AFTER THE BEEP';beep(920,.14,'square',.06);
-    }else if(reactionMode==='gonogo'){
-      const go=Math.random()<.72;reactionState=go?'go':'nogogo';b.className=go?'reaction-full ready':'reaction-full result';$('rm').textContent=go?'GO!':'WAIT';$('rs').textContent=go?'CLICK NOW':'DO NOT CLICK';beep(go?880:320,.1,'square',.05);
-    }else if(reactionMode==='color'){
-      reactionTarget=['red','blue','green','yellow'][Math.floor(Math.random()*4)];b.className='reaction-full ready';b.style.background={red:'#ca555d',blue:'#3e79c5',green:'#4ba56a',yellow:'#c5a83b'}[reactionTarget];$('rm').textContent='MATCH '+reactionTarget.toUpperCase();$('rs').textContent='CLICK THE MATCHING COLOR';
-    }else if(reactionMode==='choice'){
-      reactionTarget=['A','B','C','D'][Math.floor(Math.random()*4)];b.className='reaction-full ready';$('rm').textContent='TARGET: '+reactionTarget;$('rs').textContent='CLICK THE MATCHING BUTTON';
+    reactionState='go';reactionStartTime=performance.now();
+    if(reactionMode==='classic'||reactionMode==='challenge'){
+      b.className='reaction-full ready';$('rm').textContent='GO!';$('rs').textContent='CLICK ANYWHERE';
+      beep(880,.1,'square',.05);
     }else{
-      b.className='reaction-full ready';$('rm').textContent='CLICK!';$('rs').textContent='NOW!';beep(880,.1,'square',.05);
+      b.className='reaction-full ready';$('rm').textContent='TARGET!';$('rs').textContent='CLICK THE TARGET';reactionMakeTarget();beep(880,.08,'triangle',.05);
     }
   },range[0]+Math.random()*(range[1]-range[0]));
 }
-function reactionFinish(label,ms){
-  reactionState='idle';const b=$('rb');b.className='reaction-full result';b.style.background='';$('rm').textContent=label||ms+' MS';$('rs').textContent='Press Start Round';$('rr').textContent=ms?' '+ms+' ms':label;document.querySelectorAll('.reaction-choice').forEach(x=>x.disabled=true);beep(760,.1,'triangle',.04);
+function reactionReset(){
+  clearTimeout(reactionTimer);reactionState='idle';reactionRound=0;reactionTimes=[];reactionSequence=0;reactionClearTarget();
+  const b=$('rb');if(!b)return;b.className='reaction-full';b.style.background='';$('rm').textContent='READY?';$('rs').textContent='Press Start Round';$('rr').textContent='—';
+  $('rprogress').textContent='';
 }
-function reactionChoiceClick(choice){
-  if(reactionMode==='color'||reactionMode==='choice'){
-    if(reactionState!=='go')return;
-    const ms=Math.round(performance.now()-reactionStartTime);
-    if(choice===reactionTarget)reactionFinish('',ms);
-    else{reactionState='idle';reactionFinish('WRONG',ms);$('rs').textContent='Target was '+reactionTarget;beep(160,.16,'sawtooth',.04)}
+function startReaction(fs){
+  $('setup').style.display='none';$('stage').classList.add('active');
+  $('stage').innerHTML=reactionPlayfieldMarkup()+'<div class="hud"><button class="tiny btn" id="reactionStartBtn">Start</button><button class="tiny btn" id="reactionRestartBtn">Restart</button><span class="scorebig" id="rr">—</span></div>';
+  if(fs)enterGameFS();reactionReset();
+  $('reactionStartBtn').onclick=reactionStartRound;$('reactionRestartBtn').onclick=reactionReset;
+  $('rb').onclick=()=>reactionBoxClick();
+}
+function reactionStartRound(){
+  clearTimeout(reactionTimer);reactionTimes=[];reactionRound=0;reactionSequence=0;
+  if(reactionMode==='challenge'){reactionSequenceTotal=5;$('rprogress').textContent='Round 1 / 5'}
+  else if(reactionMode==='sequence'){reactionSequenceTotal=5;$('rprogress').textContent='Target 1 / 5'}
+  else $('rprogress').textContent='';
+  reactionStartSignal();
+}
+function reactionTargetHit(){
+  if(reactionState!=='go')return;
+  const ms=Math.round(performance.now()-reactionStartTime);
+  reactionTimes.push(ms);reactionState='idle';reactionClearTarget();beep(760,.07,'triangle',.03);
+  if(reactionMode==='sequence' && reactionSequence<reactionSequenceTotal-1){
+    reactionSequence++;$('rm').textContent='NICE!';$('rs').textContent=ms+' ms — next target';$('rprogress').textContent='Target '+(reactionSequence+1)+' / '+reactionSequenceTotal;
+    reactionTimer=setTimeout(reactionStartSignal,380);return;
   }
+  if(reactionMode==='challenge' && reactionRound<4){
+    reactionRound++;$('rm').textContent='ROUND '+reactionRound+' DONE';$('rs').textContent=ms+' ms';$('rprogress').textContent='Round '+(reactionRound+1)+' / 5';
+    reactionTimer=setTimeout(reactionStartSignal,520);return;
+  }
+  const avg=Math.round(reactionTimes.reduce((a,b)=>a+b,0)/reactionTimes.length);
+  const best=Math.min(...reactionTimes),worst=Math.max(...reactionTimes);
+  reactionState='idle';const b=$('rb');b.className='reaction-full result';$('rm').textContent=(reactionMode==='classic'?'RESULT':reactionMode==='target'?'TARGET RESULT':reactionMode==='challenge'?'5-ROUND COMPLETE':'SEQUENCE COMPLETE');$('rs').textContent='Avg '+avg+' ms · Best '+best+' ms · Slowest '+worst+' ms';$('rr').textContent=avg+' ms avg';$('rprogress').textContent='';beep(980,.12,'triangle',.05);
 }
 function reactionBoxClick(){
-  if(reactionState==='wait'){clearTimeout(reactionTimer);reactionFinish('FALSE START',0);return}
-  if(reactionState==='nogogo'){reactionFinish('GOOD — YOU WAITED',0);return}
-  if(reactionState==='go'){
-    const ms=Math.round(performance.now()-reactionStartTime);reactionFinish('',ms);
+  if(reactionState==='wait'){clearTimeout(reactionTimer);reactionState='idle';$('rm').textContent='FALSE START';$('rs').textContent='Wait for the signal';$('rr').textContent='—';$('rb').className='reaction-full result';beep(140,.14,'sawtooth',.04);return}
+  if(reactionState!=='go')return;
+  const ms=Math.round(performance.now()-reactionStartTime);reactionTimes.push(ms);reactionState='idle';reactionClearTarget();beep(760,.07,'triangle',.03);
+  if(reactionMode==='challenge' && reactionRound<4){
+    reactionRound++;$('rm').textContent='ROUND '+reactionRound+' DONE';$('rs').textContent=ms+' ms';$('rprogress').textContent='Round '+(reactionRound+1)+' / 5';reactionTimer=setTimeout(reactionStartSignal,520);return;
   }
+  const avg=Math.round(reactionTimes.reduce((a,b)=>a+b,0)/reactionTimes.length);
+  const best=Math.min(...reactionTimes),worst=Math.max(...reactionTimes);
+  $('rb').className='reaction-full result';$('rm').textContent=reactionMode==='challenge'?'5-ROUND COMPLETE':'RESULT';$('rs').textContent='Avg '+avg+' ms · Best '+best+' ms · Slowest '+worst+' ms';$('rr').textContent=avg+' ms avg';$('rprogress').textContent='';
 }
 function startClick(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
-  $('stage').innerHTML='<div class="click-full"><div class="cps-number" id="cv">0.00</div><div style="color:#9db4cf;margin-bottom:15px">CLICKS PER SECOND</div><button class="click-button btn" id="cb">CLICK!</button><div class="hud"><span id="ct">Ready</span><span id="cmodeLabel"></span><button class="tiny btn" id="cr">Restart</button></div></div>';
-  if(fs)enterGameFS();clickMisses=0;
-  $('cmodeLabel').textContent=clickMode==='burst'?'BURST · 10 CLICKS':clickMode==='endurance'?'ENDURANCE · 30 SEC':clickMode==='target'?'TARGET CPS · WAIT FOR ACTIVE TARGET':'STANDARD CPS';
-  $('cb').onclick=()=>{
-    if(!cpsRunning)return;
-    if(clickMode==='target'&&$('cb').dataset.target!=='1'){clickMisses++;$('ct').textContent='MISS: '+clickMisses;beep(180,.035,'sawtooth',.018);return}
-    cpsCount++;
-    const elapsed=(performance.now()-cpsStartTime)/1000;
-    $('cv').textContent=(cpsCount/Math.max(elapsed,.001)).toFixed(2);
-    if(clickMode==='target')nextClickTarget();
-    beep(620+Math.min(cpsCount,12)*18,.025,'square',.018);
-  };
-  $('cr').onclick=()=>startClick(false);setTimeout(cpsStart,120);
-}
-function nextClickTarget(){
-  const b=$('cb');b.dataset.target='1';b.textContent='CLICK TARGET';
-  setTimeout(()=>{if(cpsRunning){b.dataset.target='0';b.textContent='WAIT...'}},180+Math.random()*260);
+  $('stage').innerHTML='<div class="click-full"><div class="cps-number" id="cv">0.00</div><div id="clickMetric" style="color:#9db4cf;margin-bottom:8px">CLICKS PER SECOND</div><button class="click-button btn" id="cb">CLICK!</button><div class="hud"><span id="ct">Ready</span><button class="tiny btn" id="cr">Restart</button></div></div>';
+  if(fs)enterGameFS();
+  $('cr').onclick=()=>startClick(false);
+  $('cb').onclick=()=>{if(!cpsRunning)return;cpsCount++;const elapsed=(performance.now()-cpsStartTime)/1000;const instant=cpsCount/Math.max(elapsed,.001);$('cv').textContent=instant.toFixed(2);beep(620+Math.min(cpsCount,12)*18,.025,'square',.018);if(clickMode==='twenty'&&cpsCount>=20)cpsFinish()};
+  setTimeout(cpsStart,120);
 }
 function cpsStart(){
-  clearInterval(cpsTimer);cpsCount=0;clickMisses=0;cpsRunning=true;cpsStartTime=performance.now();
-  const duration=clickMode==='endurance'?30:cpsDuration;
-  $('ct').textContent=clickMode==='burst'?'GO! Reach 10 clicks':'GO! '+duration+' seconds';$('cv').textContent='0.00';$('cb').textContent=clickMode==='target'?'CLICK TARGET':'CLICK!';
-  if(clickMode==='target')nextClickTarget();beep(700,.08);
+  clearInterval(cpsTimer);cpsCount=0;cpsRunning=true;cpsStartTime=performance.now();clickMisses=0;
+  const duration=clickMode==='sprint3'?3:clickMode==='sprint10'?10:clickMode==='endurance'?30:clickMode==='consistency'?10:999;
+  $('ct').textContent=clickMode==='twenty'?'GO! Reach 20 clicks':'GO! '+duration+' seconds';$('cv').textContent='0.00';$('cb').textContent='CLICK!';
+  window.__clickSecondCounts=[];window.__clickNextSecond=1;
   cpsTimer=setInterval(()=>{
     const elapsed=(performance.now()-cpsStartTime)/1000;
-    if((clickMode==='burst'&&cpsCount>=10)||elapsed>=duration)cpsFinish();
-  },30);
+    while(elapsed>=window.__clickNextSecond && window.__clickSecondCounts.length<(clickMode==='endurance'||clickMode==='consistency'?30:10)){
+      const sec=window.__clickNextSecond;window.__clickSecondCounts.push({second:sec,count:Math.max(0,cpsCount-(window.__clickSecondCounts.reduce((a,b)=>a+b.count,0)))});window.__clickNextSecond++;
+    }
+    const finish=clickMode==='twenty'&&cpsCount>=20 || clickMode!=='twenty'&&elapsed>=duration;
+    if(finish)cpsFinish();
+  },40);
 }
 function cpsFinish(){
   if(!cpsRunning)return;cpsRunning=false;clearInterval(cpsTimer);
-  const elapsed=(performance.now()-cpsStartTime)/1000;
-  const denominator=clickMode==='burst'?Math.max(.001,elapsed):clickMode==='endurance'?30:cpsDuration;
-  const cps=cpsCount/denominator;
-  $('cv').textContent=cps.toFixed(2);
-  $('ct').textContent=clickMode==='burst'?cpsCount+' clicks in '+elapsed.toFixed(2)+'s · '+clickMisses+' misses':cpsCount+' clicks · '+clickMisses+' misses';
-  $('cb').textContent='DONE';$('cb').dataset.target='0';beep(1000,.12,'triangle',.05);
+  const elapsed=Math.max(.001,(performance.now()-cpsStartTime)/1000);
+  const total=cpsCount;
+  if(clickMode==='twenty'){
+    const rate=20/elapsed;$('cv').textContent=rate.toFixed(2);$('clickMetric').textContent='Time to 20 clicks: '+elapsed.toFixed(2)+' s';$('ct').textContent='20 clicks complete';$('cb').textContent='DONE';
+  }else{
+    const duration=clickMode==='sprint3'?3:clickMode==='sprint10'?10:clickMode==='endurance'||clickMode==='consistency'?30:3;
+    const used=clickMode==='endurance'?30:clickMode==='consistency'?10:duration;
+    const cps=total/used;
+    $('cv').textContent=cps.toFixed(2);
+    if(clickMode==='consistency'){
+      const counts=[];for(let s=1;s<=used;s++){const before=window.__clickSecondCounts.filter(x=>x.second===s).reduce((a,b)=>a+b.count,0);counts.push(before)}
+      const avg=counts.reduce((a,b)=>a+b,0)/counts.length;const variance=counts.reduce((a,b)=>a+Math.pow(b-avg,2),0)/counts.length;const spread=Math.sqrt(variance);
+      $('clickMetric').textContent='Average '+cps.toFixed(2)+' CPS · spread ±'+spread.toFixed(2);
+      $('ct').textContent='Lower spread = steadier clicking';
+    }else{
+      $('clickMetric').textContent='CLICKS PER SECOND';$('ct').textContent=total+' clicks in '+used+' seconds';
+    }
+    $('cb').textContent='DONE';
+  }
+  beep(1000,.12,'triangle',.05);
 }
+
 function startBreaker(fs){
   $('setup').style.display='none';$('stage').classList.add('active');
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="bc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="bs">0</span><span id="bl">Lives: 3</span><span id="blev">Level 1</span><span id="bcombo">Combo x0</span><button class="tiny btn" id="restartB">Restart</button></div></div>';
@@ -1344,10 +1376,10 @@ function gameSpecificSettings(){
     return '<div class="settings-section"><h3>Memory Match</h3>'+selectHTML('gsDiff','Board difficulty',[['easy','Easy · 4 × 4'],['medium','Medium · 5 × 4'],['hard','Hard · 6 × 6']],difficulty)+'</div>';
   }
   if(current==='click'){
-    return '<div class="settings-section"><h3>Click Speed Lab</h3>'+selectHTML('gsClickMode','Test type',[['standard','Standard CPS'],['burst','Burst 10'],['endurance','Endurance 30s'],['target','Target CPS']],clickMode)+selectHTML('gsDuration','Test length',[[1,'1 second'],[3,'3 seconds'],[5,'5 seconds'],[10,'10 seconds']],cpsDuration)+'</div>';
+    return '<div class="settings-section"><h3>Click Speed Lab</h3>'+selectHTML('gsClickMode','Test type',[['sprint3','3-Second Sprint'],['sprint10','10-Second Average'],['endurance','30-Second Endurance'],['twenty','20-Click Sprint'],['consistency','Consistency']],clickMode)+ '</div>';
   }
   if(current==='reaction'){
-    return '<div class="settings-section"><h3>Reaction Game</h3>'+selectHTML('gsReactionMode','Test type',[['classic','Classic Light'],['sound','Sound Cue'],['gonogo','Go / No-Go'],['color','Color Match'],['choice','Choice Test']],reactionMode)+selectHTML('gsReactionDelay','Signal timing',[['fast','Fast · 0.5–1.5s'],['normal','Normal · 0.7–3.2s'],['slow','Slow · 1.5–4.0s']],reactionDelay)+'</div>';
+    return '<div class="settings-section"><h3>Reaction Game</h3>'+selectHTML('gsReactionMode','Test type',[['classic','Classic'],['target','Target Hunt'],['challenge','5-Round Challenge'],['sequence','Sequence']],reactionMode)+selectHTML('gsReactionDelay','Signal timing',[['fast','Fast'],['normal','Normal'],['slow','Slow']],reactionDelay)+'</div>';
   }
   return '<div class="settings-section"><h3>Game options</h3><div class="settings-note">This game has no additional setup options beyond its controls.</div></div>';
 }
@@ -1383,11 +1415,11 @@ function wireSettings(scope){
     $('setAccent').onchange=e=>{siteSettings.accent=e.target.value;applySiteSettings()};
   }
   if(scope==='game'&&current==='reaction'){$('gsReactionMode').onchange=e=>{reactionMode=e.target.value};$('gsReactionDelay').onchange=e=>{reactionDelay=e.target.value}}
-  if(scope==='game'&&current==='click'){$('gsClickMode').onchange=e=>{clickMode=e.target.value};$('gsDuration').onchange=e=>{cpsDuration=+e.target.value}}
+  if(scope==='game'&&current==='click'){$('gsClickMode').onchange=e=>{clickMode=e.target.value}}
   $('settingsApply').onclick=()=>{saveSiteSettings();closeSettings()};
   $('settingsReset').onclick=()=>{
     if(scope==='main'){siteSettings={...siteSettingDefaults};reactionDelay='normal';breakerPace='normal';cpsDuration=3;saveSiteSettings();applySiteSettings();renderSettings('main')}
-    else{reactionMode='classic';reactionDelay='normal';clickMode='standard';breakerPace='normal';difficulty='easy';mode='cpu';cpsDuration=3;vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
+    else{reactionMode='classic';reactionDelay='normal';clickMode='sprint3';breakerPace='normal';difficulty='easy';mode='cpu';cpsDuration=3;vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
   };
 }
 const settingsHome=$('settingsModal')?.parentElement;
