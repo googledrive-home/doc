@@ -184,7 +184,7 @@ function startBreaker(fs){
   $('stage').innerHTML='<div class="tennis-stage"><canvas id="bc" class="tennis-canvas"></canvas><div class="hud"><span class="scorebig" id="bs">0</span><span id="bl">Lives: 3</span><span id="blev">Level 1</span><span id="bcombo">Combo x0</span><button class="tiny btn" id="restartB">Restart</button></div></div>';
   if(fs)enterGameFS(); bPaddle={x:0,y:0,w:150,h:16}; bScore=0;bLives=3;bLevel=1;bCombo=0;bPopped=0;bPowerups=[];bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0};bEffectText='';bEffectTimer=0;bGameOver=false;bPaused=false;
   bc=$('bc');bctx=bc.getContext('2d');resizeBreaker();resetBreakerLevel();bLast=performance.now();cancelAnimationFrame(bAnim);bAnim=requestAnimationFrame(bLoop);window.onresize=resizeBreaker;
-  bc.onpointermove=e=>{if(bGameOver)return;const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{if(bPaused&&!bGameOver){bPaused=false;bLast=performance.now();bAnim=requestAnimationFrame(bLoop)}};$('restartB').onclick=()=>startBreaker(false);
+  bc.onpointermove=e=>{if(bGameOver)return;const r=bc.getBoundingClientRect();bPaddle.x=clamp((e.clientX-r.left),bPaddle.w/2,bw-bPaddle.w/2)};bc.onpointerdown=()=>{};$('restartB').onclick=()=>startBreaker(false);
 }
 function resizeBreaker(){if(!bc)return;const r=bc.getBoundingClientRect(),d=devicePixelRatio||1;bc.width=r.width*d;bc.height=r.height*d;bctx.setTransform(d,0,0,d,0,0);bw=r.width;bh=r.height;if(bPaddle){bPaddle.y=bh-55;bPaddle.x=clamp(bPaddle.x||bw/2,bPaddle.w/2,bw-bPaddle.w/2)}}
 function breakerConfig(){return {easy:{speed:300,paddle:170,rows:6,cols:9},medium:{speed:365,paddle:145,rows:7,cols:10},hard:{speed:430,paddle:118,rows:8,cols:10}}[difficulty]||{speed:365,paddle:145,rows:7,cols:10}}
@@ -279,7 +279,7 @@ function bLoop(now){
   if(lost){
     if(bBall.balls.length){const extra=bBall.balls.pop();bBall.x=extra.x;bBall.y=extra.y;bBall.vx=extra.vx;bBall.vy=extra.vy}
     else if(bPowerTimers.shield>0){bPowerTimers.shield=0;bBall.x=bw/2;bBall.y=bh-85;bBall.vx=(Math.random()<.5?-1:1)*cfg.speed;bBall.vy=-cfg.speed*.72;beep(760,.1,'triangle',.03)}
-    else{bLives--;bCombo=0;beep(120,.12,'sawtooth',.03);if(bLives<=0){bGameOver=true;bPaused=true;updateBreakerHud();drawBreaker();return}else resetBreakerLevel()}}
+    else{bLives--;bCombo=0;beep(120,.12,'sawtooth',.03);if(bLives<=0){bGameOver=true;bPaused=true;cancelAnimationFrame(bAnim);updateBreakerHud();drawBreaker();return}else resetBreakerLevel()}}
   if(bPopped>=bBricks.length){bLevel++;bScore+=500;beep(980,.12,'triangle',.04);resetBreakerLevel()}
   updateBreakerHud();drawBreaker();bAnim=requestAnimationFrame(bLoop);
 }
