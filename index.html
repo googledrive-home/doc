@@ -95,7 +95,7 @@ body[data-decor="high"] #bgDecor .bg-shape{display:grid}
 </div></div></div><div id="settingsPortal"><div class="settings-modal" id="settingsModal" aria-hidden="true"><div class="settings-panel"><div class="settings-head"><h2 id="settingsTitle">Settings</h2><div class="grow"></div><button class="tiny btn" id="settingsClose">✕ Close</button></div><div id="settingsBody"></div></div></div></div>
 
 <script>
-const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,reactionMode='classic',reactionTarget='',reactionDelay='normal',cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null,clickMode='standard',clickMisses=0;
+const $=id=>document.getElementById(id);let sound=true,audioCtx=null,current='',mode='cpu',difficulty='medium',reactionState='idle',reactionTimer=null,reactionStartTime=0,reactionMode='classic',reactionTarget='',cpsRunning=false,cpsCount=0,cpsStartTime=0,cpsDuration=3,cpsTimer=null,clickMode='standard',clickMisses=0;
 let musicTimer=null,musicPlaying=false,musicStep=0,musicIndex=0,musicGain=null,musicVolume=0.48,musicAudio=null,localMusicFiles={},musicShuffle=false,musicNoiseBuffer=null,userMusicDb=null,musicStartedAt=0,musicProceduralDuration=0,musicSeeking=false;
 const userMusicMeta=[];
 
