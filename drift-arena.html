@@ -227,29 +227,26 @@ const TRACKS=[
 {name:'Riverside Reverse',desc:'The supplied Track 2 image driven in reverse.',image:'assets/drift-track-2.webp',W:1600,H:1169,width:88,travelScale:1.52,reverse:true,points:[[945,805],[1080,805],[1220,815],[1370,825],[1500,820],[1570,790],[1550,720],[1510,650],[1470,575],[1450,490],[1480,420],[1520,350],[1515,275],[1470,215],[1390,190],[1280,205],[1170,220],[1080,230],[1000,220],[930,205],[850,205],[790,225],[740,270],[720,335],[735,395],[770,440],[830,465],[890,470],[940,445],[980,400],[1000,350],[970,305],[910,285],[830,290],[750,310],[665,330],[575,340],[500,330],[430,300],[365,260],[300,235],[235,250],[195,300],[190,360],[220,415],[285,445],[365,455],[450,450],[520,435],[555,465],[540,520],[485,565],[410,580],[330,565],[250,540],[170,535],[100,565],[45,620],[40,700],[90,755],[190,765],[320,750],[450,735],[580,730],[710,735],[820,750],[900,770],[945,805]]}
 ];
 const trackImages={};
-TRACKS.forEach(t=>{const im=new Image();im.src='./'+t.image;trackImages[t.name]=im;});
+TRACKS.forEach(t=>{
+  const im=new Image();
+  im.onload=()=>{trackImages[t.name]=im;};
+  im.onerror=()=>{trackImages[t.name]=null;};
+  im.src='./'+t.image;
+});
 const carReferenceImage=new Image();carReferenceImage.src='./assets/drift-car-reference.webp';
 let carSprites=[];
 carReferenceImage.onload=()=>{
-  const cols=4,rows=3,tw=carReferenceImage.width/cols,th=carReferenceImage.height/rows;
-  carSprites=[];
-  for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){
-    const oc=document.createElement('canvas');oc.width=Math.ceil(tw);oc.height=Math.ceil(th);const ox=oc.getContext('2d');
-    ox.drawImage(carReferenceImage,col*tw,r*th,tw,th,0,0,oc.width,oc.height);
-    const img=ox.getImageData(0,0,oc.width,oc.height),d=img.data;
-    for(let p=0;p<d.length;p+=4){
-      const rr=d[p],gg=d[p+1],bb=d[p+2];
-      if(rr>238&&gg>238&&bb>238&&Math.max(rr,gg,bb)-Math.min(rr,gg,bb)<18)d[p+3]=0;
+  try{
+    const cols=4,rows=3,tw=carReferenceImage.naturalWidth/cols,th=carReferenceImage.naturalHeight/rows;
+    carSprites=[];
+    for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){
+      const oc=document.createElement('canvas');oc.width=Math.ceil(tw);oc.height=Math.ceil(th);const ox=oc.getContext('2d');
+      ox.drawImage(carReferenceImage,col*tw,r*th,tw,th,0,0,oc.width,oc.height);
+      carSprites.push(oc);
     }
-    ox.putImageData(img,0,0);
-    let minX=oc.width,minY=oc.height,maxX=0,maxY=0;
-    const px=ox.getImageData(0,0,oc.width,oc.height).data;
-    for(let y=0;y<oc.height;y++)for(let x=0;x<oc.width;x++)if(px[(y*oc.width+x)*4+3]>25){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);}
-    const crop=document.createElement('canvas');crop.width=Math.max(1,maxX-minX+1);crop.height=Math.max(1,maxY-minY+1);
-    crop.getContext('2d').drawImage(oc,minX,minY,crop.width,crop.height,0,0,crop.width,crop.height);
-    carSprites.push(crop);
-  }
+  }catch(e){carSprites=[];}
 };
+carReferenceImage.onerror=()=>{carSprites=[];};
 
 let selectedBrand='Subaru',selectedCarId=1,selectedP2CarId=0,selectedTrack=0,laps=3,mode='solo',aiCount=3,race=null,soundOn=true,audioCtx=null;
 const keys=new Set();
@@ -369,11 +366,29 @@ function cameraState(){
   race.cam.x=lerp(race.cam.x,tx,.10);race.cam.y=lerp(race.cam.y,ty,.10);race.cam.zoom=lerp(race.cam.zoom,zoom,.08);
   return race.cam;
 }
+function drawFallbackTrack(t,s){
+  ctx.fillStyle='#477045';ctx.fillRect(0,0,t.W,t.H);
+  ctx.save();
+  const pts=t.points;
+  function line(stroke,width){
+    ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.closePath();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();
+  }
+  for(let i=0;i<70;i++){const x=(i*173)%t.W,y=(i*97)%t.H;ctx.fillStyle=i%2?'#335d38':'#3c6b40';ctx.beginPath();ctx.arc(x,y,3+(i%4),0,TAU);ctx.fill();}
+  line('#1f2528',t.width+30);line('#7d8284',t.width+8);line('#4f5559',t.width);
+  ctx.setLineDash([16,14]);line('#ffffff55',2);ctx.setLineDash([]);
+  const st=pts[0],nxt=pts[1],a=Math.atan2(nxt[1]-st[1],nxt[0]-st[0]);
+  ctx.save();ctx.translate(st[0],st[1]);ctx.rotate(a);
+  for(let i=-5;i<=5;i++){ctx.fillStyle=i%2?'#12181c':'#f5f5f5';ctx.fillRect(i*12,-t.width*.48,12,t.width*.48);ctx.fillStyle=i%2?'#f5f5f5':'#12181c';ctx.fillRect(i*12,0,12,t.width*.48);}
+  ctx.restore();ctx.restore();
+}
 function drawWorld(){
   const w=canvas.clientWidth,h=canvas.clientHeight,cam=cameraState(),img=trackImages[race.track.name];
   ctx.clearRect(0,0,w,h);ctx.fillStyle='#1f3324';ctx.fillRect(0,0,w,h);
   ctx.save();ctx.translate(w/2-cam.x*cam.zoom,h/2-cam.y*cam.zoom);ctx.scale(cam.zoom,cam.zoom);
   if(img&&img.complete&&img.naturalWidth)ctx.drawImage(img,0,0,race.track.W,race.track.H);
+  else drawFallbackTrack(race.track,race.samples);
   ctx.restore();
   race.cars.forEach(c=>drawSkids(c,cam));race.cars.forEach(c=>drawCar(c,cam));
 }
@@ -409,6 +424,12 @@ function drawMinimap(){
   const w=mapCanvas.width,h=mapCanvas.height,img=trackImages[race.track.name];
   mctx.clearRect(0,0,w,h);mctx.fillStyle='#071017';mctx.fillRect(0,0,w,h);
   if(img&&img.complete&&img.naturalWidth)mctx.drawImage(img,0,0,w,h);
+  else{
+    mctx.strokeStyle='#495255';mctx.lineWidth=22;mctx.lineCap='round';mctx.beginPath();
+    const pts=race.track.points;mctx.moveTo(pts[0][0]/race.track.W*w,pts[0][1]/race.track.H*h);
+    for(let i=1;i<pts.length;i++)mctx.lineTo(pts[i][0]/race.track.W*w,pts[i][1]/race.track.H*h);
+    mctx.closePath();mctx.stroke();
+  }
   const sx=w/race.track.W,sy=h/race.track.H;
   race.cars.forEach(c=>{mctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd65a':'#fff';mctx.beginPath();mctx.arc(c.x*sx,c.y*sy,5,0,TAU);mctx.fill()});
 }
@@ -426,7 +447,17 @@ function restartRace(){startRace()}
 function exitRace(){if(race?.countdownTimer)clearInterval(race.countdownTimer);race=null;$('raceView').classList.add('hidden');$('setupView').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
 function draw(){if(!race)return;drawMinimap();drawWorld();updateHUD()}
 
-$('startBtn').onclick=()=>{ensureAudio();startRace()};$('pauseBtn').onclick=togglePause;$('restartBtn').onclick=restartRace;$('exitBtn').onclick=exitRace;
+$('startBtn').onclick=()=>{try{ensureAudio()}catch(e){};startRace()};$('pauseBtn').onclick=togglePause;$('restartBtn').onclick=restartRace;$('exitBtn').onclick=exitRace;
+window.addEventListener('error',e=>{
+  const msg=e?.error?.message||e?.message||'Unknown game error';
+  const host=$('toast');
+  if(host){host.textContent='Game error: '+msg;host.classList.add('show');}
+});
+window.addEventListener('unhandledrejection',e=>{
+  const msg=e?.reason?.message||String(e?.reason||'Unknown promise error');
+  const host=$('toast');
+  if(host){host.textContent='Game error: '+msg;host.classList.add('show');}
+});
 renderBrands();renderModels();renderP2Cars();renderTracks();renderSetup();updateSummary();resizeCanvas();
 </script>
 </body>
