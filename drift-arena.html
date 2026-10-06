@@ -321,7 +321,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     ctx.restore();
   }
   function rr(ctx,x,y,w,h,r){
-    if(typeof ctx.roundRect==='function'){rr(ctx,x,y,w,h,r);return}
+    if(typeof ctx.roundRect==='function'){ctx.roundRect(x,y,w,h,r);return}
     r=Math.max(0,Math.min(r,Math.abs(w)/2,Math.abs(h)/2));
     ctx.moveTo(x+r,y);
     ctx.lineTo(x+w-r,y);
