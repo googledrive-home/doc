@@ -503,6 +503,100 @@ function restartRace(){startRace()}
 function exitRace(){if(race?.countdownTimer)clearInterval(race.countdownTimer);race=null;$('raceView').classList.add('hidden');$('setupView').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
 function draw(){if(!race)return;drawMinimap();drawWorld();updateHUD()}
 
+function startGameLoader(){
+  const screen=document.getElementById('loadingScreen');
+  const card=screen?.querySelector('.loading-card');
+  const fill=document.getElementById('loadingFill');
+  const pct=document.getElementById('loadingPercent');
+  const stage=document.getElementById('loadingStage');
+  const tip=document.getElementById('loadingTip');
+  const detail=document.getElementById('loadingDetail');
+  if(!screen||!card||!fill||!pct||!stage||!tip||!detail)return;
+
+  const scenes=[
+    ['WARMING UP THE GRID','Checking the garage and player settings...','GARAGE CHECK'],
+    ['MAPPING THE CIRCUIT','Loading your supplied overhead circuit artwork...','TRACK MAPS'],
+    ['PREPPING THE CARS','Preparing the top-down car reference art...','CAR LIBRARY'],
+    ['SETTING THE CAMERA','Tuning the close chase view and minimap...','CAMERA SYSTEM'],
+    ['CALIBRATING PHYSICS','Loading grip, braking, acceleration and AI...','RACE MODEL'],
+    ['FINAL GRID CHECK','Checking everything before the countdown...','GRID READY']
+  ];
+
+  const assets=[...new Set([...(typeof TRACKS!=='undefined'?TRACKS.map(t=>t.image):[]),'assets/drift-car-reference.webp'])];
+  let completed=0;
+  let scene=0;
+  let progress=0;
+  const started=performance.now();
+  const minimum=1700;
+  const hardLimit=6500;
+
+  function paint(v){
+    progress=Math.max(progress,Math.min(100,v));
+    fill.style.width=progress+'%';
+    pct.textContent=Math.round(progress)+'%';
+  }
+  function setScene(i){
+    scene=Math.max(0,Math.min(4,i));
+    card.className='loading-card scene-'+(scene+1);
+    stage.textContent=scenes[scene][0];
+    tip.textContent=scenes[scene][1];
+    detail.textContent=scenes[scene][2];
+  }
+
+  setScene(0);
+
+  let rotating=setInterval(()=>setScene((scene+1)%5),850);
+
+  let fakeTimer=setInterval(()=>{
+    const elapsed=performance.now()-started;
+    paint(8+78*(1-Math.exp(-elapsed/1150)));
+    if(elapsed>3600){
+      clearInterval(fakeTimer);
+      fakeTimer=null;
+    }
+  },60);
+
+  const jobs=assets.map(src=>new Promise(resolve=>{
+    let finished=false;
+    const finish=()=>{
+      if(finished)return;
+      finished=true;
+      completed++;
+      paint(20+(completed/assets.length)*72);
+      resolve();
+    };
+    const im=new Image();
+    im.decoding='async';
+    im.onload=async()=>{
+      try{if(im.decode)await im.decode();}catch(e){}
+      finish();
+    };
+    im.onerror=finish;
+    im.src='./'+src;
+    setTimeout(finish,4500);
+  }));
+
+  Promise.allSettled(jobs).then(()=>{
+    const wait=Math.max(0,minimum-(performance.now()-started));
+    setTimeout(()=>{
+      if(rotating){clearInterval(rotating);rotating=null;}
+      if(fakeTimer){clearInterval(fakeTimer);fakeTimer=null;}
+      setScene(5);
+      paint(100);
+      setTimeout(()=>screen.classList.add('loaded'),450);
+    },wait);
+  });
+
+  setTimeout(()=>{
+    if(!screen.classList.contains('loaded')){
+      if(rotating)clearInterval(rotating);
+      if(fakeTimer)clearInterval(fakeTimer);
+      setScene(5);
+      paint(100);
+      setTimeout(()=>screen.classList.add('loaded'),300);
+    }
+  },hardLimit);
+}
 $('startBtn').onclick=()=>{try{ensureAudio()}catch(e){};startRace()};$('pauseBtn').onclick=togglePause;$('restartBtn').onclick=restartRace;$('exitBtn').onclick=exitRace;
 window.addEventListener('error',e=>{
   const msg=e?.error?.message||e?.message||'Unknown game error';
