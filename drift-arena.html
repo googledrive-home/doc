@@ -192,7 +192,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
   function nearest(s,x,y){let best={d:1e9,i:0,t:0};for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,t=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*t,py=a.y+aby*t,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t}}const a=s[best.i],b=s[(best.i+1)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,progress:(best.i+best.t)/s.length,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}}
   function makeCar(spec,slot,player,isAI,s){
     const p=s[(20+slot*12)%s.length],a=Math.atan2(p.ty,p.tx),tyreKey=isAI?'medium':selectedTyre;
-    return{spec,x:p.x+(slot%2?14:-14),y:p.y+Math.floor(slot/2)*12,angle:a,vx:0,vy:0,lap:0,progress:0,prev:0,player,ai:isAI,finished:false,finish:0,points:0,best:null,slip:0,drift:0,stuck:0,steerState:0,fuel:spec.fuelCap,fuelCap:spec.fuelCap,tyre:tyreKey,tyreWear:100,tcs:isAI?2:selectedTcs,inPit:false,pitting:false,pitTimer:0,serviceFlash:0,lapStart:0}
+    return{spec,x:p.x+(slot%2?14:-14),y:p.y+Math.floor(slot/2)*12,angle:a,vx:0,vy:0,lap:0,progress:0,prev:0,player,ai:isAI,finished:false,finish:0,points:0,best:null,slip:0,drift:0,stuck:0,steerState:0,fuel:spec.fuelCap,fuelCap:spec.fuelCap,tyre:tyreKey,tyreWear:100,tcs:isAI?2:selectedTcs,inPit:false,pitting:false,pitTimer:0,serviceFlash:0,brakeState:0,lapStart:0}
   }
   const AI_LEVELS={
     easy:{look:72,far:34,aggression:.82,steerGain:.72,brakeMargin:15,reaction:.75},
@@ -204,37 +204,35 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     if(!car.ai)return car.player===2?{throttle:keys.has('arrowup'),brake:keys.has('arrowdown'),steer:(keys.has('arrowleft')?-1:0)+(keys.has('arrowright')?1:0),pit:keys.has(' ')}:{throttle:keys.has('w'),brake:keys.has('s'),steer:(keys.has('a')?-1:0)+(keys.has('d')?1:0),pit:keys.has(' ')};
 
     const cfg=AI_LEVELS[race&&race.aiDifficulty||'medium']||AI_LEVELS.medium;
-    if(!Array.isArray(s)||s.length<20)return{throttle:true,brake:false,steer:0,pit:false};
-
-    const safe=(index)=>{
-      const i=((Math.floor(index)%s.length)+s.length)%s.length;
-      const p=s[i];
-      return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.tx)&&Number.isFinite(p.ty)?p:s[0];
-    };
-
     const n=nearest(s,Number(car.x)||0,Number(car.y)||0);
     const len=s.length,idx=Number.isFinite(n.i)?n.i:0;
     const speed=Math.hypot(Number(car.vx)||0,Number(car.vy)||0)*3.6;
-    const look=Math.round(clamp(cfg.look+speed*.28,45,155));
-    const p1=safe(idx+look),p2=safe(idx+look+cfg.far),p3=safe(idx+look+cfg.far*2);
-    const targetAng=Math.atan2(p1.y-car.y,p1.x-car.x);
-    const futureAng=Math.atan2(p3.y-p2.y,p3.x-p2.x);
-    const headingErr=wrap(targetAng-(Number(car.angle)||0));
-    const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny;
-    const steer=clamp(headingErr*cfg.steerGain-clamp(lateral/40,-1,1)*.65,-1,1);
+    const look=Math.round(clamp(cfg.look*.78+speed*.22,34,130));
+    const target=s[(idx+look)%len]||s[idx];
+    const far=s[(idx+look+cfg.far)%len]||target;
 
+    // Pure-pursuit style steering: follow the track tangent and correct
+    // gently toward the centerline. This prevents the old AI from snapping
+    // sideways toward an arbitrary point.
+    const tangentAngle=Math.atan2(target.ty,target.tx);
+    const aimAngle=Math.atan2(target.y-car.y,target.x-car.x);
+    const headingErr=wrap(tangentAngle-(Number(car.angle)||0));
+    const aimErr=wrap(aimAngle-(Number(car.angle)||0));
+    const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny;
+    const steer=clamp(headingErr*.95+aimErr*.30-clamp(lateral/55,-1,1)*.55,-1,1);
+
+    // Estimate upcoming curvature from the centerline, then choose a target
+    // speed. AI only brakes when it is meaningfully above that target.
     let curve=0;
     for(let j=8;j<=cfg.far+8;j+=8){
-      const aa=safe(idx+j),bb=safe(idx+j+8);
+      const aa=s[(idx+j)%len]||target,bb=s[(idx+j+8)%len]||far;
       curve=Math.max(curve,Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx))));
     }
-
     const top=Number(car.spec&&car.spec.top)||300;
-    const desired=clamp(315-curve*210-Math.abs(wrap(futureAng-targetAng))*120,105,top-10);
-    // Never let heading error alone command the brakes: at low speed the AI
-    // must keep moving while it steers toward the racing line.
-    const brake=speed>desired+cfg.brakeMargin;
-    const throttle=speed<desired-4;
+    const cornerSpeed=315-curve*205;
+    const desired=clamp(cornerSpeed*cfg.aggression,105,top-10);
+    const brake=speed>desired+Math.max(7,cfg.brakeMargin);
+    const throttle=speed<desired-2;
     return{throttle,brake,steer,pit:false};
   }
   function updateCar(car,inp,dt,s){
@@ -250,7 +248,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
       car.angle+=clamp(Math.tan(car.steerState*maxSteer)*Math.abs(f)/wheelbase,-.72,.72)*dt;
       const fuelFrac=clamp(car.fuel/car.fuelCap,0,1),fuelPower=.68+.32*fuelFrac,tcsCut=inp.throttle&&car.tcs>0?clamp((car.tcs/5)*Math.max(0,Math.abs(l)-2.5)/11,0,.58):0;
       if(inp.throttle&&car.fuel>0){const sf=clamp(Math.abs(f)/Math.max(1,top),0,1),accelScale=clamp(1-.88*Math.pow(sf,1.65),.12,1);f+=sp.accel*.46*accelScale*dt*(1-tcsCut)*fuelPower;}
-      if(inp.brake)f-=Math.min(Math.abs(f),sp.brake*dt)*Math.sign(f||1);
+      car.brakeState=lerp(car.brakeState||0,inp.brake?1:0,clamp(dt*(inp.brake?1.7:3.2),0,1)); const brakeForce=sp.brake*.30*car.brakeState; if(brakeForce>0)f-=Math.min(Math.abs(f),brakeForce*dt)*Math.sign(f||1);
       if(!inp.throttle&&!inp.brake)f-=Math.sign(f||1)*Math.min(Math.abs(f),(.55+.0045*f*f)*dt);
       if(onPit)f=clamp(f,-4,19.4);f=clamp(f,-6,top);
       const offRoad=!onPit&&mainN.d>t.width*.43,gripFactor=.64+.36*(car.tyreWear/100),effectiveGrip=sp.grip*ty.grip*gripFactor*(offRoad?.54:1),sliding=Math.abs(car.steerState)>.20&&Math.abs(f)>14;
@@ -341,26 +339,12 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     const p=()=>{ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);ctx.closePath()};
     const stroke=(color,width)=>{p();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke()};
     stroke('#0c1115',t.width+28);stroke('#81898e',t.width+15);stroke('#232a2f',t.width+7);stroke('#454e53',t.width);
-    // Racing line and edge paint.
-    ctx.setLineDash([16,20]);stroke('#f5f7f755',2.2);ctx.setLineDash([]);
-    for(let i=0;i<s.length;i+=6){
-      const a=s[i],b=s[(i+3)%s.length],col=((i/6)|0)%2?'#e64f54':'#f1f1ef';
-      for(const side of [-1,1]){
-        ctx.strokeStyle=col;ctx.lineWidth=6;ctx.lineCap='butt';
-        ctx.beginPath();ctx.moveTo(a.x+a.nx*t.width*.49*side,a.y+a.ny*t.width*.49*side);ctx.lineTo(b.x+b.nx*t.width*.49*side,b.y+b.ny*t.width*.49*side);ctx.stroke();
-      }
-    }
     const braking=brakeInfo(race.cars[0],s);drawBrakeZone(ctx,braking,t,s);
 
     const st=s[0],nx=s[6],ang=Math.atan2(nx.y-st.y,nx.x-st.x);
     ctx.save();ctx.translate(st.x,st.y);ctx.rotate(ang);
     for(let r=0;r<3;r++)for(let k=0;k<12;k++){ctx.fillStyle=(r+k)%2?'#151a1e':'#f0f0ee';ctx.fillRect(-84+k*14,-10+r*7,14,7)}ctx.restore();
 
-    // Direction boards / braking markers.
-    for(let i=9;i<s.length;i+=19){
-      const a=s[i],side=i%38===0?-1:1,x=a.x+a.nx*(t.width*.72)*side,y=a.y+a.ny*(t.width*.72)*side;
-      ctx.fillStyle='#f4f5f5';ctx.fillRect(x-8,y-6,16,12);ctx.fillStyle='#c53b45';ctx.fillRect(x-8,y-6,5,12);ctx.fillStyle='#202a31';ctx.font='bold 7px system-ui';ctx.textAlign='center';ctx.fillText(String((i/19)|0),x+2,y+3);
-    }
     ctx.restore();
   }
   function drawSpeedFX(){return;}
