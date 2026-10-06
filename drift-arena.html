@@ -204,7 +204,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     if(!car.ai)return car.player===2?{throttle:keys.has('arrowup'),brake:keys.has('arrowdown'),steer:(keys.has('arrowleft')?-1:0)+(keys.has('arrowright')?1:0),pit:keys.has(' ')}:{throttle:keys.has('w'),brake:keys.has('s'),steer:(keys.has('a')?-1:0)+(keys.has('d')?1:0),pit:keys.has(' ')};
 
     const cfg=AI_LEVELS[race&&race.aiDifficulty||'medium']||AI_LEVELS.medium;
-    if(!Array.isArray(s)||s.length<20)return{throttle:false,brake:true,steer:0,pit:false};
+    if(!Array.isArray(s)||s.length<20)return{throttle:true,brake:false,steer:0,pit:false};
 
     const safe=(index)=>{
       const i=((Math.floor(index)%s.length)+s.length)%s.length;
@@ -215,29 +215,26 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     const n=nearest(s,Number(car.x)||0,Number(car.y)||0);
     const len=s.length,idx=Number.isFinite(n.i)?n.i:0;
     const speed=Math.hypot(Number(car.vx)||0,Number(car.vy)||0)*3.6;
-    const look=Math.round(clamp(cfg.look+speed*.34,70,170));
-    const p1=safe(idx+look),p2=safe(idx+look+cfg.far+speed*.12),p3=safe(idx+look+cfg.far*1.8);
-
-    const targetAng=Math.atan2((p1.y*.70+p2.y*.30)-car.y,(p1.x*.70+p2.x*.30)-car.x);
+    const look=Math.round(clamp(cfg.look+speed*.28,45,155));
+    const p1=safe(idx+look),p2=safe(idx+look+cfg.far),p3=safe(idx+look+cfg.far*2);
+    const targetAng=Math.atan2(p1.y-car.y,p1.x-car.x);
     const futureAng=Math.atan2(p3.y-p2.y,p3.x-p2.x);
     const headingErr=wrap(targetAng-(Number(car.angle)||0));
-    const futureCurve=Math.abs(wrap(futureAng-targetAng));
     const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny;
-    const recovery=clamp(lateral/32,-1,1);
-    const steer=clamp(headingErr*cfg.steerGain-recovery*.9,-1,1);
+    const steer=clamp(headingErr*cfg.steerGain-clamp(lateral/40,-1,1)*.65,-1,1);
 
     let curve=0;
-    for(let j=12;j<=cfg.far;j+=8){
-      const aa=safe(idx+j),bb=safe(idx+j+7);
-      const turn=Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx)));
-      if(turn>curve)curve=turn;
+    for(let j=8;j<=cfg.far+8;j+=8){
+      const aa=safe(idx+j),bb=safe(idx+j+8);
+      curve=Math.max(curve,Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx))));
     }
 
-    const curveTarget=305-curve*185-futureCurve*125;
-    const desired=clamp(curveTarget*cfg.aggression,110,(Number(car.spec&&car.spec.top)||300)-8);
-    const error=speed-desired;
-    const brake=error>cfg.brakeMargin||Math.abs(headingErr)>1.05;
-    const throttle=!brake&&speed<desired-3;
+    const top=Number(car.spec&&car.spec.top)||300;
+    const desired=clamp(315-curve*210-Math.abs(wrap(futureAng-targetAng))*120,105,top-10);
+    // Never let heading error alone command the brakes: at low speed the AI
+    // must keep moving while it steers toward the racing line.
+    const brake=speed>desired+cfg.brakeMargin;
+    const throttle=speed<desired-4;
     return{throttle,brake,steer,pit:false};
   }
   function updateCar(car,inp,dt,s){
@@ -434,24 +431,29 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
       if(race.started&&!race.paused&&!race.done){
         race.time+=dt;
         for(const car of race.cars){
-          try{updateCar(car,input(car,race.s),dt,race.s)}
-          catch(err){console.error('AI/car update',err)}
+          try{updateCar(car,input(car,race.s),dt,race.s)}catch(err){console.error('AI/car update',err)}
         }
         if(race.cars[0]&&race.cars[0].finished)race.done=true;
       }
       const p=race.cars[0];
       if(!p){requestAnimationFrame(loop);return}
       const p2=race.cars.find(c=>c.player===2);
-      let tx=p.x+p.vx*.78,ty=p.y+p.vy*.78,z=5.2;
+      let tx=p.x+p.vx*.65,ty=p.y+p.vy*.65,z=5.2;
       if(p2){
-        const dx=p2.x-p.x,dy=p2.y-p.y,dist=Math.hypot(dx,dy);
-        tx=(p.x+p2.x)/2+(p.vx+p2.vx)*.18;
-        ty=(p.y+p2.y)/2+(p.vy+p2.vy)*.18;
-        const w=canvas.clientWidth||1000,h=canvas.clientHeight||600,margin=220;
-        const fitX=(w-margin)/Math.max(1,Math.abs(dx)),fitY=(h-margin)/Math.max(1,Math.abs(dy));
-        z=clamp(Math.min(5.15-dist/310,fitX,fitY),2.15,5.15);
+        const minX=Math.min(p.x,p2.x),maxX=Math.max(p.x,p2.x),minY=Math.min(p.y,p2.y),maxY=Math.max(p.y,p2.y);
+        const spanX=Math.max(1,maxX-minX),spanY=Math.max(1,maxY-minY);
+        const w=canvas.clientWidth||1000,h=canvas.clientHeight||600;
+        const marginX=190,marginY=185;
+        const fitX=Math.max(.9,(w-marginX*2)/spanX);
+        const fitY=Math.max(.9,(h-marginY*2)/spanY);
+        tx=(minX+maxX)/2+(p.vx+p2.vx)*.10;
+        ty=(minY+maxY)/2+(p.vy+p2.vy)*.10;
+        z=clamp(Math.min(5.15,fitX,fitY),.9,5.15);
       }
-      race.cam.x=lerp(race.cam.x,tx,.12);race.cam.y=lerp(race.cam.y,ty,.12);race.cam.zoom=lerp(race.cam.zoom,z,.12);
+      race.cam.x=lerp(race.cam.x,tx,p2?.20:.12);
+      race.cam.y=lerp(race.cam.y,ty,p2?.20:.12);
+      race.cam.zoom=lerp(race.cam.zoom,z,p2?.30:.12);
+      if(p2&&race.cam.zoom>z+.05)race.cam.zoom=z;
       const w=canvas.clientWidth,h=canvas.clientHeight;
       ctx.clearRect(0,0,w,h);
       try{drawTrack(ctx,race.track,race.s,race.cam,w,h)}catch(err){console.error('drawTrack',err)}
