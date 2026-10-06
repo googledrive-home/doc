@@ -237,7 +237,22 @@ let selectedBrand='Subaru',selectedCarId=1,selectedP2CarId=0,selectedTrack=0,lap
 const keys=new Set();
 
 function carSpecText(car){return [['POWER',car.power+' hp'],['WEIGHT',Math.round(car.weight)+' kg'],['TOP',car.top+' km/h'],['DRIVE',car.drive],['GRIP',Math.round(car.grip*100)+'%'],['BRAKE',Math.round(car.brake*100)+'%'],['DRIFT',Math.round(car.drift*100)+'%'],['STEER',Math.round(car.steer*100)+'%']].map(([a,b])=>'<div class="spec"><b>'+b+'</b><span>'+a+'</span></div>').join('')}
-function carSVG(car){const c=car.color,shape=car.kind,wide=['supercar','muscle','suv'].includes(shape),roof=shape==='supercar'?'M28 15L72 15L84 25L17 25Z':shape==='hatch'||shape==='rally'?'M27 13L66 13L80 25L20 25Z':shape==='suv'?'M25 12L68 12L82 25L18 25Z':'M25 14L68 14L79 25L20 25Z';const rear=shape==='supercar'?'M12 31L88 31L82 42L18 42Z':'M12 28L88 28L84 41L16 41Z';return '<svg viewBox="0 0 100 54" aria-hidden="true"><ellipse cx="50" cy="45" rx="'+(wide?38:33)+'" ry="4" fill="#0009"/><path d="'+rear+'" fill="'+c+'" stroke="#eef8ff" stroke-width="1.2"/><path d="'+roof+'" fill="'+c+'" opacity=".88" stroke="#eef8ff" stroke-width="1.2"/><path d="M34 16L63 16L69 25L28 25Z" fill="#17232e"/><path d="M20 26h60" stroke="#ffffff66" stroke-width="1.2"/><circle cx="22" cy="40" r="6" fill="#11161c"/><circle cx="78" cy="40" r="6" fill="#11161c"/><circle cx="22" cy="40" r="2.2" fill="#d6e1eb"/><circle cx="78" cy="40" r="2.2" fill="#d6e1eb"/><rect x="45" y="13" width="10" height="3" rx="1.5" fill="#fff" opacity=".7"/><path d="M16 29L22 29M78 29L84 29" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>'}
+function carSVG(car){
+  const c=car.color,k=car.kind,b=car.brand,m=car.model;
+  const wide=['supercar','muscle','suv'].includes(k);
+  const body=k==='supercar'?'M14 31L22 23L33 17L67 17L78 23L88 31L82 41L18 41Z':k==='muscle'?'M11 28L25 19L73 19L89 28L85 42L15 42Z':k==='suv'?'M13 25L24 13L74 13L87 25L85 42L15 42Z':k==='rally'?'M13 27L24 15L72 15L87 27L84 42L16 42Z':'M12 28L25 16L72 16L88 28L84 41L16 41Z';
+  const roof=k==='supercar'?'M31 15L67 15L78 24L22 24Z':k==='suv'?'M27 12L73 12L79 24L21 24Z':k==='muscle'?'M31 15L69 15L78 25L22 25Z':'M29 14L69 14L77 25L23 25Z';
+  let details='<path d="M35 15L64 15L70 24L29 24Z" fill="#12212d"/>';
+  if(b==='Lamborghini'||m==='Huracán'||m==='Gallardo'||m==='Aventador'||m==='Revuelto')details+='<path d="M17 30L27 25L35 27L28 31Z M83 30L73 25L65 27L72 31Z" fill="#eef8ff"/><path d="M50 28L65 40L35 40Z" fill="'+c+'" opacity=".55"/>';
+  if(b==='Porsche'||b==='Volkswagen')details+='<path d="M38 30Q50 23 62 30L60 38Q50 42 40 38Z" fill="#1a252d"/>';
+  if(b==='Subaru'||b==='Mitsubishi'||m.includes('Escort'))details+='<path d="M19 39L81 39L76 45L24 45Z" fill="#1c2227"/><path d="M30 11H70" stroke="'+c+'" stroke-width="3"/>';
+  if(b==='BMW')details+='<path d="M46 26h3l-2 7h-3zM51 26h3l2 7h-3z" fill="#dce7ef"/>';
+  if(b==='Audi')details+='<path d="M42 27h16l-3 7H45z" fill="#e7edf3"/>';
+  if(b==='Nissan'||b==='Toyota'||b==='Honda')details+='<path d="M31 28H69" stroke="#ffffff66" stroke-width="2"/>';
+  if(b==='Ford')details+='<path d="M27 25L73 25" stroke="#ffffff55" stroke-width="2"/>';
+  const stripe=(b==='Subaru'||b==='Mitsubishi'||m==='GT-R')?'<rect x="47" y="11" width="6" height="32" rx="3" fill="#fff" opacity=".75"/>':'';
+  return '<svg viewBox="0 0 100 54" aria-hidden="true"><ellipse cx="50" cy="46" rx="'+(wide?38:33)+'" ry="4" fill="#0009"/><path d="'+body+'" fill="'+c+'" stroke="#eef8ff" stroke-width="1.2"/><path d="'+roof+'" fill="'+c+'" opacity=".9" stroke="#eef8ff" stroke-width="1.2"/>'+details+stripe+'<circle cx="22" cy="40" r="6" fill="#11161c"/><circle cx="78" cy="40" r="6" fill="#11161c"/><circle cx="22" cy="40" r="2.2" fill="#d6e1eb"/><circle cx="78" cy="40" r="2.2" fill="#d6e1eb"/><path d="M16 29L22 29M78 29L84 29" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+}
 
 function renderBrands(){ $('brandTabs').innerHTML=Object.keys(BRAND_DATA).map(b=>'<button class="brand-tab '+(b===selectedBrand?'active':'')+'" data-brand="'+b+'">'+b+' · 5</button>').join(''); $('brandTabs').querySelectorAll('.brand-tab').forEach(x=>x.onclick=()=>{selectedBrand=x.dataset.brand;renderBrands();renderModels()});}
 function renderModels(){const cars=allCars.filter(c=>c.brand===selectedBrand);$('modelTitle').textContent=selectedBrand+' models';$('modelHint').textContent='5 available';$('models').innerHTML=cars.map(c=>'<button class="car-option '+(c.id===selectedCarId?'active':'')+'" data-car="'+c.id+'"><div class="car-svg">'+carSVG(c)+'</div><div><strong>'+c.model+'</strong><small>'+c.drive+' · '+c.power+' hp · '+c.top+' km/h</small></div></button>').join('');$('models').querySelectorAll('.car-option').forEach(x=>x.onclick=()=>{selectedCarId=+x.dataset.car;renderModels();updateSpecs();updateSummary()});updateSpecs();}
@@ -323,7 +338,29 @@ function drawWorld(){const w=canvas.clientWidth,h=canvas.clientHeight,cam=camera
   race.cars.forEach(c=>drawSkids(c,cam));race.cars.forEach(c=>drawCar(c,cam));
 }
 function drawSkids(car,cam){ctx.save();for(const s of car.skids){const p=worldToScreen(s.x,s.y,cam,canvas.clientWidth,canvas.clientHeight);ctx.globalAlpha=clamp(s.life/.75,0,1)*.35;ctx.fillStyle='#0b1014';ctx.translate(p.x,p.y);ctx.rotate(s.a);ctx.fillRect(-4,-7,8,14);ctx.setTransform(1,0,0,1,0,0)}for(const q of car.smoke){const p=worldToScreen(q.x,q.y,cam,canvas.clientWidth,canvas.clientHeight);ctx.globalAlpha=clamp(q.life/.55,0,1)*.32;ctx.fillStyle='#e6edf0';ctx.beginPath();ctx.arc(p.x,p.y,7-q.life*4,0,TAU);ctx.fill()}ctx.restore()}
-function drawCar(car,cam){const p=worldToScreen(car.x,car.y,cam,canvas.clientWidth,canvas.clientHeight),c=car.spec.color;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(car.angle);const sc=cam.zoom;ctx.scale(sc,sc);const L=car.spec.length*7,W=car.spec.width*6;ctx.fillStyle='#0007';ctx.beginPath();ctx.ellipse(0,9,L*.52,W*.44,0,0,TAU);ctx.fill();ctx.fillStyle=c;ctx.strokeStyle=car.player===1?'#fff':car.player===2?'#ffd65a':'#15202b';ctx.lineWidth=car.player?2.5:1.2;ctx.beginPath();ctx.roundRect(-L/2,-W/2,L,W,shapeRadius(car.spec.kind));ctx.fill();ctx.stroke();ctx.fillStyle='#16232d';ctx.beginPath();ctx.roundRect(-L*.22,-W*.36,L*.44,W*.72,3);ctx.fill();ctx.fillStyle='#f4f8ff';ctx.fillRect(L*.34,-W*.32,L*.09,W*.64);ctx.fillStyle='#10161a';ctx.fillRect(-L*.35,-W*.61,L*.16,W*.15);ctx.fillRect(L*.19,-W*.61,L*.16,W*.15);ctx.fillRect(-L*.35,W*.46,L*.16,W*.15);ctx.fillRect(L*.19,W*.46,L*.16,W*.15);if(car.driftTime>.12){ctx.fillStyle='#d7dde2';ctx.globalAlpha=.7;ctx.fillRect(-L*.42,-2,L*.18,4);ctx.fillRect(-L*.42,-W*.12,L*.18,4)}ctx.restore()}
+function drawCar(car,cam){
+  const p=worldToScreen(car.x,car.y,cam,canvas.clientWidth,canvas.clientHeight),c=car.spec.color,shape=car.spec.kind;
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(car.angle);const sc=cam.zoom;ctx.scale(sc,sc);
+  const L=car.spec.length*7,W=car.spec.width*6;ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(0,9,L*.54,W*.44,0,0,TAU);ctx.fill();
+  ctx.fillStyle=c;ctx.strokeStyle=car.player===1?'#fff':car.player===2?'#ffd65a':'#16212b';ctx.lineWidth=car.player?2.4:1.1;
+  ctx.beginPath();
+  if(shape==='supercar')ctx.moveTo(-L/2+4,0),ctx.lineTo(-L*.34,-W/2),ctx.lineTo(L*.25,-W*.48),ctx.lineTo(L/2,W*.15),ctx.lineTo(L*.34,W/2),ctx.lineTo(-L*.34,W/2),ctx.closePath();
+  else if(shape==='muscle')ctx.roundRect(-L/2,-W/2,L,W,6);
+  else if(shape==='suv')ctx.roundRect(-L/2,-W/2,L,W,5);
+  else ctx.roundRect(-L/2,-W/2,L,W,shape==='rally'?4:5);
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='#16242f';ctx.beginPath();
+  if(shape==='supercar')ctx.moveTo(-L*.13,-W*.34),ctx.lineTo(L*.22,-W*.34),ctx.lineTo(L*.30,W*.32),ctx.lineTo(-L*.12,W*.32),ctx.closePath();
+  else ctx.roundRect(-L*.23,-W*.35,L*.46,W*.70,3);
+  ctx.fill();
+  ctx.fillStyle='#f4f8ff';ctx.fillRect(L*.34,-W*.30,L*.09,W*.60);
+  ctx.fillStyle='#11161b';ctx.fillRect(-L*.36,-W*.61,L*.16,W*.15);ctx.fillRect(L*.18,-W*.61,L*.16,W*.15);ctx.fillRect(-L*.36,W*.46,L*.16,W*.15);ctx.fillRect(L*.18,W*.46,L*.16,W*.15);
+  if(shape==='rally'||car.spec.drive==='AWD'){ctx.fillStyle='#161b20';ctx.fillRect(-L*.44,-W*.64,L*.26,W*.14);ctx.fillRect(-L*.44,W*.50,L*.26,W*.14)}
+  if(car.spec.brand==='Lamborghini'||shape==='supercar'){ctx.fillStyle='#fff6d1';ctx.fillRect(L*.42,-W*.22,L*.06,W*.17);ctx.fillRect(L*.42,W*.05,L*.06,W*.17)}
+  if(car.spec.brand==='BMW'){ctx.fillStyle='#eef5fb';ctx.fillRect(L*.33,-W*.18,L*.08,W*.10);ctx.fillRect(L*.33,W*.08,L*.08,W*.10)}
+  if(car.driftTime>.12){ctx.fillStyle='#d7dde2';ctx.globalAlpha=.72;ctx.fillRect(-L*.42,-2,L*.18,3);ctx.fillRect(-L*.42,-W*.12,L*.18,3)}
+  ctx.restore();
+}
 function shapeRadius(k){return k==='supercar'||k==='suv'?6:k==='rally'?4:3}
 
 function drawMinimap(){const w=mapCanvas.width,h=mapCanvas.height,s=race.samples,t=race.track;mctx.clearRect(0,0,w,h);mctx.fillStyle='#08131c';mctx.fillRect(0,0,w,h);const sx=w/1280,sy=h/760;mctx.save();mctx.scale(sx,sy);const pts=s.map(p=>[p.x,p.y]);function ln(st,width){mctx.beginPath();mctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)mctx.lineTo(pts[i][0],pts[i][1]);mctx.closePath();mctx.strokeStyle=st;mctx.lineWidth=width;mctx.lineCap='round';mctx.stroke()}ln('#1c2427',t.width+20);ln(t.road,t.width*.9);race.cars.forEach(c=>{mctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd65a':'#dbe5ea';mctx.beginPath();mctx.arc(c.x,c.y,7,0,TAU);mctx.fill()});mctx.restore()}
