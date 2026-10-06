@@ -335,21 +335,50 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     ctx.closePath();
   }
   function drawCar(ctx,c,cam,w,h){
-    const p={x:w/2+(c.x-cam.x)*cam.zoom,y:h/2+(c.y-cam.y)*cam.zoom},d=c.spec.shape==='supercar'?{L:4.35,W:1.94}:c.spec.shape==='hatch'?{L:4.22,W:1.83}:c.spec.shape==='suv'?{L:4.70,W:2.02}:c.spec.shape==='roadster'?{L:4.12,W:1.82}:{L:4.62,W:1.87},sc=5.55*cam.zoom,L=d.L*sc,W=d.W*sc;
-    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(c.angle+Math.PI/2);ctx.globalAlpha=.35;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(4,8,W*.8,L*.46,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
-    ctx.fillStyle='#101519';for(const side of [-1,1])for(const pos of [-.30,.30]){ctx.beginPath();rr(ctx,side*W*.53,pos*L-W*.095,W*.20,W*.37,5);ctx.fill()}
-    ctx.fillStyle=c.spec.color;ctx.beginPath();
-    if(c.spec.shape==='supercar'){ctx.moveTo(-W*.35,-L*.52);ctx.lineTo(W*.35,-L*.52);ctx.lineTo(W*.50,-L*.18);ctx.lineTo(W*.48,L*.30);ctx.lineTo(W*.30,L*.48);ctx.quadraticCurveTo(0,L*.54,-W*.30,L*.48);ctx.lineTo(-W*.48,L*.30);ctx.lineTo(-W*.50,-L*.18);ctx.closePath()}else if(c.spec.shape==='hatch'){rr(ctx,-W*.50,-L*.49,W,L,10)}else if(c.spec.shape==='suv'){rr(ctx,-W*.50,-L*.50,W,L,13)}else if(c.spec.shape==='roadster'){ctx.moveTo(-W*.44,-L*.48);ctx.quadraticCurveTo(0,-L*.56,W*.44,-L*.48);ctx.lineTo(W*.50,L*.30);ctx.quadraticCurveTo(0,L*.52,-W*.50,L*.30);ctx.closePath()}else{rr(ctx,-W*.49,-L*.50,W,L,9)}ctx.fill();
-    ctx.fillStyle='#17242d';ctx.fillRect(-W*.43,-L*.47,W*.86,Math.max(3,W*.055));ctx.fillRect(-W*.42,L*.39,W*.84,Math.max(3,W*.06));
-    ctx.fillStyle='#10202b';ctx.beginPath();if(c.spec.shape==='supercar'){ctx.moveTo(-W*.29,-L*.30);ctx.lineTo(W*.27,-L*.30);ctx.lineTo(W*.20,L*.03);ctx.lineTo(-W*.22,L*.03);ctx.closePath()}else if(c.spec.shape==='suv'){rr(ctx,-W*.31,-L*.29,W*.62,L*.42,8)}else if(c.spec.shape==='roadster'){rr(ctx,-W*.28,-L*.27,W*.56,L*.32,9)}else{rr(ctx,-W*.30,-L*.30,W*.60,L*.40,8)}ctx.fill();ctx.strokeStyle='#9cb1bfaa';ctx.lineWidth=1.1;ctx.stroke();
-    ctx.strokeStyle='#667d8c';ctx.beginPath();ctx.moveTo(0,-L*.31);ctx.lineTo(0,L*.04);ctx.stroke();
-    ctx.fillStyle='#eefaff';ctx.fillRect(-W*.32,-L*.48,W*.18,Math.max(3,W*.055));ctx.fillRect(W*.14,-L*.48,W*.18,Math.max(3,W*.055));ctx.fillStyle='#ff5662';ctx.fillRect(-W*.32,L*.40,W*.18,Math.max(3,W*.055));ctx.fillRect(W*.14,L*.40,W*.18,Math.max(3,W*.055));
-    ctx.fillStyle='#0b141a';ctx.beginPath();ctx.arc(-W*.57,-L*.10,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(W*.57,-L*.07,4,0,Math.PI*2);ctx.fill();
-    if(c.spec.shape==='supercar'){ctx.fillStyle='#202e37';ctx.fillRect(-W*.36,L*.23,W*.72,Math.max(3,W*.06))}if(c.spec.shape==='hatch'){ctx.fillStyle='#17242c';ctx.fillRect(-W*.39,L*.30,W*.78,Math.max(3,W*.05))}if(c.spec.shape==='suv'){ctx.fillStyle='#11191f';ctx.fillRect(-W*.43,L*.34,W*.86,Math.max(3,W*.07))}
-    if(c.spec.brand==='Subaru'||c.spec.brand==='Mitsubishi'){ctx.fillStyle='#e4e9eb';ctx.beginPath();ctx.arc(-W*.20,0,Math.max(2,W*.05),0,Math.PI*2);ctx.fill()}
-    if(c.spec.brand==='Porsche'||c.spec.brand==='Lamborghini'){ctx.fillStyle='#0c1318';ctx.fillRect(-W*.13,-L*.10,W*.26,Math.max(2,W*.045))}
-    ctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd35b':'#ffffff35';ctx.fillRect(-W*.045,-L*.42,W*.09,L*.74);
-    if(c.drift>.16){ctx.fillStyle='#e3eaed';ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(-W*.58,-L*.24,W*.17,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(W*.58,-L*.24,W*.17,0,Math.PI*2);ctx.fill()}if(c.pitting||c.serviceFlash>0){ctx.globalAlpha=.9;ctx.fillStyle='#ffd35b';ctx.font='900 8px system-ui';ctx.textAlign='center';ctx.fillText(c.pitting?'PIT':'READY',0,-L*.62)}ctx.restore()
+    const p={x:w/2+(c.x-cam.x)*cam.zoom,y:h/2+(c.y-cam.y)*cam.zoom};
+    const scale=4.6*cam.zoom;
+    const L=(c.spec.shape==='suv'?4.7:c.spec.shape==='supercar'?4.35:4.35)*scale;
+    const W=(c.spec.shape==='suv'?2.02:c.spec.shape==='supercar'?1.94:1.87)*scale;
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(c.angle+Math.PI/2);
+    ctx.globalAlpha=.28;
+    ctx.fillStyle='#000';
+    ctx.beginPath();
+    ctx.ellipse(3,7,W*.78,L*.42,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle='#12181d';
+    for(const side of [-1,1]) for(const pos of [-.31,.31]){
+      ctx.fillRect(side*W*.44,pos*L-W*.12,W*.14,W*.28);
+    }
+    ctx.fillStyle=c.spec.color;
+    ctx.beginPath();
+    ctx.moveTo(-W*.48,-L*.48);ctx.lineTo(W*.48,-L*.48);
+    ctx.lineTo(W*.50,L*.30);ctx.quadraticCurveTo(0,L*.54,-W*.50,L*.30);
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle='#14232d';
+    ctx.beginPath();
+    ctx.moveTo(-W*.30,-L*.28);ctx.lineTo(W*.30,-L*.28);
+    ctx.lineTo(W*.22,L*.05);ctx.lineTo(-W*.22,L*.05);
+    ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#9cb1bf';
+    ctx.lineWidth=Math.max(1,cam.zoom*.18);
+    ctx.stroke();
+    ctx.fillStyle='#eefaff';
+    ctx.fillRect(-W*.30,-L*.46,W*.16,Math.max(2,W*.055));
+    ctx.fillRect(W*.14,-L*.46,W*.16,Math.max(2,W*.055));
+    ctx.fillStyle='#ff5662';
+    ctx.fillRect(-W*.30,L*.38,W*.16,Math.max(2,W*.055));
+    ctx.fillRect(W*.14,L*.38,W*.16,Math.max(2,W*.055));
+    ctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd35b':'#ffffff';
+    ctx.fillRect(-Math.max(2,W*.035),-L*.40,Math.max(4,W*.07),L*.72);
+    if(c.drift>.16){
+      ctx.fillStyle='#e3eaed';ctx.globalAlpha=.55;
+      ctx.beginPath();ctx.arc(-W*.50,-L*.20,W*.13,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(W*.50,-L*.20,W*.13,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
   }
   function rank(){return [...race.cars].sort((a,b)=>((b.lap+b.progress)-(a.lap+a.progress))||b.points-a.points)}
   function hud(){
