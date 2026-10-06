@@ -71,6 +71,18 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
 <script>
 (function(){
   const q=id=>document.getElementById(id);
+  function showGameError(err){
+    try{
+      const box=document.getElementById('gameError')||document.createElement('pre');
+      box.id='gameError';
+      box.textContent='GAME ERROR\\n'+(err&&err.stack?err.stack:(err&&err.message)||String(err));
+      box.style.cssText='position:fixed;left:10px;right:10px;bottom:10px;max-height:38vh;overflow:auto;z-index:99999;margin:0;padding:12px;background:#2b0b10;color:#ffd9dd;border:2px solid #ff5b65;border-radius:10px;font:12px/1.4 monospace;white-space:pre-wrap';
+      document.body.appendChild(box);
+    }catch(_){}
+  }
+  window.addEventListener('error',e=>showGameError(e.error||e.message));
+  window.addEventListener('unhandledrejection',e=>showGameError(e.reason||e));
+
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const lerp=(a,b,t)=>a+(b-a)*t;
   const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
@@ -404,17 +416,23 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
   function beep(f=440){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator();o.frequency.value=f;o.connect(audio.destination);o.start();o.stop(audio.currentTime+.06)}catch(e){}}
   q('mode').onchange=()=>{mode=q('mode').value;q('p2box').classList.toggle('hidden',mode!=='two');updateSummary()};q('aiCount').onchange=updateSummary;q('tyre').onchange=()=>{selectedTyre=q('tyre').value;updateSummary()};q('pitTyre').onchange=()=>{selectedPitTyre=q('pitTyre').value;updateSummary()};q('tcs').onchange=()=>{selectedTcs=+q('tcs').value;updateSummary()};q('laps').innerHTML=Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');q('laps').value=3;q('startBtn').onclick=()=>{beep(620);startRace();requestAnimationFrame(loop)};q('pauseBtn').onclick=togglePause;q('restartBtn').onclick=restart;q('exitBtn').onclick=exitRace;q('arcadeBtn').onclick=()=>location.href='./index.html';q('soundBtn').onclick=()=>{sound=!sound;q('soundBtn').textContent=sound?'🔊 Sound':'🔇 Muted'};q('fsBtn').onclick=()=>{document.documentElement.requestFullscreen?.()};
   window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='p')togglePause()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('resize',resize);
-  renderBrands();renderModels();renderP2();renderTracks();updateSummary();resize();
-  let pct=0;const li=setInterval(()=>{pct=Math.min(100,pct+4);q('loadFill').style.width=pct+'%';q('loadPct').textContent=pct+'%';if(pct<35){q('loadStage').textContent='BUILDING THE GRID';q('loadTip').textContent='Preparing the garage...'}else if(pct<70){q('loadStage').textContent='MAPPING THE CIRCUIT';q('loadTip').textContent='Preparing the supplied circuit layouts...'}else{q('loadStage').textContent='FINAL GRID CHECK';q('loadTip').textContent='Tuning the camera and race systems...'}if(pct===100){clearInterval(li);setTimeout(()=>q('loadingScreen').classList.add('done'),250)}},55);
-  window.addEventListener('error',function(e){
-    try{
-      const box=q('gameError')||document.createElement('pre');
-      box.id='gameError';
-      box.textContent='GAME ERROR\\n'+(e.error&&e.error.stack?e.error.stack:e.message);
-      box.style.cssText='position:fixed;left:10px;right:10px;bottom:10px;max-height:40vh;overflow:auto;z-index:99999;margin:0;padding:12px;background:#2b0b10;color:#ffd9dd;border:2px solid #ff5b65;border-radius:10px;font:12px/1.4 monospace;white-space:pre-wrap';
-      document.body.appendChild(box);
-    }catch(_){}
-  });
+  let pct=0;
+  const li=setInterval(()=>{
+    pct=Math.min(100,pct+4);
+    q('loadFill').style.width=pct+'%';
+    q('loadPct').textContent=pct+'%';
+    if(pct<35){q('loadStage').textContent='BUILDING THE GRID';q('loadTip').textContent='Preparing the garage...'}
+    else if(pct<70){q('loadStage').textContent='MAPPING THE CIRCUIT';q('loadTip').textContent='Preparing the supplied circuit layouts...'}
+    else{q('loadStage').textContent='FINAL GRID CHECK';q('loadTip').textContent='Tuning the camera and race systems...'}
+    if(pct===100){clearInterval(li);setTimeout(()=>q('loadingScreen').classList.add('done'),250)}
+  },55);
+
+  try{renderBrands()}catch(e){showGameError(e)}
+  try{renderModels()}catch(e){showGameError(e)}
+  try{renderP2()}catch(e){showGameError(e)}
+  try{renderTracks()}catch(e){showGameError(e)}
+  try{updateSummary()}catch(e){showGameError(e)}
+  try{resize()}catch(e){showGameError(e)}
 })();
 </script>
 </body></html>
