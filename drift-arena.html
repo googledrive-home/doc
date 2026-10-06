@@ -155,10 +155,26 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     let best={d:1e9,i:0,t:0};for(let i=0;i<s.length-1;i++){const a=s[i],b=s[i+1],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,u=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*u,py=a.y+aby*u,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t:u}}const a=s[best.i],b=s[Math.min(s.length-1,best.i+1)],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,i:best.i,t:best.t,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}
   }
   function brakeInfo(car,s){
-    const n=nearest(s,car.x,car.y),spd=Math.hypot(car.vx,car.vy)*3.6;let maxCurve=0,curveIndex=18;
-    for(let j=12;j<=96;j+=4){const a=s[(n.i+j+s.length)%s.length],b=s[(n.i+j+8+s.length)%s.length],ang=Math.abs(wrap(Math.atan2(b.ty,b.tx)-Math.atan2(a.ty,a.tx)));if(ang>maxCurve){maxCurve=ang;curveIndex=j}}
-    const target=clamp(318-maxCurve*175,95,car.spec.top-18),need=spd-target;if(maxCurve<.18||need<12)return{show:false};
-    const v=spd/3.6,tv=target/3.6,brakeM=Math.max(0,(v*v-tv*tv)/(2*9.5)),advance=clamp(Math.round(brakeM*race.track.scale/18),8,70),idx=(n.i+advance)%s.length;return{show:true,intensity:clamp(need/95,0,1),target,distance:Math.round(brakeM),index:idx,curve:maxCurve}
+    if(!car||!s||s.length<16||!car.spec)return{show:false};
+    const n=nearest(s,Number(car.x)||0,Number(car.y)||0);
+    const len=s.length;
+    let maxCurve=0;
+    for(let j=12;j<=96;j+=4){
+      const aa=s[(n.i+j)%len],bb=s[(n.i+j+8)%len];
+      if(!aa||!bb)continue;
+      if(!Number.isFinite(aa.ty)||!Number.isFinite(aa.tx)||!Number.isFinite(bb.ty)||!Number.isFinite(bb.tx))continue;
+      const ang=Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx)));
+      if(ang>maxCurve)maxCurve=ang;
+    }
+    const spd=Math.hypot(Number(car.vx)||0,Number(car.vy)||0)*3.6;
+    const top=Number(car.spec.top)||300;
+    const target=clamp(318-maxCurve*175,95,top-18),need=spd-target;
+    if(maxCurve<.18||need<12)return{show:false};
+    const v=spd/3.6,tv=target/3.6;
+    const brakeM=Math.max(0,(v*v-tv*tv)/(2*9.5));
+    const trackScale=Number(race&&race.track&&race.track.scale)||1;
+    const advance=clamp(Math.round(brakeM*trackScale/18),8,70);
+    return{show:true,intensity:clamp(need/95,0,1),target,distance:Math.round(brakeM),index:(n.i+advance)%len,curve:maxCurve};
   }
   function nearest(s,x,y){let best={d:1e9,i:0,t:0};for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,t=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*t,py=a.y+aby*t,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t}}const a=s[best.i],b=s[(best.i+1)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,progress:(best.i+best.t)/s.length,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}}
   function makeCar(spec,slot,player,isAI,s){
