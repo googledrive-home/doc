@@ -102,7 +102,66 @@ button{cursor:pointer}
     <div class="loading-footer"><span id="loadingDetail">Preparing Drift Arena</span><span>PLEASE WAIT</span></div>
   </div>
 </div>
-<div class="wrap">
+<script>
+(function(){
+  const screen=document.getElementById('loadingScreen');
+  const card=screen?.querySelector('.loading-card');
+  const fill=document.getElementById('loadingFill');
+  const pct=document.getElementById('loadingPercent');
+  const stage=document.getElementById('loadingStage');
+  const tip=document.getElementById('loadingTip');
+  const detail=document.getElementById('loadingDetail');
+  if(!screen||!card||!fill||!pct||!stage||!tip||!detail)return;
+
+  const scenes=[
+    ['WARMING UP THE GRID','Checking the garage and starting the race systems...','GARAGE CHECK'],
+    ['MAPPING THE CIRCUIT','Preparing the supplied overhead track artwork...','TRACK MAPS'],
+    ['PREPPING THE CARS','Preparing the top-down car visuals...','CAR LIBRARY'],
+    ['SETTING THE CAMERA','Building the close chase view and minimap...','CAMERA SYSTEM'],
+    ['CALIBRATING PHYSICS','Preparing grip, braking, acceleration and AI...','PHYSICS'],
+    ['FINAL GRID CHECK','Finishing the last startup checks...','GRID READY']
+  ];
+
+  let lastScene=-1;
+  function setScene(n){
+    const i=n%scenes.length;
+    if(i===lastScene)return;
+    lastScene=i;
+    card.className='loading-card scene-'+(i+1);
+    stage.textContent=scenes[i][0];
+    tip.textContent=scenes[i][1];
+    detail.textContent=scenes[i][2];
+  }
+
+  setScene(0);
+  const start=performance.now();
+  const duration=4600;
+
+  function tick(now){
+    const t=Math.min(1,(now-start)/duration);
+    const eased=1-Math.pow(1-t,3);
+    const value=Math.round(eased*100);
+    fill.style.width=value+'%';
+    pct.textContent=value+'%';
+    setScene(Math.floor(t*6));
+
+    if(t<1){
+      requestAnimationFrame(tick);
+    }else{
+      card.className='loading-card scene-5';
+      stage.textContent='READY FOR THE START';
+      tip.textContent='Everything is loaded. Welcome to Drift Arena.';
+      detail.textContent='GRID READY';
+      setTimeout(()=>screen.classList.add('loaded'),350);
+    }
+  }
+  requestAnimationFrame(tick);
+
+  // Preload visual assets independently; they never control the progress bar.
+  const assets=['assets/drift-car-reference.webp','assets/drift-track-1.webp','assets/drift-track-2.webp'];
+  assets.forEach(src=>{const im=new Image();im.decoding='async';im.src='./'+src;});
+})();
+</script><div class="wrap">
   <div class="top">
     <div class="brand">DRIFT <span>ARENA</span></div><div class="grow"></div>
     <button class="btn" id="soundBtn">🔊 Sound</button>
@@ -608,7 +667,7 @@ window.addEventListener('unhandledrejection',e=>{
   const host=$('toast');
   if(host){host.textContent='Game error: '+msg;host.classList.add('show');}
 });
-renderBrands();renderModels();renderP2Cars();renderTracks();renderSetup();updateSummary();resizeCanvas();startGameLoader();
+renderBrands();renderModels();renderP2Cars();renderTracks();renderSetup();updateSummary();resizeCanvas();
 </script>
 </body>
 </html>
