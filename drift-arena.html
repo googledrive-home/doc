@@ -47,6 +47,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
 <div class="control"><div class="section"><h2>Race setup</h2><small>Local multiplayer</small></div><div class="grid2">
 <div><small>Mode</small><select class="select" id="mode"><option value="solo">Single Player</option><option value="two">2 Players</option></select></div>
 <div><small>AI drivers</small><select class="select" id="aiCount"><option>3</option><option>5</option><option>8</option><option>10</option></select></div>
+<div><small>AI difficulty</small><select class="select" id="aiDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="pro">Pro</option></select></div>
 <div id="p2box" class="hidden"><small>Player 2 car</small><select class="select" id="p2car"></select></div>
 <div><small>Laps</small><select class="select" id="laps"></select></div>
 <div><small>Start tyres</small><select class="select" id="tyre"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></div>
@@ -123,7 +124,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     {name:'Harbor Ring',W:H.W,H:H.H,width:44,pts:H.pts,scale:1.46}
   ];
   const keys=new Set();
-  let selectedBrand='Subaru',selectedCar=1,selectedP2=0,selectedTrack=2,mode='solo',aiCount=3,laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
+  let selectedBrand='Subaru',selectedCar=1,selectedP2=0,selectedTrack=2,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
 
   function svg(car){
     const body=car.shape==='supercar'?'<path d="M14 36L20 20L34 11L66 11L80 20L86 36L79 45L21 45Z"':car.shape==='hatch'?'<path d="M13 37L18 19L31 10L69 10L82 19L87 37L77 46L23 46Z"':car.shape==='suv'?'<path d="M12 38L17 17L28 9L72 9L83 17L88 38L78 47L22 47Z"':car.shape==='roadster'?'<path d="M17 38L22 20L37 12L63 12L78 20L83 38L73 45L27 45Z"':'<path d="M14 38L18 19L30 10L70 10L82 19L86 38L77 46L23 46Z"';
@@ -154,7 +155,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     q('tracks').innerHTML=trackDefs.map((t,i)=>'<button class="track-choice '+(i===selectedTrack?'active':'')+'" data-t="'+i+'"><div class="track-mini"><canvas width="230" height="120"></canvas></div><div><strong>'+t.name+'</strong><small>Wide circuit · '+(i%2?'reverse':'clockwise')+' line · pit lane · smart braking zones</small></div></button>').join('');
     q('tracks').querySelectorAll('.track-choice').forEach((b,i)=>{const ts=pathSamples(trackDefs[i]),pit=buildPit(ts,trackDefs[i]);mini(trackDefs[i],b.querySelector('canvas').getContext('2d'),pit);b.onclick=()=>{selectedTrack=i;renderTracks();updateSummary()}});
   }
-  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs}
+  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+aiDifficulty.toUpperCase()+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs}
   function pathSamples(track){
     const pts=track.pts,s=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(3,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/18));for(let j=0;j<n;j++){const u=j/n;s.push({x:lerp(a[0],b[0],u),y:lerp(a[1],b[1],u)})}}for(let i=0;i<s.length;i++){const a=s[(i+s.length-5)%s.length],b=s[(i+5)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;s[i].tx=dx/l;s[i].ty=dy/l;s[i].nx=-s[i].ty;s[i].ny=s[i].tx}return s
   }
@@ -193,9 +194,42 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     const p=s[(20+slot*12)%s.length],a=Math.atan2(p.ty,p.tx),tyreKey=isAI?'medium':selectedTyre;
     return{spec,x:p.x+(slot%2?14:-14),y:p.y+Math.floor(slot/2)*12,angle:a,vx:0,vy:0,lap:0,progress:0,prev:0,player,ai:isAI,finished:false,finish:0,points:0,best:null,slip:0,drift:0,stuck:0,steerState:0,fuel:spec.fuelCap,fuelCap:spec.fuelCap,tyre:tyreKey,tyreWear:100,tcs:isAI?2:selectedTcs,inPit:false,pitting:false,pitTimer:0,serviceFlash:0,lapStart:0}
   }
+  const AI_LEVELS={
+    easy:{look:72,far:34,aggression:.82,steerGain:.72,brakeMargin:15,reaction:.75},
+    medium:{look:86,far:42,aggression:1.00,steerGain:.88,brakeMargin:9,reaction:.88},
+    hard:{look:102,far:52,aggression:1.10,steerGain:1.02,brakeMargin:6,reaction:.96},
+    pro:{look:116,far:62,aggression:1.18,steerGain:1.12,brakeMargin:3,reaction:1}
+  };
   function input(car,s){
     if(!car.ai)return car.player===2?{throttle:keys.has('arrowup'),brake:keys.has('arrowdown'),steer:(keys.has('arrowleft')?-1:0)+(keys.has('arrowright')?1:0),pit:keys.has(' ')}:{throttle:keys.has('w'),brake:keys.has('s'),steer:(keys.has('a')?-1:0)+(keys.has('d')?1:0),pit:keys.has(' ')};
-    const n=nearest(s,car.x,car.y),idx=Math.floor(n.progress*s.length),look=Math.round(clamp(62+Math.hypot(car.vx,car.vy)*1.1,65,155)),t=s[(idx+look)%s.length],t2=s[(idx+look+32)%s.length],desired=Math.atan2(t.y-car.y,t.x-car.x),far=Math.atan2(t2.y-t.y,t2.x-t.x),err=wrap(desired-car.angle),curve=Math.abs(wrap(far-desired)),kmh=Math.hypot(car.vx,car.vy)*3.6,target=clamp(315-curve*175,105,car.spec.top-14);return{throttle:kmh<target-5,brake:kmh>target+8||Math.abs(err)>1.0,steer:clamp(err*1.35-((car.x-n.x)*n.nx+(car.y-n.y)*n.ny)*.010,-1,1),pit:false}
+
+    const cfg=AI_LEVELS[race&&race.aiDifficulty||'medium']||AI_LEVELS.medium;
+    const n=nearest(s,car.x,car.y),len=s.length,idx=n.i;
+    const speed=Math.hypot(car.vx,car.vy)*3.6;
+    const look=Math.round(clamp(cfg.look+speed*.34,70,170));
+    const p1=s[(idx+look)%len],p2=s[(idx+Math.round(look+cfg.far+speed*.12))%len],p3=s[(idx+Math.round(look+cfg.far*1.8))%len];
+    const targetAng=Math.atan2((p1.y+p2.y*.35)-car.y*1.35,(p1.x+p2.x*.35)-car.x*1.35);
+    const futureAng=Math.atan2(p3.y-p2.y,p3.x-p2.x);
+    const headingErr=wrap(targetAng-car.angle);
+    const futureCurve=Math.abs(wrap(futureAng-targetAng));
+    const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny;
+    const recovery=clamp(lateral/32,-1,1);
+    const steer=clamp(headingErr*cfg.steerGain-recovery*.9,-1,1);
+
+    // Use several look-ahead samples to estimate corner severity instead of
+    // chasing one point. This keeps AI on the racing surface.
+    let curve=0;
+    for(let j=12;j<=cfg.far;j+=8){
+      const aa=s[(idx+j)%len],bb=s[(idx+j+7)%len];
+      if(aa&&bb)curve=Math.max(curve,Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx))));
+    }
+    const straightFactor=clamp(1-futureCurve/.75,0,1);
+    const curveTarget=305-curve*185-futureCurve*125;
+    const desired=clamp(curveTarget*cfg.aggression,110,car.spec.top-8);
+    const error=speed-desired;
+    const brake=error>cfg.brakeMargin||Math.abs(headingErr)>1.05;
+    const throttle=!brake && speed<desired-3;
+    return{throttle,brake,steer,pit:false};
   }
   function updateCar(car,inp,dt,s){
     const sp=car.spec,t=race.track,ty=TYRES[car.tyre]||TYRES.medium,ppm=t.scale*1.58,hx=Math.cos(car.angle),hy=Math.sin(car.angle),rx=-hy,ry=hx;
@@ -311,8 +345,6 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
       }
     }
     const braking=brakeInfo(race.cars[0],s);drawBrakeZone(ctx,braking,t,s);
-    // Subtle racing groove.
-    ctx.strokeStyle='#ffffff16';ctx.lineWidth=t.width*.34;ctx.setLineDash([26,34]);stroke('#dbe3e533',1.6);ctx.setLineDash([]);
 
     const st=s[0],nx=s[6],ang=Math.atan2(nx.y-st.y,nx.x-st.x);
     ctx.save();ctx.translate(st.x,st.y);ctx.rotate(ang);
@@ -400,7 +432,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     mode=q('mode').value;aiCount=+q('aiCount').value;laps=+q('laps').value;selectedP2=+q('p2car').value;selectedTyre=q('tyre').value;selectedPitTyre=q('pitTyre').value;selectedTcs=+q('tcs').value;
     const track=trackDefs[selectedTrack],s=pathSamples(track);track.pitSide=track.pitSide||-1;const pit=buildPit(s,track),cars=[makeCar(all[selectedCar],0,1,false,s)];
     if(mode==='two')cars.push(makeCar(all[selectedP2],1,2,false,s));for(let i=0;i<aiCount;i++)cars.push(makeCar(all[(selectedCar*7+i*5+11)%all.length],cars.length,0,true,s));
-    race={track,s,pit,cars,laps,time:0,last:performance.now(),paused:false,started:false,done:false,cam:{x:s[0].x,y:s[0].y,zoom:5.2}};
+    race={track,s,pit,cars,laps,aiDifficulty,time:0,last:performance.now(),paused:false,started:false,done:false,cam:{x:s[0].x,y:s[0].y,zoom:5.2}};
     cars.forEach((car,i)=>{car.x=s[0].x+(i%2?-16:16);car.y=s[0].y+Math.floor(i/2)*12;car.angle=Math.atan2(s[4].y-s[0].y,s[4].x-s[0].x);car.prev=0;car.lapStart=0});
     q('setupView').classList.add('hidden');q('raceView').classList.remove('hidden');q('result').classList.add('hidden');q('speed2').classList.toggle('hidden',mode!=='two');q('p1Name').textContent='P1 · '+race.cars[0].spec.model;resize();countdown();
   }
@@ -425,7 +457,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
   function exitRace(){race=null;q('raceView').classList.add('hidden');q('setupView').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
   function restart(){startRace();requestAnimationFrame(loop)}
   function beep(f=440){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator();o.frequency.value=f;o.connect(audio.destination);o.start();o.stop(audio.currentTime+.06)}catch(e){}}
-  q('mode').onchange=()=>{mode=q('mode').value;q('p2box').classList.toggle('hidden',mode!=='two');updateSummary()};q('aiCount').onchange=updateSummary;q('tyre').onchange=()=>{selectedTyre=q('tyre').value;updateSummary()};q('pitTyre').onchange=()=>{selectedPitTyre=q('pitTyre').value;updateSummary()};q('tcs').onchange=()=>{selectedTcs=+q('tcs').value;updateSummary()};q('laps').innerHTML=Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');q('laps').value=3;q('startBtn').onclick=()=>{beep(620);startRace();requestAnimationFrame(loop)};q('pauseBtn').onclick=togglePause;q('restartBtn').onclick=restart;q('exitBtn').onclick=exitRace;q('arcadeBtn').onclick=()=>location.href='./index.html';q('soundBtn').onclick=()=>{sound=!sound;q('soundBtn').textContent=sound?'🔊 Sound':'🔇 Muted'};q('fsBtn').onclick=()=>{document.documentElement.requestFullscreen?.()};
+  q('mode').onchange=()=>{mode=q('mode').value;q('p2box').classList.toggle('hidden',mode!=='two');updateSummary()};q('aiCount').onchange=updateSummary;q('aiDifficulty').onchange=()=>{aiDifficulty=q('aiDifficulty').value;updateSummary()};q('tyre').onchange=()=>{selectedTyre=q('tyre').value;updateSummary()};q('pitTyre').onchange=()=>{selectedPitTyre=q('pitTyre').value;updateSummary()};q('tcs').onchange=()=>{selectedTcs=+q('tcs').value;updateSummary()};q('laps').innerHTML=Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');q('laps').value=3;q('startBtn').onclick=()=>{beep(620);startRace();requestAnimationFrame(loop)};q('pauseBtn').onclick=togglePause;q('restartBtn').onclick=restart;q('exitBtn').onclick=exitRace;q('arcadeBtn').onclick=()=>location.href='./index.html';q('soundBtn').onclick=()=>{sound=!sound;q('soundBtn').textContent=sound?'🔊 Sound':'🔇 Muted'};q('fsBtn').onclick=()=>{document.documentElement.requestFullscreen?.()};
   window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='p')togglePause()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('resize',resize);
   let pct=0;
   const li=setInterval(()=>{
