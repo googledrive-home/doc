@@ -248,7 +248,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
       car.angle+=clamp(Math.tan(car.steerState*maxSteer)*Math.abs(f)/wheelbase,-.72,.72)*dt;
       const fuelFrac=clamp(car.fuel/car.fuelCap,0,1),fuelPower=.68+.32*fuelFrac,tcsCut=inp.throttle&&car.tcs>0?clamp((car.tcs/5)*Math.max(0,Math.abs(l)-2.5)/11,0,.58):0;
       if(inp.throttle&&car.fuel>0){const sf=clamp(Math.abs(f)/Math.max(1,top),0,1),accelScale=clamp(1-.88*Math.pow(sf,1.65),.12,1);f+=sp.accel*.46*accelScale*dt*(1-tcsCut)*fuelPower;}
-      car.brakeState=lerp(car.brakeState||0,inp.brake?1:0,clamp(dt*(inp.brake?1.7:3.2),0,1)); const brakeForce=sp.brake*.30*car.brakeState; if(brakeForce>0)f-=Math.min(Math.abs(f),brakeForce*dt)*Math.sign(f||1);
+      car.brakeState=lerp(car.brakeState||0,inp.brake?1:0,clamp(dt*(inp.brake?2.2:3.2),0,1)); const brakeForce=sp.brake*.56*car.brakeState; if(brakeForce>0)f-=Math.min(Math.abs(f),brakeForce*dt)*Math.sign(f||1);
       if(!inp.throttle&&!inp.brake)f-=Math.sign(f||1)*Math.min(Math.abs(f),(.55+.0045*f*f)*dt);
       if(onPit)f=clamp(f,-4,19.4);f=clamp(f,-6,top);
       const offRoad=!onPit&&mainN.d>t.width*.43,gripFactor=.64+.36*(car.tyreWear/100),effectiveGrip=sp.grip*ty.grip*gripFactor*(offRoad?.54:1),sliding=Math.abs(car.steerState)>.20&&Math.abs(f)>14;
