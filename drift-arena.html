@@ -43,9 +43,56 @@ button{cursor:pointer}
 .toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:9px 13px;border-radius:12px;background:#06101ddd;border:1px solid #ffffff18;font-size:11px;opacity:0;transition:.2s}.toast.show{opacity:1}
 @media(max-width:1000px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.startbox{margin-top:0}}
 @media(max-width:760px){.wrap{padding:9px}.models{grid-template-columns:1fr}.controlgrid,.side{grid-template-columns:1fr}.specs{grid-template-columns:repeat(2,1fr)}.track-choice{grid-template-columns:105px 1fr}.track-mini{width:105px;height:62px}.speed-panel{width:145px}.speed-ring{width:108px;height:108px}.minimap{width:145px;height:95px}.speed-panel.p2{right:8px}.speed-panel{left:8px}.p1tag{left:8px}.minimap{right:8px}}
-.reference-board{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-top:14px;padding:10px;border-radius:16px;background:#091724;border:1px solid #ffffff12}.reference-board img{width:120px;height:92px;object-fit:cover;border-radius:11px}.reference-board b{display:block;font-size:12px}.reference-board small{display:block;color:#8ea6bb;font-size:10px;line-height:1.4;margin-top:4px}</style>
+.reference-board{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-top:14px;padding:10px;border-radius:16px;background:#091724;border:1px solid #ffffff12}.reference-board img{width:120px;height:92px;object-fit:cover;border-radius:11px}.reference-board b{display:block;font-size:12px}.reference-board small{display:block;color:#8ea6bb;font-size:10px;line-height:1.4;margin-top:4px}#loadingScreen{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;overflow:hidden;background:#050b12;color:#f6fbff}
+#loadingScreen.loaded{opacity:0;pointer-events:none;transition:opacity .65s ease}
+.loading-noise{position:absolute;inset:0;background:radial-gradient(circle at 20% 10%,#1b51665e 0 2px,transparent 3px),radial-gradient(circle at 80% 80%,#ff6b4e42 0 2px,transparent 3px);background-size:34px 34px,44px 44px;opacity:.35}
+.loading-track{position:absolute;inset:-35%;border:80px solid #3a4248;border-radius:48%;transform:rotate(-12deg);box-shadow:inset 0 0 0 4px #81878a,inset 0 0 0 20px #252b30;opacity:.34}
+.loading-track-a{animation:loadTrackA 8s linear infinite}.loading-track-b{transform:rotate(30deg);opacity:.15;animation:loadTrackB 12s linear infinite}
+.loading-card{position:relative;width:min(760px,92vw);padding:24px;border-radius:24px;background:#07111ce8;border:1px solid #ffffff20;box-shadow:0 30px 120px #000b;backdrop-filter:blur(18px)}
+.loading-kicker{font-size:10px;letter-spacing:.16em;color:#8ea9bb;font-weight:1000}.loading-kicker span{color:#4be3ff}
+.loading-card h1{margin:7px 0 13px;font-size:clamp(40px,8vw,82px);letter-spacing:-5px;line-height:.88}.loading-card h1 span{color:#4be3ff}
+.loading-scene{height:260px;position:relative;overflow:hidden;border-radius:17px;border:1px solid #ffffff16;background:linear-gradient(155deg,#213b2c,#0c151a)}
+.loading-scene:before{content:"";position:absolute;inset:14% -15%;height:58%;border-radius:45% / 50%;background:#1b2327;box-shadow:inset 0 0 0 7px #73797b,inset 0 0 0 18px #41484b;transform:rotate(-8deg)}
+.loading-scene:after{content:"";position:absolute;left:-10%;right:-10%;top:49%;border-top:3px dashed #f0f2f3;transform:rotate(-8deg);opacity:.45}
+.loading-car{position:absolute;width:124px;height:58px;border-radius:24px 28px 18px 18px;border:3px solid #dceaf2;z-index:3;box-shadow:0 14px 34px #0008}
+.loading-car:before{content:"";position:absolute;left:31px;top:6px;width:47px;height:39px;border-radius:16px 18px 11px 11px;background:#14212c}
+.loading-car:after{content:"";position:absolute;left:16px;right:16px;bottom:-10px;height:12px;background:radial-gradient(circle,#12161b 0 5px,transparent 6px) 0 0/38px 12px repeat-x}
+.loading-car-a{background:#e84f57;left:17%;top:54%;transform:rotate(-11deg);animation:loadCarA 3.6s ease-in-out infinite}
+.loading-car-b{background:#4be3ff;right:15%;top:34%;transform:rotate(8deg);animation:loadCarB 4.2s ease-in-out infinite}
+.loading-apex{position:absolute;width:180px;height:180px;border:2px solid #ffd65a66;border-radius:50%;right:24%;top:7%;box-shadow:0 0 50px #ffd65a13}
+.loading-scene-lines{position:absolute;inset:0;background:linear-gradient(90deg,transparent 0 48%,#ffffff0b 49% 50%,transparent 51% 100%);opacity:.3}
+.loading-meta{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-top:14px}.loading-meta b{display:block;font-size:14px;letter-spacing:.04em}.loading-meta span{display:block;color:#91a9bd;font-size:10px;margin-top:3px}.loading-meta strong{font-size:22px;color:#4be3ff}
+.loading-bar{height:12px;border-radius:99px;background:#0a1724;border:1px solid #ffffff14;overflow:hidden;margin-top:10px}.loading-bar>div{height:100%;width:0;background:linear-gradient(90deg,#4be3ff,#79f2c1,#ffd65a);border-radius:inherit;box-shadow:0 0 24px #4be3ff55;transition:width .25s ease}
+.loading-footer{display:flex;justify-content:space-between;margin-top:8px;color:#6f8799;font-size:9px;letter-spacing:.1em}
+@keyframes loadTrackA{0%{transform:rotate(-12deg) translate(-2%,0)}50%{transform:rotate(-12deg) translate(2%,-1%)}100%{transform:rotate(-12deg) translate(-2%,0)}}
+@keyframes loadTrackB{0%{transform:rotate(30deg) translate(1%,0)}50%{transform:rotate(30deg) translate(-2%,2%)}100%{transform:rotate(30deg) translate(1%,0)}}
+@keyframes loadCarA{0%,100%{transform:translate(0,0) rotate(-11deg)}50%{transform:translate(65px,-14px) rotate(-5deg)}}
+@keyframes loadCarB{0%,100%{transform:translate(0,0) rotate(8deg)}50%{transform:translate(-70px,24px) rotate(15deg)}}
+@media(max-width:700px){.loading-card{padding:16px}.loading-scene{height:220px}.loading-car{transform:scale(.82)}}
+</style>
 </head>
 <body>
+<div id="loadingScreen" aria-live="polite">
+  <div class="loading-noise"></div>
+  <div class="loading-track loading-track-a"></div>
+  <div class="loading-track loading-track-b"></div>
+  <div class="loading-card">
+    <div class="loading-kicker">GOOGLE DRIVE ARCADE · <span>RACING DEPARTMENT</span></div>
+    <h1>DRIFT <span>ARENA</span></h1>
+    <div class="loading-scene">
+      <div class="loading-car loading-car-a"></div>
+      <div class="loading-car loading-car-b"></div>
+      <div class="loading-apex"></div>
+      <div class="loading-scene-lines"></div>
+    </div>
+    <div class="loading-meta">
+      <div><b id="loadingStage">WARMING UP THE GRID</b><span id="loadingTip">Loading circuits, cars and race assets...</span></div>
+      <strong id="loadingPercent">0%</strong>
+    </div>
+    <div class="loading-bar"><div id="loadingFill"></div></div>
+    <div class="loading-footer"><span id="loadingDetail">Preparing Drift Arena</span><span>PLEASE WAIT</span></div>
+  </div>
+</div>
 <div class="wrap">
   <div class="top">
     <div class="brand">DRIFT <span>ARENA</span></div><div class="grow"></div>
@@ -458,7 +505,7 @@ window.addEventListener('unhandledrejection',e=>{
   const host=$('toast');
   if(host){host.textContent='Game error: '+msg;host.classList.add('show');}
 });
-renderBrands();renderModels();renderP2Cars();renderTracks();renderSetup();updateSummary();resizeCanvas();
+renderBrands();renderModels();renderP2Cars();renderTracks();renderSetup();updateSummary();resizeCanvas();startGameLoader();
 </script>
 </body>
 </html>
