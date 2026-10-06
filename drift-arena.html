@@ -408,8 +408,19 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
   const canvas=q('canvas'),ctx=canvas.getContext('2d'),map=q('map');
   function resize(){const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.floor(r.width*d));canvas.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);map.width=370;map.height=240}
   function loop(now){if(!race)return;const dt=Math.min(.032,(now-race.last)/1000||0);race.last=now;if(race.started&&!race.paused&&!race.done){race.time+=dt;for(const c of race.cars)updateCar(c,input(c,race.s),dt,race.s);if(race.cars[0].finished)race.done=true}
-    const p=race.cars[0],p2=race.cars.find(c=>c.player===2),spd=Math.hypot(p.vx,p.vy),tx=p2?(p.x+p2.x)/2:p.x+p.vx*.78,ty=p2?(p.y+p2.y)/2:p.y+p.vy*.78,d=p2?Math.hypot(p.x-p2.x,p.y-p2.y):0,z=p2?clamp(4.45-d/260,2.7,4.45):5.2;race.cam.x=lerp(race.cam.x,tx,.08);race.cam.y=lerp(race.cam.y,ty,.08);race.cam.zoom=lerp(race.cam.zoom,z,.08);
-    const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);drawTrack(ctx,race.track,race.s,race.cam,w,h);race.cars.forEach(c=>drawCar(ctx,c,race.cam,w,h));drawSpeedFX(ctx,p,race.cam,w,h,spd);mapDraw();hud();if(race.done)result();else requestAnimationFrame(loop)}
+    const p=race.cars[0],p2=race.cars.find(c=>c.player===2);
+    let tx=p.x+p.vx*.78,ty=p.y+p.vy*.78,z=5.2;
+    if(p2){
+      const dx=p2.x-p.x,dy=p2.y-p.y,dist=Math.hypot(dx,dy);
+      tx=(p.x+p2.x)/2+(p.vx+p2.vx)*.18;
+      ty=(p.y+p2.y)/2+(p.vy+p2.vy)*.18;
+      const w=canvas.clientWidth||1000,h=canvas.clientHeight||600,margin=220;
+      const fitX=(w-margin)/Math.max(1,Math.abs(dx)),fitY=(h-margin)/Math.max(1,Math.abs(dy));
+      const distanceZoom=5.15-dist/310;
+      z=clamp(Math.min(distanceZoom,fitX,fitY),2.15,5.15);
+    }
+    race.cam.x=lerp(race.cam.x,tx,.12);race.cam.y=lerp(race.cam.y,ty,.12);race.cam.zoom=lerp(race.cam.zoom,z,.12);
+    const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);drawTrack(ctx,race.track,race.s,race.cam,w,h);race.cars.forEach(c=>drawCar(ctx,c,race.cam,w,h));mapDraw();hud();if(race.done)result();else requestAnimationFrame(loop)}
   function togglePause(){if(!race||race.done)return;race.paused=!race.paused;q('pauseBtn').textContent=race.paused?'▶ Resume':'Ⅱ Pause'}
   function exitRace(){race=null;q('raceView').classList.add('hidden');q('setupView').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
   function restart(){startRace();requestAnimationFrame(loop)}
