@@ -399,6 +399,13 @@ function ensureAudio(){
   }catch(e){}
 }
 
+function carSpecText(car){
+  return [
+    ['POWER',car.power+' hp'],['WEIGHT',Math.round(car.weight)+' kg'],['TOP',car.top+' km/h'],
+    ['DRIVE',car.drive],['GRIP',Math.round(car.grip*100)+'%'],['BRAKE',Math.round(car.brake*100)+'%'],
+    ['DRIFT',Math.round(car.drift*100)+'%'],['STEER',Math.round(car.steer*100)+'%']
+  ].map(([label,value])=>'<div class="spec"><b>'+value+'</b><span>'+label+'</span></div>').join('');
+}
 function carSVG(car){
   const c=car.color||'#4be3ff',k=car.kind||'coupe';
   const roof=k==='supercar'?'M31 14L69 14L79 25L21 25Z':k==='suv'?'M27 12L73 12L80 25L20 25Z':'M27 14L70 14L79 26L21 26Z';
