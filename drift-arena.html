@@ -363,6 +363,98 @@ carReferenceImage.onload=()=>{
 };
 carReferenceImage.onerror=()=>{carSprites=[];};
 
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const mapCanvas=document.getElementById('mapCanvas');
+const mctx=mapCanvas.getContext('2d');
+
+function resizeCanvas(){
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  canvas.width=Math.max(1,Math.floor(rect.width*dpr));
+  canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resizeCanvas);
+
+function beep(freq=440,duration=.06,type='sine',gain=.025){
+  if(!soundOn)return;
+  try{
+    if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const osc=audioCtx.createOscillator(),amp=audioCtx.createGain();
+    osc.type=type;osc.frequency.value=freq;
+    amp.gain.setValueAtTime(gain,audioCtx.currentTime);
+    amp.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration);
+    osc.connect(amp);amp.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+duration);
+  }catch(e){}
+}
+
+function ensureAudio(){
+  if(!soundOn)return;
+  try{
+    if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+  }catch(e){}
+}
+
+function carSVG(car){
+  const c=car.color||'#4be3ff',k=car.kind||'coupe';
+  const roof=k==='supercar'?'M31 14L69 14L79 25L21 25Z':k==='suv'?'M27 12L73 12L80 25L20 25Z':'M27 14L70 14L79 26L21 26Z';
+  const body=k==='supercar'?'M12 28L25 18L75 18L88 29L83 42L17 42Z':k==='suv'?'M10 27L24 14L76 14L90 27L85 42L15 42Z':'M11 28L25 17L74 17L89 28L84 42L16 42Z';
+  return '<svg viewBox="0 0 100 54" aria-hidden="true"><ellipse cx="50" cy="46" rx="34" ry="4" fill="#0008"/><path d="'+body+'" fill="'+c+'" stroke="#edf7ff" stroke-width="1.2"/><path d="'+roof+'" fill="'+c+'" opacity=".9" stroke="#edf7ff" stroke-width="1.2"/><path d="M33 16L63 16L70 25L28 25Z" fill="#12202b"/><circle cx="22" cy="40" r="6" fill="#11161c"/><circle cx="78" cy="40" r="6" fill="#11161c"/><circle cx="22" cy="40" r="2" fill="#dfe8ef"/><circle cx="78" cy="40" r="2" fill="#dfe8ef"/></svg>';
+}
+
+function renderBrands(){
+  $('brandTabs').innerHTML=Object.keys(BRAND_DATA).map(b=>'<button class="brand-tab '+(b===selectedBrand?'active':'')+'" data-brand="'+b+'">'+b+' · '+BRAND_DATA[b].cars.length+'</button>').join('');
+  $('brandTabs').querySelectorAll('.brand-tab').forEach(btn=>btn.onclick=()=>{selectedBrand=btn.dataset.brand;renderBrands();renderModels();});
+}
+function renderModels(){
+  const cars=allCars.filter(c=>c.brand===selectedBrand);
+  $('modelTitle').textContent=selectedBrand+' models';
+  $('modelHint').textContent=cars.length+' available';
+  $('models').innerHTML=cars.map(c=>'<button class="car-option '+(c.id===selectedCarId?'active':'')+'" data-car="'+c.id+'"><div class="car-svg">'+carSVG(c)+'</div><div><strong>'+c.model+'</strong><small>'+c.drive+' · '+c.power+' hp · '+c.top+' km/h</small></div></button>').join('');
+  $('models').querySelectorAll('.car-option').forEach(btn=>btn.onclick=()=>{selectedCarId=+btn.dataset.car;renderModels();updateSpecs();updateSummary();});
+  updateSpecs();
+}
+function updateSpecs(){
+  const c=allCars[selectedCarId];
+  $('specs').innerHTML=carSpecText(c);
+}
+function renderP2Cars(){
+  $('p2Car').innerHTML=allCars.map(c=>'<option value="'+c.id+'">'+c.brand+' · '+c.model+'</option>').join('');
+  $('p2Car').value=selectedP2CarId;
+  $('p2Car').onchange=e=>{selectedP2CarId=+e.target.value;updateSummary();};
+}
+function renderTracks(){
+  $('tracks').innerHTML=TRACKS.map((t,i)=>'<button class="track-choice '+(i===selectedTrack?'active':'')+'" data-track="'+i+'"><div class="track-mini"><img src="./'+t.image+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div><div><strong>'+t.name+'</strong><small>'+t.desc+'</small></div></button>').join('');
+  $('tracks').querySelectorAll('.track-choice').forEach(btn=>btn.onclick=()=>{selectedTrack=+btn.dataset.track;renderTracks();updateSummary();});
+}
+function renderAI(){
+  const max=mode==='solo'?10:8;
+  if(aiCount>max)aiCount=max;
+  $('aiCount').innerHTML=Array.from({length:max+1},(_,i)=>'<option value="'+i+'">'+i+' AI</option>').join('');
+  $('aiCount').value=aiCount;
+  $('aiCount').onchange=e=>{aiCount=+e.target.value;updateSummary();};
+}
+function renderSetup(){
+  $('laps').innerHTML=Array.from({length:10},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+(i===0?' Lap':' Laps')+'</option>').join('');
+  $('laps').value=laps;
+  $('laps').onchange=e=>{laps=+e.target.value;updateSummary();};
+  $('mode').value=mode;
+  $('mode').onchange=e=>{mode=e.target.value;renderAI();$('p2Wrap').classList.toggle('hidden',mode!=='two');$('speedPanel2').classList.toggle('hidden',mode!=='two');updateSummary();};
+  renderAI();
+  $('p2Wrap').classList.toggle('hidden',mode!=='two');
+}
+function updateSummary(){
+  const c=allCars[selectedCarId],p2=allCars[selectedP2CarId],grid=1+aiCount+(mode==='two'?1:0);
+  $('buildSummary').textContent=c.brand+' · '+c.model;
+  $('gridSummary').textContent=(mode==='solo'?'1 player':'2 players')+' · '+aiCount+' AI · '+laps+' lap'+(laps===1?'':'s')+' · '+TRACKS[selectedTrack].name;
+  $('setupNote').textContent=mode==='solo'
+    ? 'P1 drives '+c.model+'. '+grid+' cars on the grid.'
+    : 'P1: '+c.model+' · P2: '+p2.model+' · '+aiCount+' AI fill the field.';
+}
 let selectedBrand='Subaru',selectedCarId=1,selectedP2CarId=0,selectedTrack=0,laps=3,mode='solo',aiCount=3,race=null,soundOn=true,audioCtx=null;
 const keys=new Set();
 window.addEventListener('keydown',e=>{
