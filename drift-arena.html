@@ -204,31 +204,40 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     if(!car.ai)return car.player===2?{throttle:keys.has('arrowup'),brake:keys.has('arrowdown'),steer:(keys.has('arrowleft')?-1:0)+(keys.has('arrowright')?1:0),pit:keys.has(' ')}:{throttle:keys.has('w'),brake:keys.has('s'),steer:(keys.has('a')?-1:0)+(keys.has('d')?1:0),pit:keys.has(' ')};
 
     const cfg=AI_LEVELS[race&&race.aiDifficulty||'medium']||AI_LEVELS.medium;
-    const n=nearest(s,car.x,car.y),len=s.length,idx=n.i;
-    const speed=Math.hypot(car.vx,car.vy)*3.6;
+    if(!Array.isArray(s)||s.length<20)return{throttle:false,brake:true,steer:0,pit:false};
+
+    const safe=(index)=>{
+      const i=((Math.floor(index)%s.length)+s.length)%s.length;
+      const p=s[i];
+      return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.tx)&&Number.isFinite(p.ty)?p:s[0];
+    };
+
+    const n=nearest(s,Number(car.x)||0,Number(car.y)||0);
+    const len=s.length,idx=Number.isFinite(n.i)?n.i:0;
+    const speed=Math.hypot(Number(car.vx)||0,Number(car.vy)||0)*3.6;
     const look=Math.round(clamp(cfg.look+speed*.34,70,170));
-    const p1=s[(idx+look)%len],p2=s[(idx+Math.round(look+cfg.far+speed*.12))%len],p3=s[(idx+Math.round(look+cfg.far*1.8))%len];
-    const targetAng=Math.atan2((p1.y+p2.y*.35)-car.y*1.35,(p1.x+p2.x*.35)-car.x*1.35);
+    const p1=safe(idx+look),p2=safe(idx+look+cfg.far+speed*.12),p3=safe(idx+look+cfg.far*1.8);
+
+    const targetAng=Math.atan2((p1.y*.70+p2.y*.30)-car.y,(p1.x*.70+p2.x*.30)-car.x);
     const futureAng=Math.atan2(p3.y-p2.y,p3.x-p2.x);
-    const headingErr=wrap(targetAng-car.angle);
+    const headingErr=wrap(targetAng-(Number(car.angle)||0));
     const futureCurve=Math.abs(wrap(futureAng-targetAng));
     const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny;
     const recovery=clamp(lateral/32,-1,1);
     const steer=clamp(headingErr*cfg.steerGain-recovery*.9,-1,1);
 
-    // Use several look-ahead samples to estimate corner severity instead of
-    // chasing one point. This keeps AI on the racing surface.
     let curve=0;
     for(let j=12;j<=cfg.far;j+=8){
-      const aa=s[(idx+j)%len],bb=s[(idx+j+7)%len];
-      if(aa&&bb)curve=Math.max(curve,Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx))));
+      const aa=safe(idx+j),bb=safe(idx+j+7);
+      const turn=Math.abs(wrap(Math.atan2(bb.ty,bb.tx)-Math.atan2(aa.ty,aa.tx)));
+      if(turn>curve)curve=turn;
     }
-    const straightFactor=clamp(1-futureCurve/.75,0,1);
+
     const curveTarget=305-curve*185-futureCurve*125;
-    const desired=clamp(curveTarget*cfg.aggression,110,car.spec.top-8);
+    const desired=clamp(curveTarget*cfg.aggression,110,(Number(car.spec&&car.spec.top)||300)-8);
     const error=speed-desired;
     const brake=error>cfg.brakeMargin||Math.abs(headingErr)>1.05;
-    const throttle=!brake && speed<desired-3;
+    const throttle=!brake&&speed<desired-3;
     return{throttle,brake,steer,pit:false};
   }
   function updateCar(car,inp,dt,s){
@@ -357,29 +366,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
     }
     ctx.restore();
   }
-  function drawSpeedFX(ctx,c,cam,w,h,spd){
-    // Lightweight motion/tyre effects. This function must always be present
-    // because the main animation loop calls it every frame.
-    if(!c || spd < 18) return;
-    const p={x:w/2+(c.x-cam.x)*cam.zoom,y:h/2+(c.y-cam.y)*cam.zoom};
-    const alpha=clamp((spd-18)/140,0,.24);
-    ctx.save();
-    ctx.globalAlpha=alpha;
-    ctx.strokeStyle='#dce7ed';
-    ctx.lineWidth=2;
-    ctx.lineCap='round';
-    const bx=Math.cos(c.angle), by=Math.sin(c.angle);
-    const px=-by, py=bx;
-    for(const side of [-1,1]){
-      const sx=p.x+px*13*cam.zoom-side*0;
-      const sy=p.y+py*13*cam.zoom;
-      ctx.beginPath();
-      ctx.moveTo(sx-bx*18*cam.zoom,sy-by*18*cam.zoom);
-      ctx.lineTo(sx-bx*(42+spd*.08)*cam.zoom,sy-by*(42+spd*.08)*cam.zoom);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+  function drawSpeedFX(){return;}
   function rr(ctx,x,y,w,h,r){
     if(typeof ctx.roundRect==='function'){ctx.roundRect(x,y,w,h,r);return}
     r=Math.max(0,Math.min(r,Math.abs(w)/2,Math.abs(h)/2));
@@ -439,20 +426,41 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
   function countdown(){let n=3;q('countdown').textContent=n;q('countdown').classList.remove('hide');const timer=setInterval(()=>{n--;if(n>0)q('countdown').textContent=n;else{q('countdown').textContent='GO';setTimeout(()=>{q('countdown').classList.add('hide');race.started=true},450);clearInterval(timer)}},650)}
   const canvas=q('canvas'),ctx=canvas.getContext('2d'),map=q('map');
   function resize(){const r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.floor(r.width*d));canvas.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);map.width=370;map.height=240}
-  function loop(now){if(!race)return;const dt=Math.min(.032,(now-race.last)/1000||0);race.last=now;if(race.started&&!race.paused&&!race.done){race.time+=dt;for(const c of race.cars)updateCar(c,input(c,race.s),dt,race.s);if(race.cars[0].finished)race.done=true}
-    const p=race.cars[0],p2=race.cars.find(c=>c.player===2);
-    let tx=p.x+p.vx*.78,ty=p.y+p.vy*.78,z=5.2;
-    if(p2){
-      const dx=p2.x-p.x,dy=p2.y-p.y,dist=Math.hypot(dx,dy);
-      tx=(p.x+p2.x)/2+(p.vx+p2.vx)*.18;
-      ty=(p.y+p2.y)/2+(p.vy+p2.vy)*.18;
-      const w=canvas.clientWidth||1000,h=canvas.clientHeight||600,margin=220;
-      const fitX=(w-margin)/Math.max(1,Math.abs(dx)),fitY=(h-margin)/Math.max(1,Math.abs(dy));
-      const distanceZoom=5.15-dist/310;
-      z=clamp(Math.min(distanceZoom,fitX,fitY),2.15,5.15);
-    }
-    race.cam.x=lerp(race.cam.x,tx,.12);race.cam.y=lerp(race.cam.y,ty,.12);race.cam.zoom=lerp(race.cam.zoom,z,.12);
-    const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);drawTrack(ctx,race.track,race.s,race.cam,w,h);race.cars.forEach(c=>drawCar(ctx,c,race.cam,w,h));mapDraw();hud();if(race.done)result();else requestAnimationFrame(loop)}
+  function loop(now){
+    if(!race)return;
+    const dt=Math.min(.032,(now-race.last)/1000||0);
+    race.last=now;
+    try{
+      if(race.started&&!race.paused&&!race.done){
+        race.time+=dt;
+        for(const car of race.cars){
+          try{updateCar(car,input(car,race.s),dt,race.s)}
+          catch(err){console.error('AI/car update',err)}
+        }
+        if(race.cars[0]&&race.cars[0].finished)race.done=true;
+      }
+      const p=race.cars[0];
+      if(!p){requestAnimationFrame(loop);return}
+      const p2=race.cars.find(c=>c.player===2);
+      let tx=p.x+p.vx*.78,ty=p.y+p.vy*.78,z=5.2;
+      if(p2){
+        const dx=p2.x-p.x,dy=p2.y-p.y,dist=Math.hypot(dx,dy);
+        tx=(p.x+p2.x)/2+(p.vx+p2.vx)*.18;
+        ty=(p.y+p2.y)/2+(p.vy+p2.vy)*.18;
+        const w=canvas.clientWidth||1000,h=canvas.clientHeight||600,margin=220;
+        const fitX=(w-margin)/Math.max(1,Math.abs(dx)),fitY=(h-margin)/Math.max(1,Math.abs(dy));
+        z=clamp(Math.min(5.15-dist/310,fitX,fitY),2.15,5.15);
+      }
+      race.cam.x=lerp(race.cam.x,tx,.12);race.cam.y=lerp(race.cam.y,ty,.12);race.cam.zoom=lerp(race.cam.zoom,z,.12);
+      const w=canvas.clientWidth,h=canvas.clientHeight;
+      ctx.clearRect(0,0,w,h);
+      try{drawTrack(ctx,race.track,race.s,race.cam,w,h)}catch(err){console.error('drawTrack',err)}
+      for(const car of race.cars){try{drawCar(ctx,car,race.cam,w,h)}catch(err){console.error('drawCar',err)}}
+      try{mapDraw();hud()}catch(err){console.error('HUD',err)}
+      if(race.done)result();
+    }catch(err){showGameError(err)}
+    requestAnimationFrame(loop);
+  }
   function togglePause(){if(!race||race.done)return;race.paused=!race.paused;q('pauseBtn').textContent=race.paused?'▶ Resume':'Ⅱ Pause'}
   function exitRace(){race=null;q('raceView').classList.add('hidden');q('setupView').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
   function restart(){startRace();requestAnimationFrame(loop)}
