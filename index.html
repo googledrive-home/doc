@@ -1497,7 +1497,7 @@ function wireSettings(scope){
   $('settingsApply').onclick=()=>{saveSiteSettings();closeSettings()};
   $('settingsReset').onclick=()=>{
     if(scope==='main'){siteSettings={...siteSettingDefaults};reactionDelay='normal';breakerPace='normal';cpsDuration=3;saveSiteSettings();applySiteSettings();renderSettings('main')}
-    else{reactionMode='classic';reactionDelay='normal';clickMode='sprint3';breakerPace='normal';difficulty='easy';mode='cpu';cpsDuration=3;vaVehicle1=0;vaVehicle2=1;vaMap=0;renderSettings('game')}
+    else{reactionMode='classic';reactionDelay='normal';clickMode='sprint3';breakerPace='normal';difficulty='easy';mode='cpu';cpsDuration=3;vaVehicle1=0;vaVehicle2=1;vaMap=0;hDribbleEnabled=true;siteSettings.hockeyDribbling=true;renderSettings('game')}
   };
 }
 const settingsHome=$('settingsModal')?.parentElement;
