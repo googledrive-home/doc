@@ -180,13 +180,14 @@ function renderSetup(){const s=$('setup'),stage=$('stage');s.style.display='bloc
 if(current==='tennis'){mode='cpu';difficulty='medium';s.innerHTML='<div class="bigicon">🎾</div><h1>Tennis Rally</h1><p>Return the ball and race to 7 points. Choose your match and CPU difficulty.</p><div class="options"><button class="option selected btn" data-mode="cpu">🤖 1 Player<br><small>vs Computer</small></button><button class="option btn" data-mode="two">👥 2 Players<br><small>Local match</small></button></div><div class="options" id="diffOptions"><button class="option btn" data-diff="easy">🟢 Easy<br><small>Gentle CPU</small></button><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced CPU</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Fast CPU</small></button></div><p class="hint">P1: W/S · P2: Arrow Keys</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;s.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');s.querySelector('#diffOptions').style.opacity=mode==='two'?'.45':'1';beep(500)});s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startTennis(true)}} 
 else if(current==='hockey'){
  mode='cpu';difficulty='medium';hMode='cpu';hMap='classic';hTrail='none';hSkin1='blue';hSkin2='red';hTraining='none';hCompetition=false;hRound=0;
- s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Same core hockey physics, now with team play, cosmetics, maps and a full tournament bracket.</p><div class="options"><button class="option selected btn" data-hmode="cpu">🤖 1 v 1<br><small>Solo vs AI</small></button><button class="option btn" data-hmode="two">👥 2 Players<br><small>1 v 1 local</small></button><button class="option btn" data-hmode="2v2coop">🤝 2 v 2 Co-op<br><small>Two humans together vs AI</small></button><button class="option btn" data-hmode="2v2ai">🤖 2 v 2 AI Team<br><small>You + AI teammate vs 2 AI</small></button></div><div class="options"><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced AI</small></button><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed AI</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Aggressive AI</small></button></div><div class="hockey-custom"><div><b>MAP</b><div class="options compact"><button class="option selected btn" data-map="classic">❄ Classic Ice</button><button class="option btn" data-map="arctic">🏔 Arctic</button><button class="option btn" data-map="midnight">🌌 Midnight</button><button class="option btn" data-map="neon">⚡ Neon</button></div></div><div><b>PLAYER 1 SKIN</b><div class="options compact"><button class="option selected btn" data-skin1="blue">Blue</button><button class="option btn" data-skin1="gold">Gold</button><button class="option btn" data-skin1="ice">Ice</button></div></div><div><b>TRAIL</b><div class="options compact"><button class="option selected btn" data-trail="none">None</button><button class="option btn" data-trail="cyan">Cyan</button><button class="option btn" data-trail="rainbow">Rainbow</button><button class="option btn" data-trail="sparks">Sparks</button></div></div><div><b>EXERCISE / TRAINING</b><div class="options compact"><button class="option selected btn" data-training="none">Standard</button><button class="option btn" data-training="warmup">Warm-up</button><button class="option btn" data-training="conditioning">Conditioning</button></div></div></div><div class="options"><button class="option btn" id="competitionToggle">🏆 Competition: OFF<br><small>Round of 16 → Final</small></button></div><p class="hint">P1: WASD + F · P2: Arrow Keys + L · Co-op P2: IJKL + O · TAB switches player</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';
+ s.innerHTML='<div class="bigicon">🏒</div><h1>Hockey Arena</h1><p>Same core hockey physics, now with team play, cosmetics, maps and a full tournament bracket.</p><div class="options"><button class="option selected btn" data-hmode="cpu">🤖 1 v 1<br><small>Solo vs AI</small></button><button class="option btn" data-hmode="two">👥 2 Players<br><small>1 v 1 local</small></button><button class="option btn" data-hmode="2v2coop">🤝 2 v 2 Co-op<br><small>Two humans together vs AI</small></button><button class="option btn" data-hmode="2v2ai">🤖 2 v 2 AI Team<br><small>You + AI teammate vs 2 AI</small></button></div><div class="options"><button class="option selected btn" data-diff="medium">🟡 Medium<br><small>Balanced AI</small></button><button class="option btn" data-diff="easy">🟢 Easy<br><small>Relaxed AI</small></button><button class="option btn" data-diff="hard">🔴 Hard<br><small>Aggressive AI</small></button></div><div class="hockey-custom"><div><b>TEAM 1</b><select id="hTeam1" class="selectbox">${HTEAMS.map(x=>'<option>'+x+'</option>').join('')}</select></div><div><b>TEAM 2</b><select id="hTeam2" class="selectbox">${HTEAMS.map(x=>'<option>'+x+'</option>').join('')}</select></div><div><b>MAP</b><div class="options compact"><button class="option selected btn" data-map="classic">❄ Classic</button><button class="option btn" data-map="arctic">🏔 Arctic</button><button class="option btn" data-map="midnight">🌌 Midnight</button><button class="option btn" data-map="neon">⚡ Neon</button><button class="option btn" data-map="sunset">🌅 Sunset</button><button class="option btn" data-map="storm">🌩 Storm</button><button class="option btn" data-map="aurora">🌈 Aurora</button></div></div><div><b>PLAYER SKIN</b><div class="options compact"><button class="option selected btn" data-skin1="blue">Blue</button><button class="option btn" data-skin1="gold">Gold</button><button class="option btn" data-skin1="ice">Ice</button><button class="option btn" data-skin1="lime">Lime</button><button class="option btn" data-skin1="purple">Purple</button><button class="option btn" data-skin1="fire">Fire</button><button class="option btn" data-skin1="chrome">Chrome</button></div></div><div><b>TRAIL</b><div class="options compact"><button class="option selected btn" data-trail="none">None</button><button class="option btn" data-trail="cyan">Cyan</button><button class="option btn" data-trail="rainbow">Rainbow</button><button class="option btn" data-trail="sparks">Sparks</button><button class="option btn" data-trail="gold">Gold Pulse</button><button class="option btn" data-trail="ice">Ice Mist</button></div></div><div><b>EXERCISE / TRAINING</b><div class="options compact"><button class="option selected btn" data-training="none">Standard</button><button class="option btn" data-training="warmup">Warm-up</button><button class="option btn" data-training="conditioning">Conditioning</button><button class="option btn" data-training="speed">Speed Drill</button></div></div></div><div class="options"><button class="option btn" id="competitionToggle">🏆 Competition: OFF<br><small>Round of 16 → Final</small></button></div><p class="hint">P1: WASD + F · P2: Arrow Keys + L · Co-op P2: IJKL + O · TAB switches player</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';
  s.querySelectorAll('[data-hmode]').forEach(b=>b.onclick=()=>{hMode=mode=b.dataset.hmode;s.querySelectorAll('[data-hmode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});
  s.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{difficulty=b.dataset.diff;s.querySelectorAll('[data-diff]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});
  s.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>{hMap=b.dataset.map;s.querySelectorAll('[data-map]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});
  s.querySelectorAll('[data-skin1]').forEach(b=>b.onclick=()=>{hSkin1=b.dataset.skin1;s.querySelectorAll('[data-skin1]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
  s.querySelectorAll('[data-trail]').forEach(b=>b.onclick=()=>{hTrail=b.dataset.trail;s.querySelectorAll('[data-trail]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
  s.querySelectorAll('[data-training]').forEach(b=>b.onclick=()=>{hTraining=b.dataset.training;s.querySelectorAll('[data-training]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
+ $('hTeam1').value=hTeam1;$('hTeam2').value=hTeam2;$('hTeam1').onchange=e=>hTeam1=e.target.value;$('hTeam2').onchange=e=>hTeam2=e.target.value;
  $('competitionToggle').onclick=()=>{hCompetition=!hCompetition;$('competitionToggle').innerHTML='🏆 Competition: '+(hCompetition?'ON':'OFF')+'<br><small>Round of 16 → Final</small>';beep(600)};
  $('startSetup').onclick=()=>{clickSound();startHockey(true)}
 }else if(current==='reaction'){reactionMode='classic';reactionDelay='normal';s.innerHTML='<div class="bigicon">⚡</div><h1>Reaction Lab</h1><p>Real reaction challenges with a clear goal and a final result.</p><div class="options"><button class="option selected btn" data-rmode="classic">⚡ Classic<br><small>One clean reaction time</small></button><button class="option btn" data-rmode="target">🎯 Target Hunt<br><small>Click the target that appears</small></button><button class="option btn" data-rmode="challenge">🏁 5-Round Challenge<br><small>Build an average across 5 rounds</small></button><button class="option btn" data-rmode="sequence">🔢 Sequence<br><small>React to 5 targets in a row</small></button></div><div class="options" style="margin-top:6px"><button class="option btn" data-rdelay="fast">FAST</button><button class="option selected btn" data-rdelay="normal">NORMAL</button><button class="option btn" data-rdelay="slow">SLOW</button></div><p class="hint">Targets always appear inside the safe play area. Your result shows reaction time, average, and consistency where relevant.</p><button class="startbig btn" id="startSetup">PLAY IN FULLSCREEN ▶</button>';s.querySelectorAll('[data-rmode]').forEach(b=>b.onclick=()=>{reactionMode=b.dataset.rmode;s.querySelectorAll('[data-rmode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});s.querySelectorAll('[data-rdelay]').forEach(b=>b.onclick=()=>{reactionDelay=b.dataset.rdelay;s.querySelectorAll('[data-rdelay]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');beep(500)});$('startSetup').onclick=()=>{clickSound();startReaction(true)}} 
@@ -214,7 +215,8 @@ function startHockey(fs){
  $('stage').innerHTML='<canvas id="hc"></canvas><div class="hud"><span class="scorebig" id="hs">0 — 0</span><span>P1: WASD + F</span><span>'+teammateText+'</span><span>'+roundText+'</span><span class="hockey-equip">MAP '+hMap+' · TRAIL '+hTrail+' · '+hTraining+'</span><button class="tiny btn" id="restartH">Restart</button></div>';
  if(fs)enterGameFS();initHockey();$('restartH').onclick=()=>{hScore1=0;hScore2=0;resetHPos();$('hs').textContent='0 — 0';beep(300)}
 }
-let hctx,hc,hw=0,hh=0,hkeys={},hkeys2={},h1,h2,h3,h4,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0,hMode='cpu',hMap='classic',hTrail='none',hSkin1='blue',hSkin2='red',hTraining='none',hCompetition=false,hRound=0,hRoundName='Round of 16',hTournamentOpp='North Stars',hTrailPts=[];
+let hctx,hc,hw=0,hh=0,hkeys={},hkeys2={},h1,h2,h3,h4,puck,hScore1=0,hScore2=0,hAnim=0,hLast=0,hMode='cpu',hMap='classic',hTrail='none',hSkin1='blue',hSkin2='red',hTraining='none',hCompetition=false,hRound=0,hRoundName='Round of 16',hTournamentOpp='North Stars',hTrailPts=[],hTeam1='Blue Blades',hTeam2='Red Wolves';
+const HTEAMS=['Blue Blades','Red Wolves','Ice Hawks','Glacier City','Frost Union','Polar Bears','North Stars','Avalanche HC','Winter Kings','Blue Comets','Storm HC','Arctic Wolves','Steel Blades','Silver Foxes','Snow Leopards','Northern Lights'];
 let bctx,bc,bw=0,bh=0,bkeys={},bPaddle,bBall,bBricks=[],bPopped=0,bScore=0,bLives=3,bLevel=1,bCombo=0,bPowerups=[],bPowerTimers={wide:0,slow:0,multi:0,x2:0,x3:0,fire:0,magnet:0,shield:0,turbo:0},bEffectText='',bEffectTimer=0,bGameOver=false,bScoreMult=1,bMultTimer=0,bSpecialSpawnTimer=3.2,bPattern='Dense Grid',bAnim=0,bLast=0,bPaused=false;
 let sctx,sc,sw=0,sh=0,sPlayer,sPipes=[],sParticles=[],sScore=0,sAnim=0,sLast=0,sPipeTimer=0,sReady=true,sStarted=false,sOver=false,sBest=0,sSkyTime=0,sBirdFrame=0,sGroundOffset=0,sBossActive=false,sBossTimer=0,sBossX=0,sBossY=0,sBossPulse=0,sBossOrbs=[],sBossCleared=false;
 let nsnakeCtx,nsnakeCanvas,nsw=0,nsh=0,nsnakeAnim=0,nsnakeLast=0,nsnakeRunning=false,nsnakeOver=false,nsnakeDir={x:1,y:0},nsnakeNextDir={x:1,y:0},nsnakeBody=[],nsnakeFruit={x:0,y:0},nsnakeScore=0,nsnakeTick=0,nsnakeTime=0,nsnakeFruitPulse=0,nsnakeBest=0;
@@ -224,7 +226,7 @@ let memoryTimer=null,memoryRunning=false,memoryOver=false,memoryCards=[],memoryF
 
 function initHockey(){hc=$('hc');hctx=hc.getContext('2d');resizeH();resetHPos();hLast=performance.now();cancelAnimationFrame(hAnim);hAnim=requestAnimationFrame(hLoop);window.onresize=resizeH}
 function resizeH(){if(!hc)return;const r=hc.getBoundingClientRect(),d=devicePixelRatio||1;hc.width=r.width*d;hc.height=r.height*d;hctx.setTransform(d,0,0,d,0,0);hw=r.width;hh=r.height}
-function resetHPos(){h1={x:90,y:hh/2,vx:0,vy:0};h2={x:hw-90,y:hh/2,vx:0,vy:0};h3=null;h4=null;if(hMode==='2v2coop'||hMode==='2v2ai'){h3={x:150,y:hh*.32,vx:0,vy:0};h4={x:hw-150,y:hh*.68,vx:0,vy:0}}puck={x:hw/2,y:hh/2,vx:0,vy:0};hTrailPts=[]}
+function resetHPos(){h1={x:75,y:hh/2,vx:0,vy:0};h2={x:hw-75,y:hh/2,vx:0,vy:0};h3=null;h4=null;if(hMode==='2v2coop'||hMode==='2v2ai'){h3={x:150,y:hh*.32,vx:0,vy:0};h4={x:hw-150,y:hh*.68,vx:0,vy:0}}puck={x:hw/2,y:hh/2,vx:0,vy:0};hTrailPts=[]}
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open')){const k=e.key.toLowerCase();hkeys[k]=true;hkeys2[k]=true;bkeys[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault()}});addEventListener('keyup',e=>{const k=e.key.toLowerCase();hkeys[k]=false;hkeys2[k]=false;bkeys[k]=false});
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open'))tkeys[e.key.toLowerCase()]=true});addEventListener('keyup',e=>tkeys[e.key.toLowerCase()]=false);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -272,8 +274,9 @@ function moveAIPlayer(p,targetX,targetY,dt){
 }
 function aiTeam(dt){
  const push=Math.sin(performance.now()/500)*20;
- if(h3&&hMode!=='2v2coop'){const tx=puck.x>hw/2?puck.x:hw*.36,ty=clamp(puck.y,90,hh-90);moveAIPlayer(h3,tx,ty,dt)}
- if(h4){const tx=puck.x<hw/2?puck.x:hw*.64,ty=clamp(puck.y+push,90,hh-90);moveAIPlayer(h4,tx,ty,dt)}
+ if(h3&&hMode==='2v2ai'){const tx=clamp(puck.x,90,hw*.58),ty=clamp(puck.y,90,hh-90);moveAIPlayer(h3,tx,ty,dt);if(Math.hypot(puck.x-h3.x,puck.y-h3.y)<60)hit(h3,false)}
+ if(h4){const tx=clamp(puck.x,hw*.48,hw-90),ty=clamp(puck.y+push,90,hh-90);moveAIPlayer(h4,tx,ty,dt);if(Math.hypot(puck.x-h4.x,puck.y-h4.y)<70)hit(h4,false)}
+ if(hMode==='2v2coop'&&h2){const tx=clamp(puck.x,hw*.42,hw-90),ty=clamp(puck.y,90,hh-90);moveAIPlayer(h2,tx,ty,dt);if(Math.hypot(puck.x-h2.x,puck.y-h2.y)<70)hit(h2,false)}
 }function hit(p,shoot){let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;if(d<38){let nx=dx/d,ny=dy/d,f=shoot?720:360;puck.x=p.x+nx*34;puck.y=p.y+ny*34;puck.vx=nx*f+p.vx;puck.vy=ny*f+p.vy;beep(shoot?880:520,.045,'square',.018)}}
 function unstickPuck(){
   const margin=38,goalTop=hh/2-58,goalBottom=hh/2+58;
@@ -289,10 +292,17 @@ function hLoop(now){
  moveP(h1,'w','s','a','d',dt);
  if(hMode==='two')moveP(h2,'arrowup','arrowdown','arrowleft','arrowright',dt);
  else if(hMode==='2v2coop')moveP(h3,'i','k','j','l',dt);
- else if(hMode!=='2v2ai')ai(dt);
- if(hMode==='2v2ai'||hMode==='2v2coop')aiTeam(dt);
- hit(h1,hkeys.f);if(hMode==='two'||hMode==='2v2coop')hit(h2,hkeys.l);
- if((hMode==='2v2coop')&&h3)hit(h3,hkeys2.o);
+ else if(hMode==='cpu')ai(dt);
+ if(hMode==='2v2coop'||hMode==='2v2ai')aiTeam(dt);
+ if(hMode==='2v2ai'){
+   const cfg={easy:{aim:95},medium:{aim:70},hard:{aim:42}}[difficulty]||{aim:70};
+   const targetX=clamp(puck.x,hw/2+40,hw-70),targetY=clamp(puck.y,70,hh-70);
+   moveAIPlayer(h2,targetX,targetY,dt);
+   if(Math.hypot(puck.x-h2.x,puck.y-h2.y)<cfg.aim)hit(h2,true);
+ }
+ hit(h1,hkeys.f);
+ if(hMode==='two')hit(h2,hkeys.l);
+ if(hMode==='2v2coop'&&h3)hit(h3,hkeys2.o);
  if(h4)hit(h4,false);
  puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.35,dt);puck.vy*=Math.pow(.35,dt);
  if(hTrail!=='none'){hTrailPts.push({x:puck.x,y:puck.y});if(hTrailPts.length>24)hTrailPts.shift()}
@@ -312,8 +322,7 @@ function goal(){
      const rounds=['Round of 16','Quarter-final','Semi-final','Final'];
      if(hRound<3){
        hRound++;hRoundName=rounds[hRound];
-       const pool=['Ice Hawks','Glacier City','Frost Union','Polar Bears','North Stars','Avalanche HC','Winter Kings','Blue Comets','Storm HC','Arctic Wolves','Steel Blades','Silver Foxes','Snow Leopards','Northern Lights','Frozen Lake'];
-       hTournamentOpp=pool[Math.floor(Math.random()*pool.length)];
+       const pool=HTEAMS.filter(t=>t!==hTeam1);hTournamentOpp=pool[Math.floor(Math.random()*pool.length)];
        setTimeout(()=>{hScore1=0;hScore2=0;resetHPos();if($('hs'))$('hs').textContent='0 — 0';if($('stage')){$('stage').querySelector('.hockey-equip')?.setAttribute('data-round',hRoundName)}alert(hRoundName+'! Opponent: '+hTournamentOpp)},120);
        return;
      }
@@ -328,12 +337,15 @@ function drawH(){
  const theme={
   classic:{bg:'#dff9ff',line:'#76bfd0',goal1:'#ff5570',goal2:'#49e3ff',crease:'#a7d8ea'},
   arctic:{bg:'#eef7ff',line:'#6d91b3',goal1:'#8f6bff',goal2:'#4be3ff',crease:'#bcd8ff'},
-  midnight:{bg:'#081827',line:'#587c9b',goal1:'#ff4f8a',goal2:'#7d6cff',crease:'#163d57'},
-  neon:{bg:'#071017',line:'#38d9ff',goal1:'#ff5b65',goal2:'#ffd35b',crease:'#123b46'}
+  midnight:{bg:'#0c1626',line:'#79a6d6',goal1:'#ff5ea0',goal2:'#62a4ff',crease:'#284b70'},
+  neon:{bg:'#071017',line:'#38d9ff',goal1:'#ff5b65',goal2:'#ffd35b',crease:'#123b46'},
+  sunset:{bg:'#39233a',line:'#ffd1a3',goal1:'#ff7b45',goal2:'#ffd35b',crease:'#704052'},
+  storm:{bg:'#16202b',line:'#b9d4ee',goal1:'#73a6ff',goal2:'#9bffea',crease:'#314c62'},
+  aurora:{bg:'#10283a',line:'#a6ffef',goal1:'#b76cff',goal2:'#53f6d1',crease:'#225b62'}
  }[hMap]||{bg:'#dff9ff',line:'#76bfd0',goal1:'#ff5570',goal2:'#49e3ff',crease:'#a7d8ea'};
  hctx.fillStyle=theme.bg;hctx.fillRect(0,0,hw,hh);
- hctx.strokeStyle=theme.line;hctx.lineWidth=3;hctx.strokeRect(12,24,hw-24,hh-48);
- hctx.beginPath();hctx.moveTo(hw/2,24);hctx.lineTo(hw/2,hh-24);hctx.stroke();hctx.beginPath();hctx.arc(hw/2,hh/2,52,0,Math.PI*2);hctx.stroke();
+ hctx.strokeStyle=theme.line;hctx.lineWidth=3;hctx.strokeRect(7,16,hw-14,hh-32);
+ hctx.beginPath();hctx.moveTo(hw/2,16);hctx.lineTo(hw/2,hh-16);hctx.stroke();hctx.beginPath();hctx.arc(hw/2,hh/2,52,0,Math.PI*2);hctx.stroke();
  let gt=hh/2-58,gb=hh/2+58;
  // Colored goal mouths and detailed frames.
  function goalArt(x,color,flip){
@@ -359,15 +371,15 @@ function drawH(){
    hctx.beginPath();hctx.fillStyle=c;hctx.arc(p.x,p.y,21,0,Math.PI*2);hctx.fill();hctx.strokeStyle='#fff';hctx.lineWidth=3;hctx.stroke();
    hctx.fillStyle='#fff';hctx.font='900 13px system-ui';hctx.textAlign='center';hctx.fillText(n,p.x,p.y+5);
  }
- const c1={blue:'#2979ff',gold:'#ffd35b',ice:'#bcecff'}[hSkin1]||'#2979ff';
+ const c1={blue:'#2979ff',gold:'#ffd35b',ice:'#bcecff',lime:'#63f36d',purple:'#a56cff',fire:'#ff5d4d',chrome:'#dfe9f2'}[hSkin1]||'#2979ff';
  const c2={red:'#ff426d',blue:'#49e3ff',gold:'#ffd35b'}[hSkin2]||'#ff426d';
  player(h1,'1',c1);
  player(h2,'2',c2);
  if(h3)player(h3,hMode==='2v2coop'?'2':'A1',hMode==='2v2coop'?'#58e49a':'#9c6cff');
  if(h4)player(h4,'A2','#ff8a45');
- hctx.beginPath();hctx.fillStyle='#111';hctx.arc(puck.x,puck.y,9,0,Math.PI*2);hctx.fill();
+ hctx.save();hctx.shadowBlur=18;hctx.shadowColor=(hMap==='midnight'||hMap==='neon'||hMap==='storm'||hMap==='aurora')?'#ffffff':'#102030';hctx.beginPath();hctx.fillStyle='#ffffff';hctx.arc(puck.x,puck.y,11,0,Math.PI*2);hctx.fill();hctx.beginPath();hctx.fillStyle=(hMap==='midnight'||hMap==='neon'||hMap==='storm'||hMap==='aurora')?'#0b1118':'#111';hctx.arc(puck.x,puck.y,6,0,Math.PI*2);hctx.fill();hctx.restore();
  // Top-left match labels.
- hctx.fillStyle='#173149cc';hctx.fillRect(24,34,175,28);hctx.fillStyle='#eaf8ff';hctx.font='800 12px system-ui';hctx.textAlign='left';hctx.fillText(hMap.toUpperCase()+' · '+(hCompetition?hRoundName:'EXHIBITION'),34,53);
+ hctx.fillStyle='#173149cc';hctx.fillRect(24,34,175,28);hctx.fillStyle='#eaf8ff';hctx.font='800 12px system-ui';hctx.textAlign='left';hctx.fillText(hTeam1+' vs '+hTeam2+' · '+hMap.toUpperCase()+' · '+(hCompetition?hRoundName:'EXHIBITION'),34,53);
 }
 function reactionChoicesHTML(type){
   const arr=type==='color'?['red','blue','green','yellow']:['A','B','C','D'];
