@@ -321,8 +321,8 @@ function updateHDribble(){
     }
   }
 }
-function oppSide(a,b){return !!a&&!!b&&a!==b}
-}function hit(p,shoot,aiControlled=false){const now=performance.now();if(hDribbleOwner===p)return;if(aiControlled&&p._hLastHit&&now-p._hLastHit<170)return;let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;if(hDribbleOwner&&p!==hDribbleOwner&&d<56){hDribbleOwner=null;beep(180,.05,'sawtooth',.018)}if(d<33){let nx=dx/d,ny=dy/d,f=shoot?720:360;puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*f+p.vx;puck.vy=ny*f+p.vy;if(aiControlled)p._hLastHit=now;beep(shoot?880:520,.045,'square',.018)}}
+function oppSide(a,b){if(!a||!b||a===b)return false;const teamA=(a===h1||a===h3)?1:2,teamB=(b===h1||b===h3)?1:2;return teamA!==teamB}
+function hit(p,shoot,aiControlled=false){const now=performance.now();if(hDribbleOwner===p)return;if(aiControlled&&p._hLastHit&&now-p._hLastHit<170)return;let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;if(hDribbleOwner&&p!==hDribbleOwner&&d<56){hDribbleOwner=null;beep(180,.05,'sawtooth',.018)}if(d<33){let nx=dx/d,ny=dy/d,f=shoot?720:360;puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*f+p.vx;puck.vy=ny*f+p.vy;if(aiControlled)p._hLastHit=now;beep(shoot?880:520,.045,'square',.018)}}
 function unstickPuck(){
   const margin=38,goalTop=hh/2-58,goalBottom=hh/2+58;
   const topLeft=puck.x<margin&&puck.y<margin;
