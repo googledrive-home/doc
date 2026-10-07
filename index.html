@@ -225,9 +225,9 @@ function resetHPos(){h1={x:75,y:hh/2,vx:0,vy:0};h2={x:hw-75,y:hh/2,vx:0,vy:0};h3
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open')){const k=e.key.toLowerCase();hkeys[k]=true;hkeys2[k]=true;bkeys[k]=true;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault()}});addEventListener('keyup',e=>{const k=e.key.toLowerCase();hkeys[k]=false;hkeys2[k]=false;bkeys[k]=false});
 addEventListener('keydown',e=>{if($('gameModal').classList.contains('open'))tkeys[e.key.toLowerCase()]=true});addEventListener('keyup',e=>tkeys[e.key.toLowerCase()]=false);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function moveP(p,u,d,l,r,dt){let dx=(hkeys[r]?1:0)-(hkeys[l]?1:0),dy=(hkeys[d]?1:0)-(hkeys[u]?1:0),len=Math.hypot(dx,dy)||1;p.vx+=dx/len*480*dt;p.vy+=dy/len*480*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);const max=310;const sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}p.x=clamp(p.x+p.vx*dt,42,hw-42);p.y=clamp(p.y+p.vy*dt,50,hh-50)}
+function moveP(p,u,d,l,r,dt){let dx=(hkeys[r]?1:0)-(hkeys[l]?1:0),dy=(hkeys[d]?1:0)-(hkeys[u]?1:0),len=Math.hypot(dx,dy)||1;p.vx+=dx/len*620*dt;p.vy+=dy/len*620*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);const max=390;const sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}p.x=clamp(p.x+p.vx*dt,42,hw-42);p.y=clamp(p.y+p.vy*dt,50,hh-50)}
 function ai(dt){
-  const cfg={easy:{speed:180,predict:.05,turn:.055,attack:.18,aim:86},medium:{speed:295,predict:.13,turn:.09,attack:.34,aim:64},hard:{speed:395,predict:.22,turn:.13,attack:.58,aim:40}}[difficulty]||{speed:295,predict:.13,turn:.09,attack:.34,aim:64};
+  const cfg={easy:{speed:220,predict:.05,turn:.055,attack:.18,aim:86},medium:{speed:350,predict:.13,turn:.09,attack:.34,aim:64},hard:{speed:460,predict:.22,turn:.13,attack:.58,aim:40}}[difficulty]||{speed:295,predict:.13,turn:.09,attack:.34,aim:64};
   const safeLeft=hw/2+52,safeRight=hw-68,safeTop=74,safeBottom=hh-74;
   const puckNearCorner=(puck.x>hw-105&&(puck.y<92||puck.y>hh-92));
   const aiNearCorner=(h2.x>hw-78&&(h2.y<92||h2.y>hh-92));
@@ -264,8 +264,8 @@ function ai(dt){
 } 
 function moveAIPlayer(p,targetX,targetY,dt){
  let dx=targetX-p.x,dy=targetY-p.y,len=Math.hypot(dx,dy)||1;
- p.vx+=dx/len*480*dt;p.vy+=dy/len*480*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);
- const max=310,sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}
+ p.vx+=dx/len*620*dt;p.vy+=dy/len*620*dt;p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);
+ const max=390,sp=Math.hypot(p.vx,p.vy);if(sp>max){p.vx=p.vx/sp*max;p.vy=p.vy/sp*max}
  p.x=clamp(p.x+p.vx*dt,42,hw-42);p.y=clamp(p.y+p.vy*dt,50,hh-50);
 }
 function aiTeam(dt){
