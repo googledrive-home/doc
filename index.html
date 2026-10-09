@@ -353,15 +353,21 @@ function updateFx(dt){if(hFxTimer>0){hFxTimer=Math.max(0,hFxTimer-dt);if(hFxType
 function drawFxOverlay(){if(!hFxTimer||!hFxType)return;hctx.save();hctx.fillStyle='rgba(2,8,18,'+(hFxType==='start'?.46:.38)+')';hctx.fillRect(0,0,hw,hh);hctx.textAlign='center';if(hFxType==='start'){const n=hFxTimer>.45?Math.ceil(hFxTimer-.05):0;hctx.fillStyle='#fff';hctx.font='900 clamp(34px,8vw,72px) system-ui';hctx.fillText(n?String(Math.min(3,n)):'GO!',hw/2,hh*.43);hctx.fillStyle='#9eefff';hctx.font='900 18px system-ui';hctx.fillText('FACE-OFF',hw/2,hh*.56);hctx.font='700 12px system-ui';hctx.fillText(hFxSub,hw/2,hh*.62)}else{hctx.fillStyle=hFxType==='goal'?(hFxTeam===1?'#49e3ff':'#ff6b86'):'#ffd35b';hctx.font='1000 clamp(38px,8vw,82px) system-ui';hctx.fillText(hFxTitle,hw/2,hh*.43);hctx.fillStyle='#fff';hctx.font='900 20px system-ui';hctx.fillText(hFxSub,hw/2,hh*.53);if(hFxType==='goal'){hctx.font='900 14px system-ui';hctx.fillText(hScore1+' — '+hScore2,hw/2,hh*.60)}}hctx.restore()}
 function resolveHockeyPlayerCollisions(){
  const players=[h1,h2,h3,h4].filter(Boolean),diameter=38;
- for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++){
-  const a=players[i],b=players[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
-  if(d>=diameter)continue;
-  const safeD=d||.001,nx=d?dx/d:(i%2?0:1),ny=d?dy/d:(i%2?1:0);
-  const overlap=diameter-safeD+.2,share=overlap*.5;
-  a.x=clamp(a.x-nx*share,42,hw-42);a.y=clamp(a.y-ny*share,50,hh-50);
-  b.x=clamp(b.x+nx*share,42,hw-42);b.y=clamp(b.y+ny*share,50,hh-50);
-  const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-  if(closing<0){const impulse=-closing*.58;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}
+ // Repeat separation so a later pair correction cannot leave an earlier pair overlapping.
+ for(let pass=0;pass<4;pass++){
+  for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++){
+   const a=players[i],b=players[j];
+   let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+   if(d>=diameter)continue;
+   let nx,ny;
+   if(d<.001){const angle=(i+1)*1.71+(j+1)*.83;nx=Math.cos(angle);ny=Math.sin(angle)}
+   else{nx=dx/d;ny=dy/d}
+   const overlap=diameter-d+.2,share=overlap*.5;
+   a.x=clamp(a.x-nx*share,42,hw-42);a.y=clamp(a.y-ny*share,50,hh-50);
+   b.x=clamp(b.x+nx*share,42,hw-42);b.y=clamp(b.y+ny*share,50,hh-50);
+   const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+   if(closing<0){const impulse=-closing*.52;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny}
+  }
  }
 }
 function hLoop(now){if(gamePaused){hLast=now;hAnim=requestAnimationFrame(hLoop);return;}const dt=Math.min(.033,(now-hLast)/1000||.016);hLast=now;updateFx(dt);unstickPuck();if(!hGameLocked){moveP(h1,'w','s','a','d',dt);if(hMode==='two')moveP(h2,'arrowup','arrowdown','arrowleft','arrowright',dt);else if(hMode==='2v2coop')moveP(h3,'i','k','j','l',dt);else if(hMode==='cpu')ai(dt);if(hMode==='2v2coop'||hMode==='2v2ai')aiTeam(dt);if(hMode==='2v2ai'){const cfg={easy:{aim:86},medium:{aim:64},hard:{aim:40}}[difficulty]||{aim:64};const tx=clamp(puck.x,hw/2+40,hw-70),ty=clamp(puck.y,70,hh-70);moveAIPlayer(h2,tx,ty,dt);if(Math.hypot(puck.x-h2.x,puck.y-h2.y)<33)hit(h2,true,true)}resolveHockeyPlayerCollisions();updateHDribble();hit(h1,hkeys.f);if(hMode==='two')hit(h2,hkeys.l);if(hMode==='2v2coop'&&h3)hit(h3,hkeys2.o);if(h4)hit(h4,false,true);puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.35,dt);puck.vy*=Math.pow(.35,dt);for(const [i,p] of [h1,h2,h3,h4].entries()){if(!p)continue;const pts=hPlayerTrailPts[i];if(hTrail!=='none'){pts.push({x:p.x,y:p.y});if(pts.length>16)pts.shift()}else pts.length=0}if(puck.y<34||puck.y>hh-34){puck.y=clamp(puck.y,34,hh-34);puck.vy*=-.88;beep(240,.03,'sine',.018)}let gt=hh/2-46,gb=hh/2+46;if((puck.x<25||puck.x>hw-25)&&!(puck.y>gt&&puck.y<gb)){puck.x=clamp(puck.x,25,hw-25);puck.vx*=-.88}if(puck.x<6&&puck.y>gt&&puck.y<gb){hScore2++;goal(2)}if(puck.x>hw-6&&puck.y>gt&&puck.y<gb){hScore1++;goal(1)}}drawH();hAnim=requestAnimationFrame(hLoop)}
