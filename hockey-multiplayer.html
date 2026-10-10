@@ -183,28 +183,63 @@ async function connect(kind,roomId=null,extra={}){
 }
 $("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
-async function loadRooms(){
- $("browserTitle").textContent="Public lobbies";
- const list=$("roomList");list.replaceChildren();const base=$("server").value.trim().replace(/\/$/,"");
- const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Finding public rooms…";list.appendChild(loading);
+async function loadRooms(kind=activeBrowserKind){
+ activeBrowserKind=kind==="private"?"private":"public";
+ const isPrivate=activeBrowserKind==="private",list=$("roomList"),base=$("server").value.trim().replace(/\/$/,""),endpoint=isPrivate?"/private-rooms":"/rooms";
+ $("browserTitle").textContent=isPrivate?"Join a private lobby":"Join a public lobby";
+ $("browserHelp").textContent=isPrivate?"Choose a private lobby, then enter its password to join. Room names and player lists are visible, but entry is password-protected.":"Choose a public lobby to join. Create a named lobby first if none are listed.";
+ list.replaceChildren();const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Finding "+(isPrivate?"private":"public")+" lobbies…";list.appendChild(loading);
  try{
-  const response=await fetch(base+"/rooms",{cache:"no-store"});if(!response.ok)throw Error("Server returned "+response.status);
-  const data=await response.json();list.replaceChildren();
-  const rooms=Array.isArray(data.rooms)?data.rooms:[];
-  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="No public rooms are waiting right now. Create a public room, or refresh in a moment.";list.appendChild(empty);return;}
+  const response=await fetch(base+endpoint,{cache:"no-store"});if(!response.ok)throw Error("Server returned "+response.status);
+  const data=await response.json();list.replaceChildren();const rooms=Array.isArray(data.rooms)?data.rooms:[];
+  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
   for(const item of rooms){
    const card=document.createElement("button");card.className="room-card";card.type="button";
    const meta=document.createElement("span");meta.className="room-meta";
-   const title=document.createElement("strong");title.textContent=item.mode.toUpperCase()+" · "+item.map+" RINK";
-   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players here: "+(rosterNames.length?rosterNames.join(", "):(item.players.length?item.players.join(", "):"Waiting for players"));
-   const sub=document.createElement("span");sub.textContent=item.playerCount+"/"+item.capacity+" players · "+item.teamName1+" vs "+item.teamName2+" · "+item.code;
-   meta.append(title,names,sub);
-   const join=document.createElement("span");join.className="join-label";join.textContent="JOIN →";
-   card.append(meta,join);card.onclick=()=>{ $("lobbyBrowser").classList.add("hidden");$("mode").value=item.mode;$("map").value=item.map;connect("join-room",item.roomId);};
+   const title=document.createElement("strong");title.textContent=(item.lobbyName||"Hockey Lobby")+" · "+String(item.mode||"1v1").toUpperCase();
+   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players: "+(rosterNames.length?rosterNames.join(", "):(item.players?.length?item.players.join(", "):"Waiting for players"));
+   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.map||"Classic")+" rink · "+(item.status||"waiting")+" · "+item.code;
+   meta.append(title,names,sub);const join=document.createElement("span");join.className="join-label";join.textContent=isPrivate?"PASSWORD REQUIRED →":"JOIN →";
+   card.append(meta,join);
+   card.onclick=()=>{
+    $("lobbyBrowser").classList.add("hidden");
+    if(isPrivate){selectedPrivateRoom=item;openLobbyPrompt("join-private");}
+    else{$("mode").value=item.mode;$("map").value=item.map;connect("join-room",item.roomId);}
+   };
    list.appendChild(card);
   }
- }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load rooms: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
+ }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load lobbies: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
 }
+function openLobbyPrompt(action){
+ pendingLobbyAction=action;const isJoin=action==="join-private",isPrivate=action==="create-private";
+ $("lobbyPromptTitle").textContent=isJoin?"Join "+(selectedPrivateRoom?.lobbyName||"private lobby"):isPrivate?"Create a private lobby":"Create a public lobby";
+ $("lobbyPromptHelp").textContent=isJoin?"Enter this private lobby's password to continue. Passwords are visible while you type.":isPrivate?"Choose a name and a password. Share both the lobby code and password with anyone you invite.":"Choose a name so other players can recognise your public lobby.";
+ $("lobbyPromptNameWrap").classList.toggle("hidden",isJoin);
+ $("lobbyPromptPasswordWrap").classList.toggle("hidden",!isJoin&&!isPrivate);
+ $("lobbyPromptName").required=!isJoin;
+ $("lobbyPromptPassword").required=isJoin||isPrivate;
+ $("lobbyPromptName").value=isJoin?"":(($("player").value.trim()||"Player")+"'s Lobby");
+ $("lobbyPromptPassword").value="";
+ $("lobbyPromptSubmit").textContent=isJoin?"JOIN PRIVATE LOBBY":isPrivate?"CREATE PRIVATE LOBBY":"CREATE PUBLIC LOBBY";
+ $("lobbyPrompt").classList.remove("hidden");
+ $("lobbyPrompt").dataset.action=action;
+ (isJoin||isPrivate?$("lobbyPromptPassword"):$("lobbyPromptName")).focus();
+}
+$("lobbyPromptForm").addEventListener("submit",event=>{
+ event.preventDefault();const action=pendingLobbyAction,lobbyName=$("lobbyPromptName").value.trim(),privatePassword=$("lobbyPromptPassword").value;
+ if(!action)return;
+ if(action!=="join-private"&&(!lobbyName||lobbyName.length>32)){$("lobbyPromptHelp").textContent="Please enter a lobby name up to 32 characters.";return;}
+ if((action==="create-private"||action==="join-private")&&(privatePassword.trim().length<4||privatePassword.trim().length>64)){$("lobbyPromptHelp").textContent="Enter a password between 4 and 64 characters.";return;}
+ $("lobbyPrompt").classList.add("hidden");
+ if(action==="join-private"){
+  if(!selectedPrivateRoom){say("Choose a private lobby first.");return;}
+  connect("join-private",selectedPrivateRoom.roomId,{code:selectedPrivateRoom.code,privatePassword});
+ }else connect(action,null,{lobbyName,privatePassword});
+});
+$("lobbyPromptCancel").onclick=()=>{
+ const wasJoin=pendingLobbyAction==="join-private";$("lobbyPrompt").classList.add("hidden");pendingLobbyAction=null;
+ if(wasJoin){$("lobbyBrowser").classList.remove("hidden");loadRooms("private");}
+};
 function renderLobbyPeople(){
  const list=$("lobbyPeopleList"),summary=$("lobbyPeopleSummary");list.replaceChildren();
  if(!room||!latestState){summary.textContent="Join a lobby to see its players and room details.";const p=document.createElement("p");p.className="browser-help";p.textContent="You are not currently in a lobby.";list.appendChild(p);$("copyLobbyCode").disabled=true;return;}
