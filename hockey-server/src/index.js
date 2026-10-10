@@ -1,6 +1,6 @@
 import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
-import { Schema, MapSchema, type, defineTypes } from "@colyseus/schema";
+import { Schema, MapSchema, defineTypes } from "@colyseus/schema";
 import express from "express";
 import { createServer } from "node:http";
 import { randomBytes, randomInt } from "node:crypto";
