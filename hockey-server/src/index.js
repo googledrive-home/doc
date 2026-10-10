@@ -54,6 +54,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  }
  onJoin(client,options){
   const humanCount=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
+  if(!["practice","matchmaking","waiting"].includes(this.state.status)){client.leave(4002,"Match already started");return;}
   if(humanCount>=CAPACITY[this.state.mode]){client.leave(4001,"Lobby full");return}
   const team=this.state.mode==="2v2-ai"?1:(humanCount%2===0?1:2);
   const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.x=team===1?130:770;p.y=150+humanCount*55;p.skin=Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=Math.max(0,Math.min(7,Number(options?.trail)||0));
@@ -127,12 +128,12 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   else if(!practice&&crossedRight){puck.score1++;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();if(state.competition&&puck.score1>=5){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
  }
  beginMatchmaking(){
-  if(!this.state||this.state.status!=="waiting"||this.matchmakingStarted)return;
+  if(!this.state||!["practice","waiting"].includes(this.state.status)||this.matchmakingStarted)return;
   const mode=this.state.mode,capacity=TOTAL_SLOTS[mode]||CAPACITY[mode];
   if(this.state.players.size>=capacity){this.startFaceoff();return;}
-  this.matchmakingStarted=true;this.waitSeconds=30;this.state.countdown=30;
+  this.matchmakingStarted=true;this.state.status="matchmaking";this.waitSeconds=30;this.state.countdown=30;
   this.broadcast("countdown",{seconds:30,started:true});
-  this.aiCountdown=setInterval(()=>{if(!this.state||this.state.status!=="waiting"||!this.matchmakingStarted)return;this.broadcast("countdown",{seconds:this.state.countdown,started:true});},1000);
+  this.aiCountdown=setInterval(()=>{if(!this.state||this.state.status!=="matchmaking"||!this.matchmakingStarted)return;this.broadcast("countdown",{seconds:this.state.countdown,started:true});},1000);
   this.aiFillTimer=setTimeout(()=>{
    this.aiFillTimer=null;clearInterval(this.aiCountdown);this.aiCountdown=null;this.matchmakingStarted=false;
    if(!this.state)return;
