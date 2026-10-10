@@ -183,7 +183,8 @@ async function previewPrivateRoom(){
   const details=document.createElement("p");details.textContent=(data.playerCount||0)+" of "+data.capacity+" player slots used · "+data.status;
   const players=document.createElement("p");players.textContent="Players already here";
   const names=document.createElement("div");names.className="names";
-  if(data.players?.length){for(const p of data.players){const badge=document.createElement("span");badge.textContent=p.name;names.appendChild(badge);}}
+  const roomPeople=Array.isArray(data.roster)?data.roster:(data.players||[]).map(p=>typeof p==="string"?{name:p}:p);
+  if(roomPeople.length){for(const p of roomPeople){const badge=document.createElement("span");badge.textContent=(p.bot?"🤖 ":"")+p.name;names.appendChild(badge);}}
   else{const badge=document.createElement("span");badge.textContent="You're the first — lobby is ready for you";names.appendChild(badge);}
   const join=document.createElement("button");join.className="join-preview";join.textContent="JOIN THIS LOBBY →";
   const canJoin=["practice","matchmaking","waiting"].includes(data.status)&&(data.playerCount||0)<data.capacity;
@@ -193,6 +194,7 @@ async function previewPrivateRoom(){
  }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent=e?.message||"Couldn't load that room.";list.appendChild(err);}
 }
 async function loadRooms(){
+ $("browserTitle").textContent="Public lobbies";
  const list=$("roomList");list.replaceChildren();const base=$("server").value.trim().replace(/\/$/,"");
  const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Finding public rooms…";list.appendChild(loading);
  try{
@@ -204,7 +206,7 @@ async function loadRooms(){
    const card=document.createElement("button");card.className="room-card";card.type="button";
    const meta=document.createElement("span");meta.className="room-meta";
    const title=document.createElement("strong");title.textContent=item.mode.toUpperCase()+" · "+item.map+" RINK";
-   const names=document.createElement("span");names.textContent="Players here: "+(item.players.length?item.players.join(", "):"Waiting for players");
+   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players here: "+(rosterNames.length?rosterNames.join(", "):(item.players.length?item.players.join(", "):"Waiting for players");
    const sub=document.createElement("span");sub.textContent=item.playerCount+"/"+item.capacity+" players · "+item.teamName1+" vs "+item.teamName2+" · "+item.code;
    meta.append(title,names,sub);
    const join=document.createElement("span");join.className="join-label";join.textContent="JOIN →";
