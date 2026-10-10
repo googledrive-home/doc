@@ -48,7 +48,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   });
   this.onMessage("customize",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(99,Number(msg?.skin)||0));p.trail=Math.max(0,Math.min(20,Number(msg?.trail)||0));});
   this.onMessage("ready",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.ready=!!msg?.ready;if(p.ready)this.beginMatchmaking();});
-  this.onMessage("play",(client)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status!=="waiting")return;p.ready=true;this.beginMatchmaking();});
+  this.onMessage("play",(client)=>{const p=this.state.players.get(client.sessionId);if(!p||!["practice","waiting"].includes(this.state.status))return;p.ready=true;this.beginMatchmaking();});
   this.onMessage("shoot",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||!["practice","matchmaking","playing"].includes(this.state.status))return;const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);if(d>70)return;let ax=Math.max(-1,Math.min(1,Number(msg?.x)||0)),ay=Math.max(-1,Math.min(1,Number(msg?.y)||0)),n=Math.hypot(ax,ay)||1;ax/=n;ay/=n;const isAI=p.sessionId.startsWith("ai-"),diffScale=this.state.difficulty==="easy"?.72:this.state.difficulty==="hard"?1.16:this.state.difficulty==="extrahard"?1.32:1,power=isAI?this.state.aiPower*diffScale:this.state.playerPower;puck.vx=ax*650*power+p.vx*.65;puck.vy=ay*650*power+p.vy*.65;puck.x=p.x+ax*31;puck.y=p.y+ay*31;});
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
  }
@@ -64,7 +64,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
  }
  onLeave(client){
-  const leaving=this.state.players.get(client.sessionId),leavingName=leaving?.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal"].includes(this.state.status);
+  const leaving=this.state.players.get(client.sessionId),leavingName=leaving?.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status);
   this.state.players.delete(client.sessionId);
   if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}
   if(wasMatchActive){
