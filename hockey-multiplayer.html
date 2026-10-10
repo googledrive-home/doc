@@ -99,7 +99,7 @@ async function connect(kind){
   room.send("customize",{name:o.name,skin:o.skin,trail:o.trail});
   room.onStateChange(state=>{
    latestState=state;targetPlayers={};
-   $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("team1").value=state.teamName1;$("team2").value=state.teamName2;
+   $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("team1").value=state.teamName1;$("team2").value=state.teamName2;$("duration").value=String(state.matchLength||state.matchTime);
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
