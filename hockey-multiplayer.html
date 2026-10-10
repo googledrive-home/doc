@@ -78,6 +78,17 @@ body:not(.in-lobby) #rink{visibility:hidden}
 .intro-equipment::before{content:"";position:absolute;left:21%;right:21%;top:15%;height:69%;border:8px dashed #bafaffb8;border-radius:50%;transform:rotate(22deg)}
 .intro-equipment::after{content:"";position:absolute;left:-37%;top:59%;width:178%;height:7px;border-radius:99px;background:linear-gradient(90deg,#c7fbff,#f4fdff 55%,#62d5f1);box-shadow:0 7px 0 #061521;transform:rotate(-29deg)}
 .intro-art[data-scene="gear"] .intro-equipment{display:block}
+.intro-art[data-scene="overtime"]{background:radial-gradient(ellipse at 65% 40%,#4c2f87,#10182f 44%,#030914 85%)}
+.intro-art[data-scene="overtime"] .intro-flash{background:#a48bff50;opacity:.7}.intro-art[data-scene="overtime"] .intro-puck{box-shadow:0 0 0 4px #b5a7ff32,0 0 32px #9676ff}
+.intro-art[data-scene="crowd"]{background:radial-gradient(ellipse at 50% 56%,#216487,#0a2c48 42%,#030c18 88%)}
+.intro-art[data-scene="crowd"] .intro-stands{height:22%;top:12%;opacity:1;filter:drop-shadow(0 0 12px #44ddff35)}
+.intro-art[data-scene="crowd"] .intro-beam{opacity:.9}.intro-art[data-scene="crowd"] .intro-flash{background:#57deff36}
+.intro-art[data-scene="powerplay"]{background:radial-gradient(ellipse at 48% 50%,#1b765f,#103c3a 37%,#05151e 83%)}
+.intro-art[data-scene="powerplay"] .intro-skater{background:radial-gradient(circle at 31% 25%,#efffe6,#a2ef72 29%,#178e69 67%,#07372c 100%);border-color:#d1ffc0}
+.intro-art[data-scene="powerplay"] .intro-net{box-shadow:0 0 23px #64f5aa62}.intro-art[data-scene="powerplay"] .intro-puck{box-shadow:0 0 0 4px #73ffba32,0 0 26px #6cffc4}
+.intro-art[data-scene="champion"]{background:radial-gradient(ellipse at 58% 45%,#8b5b25,#39263a 37%,#0b1221 80%)}
+.intro-art[data-scene="champion"] .intro-flash{background:#ffd16d60;opacity:1}.intro-art[data-scene="champion"] .intro-net{border-color:#ffd36b;box-shadow:0 0 30px #ffd36b66}
+.intro-art[data-scene="champion"] .intro-puck{box-shadow:0 0 0 4px #ffd36b45,0 0 30px #ffd36b}
 .lobby-created-card{width:min(490px,100%);border-color:#50e5ff66}
 .created-check{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#1d946d30;border:1px solid #4de3aa;color:#8affc8;font-weight:1000}
 .created-code-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #58e8ff55;border-radius:14px;background:linear-gradient(130deg,#0a2c42,#0a1b2a);box-shadow:inset 0 1px #ffffff0e}
@@ -178,7 +189,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  <div class="intro-copy"><p class="intro-eyebrow">HOCKEY ARENA · MULTIPLAYER</p><h2 id="introTitle">Under the lights.</h2><p id="introDescription" class="intro-description">Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready.</p><div class="intro-bottom"><span id="introCounter" class="intro-counter">01 / 04</span><div class="intro-progress"><span id="introProgressFill"></span></div></div><div class="intro-tip">PICK YOUR KIT · CHOOSE A RINK · HIT THE ICE</div></div>
 </div>
 <div id="lobbyCreated" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="createdTitle"><div class="browser-card lobby-created-card"><div class="browser-head"><span class="created-check">✓</span><h2 id="createdTitle">Your lobby is live</h2><span style="flex:1"></span><button id="closeCreated" class="secondary" type="button" aria-label="Close lobby confirmation">✕</button></div><p id="createdDescription" class="browser-help">You're inside the lobby now. Share the room code so your friends can join.</p><div class="created-code-row"><span><small>ROOM CODE</small><strong id="createdRoomCode">SYNCING…</strong></span><button id="copyCreatedCode" type="button">COPY CODE</button></div><p id="createdPrivacy" class="browser-help">Anyone with the code can join this lobby.</p><button id="enterCreatedLobby" type="button">ENTER LOBBY</button></div></div>
-<div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
+<div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · AUTO-HIT ON CONTACT · SPACE / F FOR A POWER HIT</span><div class="touch-controls"><button data-move="up" aria-label="Move up">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="down" aria-label="Move down">▼</button><button data-move="right" aria-label="Move right">▶</button></div></div>
 <div id="rosterPanel" class="roster-panel hidden" aria-label="Players in this practice rink"><div id="rosterTitle" class="roster-title">Rink roster</div><div id="rosterNames" class="roster-names"></div></div>
 </section>
 <script type="module">
@@ -206,12 +217,16 @@ const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
  {scene:"goal",title:"See the net. Take the shot.",description:"Team up, time your strike and turn clean touches into a goal celebration."},
- {scene:"gear",title:"Your rink. Your rules.",description:"Tune your kit, pick a rink theme and invite your friends into a private room."}
+ {scene:"gear",title:"Your rink. Your rules.",description:"Tune your kit, pick a rink theme and invite your friends into a private room."},
+ {scene:"overtime",title:"Every second matters.",description:"Stay composed in overtime. One clean touch can settle the game."},
+ {scene:"crowd",title:"Hear the home crowd.",description:"Crowd ambience, button sounds, rink impacts and cheers bring the arena to life."},
+ {scene:"powerplay",title:"Build the attack.",description:"Move into space, close on the puck and send it into the dangerous areas."},
+ {scene:"champion",title:"Play for the win.",description:"Celebrate big goals and chase the next victory with your team."}
 ];
 function say(text){$("status").textContent=text}
 function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
-let soundOn=true,audioCtx=null,masterGain=null,noiseBuffer=null;
+let soundOn=true,audioCtx=null,masterGain=null,noiseBuffer=null,musicTimer=null,musicStep=0;
 function initAudio(){
  if(!soundOn)return;
  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
@@ -228,7 +243,7 @@ function initAudio(){
   crowdBed(330,.58,.038,.13,.009);crowdBed(920,.72,.012,.19,.004);
  }
  if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
- masterGain.gain.setTargetAtTime(.72,audioCtx.currentTime,.09);
+ masterGain.gain.setTargetAtTime(.72,audioCtx.currentTime,.09);startArenaMusic();
 }
 function setSoundButton(){
  const b=$("soundToggle");b.textContent=soundOn?"🔊":"🔇";b.title=soundOn?"Sound on · click to mute":"Sound muted · click to enable";b.setAttribute("aria-pressed",String(soundOn));b.setAttribute("aria-label",soundOn?"Mute game audio":"Enable game audio");
@@ -240,6 +255,30 @@ function playTone(frequency,duration,wave="sine",volume=.05,endFrequency=null,de
  gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(volume,start+Math.min(.012,duration*.25));gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
  osc.connect(gain);gain.connect(masterGain);osc.start(start);osc.stop(start+duration+.025);
 }
+function startArenaMusic(){
+ if(musicTimer!==null||!audioCtx)return;
+ const lead=[392,0,523.25,659.25,587.33,0,523.25,392,440,0,587.33,698.46,659.25,587.33,523.25,0,392,0,523.25,659.25,783.99,0,698.46,659.25,587.33,0,523.25,440,392,0,329.63,0];
+ const bass=[98,0,98,0,130.81,0,130.81,0,110,0,110,0,146.83,0,146.83,0,98,0,98,0,130.81,0,130.81,0,87.31,0,87.31,0,110,0,110,0];
+ musicTimer=setInterval(()=>{
+  if(!soundOn||!audioCtx||audioCtx.state!=="running")return;
+  const i=musicStep%lead.length,m=lead[i],b=bass[i];
+  if(m)playTone(m,.18,"triangle",.016,m*1.015);
+  if(b&&musicStep%2===0)playTone(b,.34,"sine",.03,b*.96);
+  if(musicStep%8===0){playTone([196,261.63,329.63,392][Math.floor(musicStep/8)%4],.42,"sine",.013,null,.02);}
+  musicStep++;
+ },240);
+}
+function playCrowdRoar(duration=1.55,intensity=.085){
+ if(!audioCtx||!noiseBuffer||!masterGain||!soundOn)return;
+ const start=audioCtx.currentTime;
+ for(const [frequency,level] of [[470,intensity],[980,intensity*.46]]){
+  const source=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
+  source.buffer=noiseBuffer;filter.type="bandpass";filter.frequency.value=frequency;filter.Q.value=.7;
+  gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(level,start+.17);gain.gain.setValueAtTime(level*.82,start+duration*.45);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+  source.connect(filter);filter.connect(gain);gain.connect(masterGain);source.start(start);source.stop(start+duration+.03);
+ }
+ for(let i=0;i<5;i++){const f=170+Math.random()*210;playTone(f,.32+Math.random()*.23,"sawtooth",.009,f*(1.07+Math.random()*.08),.05+i*.095);}
+}
 function playNoiseBurst(duration,volume,frequency=900){
  if(!audioCtx||!noiseBuffer||!masterGain||!soundOn)return;
  const start=audioCtx.currentTime,source=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();source.buffer=noiseBuffer;filter.type="bandpass";filter.frequency.value=frequency;filter.Q.value=.55;
@@ -249,12 +288,14 @@ function playNoiseBurst(duration,volume,frequency=900){
 function playSound(kind,detail={}){
  if(!soundOn)return;initAudio();if(!audioCtx)return;
  if(kind==="ui"){playTone(720,.045,"sine",.034,470);return;}
- if(kind==="shoot"){playTone(230,.095,"triangle",.048,105);playNoiseBurst(.1,.024,650);return;}
- if(kind==="touch"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||70)/350));playTone(155+strength*95,.055,"triangle",.028+strength*.025,105);if(strength>.35)playTone(820,.025,"square",.012,420);return;}
+ if(kind==="shoot"){playTone(230,.095,"triangle",.048,105);playNoiseBurst(.1,.035,650);return;}
+ if(kind==="touch"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||70)/720));playTone(155+strength*95,.055,"triangle",.025+strength*.035,105);if(strength>.32)playTone(820,.025,"square",.012,420);return;}
+ if(kind==="board"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||120)/650));playTone(185+strength*70,.075,"triangle",.028+strength*.025,72);playNoiseBurst(.08,.018+strength*.016,460);return;}
  if(kind==="faceoff"){playTone(1120,.17,"sine",.045,1380);playTone(1480,.13,"sine",.032,1150,.13);return;}
- if(kind==="practiceGoal"){playTone(470,.13,"triangle",.045,620);playNoiseBurst(.42,.026,1050);return;}
- if(kind==="goal"){playTone(390,.35,"sawtooth",.055,460);playTone(520,.44,"sawtooth",.042,660,.14);playTone(780,.29,"triangle",.035,920,.32);playNoiseBurst(1.45,.06,1050);return;}
- if(kind==="finish"){playTone(440,.25,"triangle",.045,550);playTone(660,.35,"triangle",.04,880,.17);}
+ if(kind==="matchStart"){playTone(1046,.13,"sine",.04,1318);playTone(1568,.22,"sine",.035,1760,.13);playCrowdRoar(.75,.035);return;}
+ if(kind==="practiceGoal"){playTone(470,.13,"triangle",.045,620);playNoiseBurst(.42,.04,1050);playCrowdRoar(.75,.045);return;}
+ if(kind==="goal"){playTone(390,.35,"sawtooth",.055,460);playTone(520,.44,"sawtooth",.042,660,.14);playTone(780,.29,"triangle",.035,920,.32);playNoiseBurst(1.45,.08,1050);playCrowdRoar(2.2,.115);return;}
+ if(kind==="finish"){playTone(440,.25,"triangle",.045,550);playTone(660,.35,"triangle",.04,880,.17);playCrowdRoar(1.5,.075);}
 }
 document.addEventListener("pointerdown",event=>{const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(soundOn){initAudio();if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");}},{capture:true,passive:true});
 document.addEventListener("click",event=>{if(event.detail!==0)return;const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");},true);
@@ -304,13 +345,14 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("lobby",m=>{if(m.code){$("code").value=m.code;if(pendingCreatedLobby){pendingCreatedLobby.code=m.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=m.code;$("copyCreatedCode").disabled=false;}}}$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
   room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;playSound("faceoff");overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
-  room.onMessage("matchStarted",()=>{overlay="";overlayKind="";noticeMessage="";});
+  room.onMessage("matchStarted",()=>{playSound("matchStart");overlay="";overlayKind="";noticeMessage="";});
   room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
   room.onMessage("practiceGoal",m=>{playSound("practiceGoal");say(m.message||"Practice goal — puck back at centre.");});
   room.onMessage("goal",m=>{playSound("goal");overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
   room.onMessage("finished",m=>{playSound("finish");overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
    room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");});
-  room.onMessage("puckTouch",m=>playSound("touch",m));
+  room.onMessage("puckTouch",m=>playSound(m.shot?"shoot":"touch",m));
+  room.onMessage("boardHit",m=>playSound("board",m));
   const activeRoom=room;
    room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
@@ -462,10 +504,9 @@ function draw(){
  const c=$("rink"),ctx=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();if(!r.width||!r.height)return;
  if(c.width!==Math.round(r.width*d)||c.height!==Math.round(r.height*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);}
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);
- const scale=Math.min(c.width/900,c.height/600),offsetX=(c.width-900*scale)/2,offsetY=(c.height-600*scale)/2;
- const sx=scale,sy=scale;
+ const sx=c.width/900,sy=c.height/600;
  const map=latestState?.map||$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
- ctx.fillStyle=theme.bg;ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+ ctx.fillStyle=theme.bg;ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(sx,0,0,sy,0,0);
  ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);
  if(theme.crowd){ctx.fillStyle="#071321";ctx.fillRect(0,0,900,24);ctx.fillRect(0,576,900,24);for(let x=8;x<900;x+=15){const colors=["#ff6b86","#ffd35b","#49e3ff","#7cf2a6","#c49cff"];ctx.fillStyle=colors[Math.floor(x/15)%colors.length];ctx.beginPath();ctx.arc(x,10+Math.sin(now/260+x)*1.2,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x,590+Math.sin(now/280+x)*1.2,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.32;ctx.fillStyle=theme.line;for(let x=8;x<900;x+=30){ctx.fillRect(x,3,18,3);ctx.fillRect(x,594,18,3);}ctx.globalAlpha=1;}
  ctx.strokeStyle=theme.line;ctx.lineWidth=3;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
@@ -526,15 +567,15 @@ function sendMove(){
  const x=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),y=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
  if(x||y)dir={x,y};room.send("move",{x,y});
 }
-function shoot(){if(room){playSound("shoot");room.send("shoot",dir)}}
+function hitPuck(){if(room)room.send("shoot",{})}
 window.addEventListener("keydown",e=>{
  const k=e.key.toLowerCase();if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
- keys[k]=true;sendMove();if((k===" "||k==="f"||k==="enter")&&!e.repeat)shoot();
+ keys[k]=true;sendMove();if((k===" "||k==="f")&&!e.repeat)hitPuck();
 });
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;sendMove()});
 const moveKeys={up:"arrowup",down:"arrowdown",left:"arrowleft",right:"arrowright"};
 document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()},release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
-$("shoot").onclick=shoot;$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
+$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 const params=new URLSearchParams(location.search);
 if(params.has("kind"))document.body.dataset.fullscreen="true";
