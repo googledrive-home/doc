@@ -59,13 +59,15 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.onMessage("play",(client)=>{const p=this.state.players.get(client.sessionId);if(!p||!["practice","waiting"].includes(this.state.status))return;p.ready=true;this.beginMatchmaking();});
   this.onMessage("shoot",(client,msg)=>{
    const p=this.state.players.get(client.sessionId);if(!p||!["practice","matchmaking","playing"].includes(this.state.status))return;
-   const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=28;
-   if(d>contactRadius)return;
+   const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=playerR+puckR;
+   // Match the original game's HIT behaviour: a close physical touch sends the puck away from the skater.
+   if(d>=contactRadius)return;
    const now=Date.now(),last=this.lastShootAt.get(client.sessionId)||0;if(now-last<180)return;this.lastShootAt.set(client.sessionId,now);
-   let ax=Math.max(-1,Math.min(1,Number(msg?.x)||0)),ay=Math.max(-1,Math.min(1,Number(msg?.y)||0)),n=Math.hypot(ax,ay)||1;ax/=n;ay/=n;
-   const isAI=p.sessionId.startsWith("ai-"),diffScale=this.state.difficulty==="easy"?.72:this.state.difficulty==="hard"?1.16:this.state.difficulty==="extrahard"?1.32:1,power=isAI?this.state.aiPower*diffScale:this.state.playerPower;
-   puck.vx=ax*650*power+p.vx*.42;puck.vy=ay*650*power+p.vy*.42;
-   this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:Math.hypot(puck.vx,puck.vy),player:p.name,shot:true});
+   let nx=dx/d,ny=dy/d;if(!Number.isFinite(nx)||!Number.isFinite(ny)){const n=Math.hypot(p.inputX,p.inputY)||1;nx=p.inputX/n||1;ny=p.inputY/n||0;}
+   const power=this.state.playerPower;
+   puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*720*power+p.vx;puck.vy=ny*720*power+p.vy;
+   this.puckContacts.add(client.sessionId);
+   this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:720*power,player:p.name,shot:true});
   });
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
  }
@@ -164,10 +166,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     const tx=Math.max(50,Math.min(850,puck.x-teamDir*(index===1?24:75))),ty=Math.max(55,Math.min(545,puck.y+(index===1?-22:35)));
     let dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy)||1;p.inputX=dx/d*.86;p.inputY=dy/d*.86;
     const puckDistance=Math.hypot(puck.x-p.x,puck.y-p.y),now=Date.now(),lastShot=this.aiShotAt.get(p.sessionId)||0;
-    if(puckDistance<=playerR+puckR-1&&now-lastShot>700&&Math.random()<.1){
-     this.aiShotAt.set(p.sessionId,now);const gx=teamDir===1?880:20,deviation=90/Math.max(.55,state.aiAccuracy*diffScale),gy=300+(Math.random()-.5)*deviation,gd=Math.hypot(gx-puck.x,gy-puck.y)||1;
-     puck.vx=(gx-puck.x)/gd*610*state.aiPower*diffScale+p.vx*.25;puck.vy=(gy-puck.y)/gd*610*state.aiPower*diffScale+p.vy*.25;
-     this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:Math.hypot(puck.vx,puck.vy),player:p.name,shot:true});
+    if(puckDistance<playerR+puckR&&now-lastShot>420&&Math.random()<.16){
+     this.aiShotAt.set(p.sessionId,now);const gx=teamDir===1?880:20,deviation=90/Math.max(.55,state.aiAccuracy*diffScale),gy=300+(Math.random()-.5)*deviation,dx=gx-p.x,dy=gy-p.y,gd=Math.hypot(dx,dy)||1,nx=dx/gd,ny=dy/gd,power=state.aiPower*diffScale;
+     puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*720*power+p.vx;puck.vy=ny*720*power+p.vy;this.puckContacts.add(p.sessionId);
+     this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:720*power,player:p.name,shot:true});
     }
    }
    const len=Math.hypot(p.inputX,p.inputY)||1,scale=len>1?1/len:1,ax=p.inputX*scale,ay=p.inputY*scale,isAI=p.sessionId.startsWith("ai-"),speed=isAI?state.aiSpeed*diffScale:state.playerSpeed*trainingScale,control=isAI?1:state.playerControl;
@@ -185,28 +187,21 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;if(closing<0){const impulse=-closing*.58;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}
   }
   // Damped puck motion, player contact, boards, and the two goals.
-  puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.28,dt);puck.vy*=Math.pow(.28,dt);
-  if(Math.hypot(puck.vx,puck.vy)<7){puck.vx=0;puck.vy=0;}
+  puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.35,dt);puck.vy*=Math.pow(.35,dt);
   const goalTop=rinkH/2-46,goalBottom=rinkH/2+46;
-  if(puck.y<35||puck.y>rinkH-35){puck.y=Math.max(35,Math.min(rinkH-35,puck.y));puck.vy*=-.86;}
-  if(puck.x<25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x=25;puck.vx=Math.abs(puck.vx)*.86;}
-  if(puck.x>rinkW-25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x= rinkW-25;puck.vx=-Math.abs(puck.vx)*.86;}
-  const activePuckContacts=new Set();
+  if(puck.y<35||puck.y>rinkH-35){puck.y=Math.max(35,Math.min(rinkH-35,puck.y));puck.vy*=-.88;}
+  if(puck.x<25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x=25;puck.vx=Math.abs(puck.vx)*.88;}
+  if(puck.x>rinkW-25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x= rinkW-25;puck.vx=-Math.abs(puck.vx)*.88;}
+  const activePuckContacts=new Set(),contactRadius=playerR+puckR;
   for(const p of ps){
-   const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=playerR+puckR;
-   if(d>contactRadius+4){continue;}
+   const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);
+   if(d>contactRadius+4)continue;
    activePuckContacts.add(p.sessionId);
-   if(d>=contactRadius||d<=.001)continue;
-   const nx=dx/d,ny=dy/d,over=contactRadius-d;
-   puck.x+=nx*over;puck.y+=ny*over;
-   // Only a skater driving into the puck can add momentum. A nearby or stationary skater cannot "magnetically" move it.
-   const playerDrive=p.vx*nx+p.vy*ny;
-   if(playerDrive>28&&!this.puckContacts.has(p.sessionId)){
-    const impulse=Math.min(430,(playerDrive-18)*1.22);
-    puck.vx+=nx*impulse;puck.vy+=ny*impulse;this.puckContacts.add(p.sessionId);
-    const now=Date.now();
-    if(impulse>36&&now-this.lastPuckTouchAt>90){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:impulse,player:p.name,shot:false});}
-   }
+   if(d>=contactRadius||d<=.001||this.puckContacts.has(p.sessionId))continue;
+   // The original game hits the puck out from the point of contact. Never drag or repeatedly push it while overlapping.
+   const nx=dx/d,ny=dy/d,isAI=p.sessionId.startsWith("ai-"),diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*diffScale:1,force=360*power;
+   puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*force+p.vx;puck.vy=ny*force+p.vy;this.puckContacts.add(p.sessionId);
+   const now=Date.now();if(now-this.lastPuckTouchAt>80){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:force,player:p.name,shot:false});}
   }
   for(const id of this.puckContacts)if(!activePuckContacts.has(id))this.puckContacts.delete(id);
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
