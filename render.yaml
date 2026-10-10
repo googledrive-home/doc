@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: hockey-multiplayer
+    runtime: node
+    plan: starter
+    rootDir: hockey-server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
