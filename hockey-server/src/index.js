@@ -37,6 +37,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.private=!!options.private;this.state.map=String(options.map||"Classic").slice(0,24);
   this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode});
+  if(mode==="2v2-ai"){addAI(this,2,1);addAI(this,2,2);}
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status==="finished")return;
    p.vx=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.vy=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
@@ -46,25 +47,42 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
  }
  onJoin(client,options){
-  if(this.state.players.size>=CAPACITY[this.state.mode]){client.leave(4001,"Lobby full");return}
   const humanCount=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
-  const team=this.state.mode==="1v1"||this.state.mode==="2v2-ai"? (humanCount%2===0?1:2) : (humanCount%2===0?1:2);
+  if(humanCount>=CAPACITY[this.state.mode]){client.leave(4001,"Lobby full");return}
+  const humanCount=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
+  const team=this.state.mode==="2v2-ai"?1:(humanCount%2===0?1:2);
   const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.x=team===1?130:770;p.y=150+humanCount*55;p.skin=Math.max(0,Math.min(99,Number(options?.skin)||0));p.trail=Math.max(0,Math.min(20,Number(options?.trail)||0));
   this.state.players.set(client.sessionId,p);if(!this.state.hostId)this.state.hostId=client.sessionId;
   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
  }
  onLeave(client){this.state.players.delete(client.sessionId);if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});}
  tick(dt){
-  if(this.state.status==="waiting"&&Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length>=2)this.state.status="playing";
+  if(this.state.status==="waiting"){
+   const humans=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
+   if(humans>=2||(this.state.mode==="2v2-ai"&&humans>=1))this.state.status="playing";
+  }
   const puck=this.state.puck;
   for(const p of this.state.players.values()){
-   if(p.sessionId.startsWith("ai-")){const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy)||1;p.vx=dx/d*.55;p.vy=dy/d*.55;}
+   if(p.sessionId.startsWith("ai-")){
+    const defend=p.team===1?Math.min(450,puck.x):Math.max(450,puck.x);
+    const tx=puck.x+(p.team===1?-35:35),ty=puck.y+(Number(p.sessionId.split("-")[2])===2?55:-55);
+    const dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy)||1;
+    p.vx=Math.max(-1,Math.min(1,dx/d*.72));p.vy=Math.max(-1,Math.min(1,dy/d*.72));
+   }
    p.x=Math.max(28,Math.min(872,p.x+p.vx*250*dt));p.y=Math.max(48,Math.min(552,p.y+p.vy*250*dt));
   }
   puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.985,dt*60);puck.vy*=Math.pow(.985,dt*60);
   if(puck.y<24||puck.y>576){puck.vy*=-.86;puck.y=Math.max(24,Math.min(576,puck.y));}
   if(puck.x<8){puck.score2++;this.resetPuck()}else if(puck.x>892){puck.score1++;this.resetPuck()}else if(puck.x<24||puck.x>876){puck.vx*=-.85;puck.x=Math.max(24,Math.min(876,puck.x));}
-  for(const p of this.state.players.values()){const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);if(d<30&&d>0){puck.vx+=dx/d*95;puck.vy+=dy/d*95;}}
+  for(const p of this.state.players.values()){
+   const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);
+   if(d<30&&d>0){
+    const speed=Math.hypot(p.vx,p.vy);
+    puck.vx+=dx/d*(95+speed*85)+p.vx*100;
+    puck.vy+=dy/d*(95+speed*85)+p.vy*100;
+    const mag=Math.hypot(puck.vx,puck.vy);if(mag>650){puck.vx=puck.vx/mag*650;puck.vy=puck.vy/mag*650;}
+   }
+  }
  }
  resetPuck(){this.state.puck.x=450;this.state.puck.y=300;this.state.puck.vx=0;this.state.puck.vy=0;}
  onDispose(){if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);}
