@@ -16,7 +16,7 @@ defineTypes(Puck,{x:"number",y:"number",vx:"number",vy:"number",score1:"number",
 class MatchState extends Schema {
   constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="waiting";this.hostId="";this.private=false;this.map="Classic";}
 }
-defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",map:"string"});
+defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",map:"string",code:"string"});
 
 const app=express();
 app.get("/",(_req,res)=>res.json({name:"Hockey Multiplayer",status:"ok",protocol:"Colyseus WebSocket",version:1}));
@@ -36,7 +36,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.maxClients=6;this.autoDispose=true;this.setState(new MatchState());
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.private=!!options.private;this.state.map=String(options.map||"Classic").slice(0,24);
-  this.state.hostId="";this.roomCode=options.code||makeCode();codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode});
+  this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode});
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status==="finished")return;
    p.vx=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.vy=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
