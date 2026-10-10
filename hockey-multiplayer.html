@@ -137,7 +137,7 @@ function draw(){
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);
  const scale=Math.min(c.width/900,c.height/600),ox=(c.width-900*scale)/2,oy=(c.height-600*scale)/2;
  ctx.fillStyle="#030a12";ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(scale,0,0,scale,ox,oy);
- const map=$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
+ const map=latestState?.map||$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
  ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);
  if(theme.crowd){ctx.fillStyle="#071321";ctx.fillRect(0,0,900,24);ctx.fillRect(0,576,900,24);for(let x=8;x<900;x+=15){const colors=["#ff6b86","#ffd35b","#49e3ff","#7cf2a6","#c49cff"];ctx.fillStyle=colors[Math.floor(x/15)%colors.length];ctx.beginPath();ctx.arc(x,10+Math.sin(now/260+x)*1.2,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x,590+Math.sin(now/280+x)*1.2,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.32;ctx.fillStyle=theme.line;for(let x=8;x<900;x+=30){ctx.fillRect(x,3,18,3);ctx.fillRect(x,594,18,3);}ctx.globalAlpha=1;}
  ctx.strokeStyle=theme.line;ctx.lineWidth=3;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
@@ -171,7 +171,7 @@ function draw(){
  const t1=latestState?.teamName1||$("team1").value,t2=latestState?.teamName2||$("team2").value,score1=latestState?.puck?.score1??puck.score1,score2=latestState?.puck?.score2??puck.score2;
  ctx.fillStyle="#071725d9";ctx.fillRect(20,35,215,31);ctx.fillStyle="#eaf8ff";ctx.font="800 12px system-ui";ctx.textAlign="left";ctx.fillText(t1+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===1).length+" skaters",30,55);
  ctx.fillStyle="#071725d9";ctx.fillRect(665,35,215,31);ctx.fillStyle="#eaf8ff";ctx.textAlign="right";ctx.fillText(t2+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===2).length+" skaters",870,55);
- ctx.fillStyle="#03101de8";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff2a";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);ctx.fillText((map.toUpperCase())+" RINK  ·  "+formatTime(secs)+" LEFT  ·  "+($("training").value==="none"?"EXHIBITION":$("training").value.toUpperCase())+($("competition").value==="true"?" · FIRST TO 5":""),450,66);
+ ctx.fillStyle="#03101de8";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff2a";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);ctx.fillText((map.toUpperCase())+" RINK  ·  "+formatTime(secs)+" LEFT  ·  "+((latestState?.training||$("training").value)==="none"?"EXHIBITION":(latestState?.training||$("training").value).toUpperCase())+((latestState?.competition??($("competition").value==="true"))?" · FIRST TO 5":""),450,66);
  if(overlay&&now<overlayUntil){ctx.fillStyle="rgba(2,8,18,.59)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle=overlay.includes("SCORES")?theme.goal2:"#f8fcff";ctx.font="1000 48px system-ui";ctx.shadowColor="#000";ctx.shadowBlur=12;ctx.fillText(overlay,450,278);ctx.shadowBlur=0;ctx.fillStyle="#a9efff";ctx.font="900 18px system-ui";ctx.fillText(overlay.includes("FACE")?"3 · 2 · 1 · PLAY!":"HOCKEY ARENA ONLINE",450,319);}
  else if(latestState&&latestState.status==="waiting"){ctx.fillStyle="rgba(2,8,18,.35)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle="#f5fbff";ctx.font="1000 34px system-ui";ctx.fillText("WAITING FOR PLAYERS",450,275);ctx.fillStyle=theme.line;ctx.font="900 19px system-ui";ctx.fillText("AI will fill open positions in "+Math.max(0,latestState.countdown)+" seconds",450,314);}
  ctx.restore();
@@ -200,6 +200,7 @@ document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.prevent
 $("shoot").onclick=shoot;$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 const params=new URLSearchParams(location.search);
+if(params.has("kind"))document.body.dataset.fullscreen="true";
 if(params.get("kind")==="private"&&params.get("action")==="create")connect("create-private");
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("code").focus();say("Private lobby selected. Enter a room code or choose Create private.");}
 else if(params.get("kind")==="public"&&params.get("action")==="create")connect("create-public");
