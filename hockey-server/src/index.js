@@ -14,7 +14,7 @@ class Puck extends Schema {
 }
 defineTypes(Puck,{x:"number",y:"number",vx:"number",vy:"number",score1:"number",score2:"number"});
 class MatchState extends Schema {
-  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="waiting";this.hostId="";this.private=false;this.map="Classic";this.teamName1="Blue Blades";this.teamName2="Red Wolves";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;}
+  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="practice";this.hostId="";this.private=false;this.map="Classic";this.teamName1="Blue Blades";this.teamName2="Red Wolves";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;}
 }
 defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number"});
 
@@ -27,6 +27,8 @@ const gameServer=new Server({transport:new WebSocketTransport({server:httpServer
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
 const TOTAL_SLOTS={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":4 };
 const codes=new Map();
+const activeRooms=new Map();
+app.get("/rooms",(_req,res)=>{const rooms=[];for(const room of activeRooms.values()){const st=room.state;if(st.private||!["practice","matchmaking","waiting"].includes(st.status))continue;const people=Array.from(st.players.values()).map(p=>({name:p.name,team:p.team,skin:p.skin,bot:p.sessionId.startsWith("ai-")}));const humans=people.filter(p=>!p.bot),capacity=CAPACITY[st.mode]||2;if(humans.length>=capacity)continue;rooms.push({roomId:room.roomId,code:room.roomCode,mode:st.mode,map:st.map,status:st.status,playerCount:humans.length,capacity,players:humans.map(p=>p.name),teamName1:st.teamName1,teamName2:st.teamName2});}res.json({rooms});});
 app.get("/room/:code",(req,res)=>{const roomId=codes.get(String(req.params.code||"").toUpperCase());if(!roomId)return res.status(404).json({error:"Room code not found"});res.json({roomId});});
 const cleanName=v=>String(v??"Player").replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,18)||"Player";
 function makeCode(){let code;do{code=randomBytes(3).toString("hex").toUpperCase()}while(codes.has(code));return code}
@@ -38,7 +40,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.maxClients=6;this.autoDispose=true;this.setState(new MatchState());
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.private=!!options.private;this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1=cleanName(options?.teamName1||"Blue Blades");this.state.teamName2=cleanName(options?.teamName2||"Red Wolves");this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;
-  this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
+  this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
   if(mode==="2v2-ai"){addAI(this,1,1);addAI(this,2,1);addAI(this,2,2);}
 
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status==="finished")return;
@@ -60,27 +62,31 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(this.matchmakingStarted&&humansNow>=CAPACITY[this.state.mode])this.startFaceoff();
   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
  }
- onLeave(client){this.state.players.delete(client.sessionId);if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}if(this.matchmakingStarted&&Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length===0)this.cancelMatchmaking();this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});}
+ onLeave(client){
+  const leaving=this.state.players.get(client.sessionId),leavingName=leaving?.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal"].includes(this.state.status);
+  this.state.players.delete(client.sessionId);
+  if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}
+  if(wasMatchActive){
+   this.cancelMatchmaking();
+   for(const [id,p] of Array.from(this.state.players.entries())){if(id.startsWith("ai-")){this.state.players.delete(id);continue;}p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.x=p.team===1?130:770;p.y=300;}
+   this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.resetPuck();this.state.status="practice";this.state.countdown=0;
+   this.broadcast("playerLeft",{name:leavingName,message:leavingName+" left. Match stopped — back to practice."});
+  }else if(this.matchmakingStarted&&Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length===0)this.cancelMatchmaking();
+  this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
+ }
  tick(dt){
-  const state=this.state,puck=state.puck;
-  if(state.status==="waiting"){
-   if(this.matchmakingStarted){this.waitSeconds=Math.max(0,this.waitSeconds-dt);state.countdown=Math.ceil(this.waitSeconds);}
-   else state.countdown=0;
-   return;
-  }
-  if(state.status==="countdown"){
-   this.startSeconds=Math.max(0,this.startSeconds-dt);state.countdown=Math.ceil(this.startSeconds);
-   if(this.startSeconds<=0){state.status="playing";state.countdown=0;this.broadcast("matchStarted",{team1:state.teamName1,team2:state.teamName2});}
-   return;
-  }
-  if(state.status==="goal"){
-   this.goalPause=Math.max(0,this.goalPause-dt);
-   if(this.goalPause<=0)this.startFaceoff();
-   return;
-  }
+  const state=this.state;
+  if(state.status==="practice"){this.simulateRink(dt,true);return;}
+  if(state.status==="matchmaking"){this.waitSeconds=Math.max(0,this.waitSeconds-dt);state.countdown=Math.ceil(this.waitSeconds);this.simulateRink(dt,true);return;}
+  if(state.status==="countdown"){this.startSeconds=Math.max(0,this.startSeconds-dt);state.countdown=Math.ceil(this.startSeconds);if(this.startSeconds<=0){state.status="playing";state.countdown=0;this.broadcast("matchStarted",{team1:state.teamName1,team2:state.teamName2});}return;}
+  if(state.status==="goal"){this.goalPause=Math.max(0,this.goalPause-dt);if(this.goalPause<=0)this.startFaceoff();return;}
   if(state.status!=="playing")return;
   state.matchTime=Math.max(0,state.matchTime-dt);
-  if(state.matchTime<=0){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});return;}
+  if(state.matchTime<=0){state.status="finished";this.broadcast("finished",{score1:state.puck.score1,score2:state.puck.score2});return;}
+  this.simulateRink(dt,false);
+ }
+ simulateRink(dt,practice=false){
+  const state=this.state,puck=state.puck;
   const rinkW=900,rinkH=600,playerR=19,puckR=10,diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,trainingScale=state.training==="warmup"?.82:state.training==="speed"?1.18:state.training==="conditioning"?1.05:1;
   const ps=Array.from(state.players.values());
   for(const p of ps){
@@ -115,8 +121,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    if(d<playerR+puckR+2&&d>.001){const nx=dx/d,ny=dy/d,over=playerR+puckR+2-d;puck.x+=nx*over;puck.y+=ny*over;const speed=Math.hypot(p.vx,p.vy);puck.vx+=nx*(100+speed*.5)+p.vx*.48;puck.vy+=ny*(100+speed*.5)+p.vy*.48;}
   }
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>760){puck.vx=puck.vx/puckSpeed*760;puck.vy=puck.vy/puckSpeed*760;}
-  if(puck.x<2&&puck.y>goalTop&&puck.y<goalBottom){puck.score2++;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();if(state.competition&&puck.score2>=5){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
-  else if(puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom){puck.score1++;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();if(state.competition&&puck.score1>=5){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
+  if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
+  else if(!practice&&crossedLeft){puck.score2++;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();if(state.competition&&puck.score2>=5){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedRight){puck.score1++;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();if(state.competition&&puck.score1>=5){state.status="finished";this.broadcast("finished",{score1:puck.score1,score2:puck.score2});}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
  }
  beginMatchmaking(){
   if(!this.state||this.state.status!=="waiting"||this.matchmakingStarted)return;
@@ -140,10 +148,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);
   this.aiFillTimer=null;this.aiCountdown=null;this.matchmakingStarted=false;this.waitSeconds=30;this.state.countdown=0;
  }
- startFaceoff(){this.cancelMatchmaking();this.startSeconds=3;this.state.status="countdown";this.state.countdown=3;this.broadcast("faceoff",{seconds:3,team1:this.state.teamName1,team2:this.state.teamName2});}
+
+ startFaceoff(){this.cancelMatchmaking();this.resetPuck();for(const p of this.state.players.values()){p.x=p.team===1?130:770;p.y=300+(Number(p.sessionId.split("-").pop())||1)*24;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;}this.startSeconds=3;this.state.status="countdown";this.state.countdown=3;this.broadcast("faceoff",{seconds:3,team1:this.state.teamName1,team2:this.state.teamName2});}
  resetPuck(){this.state.puck.x=450;this.state.puck.y=300;this.state.puck.vx=0;this.state.puck.vy=0;}
 
- onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);}
+ onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
 }
 gameServer.define("hockey",HockeyRoom);
 gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","map","difficulty","training","competition"]);
