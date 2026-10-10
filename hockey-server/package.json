@@ -2,7 +2,7 @@
   "name": "hockey-multiplayer-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Colyseus realtime server for Hockey",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js"
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@colyseus/core": "^0.16.5",
+    "@colyseus/schema": "^3.0.60",
     "@colyseus/ws-transport": "^0.16.5",
     "express": "^4.21.2"
   }
