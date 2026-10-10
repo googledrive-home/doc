@@ -32,8 +32,67 @@ button.active{outline:2px solid var(--cyan);background:linear-gradient(180deg,#1
 body.match-live .roster-panel{opacity:.34}
 body.in-lobby .statusbar{background:rgba(6,20,33,.48);border-color:#ffffff20;backdrop-filter:blur(5px)}
 body.in-lobby.config-open .config{background:rgba(7,26,43,.87);backdrop-filter:blur(14px)}
-.rink-panel{flex:1;min-height:0;display:flex;position:relative;background:transparent;border:0;border-radius:0;overflow:hidden}
+.rink-panel{flex:1;min-height:0;display:flex;position:relative;background:radial-gradient(ellipse at 50% 40%,#102d45,#06111e 72%);border:0;border-radius:0;overflow:hidden}
 canvas{display:block;width:100%;height:100%;min-height:0;touch-action:none}
+body:not(.in-lobby) #rink{visibility:hidden}
+.arena-intro{position:absolute;inset:0;display:grid;grid-template-columns:minmax(240px,.94fr) minmax(280px,1.06fr);align-items:stretch;overflow:hidden;background:#071522;color:#f4faff;z-index:5}
+.arena-intro.hidden{display:none!important}
+.intro-art{position:relative;min-height:250px;overflow:hidden;background:radial-gradient(ellipse at 54% 55%,#1a8bad 0%,#0a3855 24%,#071726 65%,#040a12 100%);isolation:isolate;transition:opacity .24s ease,transform .5s ease}
+.intro-art::before{content:"";position:absolute;inset:-10%;background:radial-gradient(ellipse at 48% 74%,#4ceaff28,transparent 34%),linear-gradient(118deg,transparent 35%,#45dfff0a 36%,transparent 60%);animation:introLightSweep 7s ease-in-out infinite}
+.intro-art::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 60%,#071522 100%),linear-gradient(0deg,#071522bd,transparent 40%,#02081130);pointer-events:none}
+.intro-art.swapping{opacity:.15;transform:scale(1.025)}
+.intro-halo{position:absolute;left:15%;right:8%;top:11%;height:44%;background:radial-gradient(ellipse,#53e8ff28,transparent 67%);filter:blur(8px)}
+.intro-rink{position:absolute;left:7%;right:4%;top:28%;bottom:-18%;border:3px solid #6feaffa3;border-radius:48% 48% 9% 9% / 20% 20% 8% 8%;transform:perspective(480px) rotateX(54deg);box-shadow:0 0 25px #45e8ff19,inset 0 0 20px #45d8ff20;background:linear-gradient(90deg,transparent 49.7%,#b6f6ff6e 49.9%,#b6f6ff6e 50.2%,transparent 50.4%),linear-gradient(0deg,#91f4ff12,transparent)}
+.intro-rink::before{content:"";position:absolute;left:30%;right:30%;top:27%;bottom:27%;border:2px solid #8ceeff75;border-radius:50%}
+.intro-rink::after{content:"";position:absolute;left:12%;right:12%;top:0;bottom:0;border-left:2px solid #8ceeff55;border-right:2px solid #8ceeff55}
+.intro-beam{position:absolute;top:-15%;width:25%;height:90%;background:linear-gradient(180deg,#b6f7ff42,transparent 75%);clip-path:polygon(40% 0,60% 0,100% 100%,0 100%);filter:blur(1px);opacity:.66}
+.intro-beam.one{left:9%;transform:rotate(10deg)}.intro-beam.two{right:10%;transform:rotate(-10deg)}
+.intro-stands{position:absolute;top:17%;left:0;right:0;height:13%;opacity:.72;background:repeating-linear-gradient(90deg,#b6faff 0 3px,transparent 3px 11px),linear-gradient(180deg,#1d435d,#081521);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.intro-skater{position:absolute;left:47%;top:42%;width:54px;height:62px;border-radius:48% 48% 42% 42%;background:radial-gradient(circle at 31% 25%,#d4fcff,#2bbde8 29%,#0966ad 67%,#092541 100%);border:2px solid #a5f7ff;box-shadow:0 0 22px #42dfff7a;transform:rotate(-18deg);animation:skaterGlide 3.6s ease-in-out infinite}
+.intro-skater.second{display:none}
+.intro-skater::before{content:"";position:absolute;left:15px;top:-18px;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff,#c5eaf0 38%,#203448 75%);border:2px solid #e6fcff}
+.intro-skater::after{content:"";position:absolute;right:-41px;top:38px;width:60px;height:4px;background:linear-gradient(90deg,#edfdff,#75d5f4);border-radius:8px;transform:rotate(34deg);box-shadow:0 3px 0 #071321}
+.intro-puck{position:absolute;left:62%;top:69%;width:18px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 20%,#a5b1be,#202b37 55%,#03070c);box-shadow:0 0 0 3px #69dff32b,0 0 22px #4bdbff7d;animation:puckSkate 3.6s ease-in-out infinite}
+.intro-net{position:absolute;right:8%;top:39%;width:64px;height:74px;border:4px solid #65eaff;border-left:0;box-shadow:0 0 20px #43dfff63,inset 0 0 16px #56e6ff22;background:repeating-linear-gradient(0deg,#7ceeff55 0 1px,transparent 1px 10px),repeating-linear-gradient(90deg,#7ceeff40 0 1px,transparent 1px 10px);transform:perspective(200px) rotateY(-8deg)}
+.intro-flash{position:absolute;right:9%;top:34%;width:110px;height:110px;border-radius:50%;background:#51edff22;filter:blur(14px);animation:goalPulse 2.3s ease-in-out infinite}
+.intro-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:clamp(24px,5vw,68px);background:linear-gradient(100deg,#071522e8,#071522f7)}
+.intro-eyebrow{margin:0 0 14px;color:#62e9ff;font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:950}
+.intro-copy h2{margin:0;max-width:520px;font-size:clamp(30px,4.2vw,58px);line-height:1.03;letter-spacing:-.045em;font-weight:1000;color:#f5fcff}
+.intro-copy .intro-description{max-width:490px;margin:17px 0 0;color:#a9c5d9;line-height:1.7;font-size:clamp(13px,1.35vw,16px)}
+.intro-bottom{display:flex;align-items:center;gap:14px;width:min(100%,390px);margin-top:28px;color:#7f9fb6;font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+.intro-counter{white-space:nowrap;color:#d8f7ff}
+.intro-progress{height:3px;flex:1;border-radius:20px;background:#ffffff18;overflow:hidden}
+.intro-progress span{display:block;height:100%;width:25%;background:linear-gradient(90deg,#16afda,#9df7ff);box-shadow:0 0 12px #49e3ff;transition:width .35s ease}
+.intro-tip{margin-top:18px;padding:9px 12px;border:1px solid #ffffff16;border-radius:9px;background:#ffffff07;color:#7d9db4;font-size:11px}
+.intro-art[data-scene="faceoff"]{background:radial-gradient(ellipse at 50% 55%,#276b8b,#0c304d 44%,#05111f 82%)}
+.intro-art[data-scene="faceoff"] .intro-skater{left:31%;top:44%;transform:rotate(8deg)}
+.intro-art[data-scene="faceoff"] .intro-skater.second{display:block;left:61%;top:44%;background:radial-gradient(circle at 31% 25%,#fff0de,#ffb16d 29%,#d85145 67%,#32121c 100%);border-color:#ffd0a2;animation-delay:-1.3s}
+.intro-art[data-scene="faceoff"] .intro-puck{left:49%;top:66%}
+.intro-art[data-scene="goal"]{background:radial-gradient(ellipse at 74% 48%,#b54a34 0%,#4e2335 25%,#101528 62%,#050a13 100%)}
+.intro-art[data-scene="goal"] .intro-net{right:16%;width:86px;height:100px;box-shadow:0 0 28px #ff6f627d,inset 0 0 16px #ffab5d55}
+.intro-art[data-scene="goal"] .intro-flash{background:#ff9b5e46;opacity:.85}
+.intro-art[data-scene="goal"] .intro-puck{left:73%;top:67%;box-shadow:0 0 0 4px #ffb56e35,0 0 28px #ff9c61}
+.intro-art[data-scene="gear"]{background:radial-gradient(ellipse at 50% 48%,#24465d,#0b1d2d 54%,#030912 100%)}
+.intro-art[data-scene="gear"] .intro-rink,.intro-art[data-scene="gear"] .intro-net,.intro-art[data-scene="gear"] .intro-stands,.intro-art[data-scene="gear"] .intro-beam,.intro-art[data-scene="gear"] .intro-skater,.intro-art[data-scene="gear"] .intro-puck,.intro-art[data-scene="gear"] .intro-flash{display:none}
+.intro-equipment{display:none;position:absolute;left:50%;top:48%;width:220px;height:220px;transform:translate(-50%,-50%) rotate(-12deg);border-radius:34%;background:radial-gradient(circle at 31% 22%,#d4fbff,#34bde1 26%,#125a90 60%,#071522 83%);border:2px solid #8af2ff;box-shadow:0 0 70px #45e8ff36,inset 0 2px 15px #ffffff5c}
+.intro-equipment::before{content:"";position:absolute;left:21%;right:21%;top:15%;height:69%;border:8px dashed #bafaffb8;border-radius:50%;transform:rotate(22deg)}
+.intro-equipment::after{content:"";position:absolute;left:-37%;top:59%;width:178%;height:7px;border-radius:99px;background:linear-gradient(90deg,#c7fbff,#f4fdff 55%,#62d5f1);box-shadow:0 7px 0 #061521;transform:rotate(-29deg)}
+.intro-art[data-scene="gear"] .intro-equipment{display:block}
+.lobby-created-card{width:min(490px,100%);border-color:#50e5ff66}
+.created-check{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#1d946d30;border:1px solid #4de3aa;color:#8affc8;font-weight:1000}
+.created-code-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #58e8ff55;border-radius:14px;background:linear-gradient(130deg,#0a2c42,#0a1b2a);box-shadow:inset 0 1px #ffffff0e}
+.created-code-row>span{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.created-code-row small{font-size:10px;letter-spacing:.16em;color:#86adc5;font-weight:900}
+.created-code-row strong{font-size:clamp(24px,5vw,34px);letter-spacing:.18em;color:#9ef5ff;font-weight:1000;overflow-wrap:anywhere}
+.created-code-row button{width:auto;min-width:115px}
+#enterCreatedLobby{width:100%;margin-top:3px}
+body:not(.in-lobby) .hudbottom{display:none}
+@keyframes introLightSweep{0%,100%{transform:translateX(-2%);opacity:.6}50%{transform:translateX(5%);opacity:1}}
+@keyframes skaterGlide{0%,100%{transform:translate(-9px,7px) rotate(-18deg)}50%{transform:translate(15px,-8px) rotate(-9deg)}}
+@keyframes puckSkate{0%,100%{transform:translate(-34px,-5px) rotate(-4deg)}50%{transform:translate(26px,9px) rotate(8deg)}}
+@keyframes goalPulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.8;transform:scale(1.16)}}
+@media(max-width:780px){.arena-intro{grid-template-columns:1fr;grid-template-rows:minmax(160px,.85fr) minmax(230px,1.15fr)}.intro-art{min-height:160px}.intro-copy{padding:24px 25px 28px}.intro-copy h2{font-size:clamp(30px,8vw,46px)}.intro-copy .intro-description{margin-top:10px;line-height:1.5}.intro-bottom{margin-top:18px}.intro-tip{margin-top:10px}}
+@media(prefers-reduced-motion:reduce){.intro-art::before,.intro-skater,.intro-puck,.intro-flash{animation:none!important}}
 .hudbottom{position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:end;pointer-events:none}.hint{font-size:11px;color:#d6e9f9;background:#061421b8;border:1px solid #ffffff20;padding:6px 9px;border-radius:8px;backdrop-filter:blur(6px)}
 .touch-controls{display:none;gap:5px;pointer-events:auto}.touch-controls button{width:44px;height:42px;background:#102e48dd;border:1px solid #ffffff36;padding:3px}
 .help{font-size:11px;color:#91abc3}.hidden{display:none!important}.advanced{grid-column:1/-1;border-top:1px solid #294865;padding:5px 2px 0}.advanced summary{cursor:pointer;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#a8c4db;font-weight:850}.specgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:9px 0 3px}.specgrid label{font-size:10px;color:#a8c4db;display:flex;flex-direction:column;gap:6px}.specgrid label span{display:flex;justify-content:space-between;gap:5px}.specgrid output{color:#49e3ff;font-weight:900}.specgrid input[type=range]{height:16px;padding:0;accent-color:#49e3ff;border:0;background:transparent}.competition-mark{color:#ffd35b;font-weight:900}
@@ -112,6 +171,13 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
+<div id="arenaIntro" class="arena-intro" aria-live="polite">
+ <div id="introArtwork" class="intro-art" data-scene="arena" role="img" aria-label="Illustrated hockey arena with a skater and puck">
+  <div class="intro-halo"></div><div class="intro-beam one"></div><div class="intro-beam two"></div><div class="intro-stands"></div><div class="intro-rink"></div><div class="intro-net"></div><div class="intro-flash"></div><div class="intro-skater"></div><div class="intro-skater second"></div><div class="intro-puck"></div><div class="intro-equipment"></div>
+ </div>
+ <div class="intro-copy"><p class="intro-eyebrow">HOCKEY ARENA · MULTIPLAYER</p><h2 id="introTitle">Under the lights.</h2><p id="introDescription" class="intro-description">Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready.</p><div class="intro-bottom"><span id="introCounter" class="intro-counter">01 / 04</span><div class="intro-progress"><span id="introProgressFill"></span></div></div><div class="intro-tip">PICK YOUR KIT · CHOOSE A RINK · HIT THE ICE</div></div>
+</div>
+<div id="lobbyCreated" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="createdTitle"><div class="browser-card lobby-created-card"><div class="browser-head"><span class="created-check">✓</span><h2 id="createdTitle">Your lobby is live</h2><span style="flex:1"></span><button id="closeCreated" class="secondary" type="button" aria-label="Close lobby confirmation">✕</button></div><p id="createdDescription" class="browser-help">You're inside the lobby now. Share the room code so your friends can join.</p><div class="created-code-row"><span><small>ROOM CODE</small><strong id="createdRoomCode">SYNCING…</strong></span><button id="copyCreatedCode" type="button">COPY CODE</button></div><p id="createdPrivacy" class="browser-help">Anyone with the code can join this lobby.</p><button id="enterCreatedLobby" type="button">ENTER LOBBY</button></div></div>
 <div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
 <div id="rosterPanel" class="roster-panel hidden" aria-label="Players in this practice rink"><div id="rosterTitle" class="roster-title">Rink roster</div><div id="rosterNames" class="roster-names"></div></div>
 </section>
@@ -135,7 +201,13 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public";
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0; 
+const introSlides=[
+ {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
+ {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
+ {scene:"goal",title:"See the net. Take the shot.",description:"Team up, time your strike and turn clean touches into a goal celebration."},
+ {scene:"gear",title:"Your rink. Your rules.",description:"Tune your kit, pick a rink theme and invite your friends into a private room."}
+];
 function say(text){$("status").textContent=text}
 function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
@@ -190,6 +262,7 @@ $("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;if(soundOn){init
 function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null,extra={}){
+ let justCreated=null;
  try{
   const privatePassword=String(extra.privatePassword||"").trim(),lobbyName=String(extra.lobbyName||"").trim();
   if(kind==="create-private"&&(privatePassword.length<4||privatePassword.length>64))throw Error("Use a private lobby password between 4 and 64 characters.");
@@ -198,14 +271,14 @@ async function connect(kind,roomId=null,extra={}){
   if(kind==="join-private"&&!privatePassword)throw Error("Enter the private lobby password.");
   if(room){const oldRoom=room;room=null;try{oldRoom.leave().catch(()=>{});}catch{}}
   markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
-  if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";say("Private lobby created: "+lobbyName+". Share the room code and password with friends.");}
-  else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";say("Public lobby created: "+lobbyName+".");}
+  if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:true,code:room.state.code||""};say("Private lobby created: "+lobbyName+".");}
+  else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:false,code:room.state.code||""};say("Public lobby created: "+lobbyName+".");}
   else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,{...o,privatePassword});say("Joined private lobby "+(data.lobbyName||code)+".");}
   else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,o);say("Joined the selected public practice rink.");}
   else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
   room.send("customize",{name:o.name,skin:o.skin,trail:0});
   room.onStateChange(state=>{
-   latestState=state;targetPlayers={};
+   latestState=state;targetPlayers={};if(state.code){$("code").value=state.code;if(pendingCreatedLobby){pendingCreatedLobby.code=state.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=state.code;$("copyCreatedCode").disabled=false;}}}
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id]};});
@@ -228,7 +301,7 @@ async function connect(kind,roomId=null,extra={}){
    else if(state.status==="finished"){label("FINAL");say("Full time · "+state.puck.score1+" — "+state.puck.score2);overlay=state.puck.score1===state.puck.score2?"DRAW":(state.puck.score1>state.puck.score2?state.teamName1:state.teamName2)+" WINS";overlayKind="finish";overlayUntil=performance.now()+5000;}
    draw();
   });
-  room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
+  room.onMessage("lobby",m=>{if(m.code){$("code").value=m.code;if(pendingCreatedLobby){pendingCreatedLobby.code=m.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=m.code;$("copyCreatedCode").disabled=false;}}}$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
   room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;playSound("faceoff");overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
   room.onMessage("matchStarted",()=>{overlay="";overlayKind="";noticeMessage="";});
@@ -239,10 +312,11 @@ async function connect(kind,roomId=null,extra={}){
    room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");});
   room.onMessage("puckTouch",m=>playSound("touch",m));
   const activeRoom=room;
-   room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
+   room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
-  markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
- }catch(e){label("NOT CONNECTED");markConnected(false);say("Connection failed: "+(e?.message||e));if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}}
+  markConnected(true);document.body.classList.add("in-lobby");$("arenaIntro").classList.add("hidden");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say(justCreated?(justCreated.private?"Private lobby created · code "+(justCreated.code||"syncing…")+". You're in.":"Public lobby created · code "+(justCreated.code||"syncing…")+". You're in."):"Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
+  if(justCreated){pendingCreatedLobby=justCreated;showLobbyCreated(justCreated);}
+ }catch(e){label("NOT CONNECTED");markConnected(false);document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
 }
 $("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
@@ -322,7 +396,7 @@ function renderLobbyPeople(){
 function leaveCurrentLobby(){
  const oldRoom=room;if(!oldRoom){say("You are not in a lobby.");return;}
  room=null;markConnected(false);
- document.body.classList.remove("in-lobby","match-live","config-open");
+ document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("lobbyCreated").classList.add("hidden");
  $("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");
  viewPlayers={};targetPlayers={};latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
  if(oldRoom){try{oldRoom.leave().catch(()=>{});}catch{}}
@@ -352,6 +426,33 @@ $("createPublic").onclick=()=>openLobbyPrompt("create-public");
 $("joinPublic").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms("public");};
 $("joinPrivate").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms("private");};
 function normalizedSkin(i){return SKINS[Math.max(0,Math.min(SKINS.length-1,Number(i)||0))]}
+function showIntroSlide(index){
+ introIndex=(index+introSlides.length)%introSlides.length;const slide=introSlides[introIndex],art=$("introArtwork");
+ art.dataset.scene=slide.scene;$("introTitle").textContent=slide.title;$("introDescription").textContent=slide.description;
+ $("introCounter").textContent=String(introIndex+1).padStart(2,"0")+" / "+String(introSlides.length).padStart(2,"0");
+ $("introProgressFill").style.width=((introIndex+1)/introSlides.length*100)+"%";
+}
+function advanceIntroSlide(){
+ if(document.body.classList.contains("in-lobby")||!$("arenaIntro"))return;
+ const art=$("introArtwork");art.classList.add("swapping");
+ setTimeout(()=>{if(!document.body.classList.contains("in-lobby"))showIntroSlide(introIndex+1);art.classList.remove("swapping");},210);
+}
+setInterval(advanceIntroSlide,5200);
+function showLobbyCreated(info){
+ pendingCreatedLobby=info;$("createdTitle").textContent=(info.private?"Private":"Public")+" lobby is live";
+ $("createdDescription").textContent="Your lobby has been created and you're already inside. Copy this room code and share it"+(info.private?" with the private password you chose.":" with your friends.") ;
+ $("createdPrivacy").textContent=info.private?"Private lobby · friends need both this room code and your chosen password.":"Public lobby · friends can find it in the public lobby browser.";
+ $("createdRoomCode").textContent=info.code||"SYNCING…";$("copyCreatedCode").disabled=!info.code;$("copyCreatedCode").textContent="COPY CODE";
+ $("lobbyCreated").classList.remove("hidden");
+}
+async function copyCreatedCode(){
+ const code=$("createdRoomCode").textContent.trim();if(!code||code==="SYNCING…")return;
+ try{await navigator.clipboard.writeText(code);$("copyCreatedCode").textContent="COPIED!";say("Copied room code "+code+".");}
+ catch{$("createdRoomCode").setAttribute("title","Select this code and copy it manually.");$("createdDescription").textContent="Room code: "+code+" · select the code and copy it manually.";}
+}
+$("copyCreatedCode").onclick=copyCreatedCode;
+function closeCreatedLobby(){ $("lobbyCreated").classList.add("hidden"); }
+$("closeCreated").onclick=closeCreatedLobby;$("enterCreatedLobby").onclick=closeCreatedLobby;
 function resizeCanvas(){
  const c=$("rink"),r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
  c.width=Math.max(1,Math.round(r.width*d));c.height=Math.max(1,Math.round(r.height*d));
@@ -361,9 +462,10 @@ function draw(){
  const c=$("rink"),ctx=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();if(!r.width||!r.height)return;
  if(c.width!==Math.round(r.width*d)||c.height!==Math.round(r.height*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);}
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);
- const sx=c.width/900,sy=c.height/600;
+ const scale=Math.min(c.width/900,c.height/600),offsetX=(c.width-900*scale)/2,offsetY=(c.height-600*scale)/2;
+ const sx=scale,sy=scale;
  const map=latestState?.map||$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
- ctx.fillStyle=theme.bg;ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(sx,0,0,sy,0,0);
+ ctx.fillStyle=theme.bg;ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
  ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);
  if(theme.crowd){ctx.fillStyle="#071321";ctx.fillRect(0,0,900,24);ctx.fillRect(0,576,900,24);for(let x=8;x<900;x+=15){const colors=["#ff6b86","#ffd35b","#49e3ff","#7cf2a6","#c49cff"];ctx.fillStyle=colors[Math.floor(x/15)%colors.length];ctx.beginPath();ctx.arc(x,10+Math.sin(now/260+x)*1.2,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x,590+Math.sin(now/280+x)*1.2,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.32;ctx.fillStyle=theme.line;for(let x=8;x<900;x+=30){ctx.fillRect(x,3,18,3);ctx.fillRect(x,594,18,3);}ctx.globalAlpha=1;}
  ctx.strokeStyle=theme.line;ctx.lineWidth=3;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
@@ -376,13 +478,13 @@ function draw(){
  for(let i=1;i<puckHistory.length;i++){ctx.globalAlpha=(i/puckHistory.length)*.28;ctx.strokeStyle=theme.line;ctx.lineWidth=2+(i/puckHistory.length)*3;ctx.beginPath();ctx.moveTo(puckHistory[i-1].x,puckHistory[i-1].y);ctx.lineTo(puckHistory[i].x,puckHistory[i].y);ctx.stroke();}ctx.globalAlpha=1;
  for(const p of Object.values(viewPlayers)){
   const sk=normalizedSkin(p.skin),rr=19;
-  ctx.save();ctx.translate(p.x,p.y);ctx.scale(1/sx,1/sy);
+  ctx.save();ctx.translate(p.x,p.y);
   const g=ctx.createRadialGradient(-rr*.35,-rr*.4,1,0,0,rr*1.15);g.addColorStop(0,sk.accent);g.addColorStop(.52,sk.base);g.addColorStop(1,"#07101c");
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();ctx.restore();
   ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
  }
- ctx.save();ctx.translate(puck.x,puck.y);ctx.scale(1/sx,1/sy);
+ ctx.save();ctx.translate(puck.x,puck.y);
   const puckVelocity=Math.hypot(Number(targetPuck.vx)||0,Number(targetPuck.vy)||0);
   if(puckHistory.length>2&&puckVelocity>80){ctx.save();ctx.lineCap="round";for(let i=1;i<puckHistory.length;i++){const age=i/(puckHistory.length-1),a=puckHistory[i-1],b=puckHistory[i];ctx.globalAlpha=.2*age*Math.min(1,puckVelocity/420);ctx.strokeStyle=theme.line;ctx.lineWidth=1+3*age;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}ctx.restore();ctx.globalAlpha=1;}
   const puckGrad=ctx.createRadialGradient(-3,-4,1,0,0,11);puckGrad.addColorStop(0,"#515b66");puckGrad.addColorStop(.28,"#222a33");puckGrad.addColorStop(.72,"#10161d");puckGrad.addColorStop(1,"#05080d");
@@ -440,6 +542,6 @@ if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyProm
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms("private");}
 else if(params.get("kind")==="public"&&params.get("action")==="create")openLobbyPrompt("create-public");
 else if(params.get("kind")==="public"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms();}
-resizeCanvas();renderId=requestAnimationFrame(updateRender);
+showIntroSlide(0);resizeCanvas();renderId=requestAnimationFrame(updateRender);
 </script>
 </body></html>
