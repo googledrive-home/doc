@@ -40,13 +40,19 @@ body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 #playMatch{flex:none;width:auto;min-width:105px;height:32px;padding:5px 13px;background:linear-gradient(135deg,#0e9cbd,#0879a1);border:1px solid #65eaff;color:#fff;font-weight:950;letter-spacing:.04em}
 #playMatch:disabled{background:#243b51;border-color:#42556b;color:#a0b2c4;cursor:wait}
 #toggleSetup{flex:none;width:34px;height:32px;padding:3px;font-size:16px}
+#lobbyPlayersBtn{flex:none;width:36px;min-width:36px;height:32px;padding:3px;font-size:16px}
+#leaveLobby{flex:none;width:55px;min-width:55px;height:32px;padding:3px 6px;background:#773844;border:1px solid #c86a7a;font-size:11px;letter-spacing:.03em}
+#leaveLobby:hover{background:#9a4050}
+.people-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.people-actions button{width:auto;min-width:100px}
+#leaveLobbyFromPeople{background:#773844}
 body.in-lobby .config{display:none}
 body.in-lobby .statusbar{position:fixed;z-index:15;top:6px;left:6px;right:6px;width:auto;max-width:850px;min-height:32px;padding:3px 7px;gap:8px;background:#061421d9;border-color:#ffffff20;backdrop-filter:blur(7px);box-shadow:0 2px 12px #0005}
 body.in-lobby .statusbar .grow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:20px}
 body.in-lobby #playMatch,body.in-lobby #toggleSetup{display:block!important}
 body.in-lobby.config-open .config{display:grid;position:fixed;top:45px;left:8px;right:8px;z-index:30;width:auto;max-height:calc(100vh - 53px);overflow:auto;box-shadow:0 18px 70px #000b;background:#071a2bf5}
-body.match-live .statusbar{left:auto;right:7px;top:7px;width:36px;max-width:36px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
-body.match-live .statusbar>:not(#toggleSetup){display:none!important}
+body.match-live .statusbar{left:auto;right:7px;top:7px;width:136px;max-width:136px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:3px}
+body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby){display:none!important}
 body.match-live #toggleSetup{height:29px;width:34px;background:#061421aa;border:1px solid #ffffff22;opacity:.7}
 body.match-live.config-open .config{display:grid}
 body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!important}
@@ -54,6 +60,7 @@ body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!imp
  body.in-lobby .statusbar{right:5px;left:5px;top:4px;max-width:none;gap:5px}
  body.in-lobby #playerCount{display:none}
  body.in-lobby #playMatch{min-width:83px;padding:4px 7px}
+ body.match-live .statusbar{right:5px;width:136px;max-width:136px}
  body.in-lobby.config-open .config{top:40px;left:4px;right:4px;max-height:calc(100vh - 46px)}
 }
 </style>
@@ -82,11 +89,12 @@ body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!imp
 </div></details>
 <div class="server-row"><input id="server" aria-label="Multiplayer server URL" value="https://hockey-multiplayer.onrender.com" autocomplete="url"><button id="connect" class="secondary">CONNECT</button><input id="code" class="room-code" maxlength="6" placeholder="ROOM CODE" aria-label="Private room code"><button id="joinPrivate" class="secondary">JOIN CODE</button></div>
 <div class="actions">
-<button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button><button id="browseRooms" class="secondary">🔎 Browse rooms & player names</button>
+<button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button><button id="browseRooms" class="secondary">🔎 Browse public lobbies</button>
 </div>
 </section>
-<div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Public lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p class="browser-help">See who is already in a room before joining. Full rooms are hidden to keep party sizes within the selected mode.</p><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
-<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
+<div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Public lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p class="browser-help">See who is already in a public room before joining. Private rooms can be joined directly with their room code.</p><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
+<div id="lobbyPeopleDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPeopleTitle"><div class="browser-card"><div class="browser-head"><h2 id="lobbyPeopleTitle">Players in your lobby</h2><span style="flex:1"></span><button id="copyLobbyCode" class="secondary" type="button">COPY CODE</button><button id="closeLobbyPeople" class="secondary" type="button">✕</button></div><p id="lobbyPeopleSummary" class="browser-help">Join a lobby to see its players and room details.</p><div id="lobbyPeopleList" class="room-list"></div><div class="people-actions"><button id="leaveLobbyFromPeople" type="button">LEAVE LOBBY</button><button id="doneLobbyPeople" class="secondary" type="button">DONE</button></div></div></div>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
@@ -120,11 +128,11 @@ function options(){return {name:$("player").value.trim()||"Player",mode:$("mode"
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null){
  try{
-  if(room){try{room.leave()}catch{}room=null}
+  if(room){const oldRoom=room;room=null;try{await oldRoom.leave()}catch{}}
   markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};trailHistory={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true});$("code").value=room.state.code||"";say("Private lobby created. Share the room code with friends.");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false});$("code").value=room.state.code||"";say("Public lobby created. Share the room code or wait for players.");}
-  else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code));if(!res.ok)throw Error("Room code not found. Check the code and try again.");const data=await res.json();room=await c.joinById(data.roomId,o);say("Joined private lobby "+code+".");}
+  else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code),{cache:"no-store"});if(!res.ok)throw Error("Room code not found. Check the code and try again.");const data=await res.json();if(!data.private)throw Error("That code belongs to a public room. Use Browse public lobbies instead.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,o);say("Joined private lobby "+code+".");}
   else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,o);say("Joined the selected public practice rink.");}
   else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
   room.send("customize",{name:o.name,skin:o.skin,trail:o.trail});
@@ -132,10 +140,10 @@ async function connect(kind,roomId=null){
    latestState=state;targetPlayers={};
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("team1").value=state.teamName1;$("team2").value=state.teamName2;$("duration").value=String(state.matchLength||state.matchTime);
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
-   state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
+   state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
    targetPuck={x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2};
-   $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";renderRoster();
+   $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";renderRoster();renderLobbyPeople();
    const isMatchLive=["countdown","playing","goal","finished"].includes(state.status);
    document.body.classList.add("in-lobby");document.body.classList.toggle("match-live",isMatchLive);
    $("toggleSetup").classList.remove("hidden");
@@ -159,10 +167,12 @@ async function connect(kind,roomId=null){
   room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
   room.onMessage("practiceGoal",m=>{say(m.message||"Practice goal — puck back at centre.");});
   room.onMessage("goal",m=>{overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
-  room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+6000;});
-  room.onLeave(code=>{markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("rosterPanel").classList.add("hidden");});
+  room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
+   room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");});
+  const activeRoom=room;
+   room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
-  markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");renderRoster();
+  markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
  }catch(e){label("NOT CONNECTED");markConnected(false);say("Connection failed: "+(e?.message||e));}
 }
 $("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
@@ -215,11 +225,41 @@ async function loadRooms(){
   }
  }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load rooms: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
 }
+function renderLobbyPeople(){
+ const list=$("lobbyPeopleList"),summary=$("lobbyPeopleSummary");list.replaceChildren();
+ if(!room||!latestState){summary.textContent="Join a lobby to see its players and room details.";const p=document.createElement("p");p.className="browser-help";p.textContent="You are not currently in a lobby.";list.appendChild(p);$("copyLobbyCode").disabled=true;return;}
+ const mode=latestState.mode||$("mode").value,capacity=mode==="2v2-ai"?1:({"1v1":2,"2v2":4,"3v3":6}[mode]||2),people=Object.values(targetPlayers).sort((a,b)=>a.team-b.team||a.name.localeCompare(b.name)),humans=people.filter(p=>!String(p.id).startsWith("ai-")).length,code=latestState.code||$("code").value.trim().toUpperCase(),status=latestState.status==="practice"?"Practice lobby":latestState.status==="matchmaking"?"Matchmaking":latestState.status==="waiting"?"Waiting to start":latestState.status==="finished"?"Match finished":latestState.status==="playing"?"Match in progress":latestState.status==="goal"?"Face-off after goal":"Face-off countdown";
+ $("lobbyPeopleTitle").textContent=(latestState.private?"Private":"Public")+" lobby · players";
+ summary.textContent=humans+"/"+capacity+" players · "+status+" · "+(latestState.map||"Classic")+" rink · "+(code?"Room code "+code:"No room code");
+ $("copyLobbyCode").disabled=!code;
+ if(!people.length){const p=document.createElement("p");p.className="browser-help";p.textContent="No players are listed yet.";list.appendChild(p);return;}
+ for(const p of people){
+  const card=document.createElement("div");card.className="room-card";
+  const meta=document.createElement("span");meta.className="room-meta";
+  const title=document.createElement("strong");title.textContent=p.name+(p.id===room.sessionId?" · YOU":String(p.id).startsWith("ai-")?" · AI":"")+(p.id===latestState.hostId?" · HOST":"");
+  const sub=document.createElement("span");sub.textContent=(p.team===1?(latestState.teamName1||"Team 1"):(latestState.teamName2||"Team 2"))+(p.ready?" · Ready":"");
+  meta.append(title,sub);card.append(meta);list.appendChild(card);
+ }
+}
+async function leaveCurrentLobby(){
+ const oldRoom=room;if(!oldRoom){say("You are not in a lobby.");return;}
+ room=null;markConnected(false);try{await oldRoom.leave();}catch{}
+ document.body.classList.remove("in-lobby","match-live","config-open");
+ $("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");
+ viewPlayers={};targetPlayers={};latestState=null;overlay="";overlayKind="";noticeMessage="";label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
+}
+$("lobbyPlayersBtn").onclick=()=>{renderLobbyPeople();$("lobbyPeopleDialog").classList.remove("hidden");};
+$("leaveLobby").onclick=leaveCurrentLobby;
+$("leaveLobbyFromPeople").onclick=leaveCurrentLobby;
+$("copyLobbyCode").onclick=async()=>{const code=latestState?.code||$("code").value.trim().toUpperCase();if(!code)return;try{await navigator.clipboard.writeText(code);say("Copied lobby code "+code+".");}catch{say("Lobby code: "+code+" (select it in the room-code field to copy).");}};
+$("closeLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden");
+$("doneLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden");
+$("lobbyPeopleDialog").addEventListener("click",e=>{if(e.target===$("lobbyPeopleDialog"))$("lobbyPeopleDialog").classList.add("hidden");});
 $("browseRooms").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms();};
 $("refreshRooms").onclick=loadRooms;
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")$("lobbyBrowser").classList.add("hidden");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");}});
 function renderRoster(){
  const roster=$("rosterPanel"),names=$("rosterNames");if(!connected||!Object.keys(targetPlayers).length){roster.classList.add("hidden");return;}
  roster.classList.remove("hidden");$("rosterTitle").textContent="PRACTICE RINK · "+Object.keys(targetPlayers).length;
@@ -231,7 +271,7 @@ $("connect").onclick=()=>connect("join-public");
 $("createPrivate").onclick=()=>connect("create-private");
 $("createPublic").onclick=()=>connect("create-public");
 $("joinPublic").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms();};
-$("joinPrivate").onclick=previewPrivateRoom;
+$("joinPrivate").onclick=()=>connect("join-private");
 function normalizedSkin(i){return SKINS[Math.max(0,Math.min(SKINS.length-1,Number(i)||0))]}
 function resizeCanvas(){
  const c=$("rink"),r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
@@ -274,7 +314,8 @@ function draw(){
   ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
   ctx.fillStyle=p.team===1?theme.goal2:theme.goal1;ctx.fillRect(p.x-10,p.y+23,20,3);
  }
- ctx.save();ctx.shadowBlur=16;ctx.shadowColor="#ffffff99";ctx.fillStyle="#faffff";ctx.beginPath();ctx.arc(puck.x,puck.y,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#18212d";ctx.beginPath();ctx.arc(puck.x-2,puck.y-2,5.7,0,Math.PI*2);ctx.fill();ctx.restore();
+ const puckAngle=Math.atan2(targetPuck.vy||puck.vy,targetPuck.vx||puck.vx);
+  ctx.save();ctx.translate(puck.x,puck.y);ctx.rotate(puckAngle);ctx.fillStyle="#0008";ctx.beginPath();ctx.ellipse(1,5,14,7,0,0,Math.PI*2);ctx.fill();ctx.shadowColor="#000b";ctx.shadowBlur=7;ctx.shadowOffsetY=2;ctx.fillStyle="#111820";ctx.beginPath();ctx.ellipse(0,1,14,8,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.strokeStyle="#738397";ctx.lineWidth=1.7;ctx.stroke();const puckGrad=ctx.createLinearGradient(-8,-7,8,7);puckGrad.addColorStop(0,"#56616d");puckGrad.addColorStop(.28,"#202832");puckGrad.addColorStop(1,"#080d13");ctx.fillStyle=puckGrad;ctx.beginPath();ctx.ellipse(0,-1,12,6.5,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#9ba9b8";ctx.globalAlpha=.8;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(-2,-2,8,2.6,-.12,Math.PI*1.05,Math.PI*1.8);ctx.stroke();ctx.globalAlpha=1;ctx.restore();
  for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.spin);ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);ctx.restore();}ctx.globalAlpha=1;
  const t1=latestState?.teamName1||$("team1").value,t2=latestState?.teamName2||$("team2").value,score1=latestState?.puck?.score1??puck.score1,score2=latestState?.puck?.score2??puck.score2;
  ctx.fillStyle="#071725d9";ctx.fillRect(20,35,215,31);ctx.fillStyle="#eaf8ff";ctx.font="800 12px system-ui";ctx.textAlign="left";ctx.fillText(t1+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===1).length+" skaters",30,55);
@@ -291,6 +332,7 @@ function draw(){
  else if(latestState&&latestState.status==="waiting"){
   ctx.fillStyle="rgba(2,8,18,.35)";ctx.fillRect(350,83,200,27);ctx.textAlign="center";ctx.fillStyle="#f5fbff";ctx.font="800 11px system-ui";ctx.fillText(latestState.countdown>0?"MATCHMAKING · "+latestState.countdown+"s":"LOBBY READY · PRESS PLAY",450,101);
  }
+ if(latestState&&["practice","matchmaking"].includes(latestState.status)&&!(overlay&&now<overlayUntil)){const lobbyText=latestState.status==="matchmaking"?"LOBBY · MATCHMAKING":"LOBBY";ctx.fillStyle="rgba(3,16,29,.78)";ctx.fillRect(360,88,180,31);ctx.strokeStyle="#49e3ff66";ctx.lineWidth=1;ctx.strokeRect(360,88,180,31);ctx.textAlign="center";ctx.fillStyle="#bdf5ff";ctx.font="900 17px system-ui";ctx.fillText(lobbyText,450,109);}
  ctx.restore();
 }
 function themeColor(team){const th=PALETTES[latestState?.map||$("map").value]||PALETTES.Classic;return team===2?th.goal2:th.goal1}
