@@ -206,7 +206,7 @@ async function loadRooms(){
    const card=document.createElement("button");card.className="room-card";card.type="button";
    const meta=document.createElement("span");meta.className="room-meta";
    const title=document.createElement("strong");title.textContent=item.mode.toUpperCase()+" · "+item.map+" RINK";
-   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players here: "+(rosterNames.length?rosterNames.join(", "):(item.players.length?item.players.join(", "):"Waiting for players");
+   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players here: "+(rosterNames.length?rosterNames.join(", "):(item.players.length?item.players.join(", "):"Waiting for players"));
    const sub=document.createElement("span");sub.textContent=item.playerCount+"/"+item.capacity+" players · "+item.teamName1+" vs "+item.teamName2+" · "+item.code;
    meta.append(title,names,sub);
    const join=document.createElement("span");join.className="join-label";join.textContent="JOIN →";
