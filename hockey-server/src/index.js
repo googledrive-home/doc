@@ -75,7 +75,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    for(const id of Array.from(this.state.players.keys()))this.state.players.delete(id);
    this.state.hostId="";this.state.status="practice";this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.resetPuck();
    if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);
-   setTimeout(()=>{if(this.clients.length===0)this.disconnect();},0);return;
+   return;
   }
   if(wasMatchActive){
    clearTimeout(this.finishTimer);this.finishTimer=null;this.cancelMatchmaking();
