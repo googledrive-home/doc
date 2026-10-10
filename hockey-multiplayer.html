@@ -17,7 +17,7 @@ button{border:0;background:#087fa8;font-weight:850;cursor:pointer;touch-action:m
 #browseRooms{grid-column:1/-1}
 .room-browser{position:fixed;inset:8px;z-index:80;display:flex;align-items:center;justify-content:center;background:#0209139c;backdrop-filter:blur(7px)}
 .room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:#0a1a2bdc;border:1px solid #ffffff27;border-radius:18px;box-shadow:0 25px 80px #0009;backdrop-filter:blur(12px)}
-.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}
+.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}.room-preview{padding:13px;border:1px solid #ffffff24;border-radius:12px;background:#102740b8}.room-preview h3{margin:0 0 8px;font-size:17px}.room-preview p{font-size:13px;color:#aec4d8;line-height:1.5;margin:6px 0}.room-preview .names{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.room-preview .names span{border:1px solid #ffffff24;background:#ffffff0b;border-radius:9px;padding:6px 8px;font-size:12px;color:#f4fbff}.room-preview .join-preview{max-width:240px;margin-top:12px}
 .roster-panel{position:absolute;top:78px;left:12px;z-index:3;max-width:min(245px,44vw);padding:7px 9px;border:1px solid #ffffff1e;border-radius:10px;background:rgba(2,10,18,.27);backdrop-filter:blur(3px);color:#f5fbff;pointer-events:none;opacity:.72}
 .roster-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#a9eaff;margin-bottom:4px}.roster-names{display:flex;flex-direction:column;gap:3px}.roster-name{font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.match-live .roster-panel{opacity:.34}
@@ -162,11 +162,36 @@ async function connect(kind,roomId=null){
   room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+6000;});
   room.onLeave(code=>{markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("rosterPanel").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
-  markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");
+  markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");renderRoster();
  }catch(e){label("NOT CONNECTED");markConnected(false);say("Connection failed: "+(e?.message||e));}
 }
 $("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
+async function previewPrivateRoom(){
+ const code=$("code").value.trim().toUpperCase();
+ if(!code){label("ROOM CODE NEEDED");say("Enter the room code to preview the player list first.");$("code").focus();return;}
+ const list=$("roomList"),base=$("server").value.trim().replace(/\/$/,"");
+ $("browserTitle").textContent="Private lobby · "+code;$("lobbyBrowser").classList.remove("hidden");list.replaceChildren();
+ const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Loading room and player names…";list.appendChild(loading);
+ try{
+  const response=await fetch(base+"/room/"+encodeURIComponent(code),{cache:"no-store"});
+  if(!response.ok)throw Error("Room code not found or lobby has closed.");
+  const data=await response.json();list.replaceChildren();
+  const card=document.createElement("div");card.className="room-preview";
+  const title=document.createElement("h3");title.textContent=data.mode.toUpperCase()+" · "+data.map+" rink";
+  const teams=document.createElement("p");teams.textContent=(data.teamName1||"Team 1")+" vs "+(data.teamName2||"Team 2");
+  const details=document.createElement("p");details.textContent=(data.playerCount||0)+" of "+data.capacity+" player slots used · "+data.status;
+  const players=document.createElement("p");players.textContent="Players already here";
+  const names=document.createElement("div");names.className="names";
+  if(data.players?.length){for(const p of data.players){const badge=document.createElement("span");badge.textContent=p.name;names.appendChild(badge);}}
+  else{const badge=document.createElement("span");badge.textContent="You're the first — lobby is ready for you";names.appendChild(badge);}
+  const join=document.createElement("button");join.className="join-preview";join.textContent="JOIN THIS LOBBY →";
+  const canJoin=["practice","matchmaking","waiting"].includes(data.status)&&(data.playerCount||0)<data.capacity;
+  join.disabled=!canJoin; if(!canJoin){join.textContent=data.playerCount>=data.capacity?"LOBBY FULL":"MATCH ALREADY STARTED";}
+  join.onclick=()=>{$("lobbyBrowser").classList.add("hidden");connect("join-private");};
+  card.append(title,teams,details,players,names,join);list.appendChild(card);
+ }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent=e?.message||"Couldn't load that room.";list.appendChild(err);}
+}
 async function loadRooms(){
  const list=$("roomList");list.replaceChildren();const base=$("server").value.trim().replace(/\/$/,"");
  const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Finding public rooms…";list.appendChild(loading);
@@ -203,8 +228,8 @@ function renderRoster(){
 $("connect").onclick=()=>connect("join-public");
 $("createPrivate").onclick=()=>connect("create-private");
 $("createPublic").onclick=()=>connect("create-public");
-$("joinPublic").onclick=()=>connect("join-public");
-$("joinPrivate").onclick=()=>connect("join-private");
+$("joinPublic").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms();};
+$("joinPrivate").onclick=previewPrivateRoom;
 function normalizedSkin(i){return SKINS[Math.max(0,Math.min(SKINS.length-1,Number(i)||0))]}
 function resizeCanvas(){
  const c=$("rink"),r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
@@ -297,7 +322,7 @@ if(params.has("kind"))document.body.dataset.fullscreen="true";
 if(params.get("kind")==="private"&&params.get("action")==="create")connect("create-private");
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("code").focus();say("Private lobby selected. Enter a room code or choose Create private.");}
 else if(params.get("kind")==="public"&&params.get("action")==="create")connect("create-public");
-else if(params.get("kind")==="public"&&params.get("action")==="join")connect("join-public");
+else if(params.get("kind")==="public"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms();}
 resizeCanvas();renderId=requestAnimationFrame(updateRender);
 </script>
 </body></html>
