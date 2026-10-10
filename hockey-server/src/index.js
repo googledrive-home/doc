@@ -70,7 +70,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   }
   if(state.status==="countdown"){
    this.startSeconds=Math.max(0,this.startSeconds-dt);state.countdown=Math.ceil(this.startSeconds);
-   if(this.startSeconds<=0){state.status="playing";state.countdown=0;this.broadcast("faceoff",{seconds:0});}
+   if(this.startSeconds<=0){state.status="playing";state.countdown=0;this.broadcast("matchStarted",{team1:state.teamName1,team2:state.teamName2});}
    return;
   }
   if(state.status==="goal"){
