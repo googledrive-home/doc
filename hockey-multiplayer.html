@@ -120,7 +120,7 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},trailHistory={},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="";
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="";
 function say(text){$("status").textContent=text}
 function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
@@ -132,7 +132,7 @@ async function connect(kind,roomId=null){
   if(kind==="create-private"&&privatePassword.trim().length<4)throw Error("Create a private lobby password with at least 4 characters.");
   if(kind==="join-private"&&!privatePassword.trim())throw Error("Enter the private lobby password as well as the room code.");
   if(room){const oldRoom=room;room=null;try{oldRoom.leave().catch(()=>{});}catch{}}
-  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};trailHistory={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
+  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword:privatePassword.trim()});$("code").value=room.state.code||"";say("Private lobby created. Share the room code and password with friends.");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false});$("code").value=room.state.code||"";say("Public lobby created. Share the room code or wait for players.");}
   else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword.trim()})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public room. Use Browse public lobbies instead.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,{...o,privatePassword:privatePassword.trim()});say("Joined private lobby "+code+".");}
@@ -143,7 +143,7 @@ async function connect(kind,roomId=null){
    latestState=state;targetPlayers={};
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
-   state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
+   state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id]};});
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
    targetPuck={x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2};
    $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";renderRoster();renderLobbyPeople();
@@ -240,7 +240,7 @@ function renderLobbyPeople(){
   const card=document.createElement("div");card.className="room-card";
   const meta=document.createElement("span");meta.className="room-meta";
   const title=document.createElement("strong");title.textContent=p.name+(p.id===room.sessionId?" · YOU":String(p.id).startsWith("ai-")?" · AI":"")+(p.id===latestState.hostId?" · HOST":"");
-  const sub=document.createElement("span");sub.textContent=(p.team===1?(latestState.teamName1||"Team 1"):(latestState.teamName2||"Team 2"))+(p.ready?" · Ready":"");
+  const sub=document.createElement("span");sub.textContent="Team "+p.team+(p.ready?" · Ready":"");
   meta.append(title,sub);card.append(meta);list.appendChild(card);
  }
 }
@@ -337,7 +337,7 @@ function formatTime(seconds){const s=Math.max(0,Math.floor(seconds||0));return M
 function updateRender(){
  const now=performance.now(),dt=lastDraw?Math.min(.05,(now-lastDraw)/1000):.016;lastDraw=now;
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=180*dt;p.vx*=Math.pow(.16,dt);p.spin+=dt*4;if(p.life<=0)particles.splice(i,1);}
- for(const [id,t] of Object.entries(targetPlayers)){let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t,trailPts:[]};}p.x+=(t.x-p.x)*Math.min(1,dt*18);p.y+=(t.y-p.y)*Math.min(1,dt*18);p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.trail=t.trail;const pts=p.trailPts;if(Number(p.trail)){pts.push({x:p.x,y:p.y});if(pts.length>18)pts.shift()}else pts.length=0;}
+ for(const [id,t] of Object.entries(targetPlayers)){let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}p.x+=(t.x-p.x)*Math.min(1,dt*18);p.y+=(t.y-p.y)*Math.min(1,dt*18);p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;}
  puck.x+=(targetPuck.x-puck.x)*Math.min(1,dt*22);puck.y+=(targetPuck.y-puck.y)*Math.min(1,dt*22);puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
  puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  draw();renderId=requestAnimationFrame(updateRender);
