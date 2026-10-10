@@ -63,6 +63,29 @@ body:not(.in-lobby) #rink{visibility:hidden}
 .intro-progress{height:3px;flex:1;border-radius:20px;background:#ffffff18;overflow:hidden}
 .intro-progress span{display:block;height:100%;width:25%;background:linear-gradient(90deg,#16afda,#9df7ff);box-shadow:0 0 12px #49e3ff;transition:width .35s ease}
 .intro-tip{margin-top:18px;padding:9px 12px;border:1px solid #ffffff16;border-radius:9px;background:#ffffff07;color:#7d9db4;font-size:11px}
+.intro-art[data-scene="faceoff"]{background:radial-gradient(ellipse at 50% 55%,#276b8b,#0c304d 44%,#05111f 82%)}
+.intro-art[data-scene="faceoff"] .intro-skater{left:31%;top:44%;transform:rotate(8deg)}
+.intro-art[data-scene="faceoff"] .intro-skater.second{display:block;left:61%;top:44%;background:radial-gradient(circle at 31% 25%,#fff0de,#ffb16d 29%,#d85145 67%,#32121c 100%);border-color:#ffd0a2;animation-delay:-1.3s}
+.intro-art[data-scene="faceoff"] .intro-puck{left:49%;top:66%}
+.intro-art[data-scene="goal"]{background:radial-gradient(ellipse at 74% 48%,#b54a34 0%,#4e2335 25%,#101528 62%,#050a13 100%)}
+.intro-art[data-scene="goal"] .intro-net{right:16%;width:86px;height:100px;box-shadow:0 0 28px #ff6f627d,inset 0 0 16px #ffab5d55}
+.intro-art[data-scene="goal"] .intro-flash{background:#ff9b5e46;opacity:.85}
+.intro-art[data-scene="goal"] .intro-puck{left:73%;top:67%;box-shadow:0 0 0 4px #ffb56e35,0 0 28px #ff9c61}
+.intro-art[data-scene="gear"]{background:radial-gradient(ellipse at 50% 48%,#24465d,#0b1d2d 54%,#030912 100%)}
+.intro-art[data-scene="gear"] .intro-rink,.intro-art[data-scene="gear"] .intro-net,.intro-art[data-scene="gear"] .intro-stands,.intro-art[data-scene="gear"] .intro-beam,.intro-art[data-scene="gear"] .intro-skater,.intro-art[data-scene="gear"] .intro-puck,.intro-art[data-scene="gear"] .intro-flash{display:none}
+.intro-equipment{display:none;position:absolute;left:50%;top:48%;width:220px;height:220px;transform:translate(-50%,-50%) rotate(-12deg);border-radius:34%;background:radial-gradient(circle at 31% 22%,#d4fbff,#34bde1 26%,#125a90 60%,#071522 83%);border:2px solid #8af2ff;box-shadow:0 0 70px #45e8ff36,inset 0 2px 15px #ffffff5c}
+.intro-equipment::before{content:"";position:absolute;left:21%;right:21%;top:15%;height:69%;border:8px dashed #bafaffb8;border-radius:50%;transform:rotate(22deg)}
+.intro-equipment::after{content:"";position:absolute;left:-37%;top:59%;width:178%;height:7px;border-radius:99px;background:linear-gradient(90deg,#c7fbff,#f4fdff 55%,#62d5f1);box-shadow:0 7px 0 #061521;transform:rotate(-29deg)}
+.intro-art[data-scene="gear"] .intro-equipment{display:block}
+.lobby-created-card{width:min(490px,100%);border-color:#50e5ff66}
+.created-check{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#1d946d30;border:1px solid #4de3aa;color:#8affc8;font-weight:1000}
+.created-code-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #58e8ff55;border-radius:14px;background:linear-gradient(130deg,#0a2c42,#0a1b2a);box-shadow:inset 0 1px #ffffff0e}
+.created-code-row>span{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.created-code-row small{font-size:10px;letter-spacing:.16em;color:#86adc5;font-weight:900}
+.created-code-row strong{font-size:clamp(24px,5vw,34px);letter-spacing:.18em;color:#9ef5ff;font-weight:1000;overflow-wrap:anywhere}
+.created-code-row button{width:auto;min-width:115px}
+#enterCreatedLobby{width:100%;margin-top:3px}
+body:not(.in-lobby) .hudbottom{display:none}
 @keyframes introLightSweep{0%,100%{transform:translateX(-2%);opacity:.6}50%{transform:translateX(5%);opacity:1}}
 @keyframes skaterGlide{0%,100%{transform:translate(-9px,7px) rotate(-18deg)}50%{transform:translate(15px,-8px) rotate(-9deg)}}
 @keyframes puckSkate{0%,100%{transform:translate(-34px,-5px) rotate(-4deg)}50%{transform:translate(26px,9px) rotate(8deg)}}
@@ -149,7 +172,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div id="arenaIntro" class="arena-intro" aria-live="polite">
  <div id="introArtwork" class="intro-art" data-scene="arena" role="img" aria-label="Illustrated hockey arena with a skater and puck">
-  <div class="intro-halo"></div><div class="intro-beam one"></div><div class="intro-beam two"></div><div class="intro-stands"></div><div class="intro-rink"></div><div class="intro-net"></div><div class="intro-flash"></div><div class="intro-skater"></div><div class="intro-puck"></div>
+  <div class="intro-halo"></div><div class="intro-beam one"></div><div class="intro-beam two"></div><div class="intro-stands"></div><div class="intro-rink"></div><div class="intro-net"></div><div class="intro-flash"></div><div class="intro-skater"></div><div class="intro-skater second"></div><div class="intro-puck"></div><div class="intro-equipment"></div>
  </div>
  <div class="intro-copy"><p class="intro-eyebrow">HOCKEY ARENA · MULTIPLAYER</p><h2 id="introTitle">Under the lights.</h2><p id="introDescription" class="intro-description">Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready.</p><div class="intro-bottom"><span id="introCounter" class="intro-counter">01 / 04</span><div class="intro-progress"><span id="introProgressFill"></span></div></div><div class="intro-tip">PICK YOUR KIT · CHOOSE A RINK · HIT THE ICE</div></div>
 </div>
@@ -277,7 +300,7 @@ async function connect(kind,roomId=null,extra={}){
    else if(state.status==="finished"){label("FINAL");say("Full time · "+state.puck.score1+" — "+state.puck.score2);overlay=state.puck.score1===state.puck.score2?"DRAW":(state.puck.score1>state.puck.score2?state.teamName1:state.teamName2)+" WINS";overlayKind="finish";overlayUntil=performance.now()+5000;}
    draw();
   });
-  room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
+  room.onMessage("lobby",m=>{if(m.code){$("code").value=m.code;if(pendingCreatedLobby){pendingCreatedLobby.code=m.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=m.code;$("copyCreatedCode").disabled=false;}}}$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
   room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;playSound("faceoff");overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
   room.onMessage("matchStarted",()=>{overlay="";overlayKind="";noticeMessage="";});
@@ -418,7 +441,7 @@ function showLobbyCreated(info){
  pendingCreatedLobby=info;$("createdTitle").textContent=(info.private?"Private":"Public")+" lobby is live";
  $("createdDescription").textContent="Your lobby has been created and you're already inside. Copy this room code and share it"+(info.private?" with the private password you chose.":" with your friends.") ;
  $("createdPrivacy").textContent=info.private?"Private lobby · friends need both this room code and your chosen password.":"Public lobby · friends can find it in the public lobby browser.";
- $("createdRoomCode").textContent=info.code||"SYNCING…";$("copyCreatedCode").disabled=!info.code;
+ $("createdRoomCode").textContent=info.code||"SYNCING…";$("copyCreatedCode").disabled=!info.code;$("copyCreatedCode").textContent="COPY CODE";
  $("lobbyCreated").classList.remove("hidden");
 }
 async function copyCreatedCode(){
