@@ -127,16 +127,18 @@ function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
 function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
-async function connect(kind,roomId=null){
+async function connect(kind,roomId=null,extra={}){
  try{
-  const privatePassword=$("privatePassword").value;
-  if(kind==="create-private"&&privatePassword.trim().length<4)throw Error("Create a private lobby password with at least 4 characters.");
-  if(kind==="join-private"&&!privatePassword.trim())throw Error("Enter the private lobby password as well as the room code.");
+  const privatePassword=String(extra.privatePassword||"").trim(),lobbyName=String(extra.lobbyName||"").trim();
+  if(kind==="create-private"&&(privatePassword.length<4||privatePassword.length>64))throw Error("Use a private lobby password between 4 and 64 characters.");
+  if(kind==="create-public"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
+  if(kind==="create-private"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
+  if(kind==="join-private"&&!privatePassword)throw Error("Enter the private lobby password.");
   if(room){const oldRoom=room;room=null;try{oldRoom.leave().catch(()=>{});}catch{}}
   markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
-  if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword:privatePassword.trim()});$("code").value=room.state.code||"";say("Private lobby created. Share the room code and password with friends.");}
-  else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false});$("code").value=room.state.code||"";say("Public lobby created. Share the room code or wait for players.");}
-  else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword.trim()})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public room. Use Browse public lobbies instead.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,{...o,privatePassword:privatePassword.trim()});say("Joined private lobby "+code+".");}
+  if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";say("Private lobby created: "+lobbyName+". Share the room code and password with friends.");}
+  else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";say("Public lobby created: "+lobbyName+".");}
+  else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,{...o,privatePassword});say("Joined private lobby "+(data.lobbyName||code)+".");}
   else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,o);say("Joined the selected public practice rink.");}
   else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
   room.send("customize",{name:o.name,skin:o.skin,trail:0});
@@ -155,7 +157,7 @@ async function connect(kind,roomId=null){
    $("playMatch").disabled=state.status==="matchmaking"||isMatchLive;
    $("playMatch").textContent=state.status==="matchmaking"?"MATCHMAKING…":"▶ PLAY";
    if(noticeMessage){label(noticeMessage.toLowerCase().includes("left")?"PLAYER LEFT":"LOBBY READY");say(noticeMessage);}
-   else if(state.status==="practice"){label("PRACTICE RINK");say("Practice together · goals reset to centre · press PLAY when everyone is ready"+(state.code?" · Room "+state.code:""));}
+   else if(state.status==="practice"){label("PRACTICE RINK");say((state.lobbyName||"Practice lobby")+" · practice together · press PLAY when ready"+(state.code?" · Room "+state.code:""));}
    else if(state.status==="waiting"){label("LOBBY READY");say("Lobby ready · press PLAY to start matchmaking"+(state.code?" · Room "+state.code:""));}
    else if(state.status==="matchmaking"){label("MATCHMAKING");say("Practice continues while we wait · AI fills empty slots in "+Math.max(0,state.countdown)+"s");}
    else if(state.status==="countdown"){label("FACE-OFF");say("Face-off countdown…");}
