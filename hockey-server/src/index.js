@@ -99,7 +99,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    this.finishTimer=null;
    if(!this.state||this.state.status!=="finished")return;
    for(const [id,p] of Array.from(this.state.players.entries())){
-    if(id.startsWith("ai-")){this.state.players.delete(id);continue;}
+    if(id.startsWith("ai-")&&this.state.mode!=="2v2-ai"){this.state.players.delete(id);continue;}
     p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;
    }
    this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;
