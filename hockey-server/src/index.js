@@ -45,7 +45,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  onCreate(options){
   this.maxClients=6;this.autoDispose=true;this.setState(new MatchState());
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
-  this.state.mode=mode;this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;
+  this.state.mode=mode;this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
@@ -57,7 +57,16 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.onMessage("customize",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;this.updateTeamNames();});
   this.onMessage("ready",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.ready=!!msg?.ready;if(p.ready)this.beginMatchmaking();});
   this.onMessage("play",(client)=>{const p=this.state.players.get(client.sessionId);if(!p||!["practice","waiting"].includes(this.state.status))return;p.ready=true;this.beginMatchmaking();});
-  this.onMessage("shoot",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||!["practice","matchmaking","playing"].includes(this.state.status))return;const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);if(d>70)return;let ax=Math.max(-1,Math.min(1,Number(msg?.x)||0)),ay=Math.max(-1,Math.min(1,Number(msg?.y)||0)),n=Math.hypot(ax,ay)||1;ax/=n;ay/=n;const isAI=p.sessionId.startsWith("ai-"),diffScale=this.state.difficulty==="easy"?.72:this.state.difficulty==="hard"?1.16:this.state.difficulty==="extrahard"?1.32:1,power=isAI?this.state.aiPower*diffScale:this.state.playerPower;puck.vx=ax*700*power+p.vx*.65;puck.vy=ay*700*power+p.vy*.65;puck.x=p.x+ax*31;puck.y=p.y+ay*31;});
+  this.onMessage("shoot",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p||!["practice","matchmaking","playing"].includes(this.state.status))return;
+   const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=31;
+   if(d>contactRadius)return;
+   const now=Date.now(),last=this.lastShootAt.get(client.sessionId)||0;if(now-last<180)return;this.lastShootAt.set(client.sessionId,now);
+   let ax=Math.max(-1,Math.min(1,Number(msg?.x)||0)),ay=Math.max(-1,Math.min(1,Number(msg?.y)||0)),n=Math.hypot(ax,ay)||1;ax/=n;ay/=n;
+   const isAI=p.sessionId.startsWith("ai-"),diffScale=this.state.difficulty==="easy"?.72:this.state.difficulty==="hard"?1.16:this.state.difficulty==="extrahard"?1.32:1,power=isAI?this.state.aiPower*diffScale:this.state.playerPower;
+   puck.vx=ax*650*power+p.vx*.42;puck.vy=ay*650*power+p.vy*.42;
+   this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:Math.hypot(puck.vx,puck.vy),player:p.name,shot:true});
+  });
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
  }
  onJoin(client,options){
@@ -74,6 +83,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  onLeave(client){
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return; // A rejected late/full-room join must not stop the current match.
+  this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);
   const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status);
   this.state.players.delete(client.sessionId);
   if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}
@@ -153,7 +163,12 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     const teamDir=p.team===1?1:-1,index=Number(p.sessionId.split("-")[2])||1;
     const tx=Math.max(50,Math.min(850,puck.x-teamDir*(index===1?24:75))),ty=Math.max(55,Math.min(545,puck.y+(index===1?-22:35)));
     let dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy)||1;p.inputX=dx/d*.86;p.inputY=dy/d*.86;
-    if(Math.hypot(puck.x-p.x,puck.y-p.y)<48&&Math.random()<.06){const gx=teamDir===1?880:20,deviation=90/Math.max(.55,state.aiAccuracy*diffScale),gy=300+(Math.random()-.5)*deviation,gd=Math.hypot(gx-puck.x,gy-puck.y)||1;puck.vx=(gx-puck.x)/gd*610*state.aiPower*diffScale;puck.vy=(gy-puck.y)/gd*610*state.aiPower*diffScale;}
+    const puckDistance=Math.hypot(puck.x-p.x,puck.y-p.y),now=Date.now(),lastShot=this.aiShotAt.get(p.sessionId)||0;
+    if(puckDistance<=playerR+puckR+1&&now-lastShot>700&&Math.random()<.1){
+     this.aiShotAt.set(p.sessionId,now);const gx=teamDir===1?880:20,deviation=90/Math.max(.55,state.aiAccuracy*diffScale),gy=300+(Math.random()-.5)*deviation,gd=Math.hypot(gx-puck.x,gy-puck.y)||1;
+     puck.vx=(gx-puck.x)/gd*610*state.aiPower*diffScale+p.vx*.25;puck.vy=(gy-puck.y)/gd*610*state.aiPower*diffScale+p.vy*.25;
+     this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:Math.hypot(puck.vx,puck.vy),player:p.name,shot:true});
+    }
    }
    const len=Math.hypot(p.inputX,p.inputY)||1,scale=len>1?1/len:1,ax=p.inputX*scale,ay=p.inputY*scale,isAI=p.sessionId.startsWith("ai-"),speed=isAI?state.aiSpeed*diffScale:state.playerSpeed*trainingScale,control=isAI?1:state.playerControl;
    p.vx+=ax*720*speed*control*dt;p.vy+=ay*720*speed*control*dt;
@@ -170,14 +185,25 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;if(closing<0){const impulse=-closing*.58;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}
   }
   // Damped puck motion, player contact, boards, and the two goals.
-  puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.50,dt);puck.vy*=Math.pow(.50,dt);
+  puck.x+=puck.vx*dt;puck.y+=puck.vy*dt;puck.vx*=Math.pow(.28,dt);puck.vy*=Math.pow(.28,dt);
+  if(Math.hypot(puck.vx,puck.vy)<7){puck.vx=0;puck.vy=0;}
   const goalTop=rinkH/2-46,goalBottom=rinkH/2+46;
   if(puck.y<35||puck.y>rinkH-35){puck.y=Math.max(35,Math.min(rinkH-35,puck.y));puck.vy*=-.86;}
   if(puck.x<25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x=25;puck.vx=Math.abs(puck.vx)*.86;}
   if(puck.x>rinkW-25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x= rinkW-25;puck.vx=-Math.abs(puck.vx)*.86;}
   for(const p of ps){
    let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);
-   if(d<playerR+puckR+2&&d>.001){const nx=dx/d,ny=dy/d,over=playerR+puckR+2-d;puck.x+=nx*over;puck.y+=ny*over;const impactSpeed=Math.max(0,p.vx*nx+p.vy*ny),hitPower=4+impactSpeed*1.55;puck.vx+=nx*hitPower+p.vx*.22;puck.vy+=ny*hitPower+p.vy*.22;}
+   const contactRadius=playerR+puckR+2;
+   if(d<contactRadius&&d>.001){
+    const nx=dx/d,ny=dy/d,over=contactRadius-d;puck.x+=nx*over;puck.y+=ny*over;
+    // Only apply momentum when the player and puck are moving into each other.
+    const closing=(p.vx-puck.vx)*nx+(p.vy-puck.vy)*ny;
+    if(closing>0.5){
+     const impulse=closing*1.12;puck.vx+=nx*impulse;puck.vy+=ny*impulse;
+     const now=Date.now();
+     if(closing>32&&now-this.lastPuckTouchAt>140){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:closing,player:p.name,shot:false});}
+    }
+   }
   }
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
