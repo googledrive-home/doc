@@ -10,14 +10,23 @@ header{display:flex;align-items:center;gap:12px;min-height:38px;flex:none}h1{fon
 .config{flex:none;background:linear-gradient(135deg,#0e2540,#0a192b);border:1px solid #294865;border-radius:14px;padding:8px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;align-items:end}
 .field{min-width:0}.field label{display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#94abc2;margin:0 0 4px 2px;font-weight:800}
 input,select,button{font:inherit;min-width:0;border:1px solid #355573;border-radius:8px;background:#071522;color:#f3f9ff;padding:8px 9px;width:100%;height:36px}
-button{border:0;background:#087fa8;font-weight:850;cursor:pointer;touch-action:manipulation}button.secondary{background:#213b58}button.active{outline:2px solid var(--cyan);background:#14506a}
+button{position:relative;isolation:isolate;overflow:hidden;border:1px solid #ffffff24;border-radius:12px;background:linear-gradient(180deg,#12a3c8 0%,#087fa8 58%,#066080 100%);font-weight:850;cursor:pointer;touch-action:manipulation;box-shadow:0 4px 0 #06445b,0 8px 18px #0003,inset 0 1px #ffffff55;transition:transform .16s ease,filter .18s ease,box-shadow .18s ease,border-color .18s ease}
+button::after{content:"";position:absolute;top:-60%;bottom:-60%;left:-78%;width:46%;pointer-events:none;background:linear-gradient(105deg,transparent,rgba(255,255,255,.36),transparent);transform:skewX(-18deg);transition:left .58s cubic-bezier(.2,.7,.2,1);mix-blend-mode:screen}
+button:hover{transform:translateY(-2px);filter:brightness(1.12);box-shadow:0 6px 0 #06445b,0 12px 22px #0005,inset 0 1px #ffffff65;border-color:#b2f6ff70}
+button:hover::after{left:138%}
+button:active{transform:translateY(1px) scale(.985);filter:brightness(.97);box-shadow:0 1px 0 #06445b,0 3px 8px #0004,inset 0 2px 5px #00192760}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+button:disabled{cursor:wait;transform:none;filter:saturate(.55);box-shadow:0 2px 0 #152b3b}
+button.secondary{background:linear-gradient(180deg,#31516e 0%,#213b58 100%);border-color:#ffffff24;box-shadow:0 3px 0 #14273b,0 7px 15px #0003,inset 0 1px #ffffff24}
+button.secondary:hover{box-shadow:0 5px 0 #14273b,0 10px 20px #0005,inset 0 1px #ffffff35}
+button.active{outline:2px solid var(--cyan);background:linear-gradient(180deg,#197797,#14506a)}
 .actions{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}.actions button{flex:1 1 135px}.server-row{grid-column:1/-1;display:flex;gap:7px;align-items:center;flex-wrap:wrap}.server-row input{flex:1}.room-code{width:125px;flex:none;text-transform:uppercase;letter-spacing:.12em}.room-password{min-width:130px;flex:1}
 .statusbar{flex:none;min-height:28px;display:flex;align-items:center;gap:12px;padding:5px 10px;border:1px solid #243e5a;background:#081827;border-radius:8px;font-size:12px;color:#a7c4dc;overflow-wrap:anywhere}
 .statusbar strong{color:#ecfaff}.statusbar .grow{flex:1}.live-dot{width:7px;height:7px;flex:none;background:#ffbf45;border-radius:50%}.live-dot.online{background:#55efa7;box-shadow:0 0 9px #55efa7}
 #browseRooms{grid-column:1/-1}
 .room-browser{position:fixed;inset:8px;z-index:80;display:flex;align-items:center;justify-content:center;background:#0209139c;backdrop-filter:blur(7px)}
-.room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:#0a1a2bdc;border:1px solid #ffffff27;border-radius:18px;box-shadow:0 25px 80px #0009;backdrop-filter:blur(12px)}
-.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}.room-preview{padding:13px;border:1px solid #ffffff24;border-radius:12px;background:#102740b8}.room-preview h3{margin:0 0 8px;font-size:17px}.room-preview p{font-size:13px;color:#aec4d8;line-height:1.5;margin:6px 0}.room-preview .names{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.room-preview .names span{border:1px solid #ffffff24;background:#ffffff0b;border-radius:9px;padding:6px 8px;font-size:12px;color:#f4fbff}.room-preview .join-preview{max-width:240px;margin-top:12px}.prompt-fields{display:flex;flex-direction:column;gap:10px}.prompt-field{display:flex;flex-direction:column;gap:5px}.prompt-field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a8c4db;font-weight:850}.prompt-field input{width:100%;height:42px}.prompt-actions{display:flex;justify-content:flex-end;gap:8px}.prompt-actions button{width:auto;min-width:110px}.room-card .room-meta strong{font-size:14px}
+.room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:linear-gradient(145deg,#102a43f2,#081624f2);border:1px solid #8beaff38;border-radius:20px;box-shadow:0 25px 80px #0009,inset 0 1px #ffffff13;backdrop-filter:blur(16px);animation:modalIn .22s cubic-bezier(.2,.8,.2,1) both}
+.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff;transform:translateY(-1px);box-shadow:0 9px 20px #0003}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}.room-preview{padding:13px;border:1px solid #ffffff24;border-radius:12px;background:#102740b8}.room-preview h3{margin:0 0 8px;font-size:17px}.room-preview p{font-size:13px;color:#aec4d8;line-height:1.5;margin:6px 0}.room-preview .names{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.room-preview .names span{border:1px solid #ffffff24;background:#ffffff0b;border-radius:9px;padding:6px 8px;font-size:12px;color:#f4fbff}.room-preview .join-preview{max-width:240px;margin-top:12px}.prompt-fields{display:flex;flex-direction:column;gap:10px}.prompt-field{display:flex;flex-direction:column;gap:5px}.prompt-field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a8c4db;font-weight:850}.prompt-field input{width:100%;height:42px}.prompt-actions{display:flex;justify-content:flex-end;gap:8px}.prompt-actions button{width:auto;min-width:110px}.room-card .room-meta strong{font-size:14px}
 .roster-panel{position:absolute;top:78px;left:12px;z-index:3;max-width:min(245px,44vw);padding:7px 9px;border:1px solid #ffffff1e;border-radius:10px;background:rgba(2,10,18,.27);backdrop-filter:blur(3px);color:#f5fbff;pointer-events:none;opacity:.72}
 .roster-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#a9eaff;margin-bottom:4px}.roster-names{display:flex;flex-direction:column;gap:3px}.roster-name{font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.match-live .roster-panel{opacity:.34}
@@ -42,7 +51,9 @@ body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 #toggleSetup{flex:none;width:34px;height:32px;padding:3px;font-size:16px}
 #lobbyPlayersBtn{flex:none;width:36px;min-width:36px;height:32px;padding:3px;font-size:16px}
 #leaveLobby{flex:none;width:55px;min-width:55px;height:32px;padding:3px 6px;background:#773844;border:1px solid #c86a7a;font-size:11px;letter-spacing:.03em}
-#leaveLobby:hover{background:#9a4050}
+#leaveLobby:hover{background:linear-gradient(180deg,#aa5060,#843744)}
+#soundToggle{flex:none;width:35px;min-width:35px;height:29px;padding:2px;font-size:15px;border:1px solid #6bdff15c;background:linear-gradient(180deg,#17415b,#0b2438);box-shadow:0 2px 0 #041522,0 5px 12px #0003}
+#soundToggle[aria-pressed="false"]{border-color:#6c7e90;background:linear-gradient(180deg,#293b4c,#182838)}
 .people-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 .people-actions button{width:auto;min-width:100px}
 #leaveLobbyFromPeople{background:#773844}
@@ -52,10 +63,13 @@ body.in-lobby .statusbar .grow{white-space:nowrap;overflow:hidden;text-overflow:
 body.in-lobby #playMatch,body.in-lobby #toggleSetup{display:block!important}
 body.in-lobby.config-open .config{display:grid;position:fixed;top:45px;left:8px;right:8px;z-index:30;width:auto;max-height:calc(100vh - 53px);overflow:auto;box-shadow:0 18px 70px #000b;background:#071a2bf5}
 body.match-live .statusbar{left:auto;right:7px;top:7px;width:136px;max-width:136px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:3px}
-body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby){display:none!important}
+body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby):not(#soundToggle){display:none!important}
 body.match-live #toggleSetup{height:29px;width:34px;background:#061421aa;border:1px solid #ffffff22;opacity:.7}
 body.match-live.config-open .config{display:grid}
 body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!important}
+@keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){button,button::after,.room-card,.browser-card{transition:none!important;animation:none!important}button:hover,button:active,.room-card:hover{transform:none!important}}
+input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offset:2px;border-color:#9cf4ff}
 @media(max-width:650px){
  body.in-lobby .statusbar{right:5px;left:5px;top:4px;max-width:none;gap:5px}
  body.in-lobby #playerCount{display:none}
@@ -95,7 +109,7 @@ body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!imp
 <div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Available lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p id="browserHelp" class="browser-help">Choose a lobby to join.</p><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
 <div id="lobbyPrompt" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPromptTitle"><form id="lobbyPromptForm" class="browser-card"><div class="browser-head"><h2 id="lobbyPromptTitle">Lobby details</h2><span style="flex:1"></span></div><p id="lobbyPromptHelp" class="browser-help"></p><div id="lobbyPromptNameWrap" class="prompt-field"><label for="lobbyPromptName">Lobby name</label><input id="lobbyPromptName" type="text" maxlength="32" placeholder="e.g. Friday Night Hockey" autocomplete="off"></div><div id="lobbyPromptPasswordWrap" class="prompt-field hidden"><label for="lobbyPromptPassword">Lobby password</label><input id="lobbyPromptPassword" type="text" maxlength="64" placeholder="Enter a password (4–64 characters)" autocomplete="off" spellcheck="false"></div><div class="prompt-actions"><button id="lobbyPromptCancel" class="secondary" type="button">CANCEL</button><button id="lobbyPromptSubmit" type="submit">CONTINUE</button></div></form></div>
 <div id="lobbyPeopleDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPeopleTitle"><div class="browser-card"><div class="browser-head"><h2 id="lobbyPeopleTitle">Players in your lobby</h2><span style="flex:1"></span><button id="copyLobbyCode" class="secondary" type="button">COPY CODE</button><button id="closeLobbyPeople" class="secondary" type="button">✕</button></div><p id="lobbyPeopleSummary" class="browser-help">Join a lobby to see its players and room details.</p><div id="lobbyPeopleList" class="room-list"></div><div class="people-actions"><button id="leaveLobbyFromPeople" type="button">LEAVE LOBBY</button><button id="doneLobbyPeople" class="secondary" type="button">DONE</button></div></div></div>
-<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
@@ -125,6 +139,54 @@ let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0
 function say(text){$("status").textContent=text}
 function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
+let soundOn=true,audioCtx=null,masterGain=null,noiseBuffer=null;
+function initAudio(){
+ if(!soundOn)return;
+ const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
+ if(!audioCtx){
+  audioCtx=new AudioCtx();masterGain=audioCtx.createGain();masterGain.gain.value=0;masterGain.connect(audioCtx.destination);
+  const frames=Math.floor(audioCtx.sampleRate*2);noiseBuffer=audioCtx.createBuffer(1,frames,audioCtx.sampleRate);const data=noiseBuffer.getChannelData(0);let smooth=0;
+  for(let i=0;i<frames;i++){const white=Math.random()*2-1;smooth=smooth*.72+white*.28;data[i]=smooth*.75+white*.25;}
+  const crowdBed=(frequency,q,level,rate,depth)=>{
+   const source=audioCtx.createBufferSource();source.buffer=noiseBuffer;source.loop=true;
+   const filter=audioCtx.createBiquadFilter();filter.type="bandpass";filter.frequency.value=frequency;filter.Q.value=q;
+   const gain=audioCtx.createGain();gain.gain.value=level;source.connect(filter);filter.connect(gain);gain.connect(masterGain);
+   const lfo=audioCtx.createOscillator(),mod=audioCtx.createGain();lfo.type="sine";lfo.frequency.value=rate;mod.gain.value=depth;lfo.connect(mod);mod.connect(gain.gain);lfo.start();source.start();
+  };
+  crowdBed(330,.58,.038,.13,.009);crowdBed(920,.72,.012,.19,.004);
+ }
+ if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
+ masterGain.gain.setTargetAtTime(.72,audioCtx.currentTime,.09);
+}
+function setSoundButton(){
+ const b=$("soundToggle");b.textContent=soundOn?"🔊":"🔇";b.title=soundOn?"Sound on · click to mute":"Sound muted · click to enable";b.setAttribute("aria-pressed",String(soundOn));b.setAttribute("aria-label",soundOn?"Mute game audio":"Enable game audio");
+}
+function playTone(frequency,duration,wave="sine",volume=.05,endFrequency=null,delay=0){
+ if(!audioCtx||!masterGain||!soundOn)return;
+ const start=audioCtx.currentTime+delay,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=wave;osc.frequency.setValueAtTime(Math.max(30,frequency),start);
+ if(endFrequency)osc.frequency.exponentialRampToValueAtTime(Math.max(30,endFrequency),start+duration);
+ gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(volume,start+Math.min(.012,duration*.25));gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+ osc.connect(gain);gain.connect(masterGain);osc.start(start);osc.stop(start+duration+.025);
+}
+function playNoiseBurst(duration,volume,frequency=900){
+ if(!audioCtx||!noiseBuffer||!masterGain||!soundOn)return;
+ const start=audioCtx.currentTime,source=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();source.buffer=noiseBuffer;filter.type="bandpass";filter.frequency.value=frequency;filter.Q.value=.55;
+ gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(volume,start+.08);gain.gain.setTargetAtTime(.0001,start+Math.max(.1,duration-.18),.07);
+ source.connect(filter);filter.connect(gain);gain.connect(masterGain);source.start(start);source.stop(start+duration+.06);
+}
+function playSound(kind,detail={}){
+ if(!soundOn)return;initAudio();if(!audioCtx)return;
+ if(kind==="ui"){playTone(720,.045,"sine",.034,470);return;}
+ if(kind==="shoot"){playTone(230,.095,"triangle",.048,105);playNoiseBurst(.1,.024,650);return;}
+ if(kind==="touch"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||70)/350));playTone(155+strength*95,.055,"triangle",.028+strength*.025,105);if(strength>.35)playTone(820,.025,"square",.012,420);return;}
+ if(kind==="faceoff"){playTone(1120,.17,"sine",.045,1380);playTone(1480,.13,"sine",.032,1150,.13);return;}
+ if(kind==="practiceGoal"){playTone(470,.13,"triangle",.045,620);playNoiseBurst(.42,.026,1050);return;}
+ if(kind==="goal"){playTone(390,.35,"sawtooth",.055,460);playTone(520,.44,"sawtooth",.042,660,.14);playTone(780,.29,"triangle",.035,920,.32);playNoiseBurst(1.45,.06,1050);return;}
+ if(kind==="finish"){playTone(440,.25,"triangle",.045,550);playTone(660,.35,"triangle",.04,880,.17);}
+}
+document.addEventListener("pointerdown",event=>{const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(soundOn){initAudio();if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");}},{capture:true,passive:true});
+document.addEventListener("click",event=>{if(event.detail!==0)return;const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");},true);
+$("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;if(soundOn){initAudio();playSound("ui");}else if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(0,audioCtx.currentTime,.035);setSoundButton();});
 function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null,extra={}){
@@ -168,13 +230,14 @@ async function connect(kind,roomId=null,extra={}){
   });
   room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
-  room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
+  room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;playSound("faceoff");overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
   room.onMessage("matchStarted",()=>{overlay="";overlayKind="";noticeMessage="";});
   room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
-  room.onMessage("practiceGoal",m=>{say(m.message||"Practice goal — puck back at centre.");});
-  room.onMessage("goal",m=>{overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
-  room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
+  room.onMessage("practiceGoal",m=>{playSound("practiceGoal");say(m.message||"Practice goal — puck back at centre.");});
+  room.onMessage("goal",m=>{playSound("goal");overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
+  room.onMessage("finished",m=>{playSound("finish");overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
    room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");});
+  room.onMessage("puckTouch",m=>playSound("touch",m));
   const activeRoom=room;
    room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
@@ -320,6 +383,8 @@ function draw(){
   ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
  }
  ctx.save();ctx.translate(puck.x,puck.y);ctx.scale(1/sx,1/sy);
+  const puckVelocity=Math.hypot(Number(targetPuck.vx)||0,Number(targetPuck.vy)||0);
+  if(puckHistory.length>2&&puckVelocity>80){ctx.save();ctx.lineCap="round";for(let i=1;i<puckHistory.length;i++){const age=i/(puckHistory.length-1),a=puckHistory[i-1],b=puckHistory[i];ctx.globalAlpha=.2*age*Math.min(1,puckVelocity/420);ctx.strokeStyle=theme.line;ctx.lineWidth=1+3*age;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}ctx.restore();ctx.globalAlpha=1;}
   const puckGrad=ctx.createRadialGradient(-3,-4,1,0,0,11);puckGrad.addColorStop(0,"#515b66");puckGrad.addColorStop(.28,"#222a33");puckGrad.addColorStop(.72,"#10161d");puckGrad.addColorStop(1,"#05080d");
   ctx.shadowColor="#000b";ctx.shadowBlur=7;ctx.fillStyle=puckGrad;ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   ctx.strokeStyle="#707d8b";ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,0,10.5,0,Math.PI*2);ctx.stroke();
@@ -359,10 +424,10 @@ function sendMove(){
  const x=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),y=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
  if(x||y)dir={x,y};room.send("move",{x,y});
 }
-function shoot(){if(room)room.send("shoot",dir)}
+function shoot(){if(room){playSound("shoot");room.send("shoot",dir)}}
 window.addEventListener("keydown",e=>{
  const k=e.key.toLowerCase();if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
- keys[k]=true;sendMove();if(k===" "||k==="f"||k==="enter")shoot();
+ keys[k]=true;sendMove();if((k===" "||k==="f"||k==="enter")&&!e.repeat)shoot();
 });
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;sendMove()});
 const moveKeys={up:"arrowup",down:"arrowdown",left:"arrowleft",right:"arrowright"};
