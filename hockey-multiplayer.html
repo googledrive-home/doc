@@ -371,9 +371,9 @@ $("shoot").onclick=shoot;$("map").addEventListener("change",draw);$("skin").addE
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 const params=new URLSearchParams(location.search);
 if(params.has("kind"))document.body.dataset.fullscreen="true";
-if(params.get("kind")==="private"&&params.get("action")==="create")connect("create-private");
+if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyPrompt("create-private");
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms("private");}
-else if(params.get("kind")==="public"&&params.get("action")==="create")connect("create-public");
+else if(params.get("kind")==="public"&&params.get("action")==="create")openLobbyPrompt("create-public");
 else if(params.get("kind")==="public"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms();}
 resizeCanvas();renderId=requestAnimationFrame(updateRender);
 </script>
