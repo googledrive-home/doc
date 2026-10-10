@@ -54,7 +54,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const team=this.state.mode==="2v2-ai"?1:(humanCount%2===0?1:2);
   const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.x=team===1?130:770;p.y=150+humanCount*55;p.skin=Math.max(0,Math.min(99,Number(options?.skin)||0));p.trail=Math.max(0,Math.min(20,Number(options?.trail)||0));
   this.state.players.set(client.sessionId,p);if(!this.state.hostId)this.state.hostId=client.sessionId;
-  if(!this.aiFillTimer){this.aiFillTimer=setTimeout(()=>{if(!this.state)return;const humans=Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length;if(!humans)return;const capacity=this.state.mode==="2v2-ai"?4:CAPACITY[this.state.mode];let n=1;while(this.state.players.size<capacity){let team=this.state.mode==="1v1"?2:(this.state.players.size%2===0?1:2);while(this.state.players.has("ai-"+team+"-"+n))n++;addAI(this,team,n++);}this.state.status="playing";this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,players:this.state.players.size,capacity});},30000);}
+  if(!this.aiFillTimer){let remain=30;this.aiCountdown=setInterval(()=>{this.broadcast("countdown",{seconds:remain});if(remain--<=0)clearInterval(this.aiCountdown);},1000);this.aiFillTimer=setTimeout(()=>{if(!this.state)return;const humans=Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length;if(!humans)return;const capacity=this.state.mode==="2v2-ai"?4:CAPACITY[this.state.mode];let n=1;while(this.state.players.size<capacity){let team=this.state.mode==="1v1"?2:(this.state.players.size%2===0?1:2);while(this.state.players.has("ai-"+team+"-"+n))n++;addAI(this,team,n++);}this.state.status="playing";this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,players:this.state.players.size,capacity});},30000);}
   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
  }
  onLeave(client){this.state.players.delete(client.sessionId);if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});}
@@ -87,7 +87,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   }
  }
  resetPuck(){this.state.puck.x=450;this.state.puck.y=300;this.state.puck.vx=0;this.state.puck.vy=0;}
- onDispose(){clearTimeout(this.aiFillTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);}
+ onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);}
 }
 gameServer.define("hockey",HockeyRoom);
 gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","map"]);
