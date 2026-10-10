@@ -262,11 +262,11 @@ function startArenaMusic(){
  musicTimer=setInterval(()=>{
   if(!soundOn||!audioCtx||audioCtx.state!=="running")return;
   const i=musicStep%lead.length,m=lead[i],b=bass[i];
-  if(m)playTone(m,.16,"triangle",.011,m*1.015);
-  if(b&&musicStep%2===0)playTone(b,.31,"sine",.022,b*.96);
-  if(musicStep%8===0){playTone([196,261.63,329.63,392][Math.floor(musicStep/8)%4],.38,"sine",.009,null,.02);}
+  if(m)playTone(m,.18,"triangle",.016,m*1.015);
+  if(b&&musicStep%2===0)playTone(b,.34,"sine",.03,b*.96);
+  if(musicStep%8===0){playTone([196,261.63,329.63,392][Math.floor(musicStep/8)%4],.42,"sine",.013,null,.02);}
   musicStep++;
- },190);
+ },240);
 }
 function playCrowdRoar(duration=1.55,intensity=.085){
  if(!audioCtx||!noiseBuffer||!masterGain||!soundOn)return;
@@ -290,6 +290,7 @@ function playSound(kind,detail={}){
  if(kind==="ui"){playTone(720,.045,"sine",.034,470);return;}
  if(kind==="shoot"){playTone(230,.095,"triangle",.048,105);playNoiseBurst(.1,.035,650);return;}
  if(kind==="touch"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||70)/720));playTone(155+strength*95,.055,"triangle",.025+strength*.035,105);if(strength>.32)playTone(820,.025,"square",.012,420);return;}
+ if(kind==="board"){const strength=Math.max(0,Math.min(1,(Number(detail.speed)||120)/650));playTone(185+strength*70,.075,"triangle",.028+strength*.025,72);playNoiseBurst(.08,.018+strength*.016,460);return;}
  if(kind==="faceoff"){playTone(1120,.17,"sine",.045,1380);playTone(1480,.13,"sine",.032,1150,.13);return;}
  if(kind==="matchStart"){playTone(1046,.13,"sine",.04,1318);playTone(1568,.22,"sine",.035,1760,.13);playCrowdRoar(.75,.035);return;}
  if(kind==="practiceGoal"){playTone(470,.13,"triangle",.045,620);playNoiseBurst(.42,.04,1050);playCrowdRoar(.75,.045);return;}
@@ -351,6 +352,7 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("finished",m=>{playSound("finish");overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
    room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");});
   room.onMessage("puckTouch",m=>playSound(m.shot?"shoot":"touch",m));
+  room.onMessage("boardHit",m=>playSound("board",m));
   const activeRoom=room;
    room.onLeave(code=>{if(room!==activeRoom)return;markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
