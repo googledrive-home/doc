@@ -87,7 +87,7 @@ body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!imp
 <label><span>AI shot power <output id="aiPowerOut">100%</output></span><input id="aiPower" type="range" min=".65" max="1.7" step=".05" value="1"></label>
 <label><span>AI accuracy <output id="aiAccuracyOut">100%</output></span><input id="aiAccuracy" type="range" min=".65" max="1.6" step=".05" value="1"></label>
 </div></details>
-<div class="server-row"><input id="server" aria-label="Multiplayer server URL" value="https://hockey-multiplayer.onrender.com" autocomplete="url"><button id="connect" class="secondary">CONNECT</button><input id="code" class="room-code" maxlength="6" placeholder="ROOM CODE" aria-label="Private room code"><input id="privatePassword" class="room-password" type="password" maxlength="64" placeholder="PRIVATE PASSWORD" aria-label="Private lobby password" autocomplete="current-password"><button id="joinPrivate" class="secondary">JOIN PRIVATE</button></div>
+<div class="server-row"><input id="server" aria-label="Multiplayer server URL" value="https://hockey-multiplayer.onrender.com" autocomplete="url"><button id="connect" class="secondary">CONNECT</button><input id="code" class="room-code" maxlength="6" placeholder="ROOM CODE" aria-label="Private room code"><input id="privatePassword" class="room-password" type="password" maxlength="64" placeholder="PRIVATE PASSWORD" aria-label="Private lobby password" autocomplete="new-password"><button id="joinPrivate" class="secondary">JOIN PRIVATE</button></div><div class="help">Private lobbies need a password of 4–64 characters. Share both the room code and password with friends.</div>
 <div class="actions">
 <button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button><button id="browseRooms" class="secondary">🔎 Browse public lobbies</button>
 </div>
@@ -153,7 +153,7 @@ async function connect(kind,roomId=null){
    $("playMatch").classList.toggle("hidden",!["practice","waiting","matchmaking"].includes(state.status));
    $("playMatch").disabled=state.status==="matchmaking"||isMatchLive;
    $("playMatch").textContent=state.status==="matchmaking"?"MATCHMAKING…":"▶ PLAY";
-   if(noticeMessage){label("PLAYER LEFT");say(noticeMessage);}
+   if(noticeMessage){label(noticeMessage.toLowerCase().includes("left")?"PLAYER LEFT":"LOBBY READY");say(noticeMessage);}
    else if(state.status==="practice"){label("PRACTICE RINK");say("Practice together · goals reset to centre · press PLAY when everyone is ready"+(state.code?" · Room "+state.code:""));}
    else if(state.status==="waiting"){label("LOBBY READY");say("Lobby ready · press PLAY to start matchmaking"+(state.code?" · Room "+state.code:""));}
    else if(state.status==="matchmaking"){label("MATCHMAKING");say("Practice continues while we wait · AI fills empty slots in "+Math.max(0,state.countdown)+"s");}
@@ -180,32 +180,6 @@ async function connect(kind,roomId=null){
 }
 $("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
-async function previewPrivateRoom(){
- const code=$("code").value.trim().toUpperCase();
- if(!code){label("ROOM CODE NEEDED");say("Enter the room code to preview the player list first.");$("code").focus();return;}
- const list=$("roomList"),base=$("server").value.trim().replace(/\/$/,"");
- $("browserTitle").textContent="Private lobby · "+code;$("lobbyBrowser").classList.remove("hidden");list.replaceChildren();
- const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Loading room and player names…";list.appendChild(loading);
- try{
-  const response=await fetch(base+"/room/"+encodeURIComponent(code),{cache:"no-store"});
-  if(!response.ok)throw Error("Room code not found or lobby has closed.");
-  const data=await response.json();list.replaceChildren();
-  const card=document.createElement("div");card.className="room-preview";
-  const title=document.createElement("h3");title.textContent=data.mode.toUpperCase()+" · "+data.map+" rink";
-  const teams=document.createElement("p");teams.textContent=(data.teamName1||"Team 1")+" vs "+(data.teamName2||"Team 2");
-  const details=document.createElement("p");details.textContent=(data.playerCount||0)+" of "+data.capacity+" player slots used · "+data.status;
-  const players=document.createElement("p");players.textContent="Players already here";
-  const names=document.createElement("div");names.className="names";
-  const roomPeople=Array.isArray(data.roster)?data.roster:(data.players||[]).map(p=>typeof p==="string"?{name:p}:p);
-  if(roomPeople.length){for(const p of roomPeople){const badge=document.createElement("span");badge.textContent=(p.bot?"🤖 ":"")+p.name;names.appendChild(badge);}}
-  else{const badge=document.createElement("span");badge.textContent="You're the first — lobby is ready for you";names.appendChild(badge);}
-  const join=document.createElement("button");join.className="join-preview";join.textContent="JOIN THIS LOBBY →";
-  const canJoin=["practice","matchmaking","waiting"].includes(data.status)&&(data.playerCount||0)<data.capacity;
-  join.disabled=!canJoin; if(!canJoin){join.textContent=data.playerCount>=data.capacity?"LOBBY FULL":"MATCH ALREADY STARTED";}
-  join.onclick=()=>{$("lobbyBrowser").classList.add("hidden");connect("join-private");};
-  card.append(title,teams,details,players,names,join);list.appendChild(card);
- }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent=e?.message||"Couldn't load that room.";list.appendChild(err);}
-}
 async function loadRooms(){
  $("browserTitle").textContent="Public lobbies";
  const list=$("roomList");list.replaceChildren();const base=$("server").value.trim().replace(/\/$/,"");
