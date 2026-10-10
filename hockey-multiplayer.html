@@ -14,6 +14,15 @@ button{border:0;background:#087fa8;font-weight:850;cursor:pointer;touch-action:m
 .actions{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}.actions button{flex:1 1 135px}.server-row{grid-column:1/-1;display:flex;gap:7px;align-items:center}.server-row input{flex:1}.room-code{width:125px;flex:none;text-transform:uppercase;letter-spacing:.12em}
 .statusbar{flex:none;min-height:28px;display:flex;align-items:center;gap:12px;padding:5px 10px;border:1px solid #243e5a;background:#081827;border-radius:8px;font-size:12px;color:#a7c4dc;overflow-wrap:anywhere}
 .statusbar strong{color:#ecfaff}.statusbar .grow{flex:1}.live-dot{width:7px;height:7px;flex:none;background:#ffbf45;border-radius:50%}.live-dot.online{background:#55efa7;box-shadow:0 0 9px #55efa7}
+#browseRooms{grid-column:1/-1}
+.room-browser{position:fixed;inset:8px;z-index:80;display:flex;align-items:center;justify-content:center;background:#0209139c;backdrop-filter:blur(7px)}
+.room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:#0a1a2bdc;border:1px solid #ffffff27;border-radius:18px;box-shadow:0 25px 80px #0009;backdrop-filter:blur(12px)}
+.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}
+.roster-panel{position:absolute;top:78px;left:12px;z-index:3;max-width:min(245px,44vw);padding:7px 9px;border:1px solid #ffffff1e;border-radius:10px;background:rgba(2,10,18,.27);backdrop-filter:blur(3px);color:#f5fbff;pointer-events:none;opacity:.72}
+.roster-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#a9eaff;margin-bottom:4px}.roster-names{display:flex;flex-direction:column;gap:3px}.roster-name{font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.match-live .roster-panel{opacity:.34}
+body.in-lobby .statusbar{background:rgba(6,20,33,.48);border-color:#ffffff20;backdrop-filter:blur(5px)}
+body.in-lobby.config-open .config{background:rgba(7,26,43,.87);backdrop-filter:blur(14px)}
 .rink-panel{flex:1;min-height:0;display:flex;position:relative;background:#050c15;border:1px solid #274663;border-radius:14px;overflow:hidden}
 canvas{display:block;width:100%;height:100%;min-height:0;touch-action:none}
 .hudbottom{position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:end;pointer-events:none}.hint{font-size:11px;color:#d6e9f9;background:#061421b8;border:1px solid #ffffff20;padding:6px 9px;border-radius:8px;backdrop-filter:blur(6px)}
@@ -73,13 +82,15 @@ body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!imp
 </div></details>
 <div class="server-row"><input id="server" aria-label="Multiplayer server URL" value="https://hockey-multiplayer.onrender.com" autocomplete="url"><button id="connect" class="secondary">CONNECT</button><input id="code" class="room-code" maxlength="6" placeholder="ROOM CODE" aria-label="Private room code"><button id="joinPrivate" class="secondary">JOIN CODE</button></div>
 <div class="actions">
-<button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button>
+<button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button><button id="browseRooms" class="secondary">🔎 Browse rooms & player names</button>
 </div>
 </section>
+<div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Public lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p class="browser-help">See who is already in a room before joining. Full rooms are hidden to keep party sizes within the selected mode.</p><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
 <div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
+<div id="rosterPanel" class="roster-panel hidden" aria-label="Players in this practice rink"><div id="rosterTitle" class="roster-title">Rink roster</div><div id="rosterNames" class="roster-names"></div></div>
 </section>
 <script type="module">
 import { Client } from "https://esm.sh/colyseus.js@0.16.22";
@@ -101,20 +112,21 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},trailHistory={},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false;
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},trailHistory={},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="";
 function say(text){$("status").textContent=text}
 function label(text){$("stateLabel").textContent=text}
 function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
 function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:Number($("trail").value),teamName1:$("team1").value,teamName2:$("team2").value,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
-async function connect(kind){
+async function connect(kind,roomId=null){
  try{
   if(room){try{room.leave()}catch{}room=null}
-  markConnected(false);viewPlayers={};targetPlayers={};trailHistory={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
+  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};trailHistory={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true});$("code").value=room.state.code||"";say("Private lobby created. Share the room code with friends.");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false});$("code").value=room.state.code||"";say("Public lobby created. Share the room code or wait for players.");}
   else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code));if(!res.ok)throw Error("Room code not found. Check the code and try again.");const data=await res.json();room=await c.joinById(data.roomId,o);say("Joined private lobby "+code+".");}
-  else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public match.");}
+  else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,o);say("Joined the selected public practice rink.");}
+  else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
   room.send("customize",{name:o.name,skin:o.skin,trail:o.trail});
   room.onStateChange(state=>{
    latestState=state;targetPlayers={};
@@ -123,36 +135,71 @@ async function connect(kind){
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
    targetPuck={x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2};
-   $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";
+   $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";renderRoster();
    const isMatchLive=["countdown","playing","goal","finished"].includes(state.status);
    document.body.classList.add("in-lobby");document.body.classList.toggle("match-live",isMatchLive);
    $("toggleSetup").classList.remove("hidden");
-   $("playMatch").classList.toggle("hidden",state.status!=="waiting");
-   $("playMatch").disabled=state.countdown>0;
-   $("playMatch").textContent=state.countdown>0?"MATCHMAKING…":"▶ PLAY";
-   if(state.status==="waiting"){
-    if(state.countdown>0){label("MATCHMAKING");say("AI fills any open slots in "+state.countdown+"s · "+(state.code?"Room "+state.code:"Lobby"));}
-    else{label("LOBBY READY");say((state.private?"Private lobby":"Lobby ready")+" · press PLAY to start matchmaking"+(state.code?" · Room "+state.code:""));}
-   }
+   $("playMatch").classList.toggle("hidden",!["practice","waiting","matchmaking"].includes(state.status));
+   $("playMatch").disabled=state.status==="matchmaking"||isMatchLive;
+   $("playMatch").textContent=state.status==="matchmaking"?"MATCHMAKING…":"▶ PLAY";
+   if(noticeMessage){label("PLAYER LEFT");say(noticeMessage);}
+   else if(state.status==="practice"){label("PRACTICE RINK");say("Practice together · goals reset to centre · press PLAY when everyone is ready"+(state.code?" · Room "+state.code:""));}
+   else if(state.status==="waiting"){label("LOBBY READY");say("Lobby ready · press PLAY to start matchmaking"+(state.code?" · Room "+state.code:""));}
+   else if(state.status==="matchmaking"){label("MATCHMAKING");say("Practice continues while we wait · AI fills empty slots in "+Math.max(0,state.countdown)+"s");}
    else if(state.status==="countdown"){label("FACE-OFF");say("Face-off countdown…");}
-   else if(state.status==="goal"){label("GOAL!");say("Goal scored — next face-off coming up.");}
+   else if(state.status==="goal"){label("GOAL!");say("Goal scored — players resetting for face-off.");}
    else if(state.status==="playing"){label("LIVE MATCH");say(state.teamName1+" vs "+state.teamName2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");}
    else if(state.status==="finished"){label("FINAL");say("Full time · "+state.puck.score1+" — "+state.puck.score2);overlay=state.puck.score1===state.puck.score2?"DRAW":(state.puck.score1>state.puck.score2?state.teamName1:state.teamName2)+" WINS";overlayKind="finish";overlayUntil=performance.now()+5000;}
    draw();
   });
-  room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";});
-  room.onMessage("countdown",m=>{if(!latestState||latestState.status==="waiting"){label("MATCHMAKING");say("AI fills any open slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";}});
+  room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
+  room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
   room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
-  room.onMessage("matchStarted",()=>{overlay="";overlayKind="";});
+  room.onMessage("matchStarted",()=>{overlay="";overlayKind="";noticeMessage="";});
+  room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
+  room.onMessage("practiceGoal",m=>{say(m.message||"Practice goal — puck back at centre.");});
   room.onMessage("goal",m=>{overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
   room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+6000;});
-  room.onLeave(code=>{markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");});
+  room.onLeave(code=>{markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("rosterPanel").classList.add("hidden");});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
   markConnected(true);document.body.classList.add("in-lobby");$("toggleSetup").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say("Lobby connected · press PLAY when you are ready.");
  }catch(e){label("NOT CONNECTED");markConnected(false);say("Connection failed: "+(e?.message||e));}
 }
-$("playMatch").onclick=()=>{if(!room)return;$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
+$("playMatch").onclick=()=>{if(!room)return;noticeMessage="";$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";label("MATCHMAKING");say("Matchmaking started · AI fills open slots in 30 seconds if needed.");room.send("play",{});};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
+async function loadRooms(){
+ const list=$("roomList");list.replaceChildren();const base=$("server").value.trim().replace(/\/$/,"");
+ const loading=document.createElement("p");loading.className="browser-help";loading.textContent="Finding public rooms…";list.appendChild(loading);
+ try{
+  const response=await fetch(base+"/rooms",{cache:"no-store"});if(!response.ok)throw Error("Server returned "+response.status);
+  const data=await response.json();list.replaceChildren();
+  const rooms=Array.isArray(data.rooms)?data.rooms:[];
+  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="No public rooms are waiting right now. Create a public room, or refresh in a moment.";list.appendChild(empty);return;}
+  for(const item of rooms){
+   const card=document.createElement("button");card.className="room-card";card.type="button";
+   const meta=document.createElement("span");meta.className="room-meta";
+   const title=document.createElement("strong");title.textContent=item.mode.toUpperCase()+" · "+item.map+" RINK";
+   const names=document.createElement("span");names.textContent="Players here: "+(item.players.length?item.players.join(", "):"Waiting for players");
+   const sub=document.createElement("span");sub.textContent=item.playerCount+"/"+item.capacity+" players · "+item.teamName1+" vs "+item.teamName2+" · "+item.code;
+   meta.append(title,names,sub);
+   const join=document.createElement("span");join.className="join-label";join.textContent="JOIN →";
+   card.append(meta,join);card.onclick=()=>{ $("lobbyBrowser").classList.add("hidden");$("mode").value=item.mode;$("map").value=item.map;connect("join-room",item.roomId);};
+   list.appendChild(card);
+  }
+ }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load rooms: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
+}
+$("browseRooms").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms();};
+$("refreshRooms").onclick=loadRooms;
+$("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
+$("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("lobbyBrowser").classList.add("hidden");});
+function renderRoster(){
+ const roster=$("rosterPanel"),names=$("rosterNames");if(!connected||!Object.keys(targetPlayers).length){roster.classList.add("hidden");return;}
+ roster.classList.remove("hidden");$("rosterTitle").textContent="PRACTICE RINK · "+Object.keys(targetPlayers).length;
+ names.replaceChildren();
+ const people=Object.values(targetPlayers).sort((a,b)=>a.team-b.team||a.name.localeCompare(b.name));
+ for(const p of people){const row=document.createElement("div");row.className="roster-name";row.style.color=p.team===1?"#bceeff":"#ffb6c3";row.textContent=(p.id?.startsWith("ai-")?"🤖 ":"")+p.name;names.appendChild(row);}
+}
 $("connect").onclick=()=>connect("join-public");
 $("createPrivate").onclick=()=>connect("create-private");
 $("createPublic").onclick=()=>connect("create-public");
