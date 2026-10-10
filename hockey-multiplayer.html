@@ -4,19 +4,19 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hockey Online — Multiplayer</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#07152b;color:#f7fbff}*{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin:auto}h1{margin:.3em 0;color:#38d9ff}p{color:#a9bdd6}.panel{background:#102544;border:1px solid #2d4f7b;border-radius:16px;padding:16px;margin:14px 0}label{display:block;margin:10px 0 5px}input,select,button{font:inherit;padding:11px;border-radius:9px;border:1px solid #41628d;background:#07152b;color:white;width:100%}button{background:#087ea4;border:0;font-weight:700;margin-top:10px;cursor:pointer}button.secondary{background:#234166}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}canvas{width:100%;background:#087b62;border-radius:12px;display:block}.status{padding:10px;background:#07152b;border-radius:8px;overflow-wrap:anywhere}.small{font-size:.9rem;color:#a9bdd6}
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#07152b;color:#f7fbff}*{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin:auto}h1{margin:.3em 0;color:#38d9ff}p{color:#a9bdd6}.panel{background:#102544;border:1px solid #2d4f7b;border-radius:16px;padding:16px;margin:14px 0}label{display:block;margin:10px 0 5px}input,select,button{font:inherit;padding:11px;border-radius:9px;border:1px solid #41628d;background:#07152b;color:white;width:100%}button{background:#087ea4;border:0;font-weight:700;margin-top:10px;cursor:pointer}button.secondary{background:#234166}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}canvas{width:100%;background:#087b62;border-radius:12px;display:block}.touch-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.touch-controls button{touch-action:none;padding:14px 3px}.status{padding:10px;background:#07152b;border-radius:8px;overflow-wrap:anywhere}.small{font-size:.9rem;color:#a9bdd6}
 </style>
 </head>
 <body>
 <h1>🏒 Hockey Online</h1><p>Online multiplayer for Hockey. Create a private room or find a public match, then play with friends on other devices.</p>
 <section class="panel">
-<label for="server">Render server URL</label><input id="server" placeholder="https://your-service.onrender.com" autocomplete="url">
+<label for="server">Render server URL</label><input id="server" value="https://hockey-multiplayer.onrender.com" placeholder="https://your-service.onrender.com" autocomplete="url">
 <div class="grid"><div><label for="player">Player name</label><input id="player" maxlength="18" value="Player"></div><div><label for="mode">Match type</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">2 v 2 with AI fill</option></select></div><div><label for="map">Rink</label><select id="map"><option>Classic</option><option>Neon</option><option>Winter</option></select></div></div>
 <div class="grid"><button id="create">Create private lobby</button><button id="public" class="secondary">Find public match</button></div>
 <label for="code">Private room code</label><input id="code" maxlength="6" placeholder="e.g. A1B2C3" autocapitalize="characters"><button id="join" class="secondary">Join with code</button>
 <div id="status" class="status" role="status">Not connected. Enter your Render URL first.</div>
 </section>
-<section class="panel"><h2>Live room preview</h2><canvas id="rink" width="900" height="600"></canvas><p class="small">Arrow keys / WASD move. Space shoots in your current direction. This online rink uses server-synchronized movement and puck physics. The online mode is separate from the local Hockey game.</p></section>
+<section class="panel"><h2>Live room preview</h2><canvas id="rink" width="900" height="600"></canvas><p class="small">Desktop: WASD / arrow keys move, Space shoots. Mobile: hold a direction button, then tap shoot.</p><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot" class="secondary">SHOOT</button></div></section>
 <script type="module">
 import { Client } from "https://esm.sh/colyseus.js@0.16.22";
 const $=id=>document.getElementById(id);let client=null,room=null,players={},puck={x:450,y:240},dir={x:1,y:0},keys={};
@@ -32,4 +32,7 @@ function draw(){const c=$("rink"),x=c.getContext("2d");x.clearRect(0,0,900,600);
 function sendMove(){if(!room)return;const x=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),y=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);if(x||y)dir={x,y};room.send("move",{x,y});}
 window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();keys[e.key]=true;sendMove();if(e.key===" "&&room)room.send("shoot",dir)});window.addEventListener("keyup",e=>{keys[e.key]=false;sendMove()});
 draw();
+const moveKeys={up:"ArrowUp",down:"ArrowDown",left:"ArrowLeft",right:"ArrowRight"};
+document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()};const release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
+$("shoot").onclick=()=>{if(room)room.send("shoot",dir)};
 </script></body></html>
