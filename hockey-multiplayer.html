@@ -1,39 +1,197 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hockey Online — Multiplayer</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Hockey Arena Online</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#07152b;color:#f7fbff}*{box-sizing:border-box}body{margin:0;padding:20px;max-width:980px;margin:auto}h1{margin:.3em 0;color:#38d9ff}p{color:#a9bdd6}.panel{background:#102544;border:1px solid #2d4f7b;border-radius:16px;padding:16px;margin:14px 0}label{display:block;margin:10px 0 5px}input,select,button{font:inherit;padding:11px;border-radius:9px;border:1px solid #41628d;background:#07152b;color:white;width:100%}button{background:#087ea4;border:0;font-weight:700;margin-top:10px;cursor:pointer}button.secondary{background:#234166}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}canvas{width:100%;background:#087b62;border-radius:12px;display:block}.touch-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.touch-controls button{touch-action:none;padding:14px 3px}.status{padding:10px;background:#07152b;border-radius:8px;overflow-wrap:anywhere}.small{font-size:.9rem;color:#a9bdd6}
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#06111e;color:#f4faff;--cyan:#49e3ff;--panel:#0d2036;--line:#294865}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06111e}body{display:flex;flex-direction:column;padding:8px;gap:7px}
+header{display:flex;align-items:center;gap:12px;min-height:38px;flex:none}h1{font-size:clamp(20px,2.4vw,30px);line-height:1;margin:0;color:var(--cyan);white-space:nowrap}header .tag{font-size:11px;color:#91abc3;letter-spacing:.12em;font-weight:800;text-transform:uppercase}
+.config{flex:none;background:linear-gradient(135deg,#0e2540,#0a192b);border:1px solid #294865;border-radius:14px;padding:8px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;align-items:end}
+.field{min-width:0}.field label{display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#94abc2;margin:0 0 4px 2px;font-weight:800}
+input,select,button{font:inherit;min-width:0;border:1px solid #355573;border-radius:8px;background:#071522;color:#f3f9ff;padding:8px 9px;width:100%;height:36px}
+button{border:0;background:#087fa8;font-weight:850;cursor:pointer;touch-action:manipulation}button.secondary{background:#213b58}button.active{outline:2px solid var(--cyan);background:#14506a}
+.actions{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}.actions button{flex:1 1 135px}.server-row{grid-column:1/-1;display:flex;gap:7px;align-items:center}.server-row input{flex:1}.room-code{width:125px;flex:none;text-transform:uppercase;letter-spacing:.12em}
+.statusbar{flex:none;min-height:28px;display:flex;align-items:center;gap:12px;padding:5px 10px;border:1px solid #243e5a;background:#081827;border-radius:8px;font-size:12px;color:#a7c4dc;overflow-wrap:anywhere}
+.statusbar strong{color:#ecfaff}.statusbar .grow{flex:1}.live-dot{width:7px;height:7px;flex:none;background:#ffbf45;border-radius:50%}.live-dot.online{background:#55efa7;box-shadow:0 0 9px #55efa7}
+.rink-panel{flex:1;min-height:0;display:flex;position:relative;background:#050c15;border:1px solid #274663;border-radius:14px;overflow:hidden}
+canvas{display:block;width:100%;height:100%;min-height:0;touch-action:none}
+.hudbottom{position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:end;pointer-events:none}.hint{font-size:11px;color:#d6e9f9;background:#061421b8;border:1px solid #ffffff20;padding:6px 9px;border-radius:8px;backdrop-filter:blur(6px)}
+.touch-controls{display:none;gap:5px;pointer-events:auto}.touch-controls button{width:44px;height:42px;background:#102e48dd;border:1px solid #ffffff36;padding:3px}
+.help{font-size:11px;color:#91abc3}.hidden{display:none!important}
+@media(max-width:1000px){.config{grid-template-columns:repeat(4,minmax(0,1fr))}.config .field{grid-column:span 1}.server-row{grid-column:1/-1}.statusbar{font-size:11px}}
+@media(max-width:650px){body{padding:4px;gap:4px}header{min-height:30px}header .tag{display:none}.config{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:6px}.config .field{grid-column:span 1}.actions button{flex:1 1 44%}.server-row input{font-size:11px}.server-row button{width:90px;flex:none}.statusbar{min-height:26px;padding:4px 7px}.hint{font-size:9px}.touch-controls{display:flex}.rink-panel{border-radius:8px}}
+body[data-fullscreen="true"] header{display:none}
+body[data-fullscreen="true"]{padding:3px;gap:3px}
+body[data-fullscreen="true"] .config{padding:5px;gap:4px}
+body[data-fullscreen="true"] .config .field label{font-size:9px}
+body[data-fullscreen="true"] input,body[data-fullscreen="true"] select,body[data-fullscreen="true"] button{height:30px;padding:4px 7px;font-size:12px}
+body[data-fullscreen="true"] .actions button{flex-basis:110px}
+body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 </style>
 </head>
 <body>
-<h1>🏒 Hockey Online</h1><p>Online multiplayer for Hockey. Create a private room or find a public match, then play with friends on other devices.</p>
-<section class="panel">
-<label for="server">Render server URL</label><input id="server" value="https://hockey-multiplayer.onrender.com" placeholder="https://your-service.onrender.com" autocomplete="url">
-<div class="grid"><div><label for="player">Player name</label><input id="player" maxlength="18" value="Player"></div><div><label for="skin">Player style</label><select id="skin"><option value="0">Classic blue</option><option value="1">Neon pink</option><option value="2">Gold</option><option value="3">Ice white</option><option value="4">Lime</option></select></div><div><label for="trail">Puck trail</label><select id="trail"><option value="0">Off</option><option value="1">Short glow</option><option value="2">Long glow</option></select></div><div><label for="mode">Match type</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">2 v 2 with AI fill</option></select></div><div><label for="map">Rink</label><select id="map"><option>Classic</option><option>Neon</option><option>Winter</option></select></div></div>
-<div class="grid"><button id="create">Create private lobby</button><button id="public" class="secondary">Find public match</button></div>
-<label for="code">Private room code</label><input id="code" maxlength="6" placeholder="e.g. A1B2C3" autocapitalize="characters"><button id="join" class="secondary">Join with code</button>
-<div id="status" class="status" role="status">Not connected. Enter your Render URL first.</div>
+<header><h1>🏒 Hockey Arena</h1><span class="tag">Live multiplayer · smooth rink physics</span><span style="flex:1"></span><span class="help">WASD / arrows · Space or F to shoot</span></header>
+<section class="config" aria-label="Hockey setup">
+<div class="field"><label for="player">Player name</label><input id="player" maxlength="18" value="Player" autocomplete="nickname"></div>
+<div class="field"><label for="mode">Match mode</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">2 v 2 · AI team</option></select></div>
+<div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select></div>
+<div class="field"><label for="skin">Player skin</label><select id="skin"><option value="0">Blue Burst</option><option value="1">Gold Stripes</option><option value="2">Ice Crystal</option><option value="3">Lime Grid</option><option value="4">Purple Wave</option><option value="5">Fire Rush</option><option value="6">Chrome Check</option><option value="7">Carbon</option><option value="8">Rainbow Pulse</option><option value="9">Circuit</option><option value="10">Sunset Split</option><option value="11">Polar Camo</option><option value="12">Galaxy</option><option value="13">Mint Dots</option></select></div>
+<div class="field"><label for="trail">Player trail</label><select id="trail"><option value="0">None</option><option value="1">Cyan Glow</option><option value="2">Rainbow</option><option value="3">Sparks</option><option value="4">Gold Pulse</option><option value="5">Ice Mist</option><option value="6">Orbit Rings</option><option value="7">Pixel Dash</option></select></div>
+<div class="field"><label for="team1">Team 1 name</label><select id="team1"><option>Blue Blades</option><option>Ice Hawks</option><option>Glacier City</option><option>Frost Union</option><option>Polar Bears</option><option>North Stars</option><option>Avalanche HC</option><option>Winter Kings</option><option>Blue Comets</option><option>Storm HC</option><option>Arctic Wolves</option><option>Steel Blades</option><option>Silver Foxes</option><option>Snow Leopards</option><option>Northern Lights</option></select></div>
+<div class="field"><label for="team2">Team 2 name</label><select id="team2"><option>Red Wolves</option><option>Ice Hawks</option><option>Glacier City</option><option>Frost Union</option><option>Polar Bears</option><option>North Stars</option><option>Avalanche HC</option><option>Winter Kings</option><option>Blue Comets</option><option>Storm HC</option><option>Arctic Wolves</option><option>Steel Blades</option><option>Silver Foxes</option><option>Snow Leopards</option><option>Northern Lights</option></select></div>
+<div class="field"><label for="duration">Match length</label><select id="duration"><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option></select></div>
+<div class="server-row"><input id="server" aria-label="Multiplayer server URL" value="https://hockey-multiplayer.onrender.com" autocomplete="url"><button id="connect" class="secondary">CONNECT</button><input id="code" class="room-code" maxlength="6" placeholder="ROOM CODE" aria-label="Private room code"><button id="joinPrivate" class="secondary">JOIN CODE</button></div>
+<div class="actions">
+<button id="createPrivate">🔒 Create private</button><button id="createPublic" class="secondary">🌍 Create public</button><button id="joinPublic" class="secondary">🌍 Join public</button>
+</div>
 </section>
-<section class="panel"><h2>Live room preview</h2><canvas id="rink" width="900" height="600"></canvas><p class="small">Desktop: WASD / arrow keys move, Space shoots. Mobile: hold a direction button, then tap shoot.</p><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot" class="secondary">SHOOT</button></div></section>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><span id="playerCount">0 players</span></div>
+<section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
+<canvas id="rink" aria-label="Animated hockey game rink"></canvas>
+<div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · SHOOT: SPACE / F · Hold a direction on mobile</span><div class="touch-controls"><button data-move="up">▲</button><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button><button id="shoot">SHOOT</button></div></div>
+</section>
 <script type="module">
 import { Client } from "https://esm.sh/colyseus.js@0.16.22";
-const $=id=>document.getElementById(id);let client=null,room=null,players={},puck={x:450,y:240},dir={x:1,y:0},keys={},skinColors=["#40d9ff","#ff4fc3","#ffd34e","#f4fbff","#54e38e"];
-function say(s){$("status").textContent=s}
-function getClient(){let raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter your Render service URL first.");let ws=raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:");client=new Client(ws);return client}
-async function connect(kind){try{if(room)room.leave();const c=getClient(),options={name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:Number($("trail").value)};say("Connecting…");if(kind==="create"){room=await c.create("hockey",{...options,private:true});$("code").value=room.state?.code||"";say("Private lobby created. Share the room code shown here.");}else if(kind==="join"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter a room code.");const raw=$("server").value.trim().replace(/\/$/,"");const resp=await fetch(raw+"/room/"+encodeURIComponent(code));if(!resp.ok)throw Error("That room code was not found. Check it and try again.");const data=await resp.json();room=await c.joinById(data.roomId,options);say("Joined private lobby "+code+".");}else{room=await c.joinOrCreate("hockey_public",options);say("Joined public match.");}
-room.send("customize",{name:options.name,skin:options.skin,trail:options.trail});room.onStateChange(state=>{players={};state.players.forEach((p,id)=>players[id]={name:p.name,team:p.team,x:p.x,y:p.y,skin:p.skin,trail:p.trail});puck={x:state.puck.x,y:state.puck.y,score1:state.puck.score1,score2:state.puck.score2};draw();});
-room.onMessage("lobby",m=>say("Room "+m.code+" · "+m.players+"/"+m.capacity+" players · "+m.mode));room.onMessage("countdown",m=>say("Starting in "+m.seconds+"s — AI will fill any empty slots if nobody else joins."));
-room.onLeave(code=>say("Disconnected from room ("+code+")."));room.onError((code,msg)=>say("Room error "+code+": "+msg));say("Connected! Room ID "+room.roomId);
-}catch(e){say("Connection failed: "+(e?.message||e));}}
-$("create").onclick=()=>connect("create");$("public").onclick=()=>connect("public");$("join").onclick=()=>connect("join");
-function draw(){const c=$("rink"),x=c.getContext("2d");x.clearRect(0,0,900,600);const theme=$("map")?.value||"Classic";x.fillStyle=theme==="Neon"?"#14284d":theme==="Winter"?"#b9e7f5":"#087b62";x.fillRect(0,0,900,600);x.strokeStyle=theme==="Neon"?"#ff4fc3":theme==="Winter"?"#ffffff":"#d8f8ff";x.lineWidth=4;x.strokeRect(12,12,876,576);x.beginPath();x.moveTo(450,12);x.lineTo(450,588);x.stroke();x.beginPath();x.arc(450,300,75,0,Math.PI*2);x.stroke();x.fillStyle="#e7f6ff";x.font="bold 26px system-ui";x.textAlign="center";x.fillText((puck.score1||0)+"  —  "+(puck.score2||0),450,42);for(const p of Object.values(players)){x.fillStyle=skinColors[p.skin%skinColors.length]|| (p.team===1?"#40d9ff":"#ff547c");x.beginPath();x.arc(p.x,p.y,17,0,Math.PI*2);x.fill();x.fillStyle="white";x.font="13px system-ui";x.fillText(p.name,p.x,p.y-23)}x.fillStyle="#101820";x.beginPath();x.arc(puck.x,puck.y,9,0,Math.PI*2);x.fill()}
-function sendMove(){if(!room)return;const x=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),y=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);if(x||y)dir={x,y};room.send("move",{x,y});}
-window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();keys[e.key]=true;sendMove();if(e.key===" "&&room)room.send("shoot",dir)});window.addEventListener("keyup",e=>{keys[e.key]=false;sendMove()});
-$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);
-draw();
-const moveKeys={up:"ArrowUp",down:"ArrowDown",left:"ArrowLeft",right:"ArrowRight"};
-document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()};const release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
-$("shoot").onclick=()=>{if(room)room.send("shoot",dir)};
-</script></body></html>
+const $=id=>document.getElementById(id);
+const SKINS=[
+ {name:"Blue Burst",base:"#2979ff",accent:"#9ceaff",style:"burst"},{name:"Gold Stripes",base:"#ffd35b",accent:"#fff2a6",style:"stripes"},{name:"Ice Crystal",base:"#bcecff",accent:"#ffffff",style:"crystal"},{name:"Lime Grid",base:"#63f36d",accent:"#0e7f53",style:"grid"},{name:"Purple Wave",base:"#a56cff",accent:"#f0d7ff",style:"wave"},{name:"Fire Rush",base:"#ff5d4d",accent:"#ffd35b",style:"flame"},{name:"Chrome Check",base:"#dfe9f2",accent:"#7f9ab2",style:"check"},{name:"Carbon",base:"#27313b",accent:"#91a7b8",style:"carbon"},{name:"Rainbow Pulse",base:"#ff65c3",accent:"#5ee7ff",style:"rainbow"},{name:"Circuit",base:"#142f48",accent:"#43eaff",style:"circuit"},{name:"Sunset Split",base:"#ff7b45",accent:"#8457ff",style:"split"},{name:"Polar Camo",base:"#d8fbff",accent:"#6aa6c7",style:"camo"},{name:"Galaxy",base:"#32235f",accent:"#8df8ff",style:"stars"},{name:"Mint Dots",base:"#48e6bd",accent:"#eafff9",style:"dots"}
+];
+const PALETTES={
+ Classic:{bg:"#dff9ff",line:"#76bfd0",goal1:"#ff5570",goal2:"#49e3ff",crease:"#a7d8ea",crowd:false},
+ Arctic:{bg:"#eef7ff",line:"#6d91b3",goal1:"#8f6bff",goal2:"#4be3ff",crease:"#bcd8ff",crowd:false},
+ Midnight:{bg:"#0c1626",line:"#79a6d6",goal1:"#ff5ea0",goal2:"#62a4ff",crease:"#284b70",crowd:false},
+ Neon:{bg:"#071017",line:"#38d9ff",goal1:"#ff5b65",goal2:"#ffd35b",crease:"#123b46",crowd:false},
+ Sunset:{bg:"#39233a",line:"#ffd1a3",goal1:"#ff7b45",goal2:"#ffd35b",crease:"#704052",crowd:false},
+ Storm:{bg:"#16202b",line:"#b9d4ee",goal1:"#73a6ff",goal2:"#9bffea",crease:"#314c62",crowd:true},
+ Aurora:{bg:"#10283a",line:"#a6ffef",goal1:"#b76cff",goal2:"#53f6d1",crease:"#225b62",crowd:true},
+ Stadium:{bg:"#dbeaf7",line:"#5d83a3",goal1:"#ff5570",goal2:"#49d9ff",crease:"#b8cfe2",crowd:true},
+ Championship:{bg:"#e9f5ff",line:"#6d9fc0",goal1:"#ffbf45",goal2:"#51dfff",crease:"#c3dff2",crowd:true},
+ Harbor:{bg:"#163447",line:"#77d4e8",goal1:"#ff687a",goal2:"#76f0d2",crease:"#2b6274",crowd:true},
+ Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
+ Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
+};
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},trailHistory={},puckHistory=[],lastDraw=0,overlay="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false;
+function say(text){$("status").textContent=text}
+function label(text){$("stateLabel").textContent=text}
+function markConnected(on){$("liveDot").classList.toggle("online",on);connected=on}
+function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:Number($("trail").value),teamName1:$("team1").value,teamName2:$("team2").value,matchTime:Number($("duration").value)}}
+function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
+async function connect(kind){
+ try{
+  if(room){try{room.leave()}catch{}room=null}
+  markConnected(false);viewPlayers={};targetPlayers={};trailHistory={};puckHistory=[];overlay="";const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
+  if(kind==="create-private"){room=await c.create("hockey",{...o,private:true});$("code").value=room.state.code||"";say("Private lobby created. Share the room code with friends.");}
+  else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false});$("code").value=room.state.code||"";say("Public lobby created. Share the room code or wait for players.");}
+  else if(kind==="join-private"){const code=$("code").value.trim().toUpperCase();if(!code)throw Error("Enter the six-character room code first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code));if(!res.ok)throw Error("Room code not found. Check the code and try again.");const data=await res.json();room=await c.joinById(data.roomId,o);say("Joined private lobby "+code+".");}
+  else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public match.");}
+  room.send("customize",{name:o.name,skin:o.skin,trail:o.trail});
+  room.onStateChange(state=>{
+   latestState=state;targetPlayers={};
+   state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id],trailPts:[]};});
+   for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
+   targetPuck={x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2};
+   $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";
+   if(state.status==="waiting"){label("LOBBY");say("Waiting for players · AI fills empty slots in "+Math.max(0,state.countdown)+"s");}
+   else if(state.status==="countdown"){label("FACE-OFF");say("Face-off in "+Math.max(0,state.countdown)+"…");}
+   else if(state.status==="goal"){label("GOAL!");say("Goal scored — getting ready for the next face-off.");}
+   else if(state.status==="playing"){label("LIVE MATCH");say(state.teamName1+" vs "+state.teamName2+" · "+Math.max(0,Math.ceil(state.matchTime))+" seconds left");}
+   else if(state.status==="finished"){label("FINAL");say("Full time · "+state.puck.score1+" — "+state.puck.score2);overlay=state.puck.score1===state.puck.score2?"DRAW":(state.puck.score1>state.puck.score2?state.teamName1:state.teamName2)+" WINS";overlayUntil=performance.now()+5000;}
+   draw();
+  });
+  room.onMessage("lobby",m=>{if(m.code)$("code").value=m.code;$("playerCount").textContent=m.players+" / "+m.capacity+" slots";});
+  room.onMessage("countdown",m=>{if(!latestState||latestState.status==="waiting"){label("MATCHMAKING");say("Waiting for players · AI fills the open positions in "+m.seconds+"s");}});
+  room.onMessage("faceoff",m=>{overlay="FACE-OFF";overlayUntil=performance.now()+Math.max(1,(m.seconds||3))*1000;});
+  room.onMessage("goal",m=>{overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayUntil=performance.now()+1850;});
+  room.onMessage("finished",m=>{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayUntil=performance.now()+6000;});
+  room.onLeave(code=>{markConnected(false);label("DISCONNECTED");say("Disconnected from the lobby ("+code+").");room=null;});
+  room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
+  markConnected(true);label("CONNECTED");say("Connected · room "+room.roomId+" · preparing rink…");
+ }catch(e){label("NOT CONNECTED");markConnected(false);say("Connection failed: "+(e?.message||e));}
+}
+$("connect").onclick=()=>connect("join-public");
+$("createPrivate").onclick=()=>connect("create-private");
+$("createPublic").onclick=()=>connect("create-public");
+$("joinPublic").onclick=()=>connect("join-public");
+$("joinPrivate").onclick=()=>connect("join-private");
+function normalizedSkin(i){return SKINS[Math.max(0,Math.min(SKINS.length-1,Number(i)||0))]}
+function resizeCanvas(){
+ const c=$("rink"),r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
+ c.width=Math.max(1,Math.round(r.width*d));c.height=Math.max(1,Math.round(r.height*d));
+ draw();
+}
+function draw(){
+ const c=$("rink"),ctx=c.getContext("2d"),d=window.devicePixelRatio||1,r=c.getBoundingClientRect();if(!r.width||!r.height)return;
+ if(c.width!==Math.round(r.width*d)||c.height!==Math.round(r.height*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);}
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);
+ const scale=Math.min(c.width/900,c.height/600),ox=(c.width-900*scale)/2,oy=(c.height-600*scale)/2;
+ ctx.fillStyle="#030a12";ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(scale,0,0,scale,ox,oy);
+ const map=$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
+ ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);
+ if(theme.crowd){ctx.fillStyle="#071321";ctx.fillRect(0,0,900,24);ctx.fillRect(0,576,900,24);for(let x=8;x<900;x+=15){const colors=["#ff6b86","#ffd35b","#49e3ff","#7cf2a6","#c49cff"];ctx.fillStyle=colors[Math.floor(x/15)%colors.length];ctx.beginPath();ctx.arc(x,10+Math.sin(now/260+x)*1.2,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x,590+Math.sin(now/280+x)*1.2,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.32;ctx.fillStyle=theme.line;for(let x=8;x<900;x+=30){ctx.fillRect(x,3,18,3);ctx.fillRect(x,594,18,3);}ctx.globalAlpha=1;}
+ ctx.strokeStyle=theme.line;ctx.lineWidth=3;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
+ ctx.beginPath();ctx.arc(450,300,52,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(260,160,35,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(640,440,35,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle=theme.crease+"44";ctx.fillRect(12,254,24,92);ctx.fillRect(864,254,24,92);
+ function goal(x,color,left){ctx.save();ctx.globalAlpha=.22;ctx.fillStyle=color;ctx.fillRect(left?x-20:x,254,20,92);ctx.globalAlpha=1;ctx.strokeStyle=color;ctx.lineWidth=5;ctx.strokeRect(left?x-20:x-2,250,left?20:22,100);ctx.strokeStyle="#ffffff60";ctx.lineWidth=1;for(let y=260;y<346;y+=11){ctx.beginPath();ctx.moveTo(left?x-19:x+1,y);ctx.lineTo(left?x:x+20,y);ctx.stroke();}ctx.restore();}
+ goal(12,theme.goal1,true);goal(888,theme.goal2,false);
+ ctx.strokeStyle=theme.crease;ctx.lineWidth=2;ctx.beginPath();ctx.arc(42,300,46,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.beginPath();ctx.arc(858,300,46,Math.PI/2,Math.PI*1.5);ctx.stroke();
+ // Puck trail and skater trails are retained between server snapshots for smooth animation.
+ for(let i=1;i<puckHistory.length;i++){ctx.globalAlpha=(i/puckHistory.length)*.28;ctx.strokeStyle=theme.line;ctx.lineWidth=2+(i/puckHistory.length)*3;ctx.beginPath();ctx.moveTo(puckHistory[i-1].x,puckHistory[i-1].y);ctx.lineTo(puckHistory[i].x,puckHistory[i].y);ctx.stroke();}ctx.globalAlpha=1;
+ for(const p of Object.values(viewPlayers)){
+  const pts=p.trailPts||[],trail=Number(p.trail)||0;
+  if(trail&&pts.length>1){ctx.save();ctx.lineCap="round";for(let i=1;i<pts.length;i++){const t=i/pts.length;ctx.globalAlpha=t*.34;ctx.lineWidth=trail===3?3:4;ctx.strokeStyle=trail===2?"hsl("+(i*24%360)+" 95% 65%)":trail===1?"#49e3ff":trail===4?"#ffd35b":trail===5?"#d9fbff":trail===6?"#b66cff":"#ffffff";ctx.beginPath();ctx.moveTo(pts[i-1].x,pts[i-1].y);ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();}ctx.restore();ctx.globalAlpha=1;if(trail===6){ctx.strokeStyle="#b66cff99";ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,23+Math.sin(now/120)*3,0,Math.PI*2);ctx.stroke();}}
+  const sk=normalizedSkin(p.skin),rr=19;
+  ctx.save();ctx.shadowColor="#0009";ctx.shadowBlur=8;ctx.fillStyle="#0007";ctx.beginPath();ctx.ellipse(p.x,p.y+4,rr,rr*.78,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.beginPath();ctx.arc(p.x,p.y,rr,0,Math.PI*2);ctx.clip();const g=ctx.createRadialGradient(p.x-rr*.35,p.y-rr*.45,2,p.x,p.y,rr*1.2);g.addColorStop(0,sk.accent);g.addColorStop(.45,sk.base);g.addColorStop(1,"#07101c");ctx.fillStyle=g;ctx.fillRect(p.x-rr-1,p.y-rr-1,rr*2+2,rr*2+2);
+  ctx.globalAlpha=.8;ctx.strokeStyle=sk.accent;ctx.lineWidth=3;
+  if(["stripes","split"].includes(sk.style)){for(let q=-rr*2;q<rr*2;q+=8){ctx.beginPath();ctx.moveTo(p.x-rr,p.y+q+rr);ctx.lineTo(p.x+rr,p.y+q-rr);ctx.stroke();}}
+  else if(["grid","circuit"].includes(sk.style)){for(let q=-rr;q<=rr;q+=7){ctx.beginPath();ctx.moveTo(p.x+q,p.y-rr);ctx.lineTo(p.x+q,p.y+rr);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-rr,p.y+q);ctx.lineTo(p.x+rr,p.y+q);ctx.stroke();}}
+  else if(["check","carbon"].includes(sk.style)){for(let xx=-rr;xx<rr;xx+=6)for(let yy=-rr;yy<rr;yy+=6)if(((xx/6+yy/6)&1)===0){ctx.fillStyle=sk.accent;ctx.globalAlpha=.34;ctx.fillRect(p.x+xx,p.y+yy,4,4);}}
+  else if(sk.style==="wave"){for(let yy=-rr;yy<rr;yy+=7){ctx.beginPath();for(let xx=-rr;xx<=rr;xx+=2){const py=p.y+yy+Math.sin((xx+now/55)*.15)*2;xx===-rr?ctx.moveTo(p.x+xx,py):ctx.lineTo(p.x+xx,py);}ctx.stroke();}}
+  else if(sk.style==="flame"){ctx.fillStyle=sk.accent;for(let j=0;j<3;j++){ctx.beginPath();ctx.moveTo(p.x-8+j*7,p.y+9);ctx.quadraticCurveTo(p.x-6+j*7,p.y-2,p.x-3+j*7,p.y-10);ctx.quadraticCurveTo(p.x+1+j*7,p.y-1,p.x+5+j*7,p.y+9);ctx.closePath();ctx.fill();}}
+  else if(["crystal","camo"].includes(sk.style)){ctx.fillStyle=sk.accent;for(let j=0;j<7;j++){const a=j*1.7;ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*4,p.y+Math.sin(a)*4);ctx.lineTo(p.x+Math.cos(a+.6)*rr,p.y+Math.sin(a+.6)*rr);ctx.lineTo(p.x+Math.cos(a+1.1)*rr*.55,p.y+Math.sin(a+1.1)*rr*.55);ctx.closePath();ctx.fill();}}
+  else if(sk.style==="rainbow"){for(let j=0;j<8;j++){ctx.fillStyle="hsl("+(j*45)+" 95% 62%)";ctx.globalAlpha=.7;ctx.fillRect(p.x-rr+j*4,p.y-rr,4,rr*2);}}
+  else if(["stars","dots"].includes(sk.style)){ctx.fillStyle=sk.accent;for(let j=0;j<8;j++){const a=j*2.2;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*(4+(j%3)*3),p.y+Math.sin(a)*(4+(j%3)*3),sk.style==="stars"?1.7:2.2,0,Math.PI*2);ctx.fill();}}
+  ctx.restore();ctx.globalAlpha=1;ctx.strokeStyle="#fff";ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(p.x,p.y,rr,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=sk.accent;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x+9,p.y+9);ctx.lineTo(p.x+22,p.y+22);ctx.stroke();
+  ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
+  ctx.fillStyle=p.team===1?theme.goal2:theme.goal1;ctx.fillRect(p.x-10,p.y+23,20,3);
+ }
+ ctx.save();ctx.shadowBlur=16;ctx.shadowColor="#ffffff99";ctx.fillStyle="#faffff";ctx.beginPath();ctx.arc(puck.x,puck.y,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#18212d";ctx.beginPath();ctx.arc(puck.x-2,puck.y-2,5.7,0,Math.PI*2);ctx.fill();ctx.restore();
+ const t1=latestState?.teamName1||$("team1").value,t2=latestState?.teamName2||$("team2").value,score1=latestState?.puck?.score1??puck.score1,score2=latestState?.puck?.score2??puck.score2;
+ ctx.fillStyle="#071725d9";ctx.fillRect(20,35,215,31);ctx.fillStyle="#eaf8ff";ctx.font="800 12px system-ui";ctx.textAlign="left";ctx.fillText(t1+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===1).length+" skaters",30,55);
+ ctx.fillStyle="#071725d9";ctx.fillRect(665,35,215,31);ctx.fillStyle="#eaf8ff";ctx.textAlign="right";ctx.fillText(t2+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===2).length+" skaters",870,55);
+ ctx.fillStyle="#03101de8";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff2a";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);ctx.fillText((map.toUpperCase())+" RINK  ·  "+formatTime(secs)+" LEFT",450,66);
+ if(overlay&&now<overlayUntil){ctx.fillStyle="rgba(2,8,18,.59)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle=overlay.includes("SCORES")?theme.goal2:"#f8fcff";ctx.font="1000 48px system-ui";ctx.shadowColor="#000";ctx.shadowBlur=12;ctx.fillText(overlay,450,278);ctx.shadowBlur=0;ctx.fillStyle="#a9efff";ctx.font="900 18px system-ui";ctx.fillText(overlay.includes("FACE")?"3 · 2 · 1 · PLAY!":"HOCKEY ARENA ONLINE",450,319);}
+ else if(latestState&&latestState.status==="waiting"){ctx.fillStyle="rgba(2,8,18,.35)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle="#f5fbff";ctx.font="1000 34px system-ui";ctx.fillText("WAITING FOR PLAYERS",450,275);ctx.fillStyle=theme.line;ctx.font="900 19px system-ui";ctx.fillText("AI will fill open positions in "+Math.max(0,latestState.countdown)+" seconds",450,314);}
+ ctx.restore();
+}
+function formatTime(seconds){const s=Math.max(0,Math.floor(seconds||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function updateRender(){
+ const now=performance.now(),dt=lastDraw?Math.min(.05,(now-lastDraw)/1000):.016;lastDraw=now;
+ for(const [id,t] of Object.entries(targetPlayers)){let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t,trailPts:[]};}p.x+=(t.x-p.x)*Math.min(1,dt*18);p.y+=(t.y-p.y)*Math.min(1,dt*18);p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.trail=t.trail;const pts=p.trailPts;if(Number(p.trail)){pts.push({x:p.x,y:p.y});if(pts.length>18)pts.shift()}else pts.length=0;}
+ puck.x+=(targetPuck.x-puck.x)*Math.min(1,dt*22);puck.y+=(targetPuck.y-puck.y)*Math.min(1,dt*22);puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
+ puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
+ draw();renderId=requestAnimationFrame(updateRender);
+}
+function sendMove(){
+ if(!room)return;
+ const x=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),y=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
+ if(x||y)dir={x,y};room.send("move",{x,y});
+}
+function shoot(){if(room)room.send("shoot",dir)}
+window.addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+ keys[k]=true;sendMove();if(k===" "||k==="f"||k==="enter")shoot();
+});
+window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;sendMove()});
+const moveKeys={up:"arrowup",down:"arrowdown",left:"arrowleft",right:"arrowright"};
+document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()},release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
+$("shoot").onclick=shoot;$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
+const params=new URLSearchParams(location.search);
+if(params.get("kind")==="private"&&params.get("action")==="create")connect("create-private");
+else if(params.get("kind")==="private"&&params.get("action")==="join"){$("code").focus();say("Private lobby selected. Enter a room code or choose Create private.");}
+else if(params.get("kind")==="public"&&params.get("action")==="create")connect("create-public");
+else if(params.get("kind")==="public"&&params.get("action")==="join")connect("join-public");
+resizeCanvas();renderId=requestAnimationFrame(updateRender);
+</script>
+</body></html>
