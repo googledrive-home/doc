@@ -25,6 +25,7 @@ const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":2 };
 const codes=new Map();
+app.get("/room/:code",(req,res)=>{const roomId=codes.get(String(req.params.code||"").toUpperCase());if(!roomId)return res.status(404).json({error:"Room code not found"});res.json({roomId});});
 const cleanName=v=>String(v??"Player").replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,18)||"Player";
 function makeCode(){let code;do{code=randomBytes(3).toString("hex").toUpperCase()}while(codes.has(code));return code}
 function addAI(room,team,index){
@@ -35,7 +36,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.maxClients=6;this.autoDispose=true;this.setState(new MatchState());
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.private=!!options.private;this.state.map=String(options.map||"Classic").slice(0,24);
-  this.state.hostId="";this.roomCode=options.code||makeCode();codes.set(this.roomCode,this.roomId);
+  this.state.hostId="";this.roomCode=options.code||makeCode();codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode});
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status==="finished")return;
    p.vx=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.vy=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
