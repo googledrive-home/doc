@@ -38,7 +38,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.maxClients=6;this.autoDispose=true;this.setState(new MatchState());
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.private=!!options.private;this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1=cleanName(options?.teamName1||"Blue Blades");this.state.teamName2=cleanName(options?.teamName2||"Red Wolves");this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=30;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;
-  this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode});
+  this.state.hostId="";this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
   if(mode==="2v2-ai"){addAI(this,1,1);addAI(this,2,1);addAI(this,2,2);}
 
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||this.state.status==="finished")return;
@@ -124,7 +124,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);}
 }
 gameServer.define("hockey",HockeyRoom);
-gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","map"]);
+gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","map","difficulty","training","competition"]);
 const port=Number(process.env.PORT||2567);
 await gameServer.listen(port,"0.0.0.0");
 console.log("Hockey multiplayer listening on",port);
