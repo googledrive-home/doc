@@ -493,7 +493,9 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    }
    const endOverlaps=endD<contactRadius;
    if(impactT===null&&!endOverlaps)continue;
-   if(endD<contactRadius+3)activePuckContacts.add(p.sessionId);
+   // Keep the contact latch only while a skater is genuinely touching the puck.
+   // A permanent latch made later collisions depend on the player's collision history.
+   activePuckContacts.add(p.sessionId);
    if(p.spectator)continue;
    // For end-overlap use the current normal; for a fast crossing use the first point of impact.
    const t=endOverlaps?1:impactT;
@@ -527,6 +529,9 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);
    }
   }
+  // Release old contact latches as soon as players separate. This keeps every new hit using
+  // the same impulse instead of making the puck mysteriously resistant after an earlier touch.
+  this.puckContacts=activePuckContacts;
 
   // Final non-penetration solver: if multiple nearby skaters overlap the puck in one tick,
   // find the nearest point outside every player instead of alternately pushing it between them.
