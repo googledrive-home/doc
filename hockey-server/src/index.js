@@ -156,6 +156,19 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   let next=1;while(Array.from(this.state.players.values()).filter(p=>!p.spectator).length<total){const team=counts[0]<=counts[1]?1:2;while(this.state.players.has("ai-"+team+"-"+next))next++;addAI(this,team,next++);counts[team-1]++;}
   for(const p of humans)p.ready=false;this.broadcastLobby();this.broadcast("matchStarting",{gameType:this.state.gameType,mode:this.state.mode,message:"Match starting"});this.startFaceoff();
  }
+ completeShootoutAttempt(scoredTeam=0){
+  const state=this.state;if(!state||state.gameType!=="shootout"||state.status!=="playing")return;
+  const attemptingTeam=state.shootoutTeam,puck=state.puck;
+  if(scoredTeam===1||scoredTeam===2){if(scoredTeam===1)puck.score1++;else puck.score2++;this.recordGoal(scoredTeam);this.broadcast("goal",{team:scoredTeam,score1:puck.score1,score2:puck.score2,shootout:true});}
+  if(attemptingTeam===1)state.shootoutAttempts1++;else state.shootoutAttempts2++;
+  this.broadcast("shootoutAttemptResult",{team:attemptingTeam,scored:scoredTeam===attemptingTeam,scoredTeam,score1:puck.score1,score2:puck.score2,attempts1:state.shootoutAttempts1,attempts2:state.shootoutAttempts2});
+  const a1=state.shootoutAttempts1,a2=state.shootoutAttempts2,g1=puck.score1,g2=puck.score2,remaining1=Math.max(0,5-a1),remaining2=Math.max(0,5-a2);
+  const clinched=(a1<5||a2<5)&&(g1>g2+remaining2||g2>g1+remaining1);
+  const pairedSuddenDeath=a1>=5&&a2>=5&&a1===a2;
+  if(clinched||(pairedSuddenDeath&&g1!==g2)){this.finishMatch();return;}
+  state.shootoutTeam=attemptingTeam===1?2:1;state.status="goal";state.countdown=0;this.goalPause=1.65;this.resetPuck();this.resetPlayers();
+  this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:puck.score1,score2:puck.score2,attempts1:a1,attempts2:a2,nextAttempt:Math.max(a1,a2)+1,suddenDeath:a1>=5&&a2>=5});
+ }
  recordGoal(team){const puck=this.state.puck,scorer=this.state.players.get(puck.lastTouchId),assister=this.state.players.get(puck.previousTouchId);if(scorer&&!scorer.spectator&&scorer.team===team)scorer.goals++;if(assister&&assister!==scorer&&!assister.spectator&&assister.team===team)assister.assists++;this.broadcast("matchStats",this.matchStatsSnapshot());}
  matchStatsSnapshot(){return {score1:this.state.puck.score1,score2:this.state.puck.score2,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).map(p=>({id:p.sessionId,name:p.name,team:p.team,spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,hits:p.hits,saves:p.saves}))};}
  resetMatchStats(){for(const p of this.state.players.values()){p.goals=0;p.assists=0;p.shots=0;p.hits=0;p.saves=0;}this.state.puck.lastTouchId="";this.state.puck.previousTouchId="";this.state.puck.lastTouchAt=0;}
@@ -183,8 +196,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!state||state.status==="finished")return;
   this.cancelMatchmaking();state.status="finished";state.countdown=0;
   const result={score1:state.puck.score1,score2:state.puck.score2};
-  const matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,finishedAt:Date.now(),winner:result.score1===result.score2?0:result.score1>result.score2?1:2};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
-  this.broadcast("finished",{...result,stats:matchRecord,history:this.matchHistory});
+  const goalie=state.gameType==="goalie"?Array.from(state.players.values()).find(p=>p.role==="goalie"&&!p.spectator):null;
+  const winner=goalie?(goalie.saves>=result.score1?2:1):result.score1===result.score2?0:result.score1>result.score2?1:2;
+  const matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,finishedAt:Date.now(),winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
+  this.broadcast("finished",{...result,gameType:state.gameType,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
   this.finishTimer=setTimeout(()=>{
    this.finishTimer=null;
@@ -203,9 +218,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const state=this.state;
   if(state.status==="practice"){this.simulateRink(dt,true);return;}
   if(state.status==="matchmaking"){this.waitSeconds=Math.max(0,this.waitSeconds-dt);state.countdown=Math.ceil(this.waitSeconds);this.simulateRink(dt,true);return;}
-  if(state.status==="countdown"){this.startSeconds=Math.max(0,this.startSeconds-dt);state.countdown=Math.ceil(this.startSeconds);if(this.startSeconds<=0){state.status="playing";state.countdown=0;this.broadcast("matchStarted",{team1:state.teamName1,team2:state.teamName2});}return;}
+  if(state.status==="countdown"){this.startSeconds=Math.max(0,this.startSeconds-dt);state.countdown=Math.ceil(this.startSeconds);if(this.startSeconds<=0){state.status="playing";state.countdown=state.gameType==="shootout"?8:0;this.shootoutSeconds=state.gameType==="shootout"?8:0;this.broadcast("matchStarted",{team1:state.teamName1,team2:state.teamName2,gameType:state.gameType});if(state.gameType==="shootout")this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:state.puck.score1,score2:state.puck.score2,attempts1:state.shootoutAttempts1,attempts2:state.shootoutAttempts2,nextAttempt:Math.max(state.shootoutAttempts1,state.shootoutAttempts2)+1,suddenDeath:state.shootoutAttempts1>=5&&state.shootoutAttempts2>=5});}return;}
   if(state.status==="goal"){this.goalPause=Math.max(0,this.goalPause-dt);if(this.goalPause<=0)this.startFaceoff();return;}
   if(state.status!=="playing")return;
+  if(state.gameType==="shootout"){this.shootoutSeconds=Math.max(0,(this.shootoutSeconds||0)-dt);state.countdown=Math.ceil(this.shootoutSeconds);if(this.shootoutSeconds<=0){this.completeShootoutAttempt(0);return;}this.simulateRink(dt,false);return;}
   state.matchTime=Math.max(0,state.matchTime-dt);
   if(state.matchTime<=0){this.finishMatch();return;}
   this.simulateRink(dt,false);
@@ -227,8 +243,13 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     }
    }
    const len=Math.hypot(p.inputX,p.inputY)||1,scale=len>1?1/len:1,ax=p.inputX*scale,ay=p.inputY*scale,isAI=p.sessionId.startsWith("ai-"),speed=isAI?state.aiSpeed*diffScale:state.playerSpeed*trainingScale,control=isAI?1:state.playerControl;
-   p.vx+=ax*720*speed*control*dt;p.vy+=ay*720*speed*control*dt;
-   const friction=Math.pow(.13/control,dt);p.vx*=friction;p.vy*=friction;
+   const friction=Math.pow(.13/control,dt);
+   if(p.role==="goalie"&&!isAI){
+    p.x=p.team===1?50:850;p.vx=0;p.vy+=ay*720*speed*control*dt;p.vy*=friction;
+    const goalieMax=250,goalieSpeed=Math.hypot(0,p.vy);if(goalieSpeed>goalieMax)p.vy=Math.sign(p.vy)*goalieMax;
+    p.y=Math.max(60,Math.min(540,p.y+p.vy*dt));continue;
+   }
+   p.vx+=ax*720*speed*control*dt;p.vy+=ay*720*speed*control*dt;p.vx*=friction;p.vy*=friction;
    const vmax=365*speed,sp=Math.hypot(p.vx,p.vy);if(sp>vmax){p.vx=p.vx/sp*vmax;p.vy=p.vy/sp*vmax;}
    p.x=Math.max(40,Math.min(860,p.x+p.vx*dt));p.y=Math.max(50,Math.min(550,p.y+p.vy*dt));
   }
