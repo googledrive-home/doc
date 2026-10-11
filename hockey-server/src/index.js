@@ -14,9 +14,9 @@ class Puck extends Schema {
 }
 defineTypes(Puck,{x:"number",y:"number",vx:"number",vy:"number",score1:"number",score2:"number",lastTouchId:"string",previousTouchId:"string",lastTouchAt:"number"});
 class MatchState extends Schema {
-  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Hockey Lobby";this.map="Classic";this.teamName1="Team 1";this.teamName2="Team 2";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;this.gameType="classic";this.shootoutTeam=1;this.shootoutAttempts1=0;this.shootoutAttempts2=0;}
+  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Hockey Lobby";this.map="Classic";this.teamName1="Team 1";this.teamName2="Team 2";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;this.gameType="classic";this.overtime=false;this.overtimePeriod=0;this.shootoutTeam=1;this.shootoutAttempts1=0;this.shootoutAttempts2=0;}
 }
-defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
+defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",overtimePeriod:"number",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
 
 const app=express();
 app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
@@ -318,7 +318,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!this.state||client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status))return;
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));if(!humans.length)return;
   const notReady=humans.filter(p=>!p.ready);if(notReady.length){client.send("lobbyNotice",{message:"Everyone must ready up before the host can start the match."});return;}
-  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
+  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.state.overtime=false;this.state.overtimePeriod=0;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
   for(const [id,p] of Array.from(this.state.players.entries()))if(id.startsWith("ai-"))this.state.players.delete(id);
   if(this.state.gameType==="goalie"){
    for(const p of humans){p.role="goalie";p.team=2;p.x=850;p.y=300;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.ready=false;}
@@ -374,11 +374,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const state=this.state;
   if(!state||state.status==="finished")return;
   this.cancelMatchmaking();state.status="finished";state.countdown=0;
-  const result={score1:state.puck.score1,score2:state.puck.score2};
+  const result={score1:state.puck.score1,score2:state.puck.score2,overtime:!!state.overtime};
   const goalie=state.gameType==="goalie"?Array.from(state.players.values()).find(p=>p.role==="goalie"&&!p.spectator):null;
   const winner=goalie?(goalie.saves>result.score1?2:goalie.saves<result.score1?1:0):result.score1===result.score2?0:result.score1>result.score2?1:2;
-  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
-  this.broadcast("finished",{...result,gameType:state.gameType,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
+  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,overtime:!!state.overtime,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
+  this.broadcast("finished",{...result,gameType:state.gameType,winner,overtime:!!state.overtime,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
   this.finishTimer=setTimeout(()=>{
    this.finishTimer=null;
@@ -387,7 +387,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     if(id.startsWith("ai-")&&this.state.mode!=="2v2-ai"){this.state.players.delete(id);continue;}
     p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;
    }
-   this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;
+   this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;this.state.overtime=false;this.state.overtimePeriod=0;
    this.resetPuck();this.resetPlayers();this.state.status="practice";
    this.broadcast("lobbyReady",{message:"Match finished — back in the lobby. Press PLAY for a rematch."});
    this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,gameType:this.state.gameType,private:this.state.private,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length,capacity:playerCapacity(this.state)});
@@ -402,7 +402,16 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(state.status!=="playing")return;
   if(state.gameType==="shootout"){this.shootoutSeconds=Math.max(0,(this.shootoutSeconds||0)-dt);state.countdown=Math.ceil(this.shootoutSeconds);if(this.shootoutSeconds<=0){this.completeShootoutAttempt(0);return;}this.simulateRink(dt,false);return;}
   state.matchTime=Math.max(0,state.matchTime-dt);
-  if(state.matchTime<=0){this.finishMatch();return;}
+  if(state.matchTime<=0){
+   if(["classic","time-attack"].includes(state.gameType)&&state.puck.score1===state.puck.score2){
+    const enteringOvertime=!state.overtime;
+    state.overtime=true;state.overtimePeriod=enteringOvertime?1:(state.overtimePeriod||1)+1;state.matchTime=60;state.countdown=0;
+    const message=enteringOvertime?"Tied at full time — 60 seconds of sudden-death overtime. Next goal wins.":"Still tied — another sudden-death minute. Next goal wins.";
+    this.broadcast(enteringOvertime?"overtimeStarted":"overtimeContinues",{seconds:60,period:state.overtimePeriod,score1:state.puck.score1,score2:state.puck.score2,message});
+    return;
+   }
+   this.finishMatch();return;
+  }
   this.simulateRink(dt,false);
  }
  simulateRink(dt,practice=false){
@@ -516,13 +525,41 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    }
   }
 
+  // Final non-penetration solver: if multiple nearby skaters overlap the puck in one tick,
+  // find the nearest point outside every player instead of alternately pushing it between them.
+  const solidPlayers=ps.filter(p=>!(state.gameType==="shootout"&&p.team!==state.shootoutTeam));
+  const separationRadius=contactRadius+.75;
+  if(solidPlayers.some(p=>Math.hypot(puck.x-p.x,puck.y-p.y)<separationRadius)){
+   const originX=puck.x,originY=puck.y;let best=null,bestDistance=Infinity;
+   for(const p of solidPlayers){
+    const base=Math.atan2(originY-p.y,originX-p.x);
+    for(let sample=0;sample<72;sample++){
+     const angle=base+sample*Math.PI*2/72,cx=p.x+Math.cos(angle)*separationRadius,cy=p.y+Math.sin(angle)*separationRadius;
+     let clear=true;
+     for(const q of solidPlayers){if(Math.hypot(cx-q.x,cy-q.y)<separationRadius-.15){clear=false;break;}}
+     if(!clear)continue;
+     const distance=(cx-originX)*(cx-originX)+(cy-originY)*(cy-originY);
+     if(distance<bestDistance){bestDistance=distance;best={x:cx,y:cy};}
+    }
+   }
+   if(best){puck.x=best.x;puck.y=best.y;}
+   else{
+    // Dense pile-up fallback: eject the puck out beyond the nearest side of the player cluster.
+    const near=solidPlayers.filter(p=>Math.hypot(originX-p.x,originY-p.y)<separationRadius),cx=near.reduce((n,p)=>n+p.x,0)/near.length,cy=near.reduce((n,p)=>n+p.y,0)/near.length;
+    let dx=originX-cx,dy=originY-cy,d=Math.hypot(dx,dy);
+    if(d<.001){dx=puck.vx!==0?-puck.vx:(near[0]?.team===1?1:-1);dy=puck.vy!==0?-puck.vy:0;d=Math.hypot(dx,dy)||1;}
+    dx/=d;dy/=d;
+    const edge=Math.max(...near.map(p=>Math.hypot(p.x-cx,p.y-cy)))+separationRadius;
+    puck.x=cx+dx*edge;puck.y=cy+dy*edge;
+   }
+  }
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
   else if(!practice&&state.gameType==="shootout"&&(crossedLeft||crossedRight)){this.broadcast("goalReplay",{team:crossedLeft?2:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.completeShootoutAttempt(crossedLeft?2:1);}
   else if(!practice&&state.gameType==="goalie"&&crossedLeft){this.resetPuck();this.broadcast("goalieClear",{message:"The puck cleared the goalie zone. Keep defending!"});}
-  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goalReplay",{team:2,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score2>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
-  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goalReplay",{team:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score1>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goalReplay",{team:2,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.overtime|| (state.competition&&puck.score2>=5)){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goalReplay",{team:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.overtime|| (state.competition&&puck.score1>=5)){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
  }
  beginMatchmaking(){
   if(!this.state||!["practice","waiting"].includes(this.state.status)||this.matchmakingStarted)return;
