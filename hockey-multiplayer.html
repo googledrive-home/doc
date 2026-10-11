@@ -237,7 +237,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  </div>
 </div>
 <div id="lobbyPeopleList" class="room-list"></div><div class="people-actions"><button id="leaveLobbyFromPeople" type="button">LEAVE LOBBY</button><button id="doneLobbyPeople" class="secondary" type="button">DONE</button></div></div></div>
-<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Live stats, a final match report and recent results from this lobby.</p><div id="statsHighlights" class="stats-highlights"></div><div class="stats-tabs"><button id="statsLiveTab" class="secondary" type="button">LIVE MATCH</button><button id="statsLastTab" class="secondary" type="button">LAST MATCH</button><button id="statsHistoryTab" class="secondary" type="button">ROOM HISTORY</button></div><div class="stats-table-wrap"><div id="statsList" class="room-list"></div></div><div id="statsHistory" class="room-list hidden"></div></div></div>
+<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Live stats, a final match report and recent results from this lobby.</p><div id="statsHighlights" class="stats-highlights"></div><div class="stats-tabs"><button id="statsLiveTab" class="secondary" type="button">LIVE MATCH</button><button id="statsLastTab" class="secondary" type="button">LAST MATCH</button><button id="statsHistoryTab" class="secondary" type="button">ROOM HISTORY</button></div><div id="statsTableWrap" class="stats-table-wrap"><div id="statsList" class="room-list"></div></div><div id="statsHistory" class="room-list hidden"></div></div></div>
 <div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
@@ -509,14 +509,84 @@ $("playAsPlayer").onclick=()=>{if(room)room.send("playAsPlayer",{});};
 $("statsToggle").onclick=()=>{renderedStatsSignature="";renderMatchStats();$("statsDialog").classList.remove("hidden");};
 $("closeStats").onclick=()=>$("statsDialog").classList.add("hidden");
 $("statsDialog").addEventListener("click",e=>{if(e.target===$("statsDialog"))$("statsDialog").classList.add("hidden");});
-function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);}}
+function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){const el=$(id);if(el&&document.activeElement!==el)el.valfunction makeStatChip(label,value){
+ const chip=document.createElement("div");chip.className="stat-chip";
+ const small=document.createElement("small");small.textContent=label;
+ const strong=document.createElement("strong");strong.textContent=String(value);
+ chip.append(small,strong);return chip;
+}
+function setStatsView(view){statsView=view;renderedStatsSignature="";renderMatchStats();if(view==="history")loadRoomHistory();}
+async function loadRoomHistory(){
+ if(!room)return;
+ const base=$("server").value.trim().replace(/\/$/,"");
+ try{const response=await fetch(base+"/room/"+encodeURIComponent(room.roomId)+"/history",{cache:"no-store"});if(!response.ok)throw Error("History not available");const data=await response.json();roomMatchHistory=Array.isArray(data.matches)?data.matches:roomMatchHistory;if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];renderedStatsSignature="";renderMatchStats();}
+ catch{if(!roomMatchHistory.length){const list=$("statsHistory");list.replaceChildren();const message=document.createElement("p");message.className="browser-help";message.textContent="No saved matches are available yet for this lobby.";list.appendChild(message);}}
+}
 function renderMatchStats(){
- const list=$("statsList");if(!list)return;const people=Object.values(targetPlayers).filter(p=>!p.spectator&&!String(p.id).startsWith("ai-")).sort((a,b)=>a.team-b.team||b.goals-a.goals);
- const signature=[latestState?.puck?.score1||0,latestState?.puck?.score2||0,latestState?.gameType||"classic",...people.map(p=>[p.id,p.goals,p.assists,p.shots,p.hits,p.saves].join(":"))].join("|");if(signature===renderedStatsSignature)return;renderedStatsSignature=signature;
- $("statsSummary").textContent=(latestState?.teamName1||"Team 1")+" "+(latestState?.puck?.score1||0)+" — "+(latestState?.puck?.score2||0)+" "+(latestState?.teamName2||"Team 2")+" · "+(latestState?.gameType||"classic").toUpperCase();
- list.replaceChildren();const head=document.createElement("div");head.className="stat-row";head.innerHTML="<strong>Player</strong><span>G</span><span>A</span><span>S</span><span>H</span><span>SV</span>";list.appendChild(head);
- if(!people.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="Player stats appear when you join a lobby.";list.appendChild(empty);return;}
- for(const p of people){const row=document.createElement("div");row.className="stat-row";const name=document.createElement("strong");name.textContent=(p.name||"Player")+" · T"+p.team;row.appendChild(name);for(const key of ["goals","assists","shots","hits","saves"]){const v=document.createElement("span");v.textContent=String(p[key]||0);row.appendChild(v);}list.appendChild(row);}
+ const list=$("statsList"),history=$("statsHistory"),highlights=$("statsHighlights"),tableWrap=$("statsTableWrap");
+ if(!list||!history||!highlights)return;
+ const record=statsView==="last"?lastMatchRecord:null,isHistory=statsView==="history";
+ const livePeople=Object.values(targetPlayers).filter(p=>!p.spectator).map(p=>({...p,bot:p.bot||String(p.id||"").startsWith("ai-")}));
+ const people=statsView==="last"?(record?.players||[]):livePeople;
+ const score1=record?.score1??latestState?.puck?.score1??0,score2=record?.score2??latestState?.puck?.score2??0;
+ const signature=statsView+"|"+score1+"|"+score2+"|"+(record?.finishedAt||"live")+"|"+people.map(p=>[p.id,p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves].join(":")).join("|")+"|"+roomMatchHistory.length;
+ if(signature===renderedStatsSignature)return;renderedStatsSignature=signature;
+ for(const [id,view] of [["statsLiveTab","live"],["statsLastTab","last"],["statsHistoryTab","history"]])$(id).classList.toggle("active",statsView===view);
+ tableWrap.classList.toggle("hidden",isHistory);history.classList.toggle("hidden",!isHistory);
+ highlights.replaceChildren();list.replaceChildren();history.replaceChildren();
+ if(isHistory){
+  const matches=roomMatchHistory.slice(0,10);
+  $("statsSummary").textContent=matches.length?"Recent completed matches in this lobby · newest first":"Finish a match to start this lobby's history.";
+  highlights.append(makeStatChip("Matches saved",matches.length),makeStatChip("Latest mode",matches[0]?.gameType||"—"),makeStatChip("Latest rink",matches[0]?.map||"—"),makeStatChip("Latest score",matches[0]?matches[0].score1+" — "+matches[0].score2:"—"));
+  if(!matches.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="Completed match reports will appear here and stay available for the next rematch.";history.appendChild(empty);return;}
+  for(const match of matches){
+   const card=document.createElement("div");card.className="stats-history-card";
+   const head=document.createElement("div");head.className="stats-history-head";
+   const title=document.createElement("strong");title.textContent=(match.teamName1||"Team 1")+" "+match.score1+" — "+match.score2+" "+(match.teamName2||"Team 2");
+   const when=document.createElement("span");when.textContent=match.finishedAt?new Date(match.finishedAt).toLocaleString():"Match completed";
+   head.append(title,when);
+   const meta=document.createElement("p");meta.className="stats-history-meta";meta.textContent=(match.gameType||"classic").toUpperCase()+" · "+(match.mode||"1v1")+" · "+(match.map||"Classic")+" · "+(match.elapsedSeconds??"—")+" seconds";
+   const winner=document.createElement("p");winner.className="stats-history-meta";
+   winner.textContent=match.winner===0?"Result: draw":match.winner===1?"Winner: "+(match.teamName1||"Team 1"):match.winner===2?"Winner: "+(match.teamName2||"Team 2"):"Result recorded";
+   const view=document.createElement("button");view.type="button";view.className="secondary";view.textContent="VIEW REPORT";
+   view.onclick=()=>{lastMatchRecord=match;setStatsView("last");};
+   card.append(head,meta,winner,view);history.appendChild(card);
+  }
+  return;
+ }
+ const teamName1=record?.teamName1||latestState?.teamName1||"Team 1",teamName2=record?.teamName2||latestState?.teamName2||"Team 2";
+ const teamAgg=(teamNo)=>{
+  const key=teamNo===1?"team1":"team2",saved=record?.[key];
+  if(saved)return saved;
+  return {goals:teamNo===1?score1:score2,shots:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shots||0),0),shotsOnGoal:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shotsOnGoal||0),0),saves:people.filter(p=>p.team!==teamNo).reduce((n,p)=>n+(p.saves||0),0)};
+ };
+ const team1=teamAgg(1),team2=teamAgg(2),topScorer=[...people].filter(p=>!p.spectator).sort((x,y)=>(y.goals||0)-(x.goals||0)||(y.assists||0)-(x.assists||0))[0];
+ $("statsSummary").textContent=statsView==="last"
+  ?teamName1+" "+score1+" — "+score2+" "+teamName2+" · "+(record?.gameType||"classic").toUpperCase()+" · "+(record?.map||"Classic")+" rink · "+(record?.elapsedSeconds??"—")+"s played"
+  :latestState?teamName1+" "+score1+" — "+score2+" "+teamName2+" · "+(latestState.gameType||"classic").toUpperCase()+" · "+(latestState.map||"Classic")+" rink · "+(latestState.status==="playing"?Math.max(0,Math.ceil(latestState.matchTime||0))+"s remaining":"Lobby / warm-up stats")
+  :"Join a lobby to see live stats.";
+ const allSaves=people.reduce((n,p)=>n+(p.saves||0),0);
+ highlights.append(
+  makeStatChip("Team shots",String(team1.shots||0)+" — "+String(team2.shots||0)),
+  makeStatChip("Shots on goal",String(team1.shotsOnGoal||0)+" — "+String(team2.shotsOnGoal||0)),
+  makeStatChip("Top scorer",topScorer?(topScorer.name||"Player")+" · "+(topScorer.goals||0):"—"),
+  makeStatChip("Total saves",allSaves)
+ );
+ const head=document.createElement("div");head.className="stat-row header";
+ for(const label of ["Player","G","A","S","SOG","TCH","SV","ACC"]){const cell=document.createElement(label==="Player"?"strong":"span");cell.textContent=label;head.appendChild(cell);}
+ list.appendChild(head);
+ if(statsView==="last"&&!record){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="No completed match report yet. Play a match and the final score and stats will appear here.";list.appendChild(empty);return;}
+ if(!people.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="Player stats appear when you join a lobby and start playing.";list.appendChild(empty);return;}
+ people.sort((x,y)=>(x.team||0)-(y.team||0)||(y.goals||0)-(x.goals||0));
+ for(const p of people){
+  const row=document.createElement("div");row.className="stat-row";
+  const name=document.createElement("strong");name.textContent=(p.bot?"🤖 ":"")+(p.name||"Player")+(p.role==="goalie"?" · G":p.team?" · T"+p.team:"");row.appendChild(name);
+  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shots||0)?Math.round((p.goals||0)/(p.shots||1)*100):0)];
+  values.forEach((value,i)=>{const cell=document.createElement("span");cell.textContent=String(value||0)+(i===6?"%":"");row.appendChild(cell);});
+  list.appendChild(row);
+ }
+}
+ppendChild(row);}
 }
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
 async function loadRooms(kind=activeBrowserKind){
