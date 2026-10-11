@@ -124,7 +124,21 @@ body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 #playMatch:disabled{background:#243b51;border-color:#42556b;color:#a0b2c4;cursor:wait}
 #toggleSetup{flex:none;width:34px;height:32px;padding:3px;font-size:16px}
 #lobbyPlayersBtn{flex:none;width:36px;min-width:36px;height:32px;padding:3px;font-size:16px}
-#statsToggle{flex:none;width:36px;min-width:36px;height:29px;padding:2px;font-size:15px}
+#statsToggle,#competitionToggle,#lastReplayToggle{flex:none;width:36px;min-width:36px;height:29px;padding:2px;font-size:15px}
+.competition-form{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(150px,1fr) auto;gap:8px;align-items:end;padding:12px;border:1px solid #ffffff17;border-radius:12px;background:#ffffff05}
+.competition-form.join{grid-template-columns:minmax(0,1fr) auto}
+.competition-form label{display:flex;flex-direction:column;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:#99b8ce}
+.competition-form input,.competition-form select{height:38px}
+.competition-form button{width:auto;min-width:95px}
+.competition-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:#ffffff07;border:1px solid #ffffff16}
+.competition-row .room-meta{flex:1}
+.competition-row .rank{font-size:12px;color:#64eaff;font-weight:1000;min-width:26px}
+.competition-row .points{font-size:12px;color:#9af9c9;font-weight:950;white-space:nowrap}
+.replay-banner{position:absolute;z-index:40;top:50px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 11px;border:1px solid #69eaff77;border-radius:12px;background:#061523ed;box-shadow:0 12px 32px #0008;pointer-events:auto;max-width:min(92vw,480px)}
+.replay-banner.hidden{display:none!important}
+.replay-banner span{font-size:11px;font-weight:950;letter-spacing:.1em;color:#bdf6ff;white-space:nowrap}
+.replay-banner button{height:30px;width:auto;min-width:80px;padding:4px 9px;font-size:10px}
+@media(max-width:650px){.competition-form{grid-template-columns:1fr 1fr}.competition-form label:first-child{grid-column:1/-1}.competition-form button{width:100%}.replay-banner{top:42px}}
 .lobby-controls{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;border:1px solid #4bdfff3d;background:linear-gradient(145deg,#0d2940,#081725)}
 .lobby-control-row{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
 .lobby-control-row label{display:flex;flex-direction:column;gap:5px;color:#9dbbd1;text-transform:uppercase;font-weight:850;font-size:10px;letter-spacing:.08em;flex:1;min-width:100px}
@@ -181,7 +195,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <div class="field"><label for="player">Player name</label><input id="player" maxlength="18" value="Player" autocomplete="nickname"></div>
 <div class="field"><label for="mode">Team format</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">Solo vs AI squad</option></select></div>
 <div class="field"><label for="gameType">Game type</label><select id="gameType"><option value="classic">Classic match</option><option value="shootout">Shootout</option><option value="goalie">Goalie challenge</option><option value="time-attack">Time attack</option></select></div>
-<div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select></div>
+<div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option><option>Frozen Lake</option><option>Rooftop</option><option>Volcanic</option><option>Lunar</option><option>Retro</option><option>Forest</option><option>Desert</option><option>Crystal</option><option>Rainy Night</option><option>Blue Ice</option></select></div>
 <div class="field"><label for="skin">Player skin</label><select id="skin"><option value="0">Blue Burst</option><option value="1">Gold Stripes</option><option value="2">Ice Crystal</option><option value="3">Lime Grid</option><option value="4">Purple Wave</option><option value="5">Fire Rush</option><option value="6">Chrome Check</option><option value="7">Carbon</option><option value="8">Rainbow Pulse</option><option value="9">Circuit</option><option value="10">Sunset Split</option><option value="11">Polar Camo</option><option value="12">Galaxy</option><option value="13">Mint Dots</option></select></div>
 
 
@@ -213,19 +227,22 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
   <div class="host-settings-grid">
    <label>Team format<select id="hostMode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">Solo vs AI squad</option></select></label>
    <label>Game type<select id="hostGameType"><option value="classic">Classic match</option><option value="shootout">Shootout</option><option value="goalie">Goalie challenge</option><option value="time-attack">Time attack</option></select></label>
-   <label>Rink<select id="hostMap"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select></label>
+   <label>Rink<select id="hostMap"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option><option>Frozen Lake</option><option>Rooftop</option><option>Volcanic</option><option>Lunar</option><option>Retro</option><option>Forest</option><option>Desert</option><option>Crystal</option><option>Rainy Night</option><option>Blue Ice</option></select></label>
    <label>Match length<select id="hostDuration"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option></select></label>
    <label>AI difficulty<select id="hostDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="extrahard">Extra hard</option></select></label>
    <label>Training<select id="hostTraining"><option value="none">Standard</option><option value="warmup">Warm-up</option><option value="conditioning">Conditioning</option><option value="speed">Speed drill</option></select></label>
+   <label>First-to-five rule<select id="hostCompetition"><option value="false">Off</option><option value="true">First to 5</option></select></label>
   </div>
   <div class="host-actions"><button id="applyLobbySettings" class="secondary" type="button">APPLY SETTINGS</button><button id="hostStartMatch" type="button" disabled>READY CHECK · 0/1</button></div>
  </div>
 </div>
 <div id="lobbyPeopleList" class="room-list"></div><div class="people-actions"><button id="leaveLobbyFromPeople" type="button">LEAVE LOBBY</button><button id="doneLobbyPeople" class="secondary" type="button">DONE</button></div></div></div>
-<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Stats update as the match is played.</p><div id="statsList" class="room-list"></div></div></div>
-<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
+<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Stats update as the match is played.</p><div id="statsList" class="room-list"></div><div id="recentMatches" class="room-list"></div></div></div>
+<div id="competitionDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="competitionTitle"><div class="browser-card"><div class="browser-head"><h2 id="competitionTitle">League & tournament desk</h2><span style="flex:1"></span><button id="refreshCompetitions" class="secondary" type="button">↻ REFRESH</button><button id="closeCompetitions" class="secondary" type="button">✕</button></div><p id="competitionSummary" class="browser-help">Create a league or cup from your lobby, or enter a code to enrol your team.</p><div class="competition-form"><label>Competition name<input id="competitionName" maxlength="32" value="Friday Night League" placeholder="Name your competition"></label><label>Format<select id="competitionFormat"><option value="league">League table</option><option value="cup">Knockout cup</option></select></label><button id="createCompetition" type="button">CREATE</button></div><div class="competition-form join"><label>Join code<input id="competitionCode" maxlength="6" placeholder="6-character code" autocomplete="off"></label><button id="joinCompetition" type="button">JOIN</button></div><div id="competitionList" class="room-list"><p class="browser-help">Load competitions to see current standings.</p></div></div></div>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="competitionToggle" class="secondary hidden" type="button" aria-label="Open league and tournament board" title="League & tournament board">🏆</button><button id="lastReplayToggle" class="secondary hidden" type="button" aria-label="Replay last goal" title="Replay last goal">↺</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
+<div id="replayBanner" class="replay-banner hidden"><span id="replayMessage">GOAL REPLAY</span><button id="skipReplay" class="secondary" type="button">SKIP REPLAY</button></div>
 <div id="arenaIntro" class="arena-intro" aria-live="polite">
  <div id="introArtwork" class="intro-art" data-scene="arena" role="img" aria-label="Illustrated hockey arena with a skater and puck">
   <div class="intro-halo"></div><div class="intro-beam one"></div><div class="intro-beam two"></div><div class="intro-stands"></div><div class="intro-rink"></div><div class="intro-net"></div><div class="intro-flash"></div><div class="intro-skater"></div><div class="intro-skater second"></div><div class="intro-puck"></div><div class="intro-equipment"></div>
@@ -254,7 +271,17 @@ const PALETTES={
  Championship:{bg:"#e9f5ff",line:"#6d9fc0",goal1:"#ffbf45",goal2:"#51dfff",crease:"#c3dff2",crowd:true},
  Harbor:{bg:"#163447",line:"#77d4e8",goal1:"#ff687a",goal2:"#76f0d2",crease:"#2b6274",crowd:true},
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
- Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
+ Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true},
+ "Frozen Lake":{bg:"#d7f3fb",line:"#71bfd6",goal1:"#ff6786",goal2:"#49d9ff",crease:"#a0d9ec",crowd:false},
+ Rooftop:{bg:"#303e54",line:"#9fbbe2",goal1:"#ff7b45",goal2:"#67e5ff",crease:"#536c91",crowd:true},
+ Volcanic:{bg:"#281827",line:"#fb805d",goal1:"#ff543f",goal2:"#ffd166",crease:"#623244",crowd:true},
+ Lunar:{bg:"#20283b",line:"#b0c8ef",goal1:"#b4a0ff",goal2:"#75e9ff",crease:"#53647f",crowd:false},
+ Retro:{bg:"#d9e4c7",line:"#628b7a",goal1:"#f56c77",goal2:"#348fce",crease:"#a6c8ad",crowd:true},
+ Forest:{bg:"#15342d",line:"#8ee0a6",goal1:"#ff779d",goal2:"#58e9dd",crease:"#275e50",crowd:true},
+ Desert:{bg:"#4b3340",line:"#f5bd86",goal1:"#ff715b",goal2:"#6fe1ff",crease:"#81566a",crowd:true},
+ Crystal:{bg:"#142a44",line:"#bcefff",goal1:"#f09dff",goal2:"#80f5ff",crease:"#3d6c8c",crowd:true},
+ "Rainy Night":{bg:"#0b1727",line:"#669bb8",goal1:"#ff6e96",goal2:"#65dfff",crease:"#2d4a67",crowd:true},
+ "Blue Ice":{bg:"#d9f5ff",line:"#48aacb",goal1:"#f44e78",goal2:"#16c8ff",crease:"#9adbf0",crowd:false}
 };
 let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature=""; 
 const introSlides=[
