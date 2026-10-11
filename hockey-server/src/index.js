@@ -14,9 +14,9 @@ class Puck extends Schema {
 }
 defineTypes(Puck,{x:"number",y:"number",vx:"number",vy:"number",score1:"number",score2:"number",lastTouchId:"string",previousTouchId:"string",lastTouchAt:"number"});
 class MatchState extends Schema {
-  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Hockey Lobby";this.map="Classic";this.teamName1="Team 1";this.teamName2="Team 2";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;this.gameType="classic";this.overtime=false;this.shootoutTeam=1;this.shootoutAttempts1=0;this.shootoutAttempts2=0;}
+  constructor(){super();this.players=new MapSchema();this.puck=new Puck();this.mode="1v1";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Hockey Lobby";this.map="Classic";this.teamName1="Team 1";this.teamName2="Team 2";this.countdown=0;this.matchTime=180;this.matchLength=180;this.difficulty="medium";this.training="none";this.competition=false;this.playerSpeed=1;this.playerPower=1;this.playerControl=1;this.aiSpeed=1;this.aiPower=1;this.aiAccuracy=1;this.gameType="classic";this.overtime=false;this.overtimePeriod=0;this.shootoutTeam=1;this.shootoutAttempts1=0;this.shootoutAttempts2=0;}
 }
-defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
+defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",overtimePeriod:"number",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
 
 const app=express();
 app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
@@ -318,7 +318,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!this.state||client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status))return;
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));if(!humans.length)return;
   const notReady=humans.filter(p=>!p.ready);if(notReady.length){client.send("lobbyNotice",{message:"Everyone must ready up before the host can start the match."});return;}
-  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.state.overtime=false;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
+  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.state.overtime=false;this.state.overtimePeriod=0;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
   for(const [id,p] of Array.from(this.state.players.entries()))if(id.startsWith("ai-"))this.state.players.delete(id);
   if(this.state.gameType==="goalie"){
    for(const p of humans){p.role="goalie";p.team=2;p.x=850;p.y=300;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.ready=false;}
@@ -387,7 +387,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     if(id.startsWith("ai-")&&this.state.mode!=="2v2-ai"){this.state.players.delete(id);continue;}
     p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;
    }
-   this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;this.state.overtime=false;
+   this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;this.state.overtime=false;this.state.overtimePeriod=0;
    this.resetPuck();this.resetPlayers();this.state.status="practice";
    this.broadcast("lobbyReady",{message:"Match finished — back in the lobby. Press PLAY for a rematch."});
    this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,gameType:this.state.gameType,private:this.state.private,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length,capacity:playerCapacity(this.state)});
@@ -403,9 +403,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(state.gameType==="shootout"){this.shootoutSeconds=Math.max(0,(this.shootoutSeconds||0)-dt);state.countdown=Math.ceil(this.shootoutSeconds);if(this.shootoutSeconds<=0){this.completeShootoutAttempt(0);return;}this.simulateRink(dt,false);return;}
   state.matchTime=Math.max(0,state.matchTime-dt);
   if(state.matchTime<=0){
-   if(!state.overtime&&["classic","time-attack"].includes(state.gameType)&&state.puck.score1===state.puck.score2){
-    state.overtime=true;state.matchTime=60;state.countdown=0;
-    this.broadcast("overtimeStarted",{seconds:60,score1:state.puck.score1,score2:state.puck.score2,message:"Tied at full time — 60 seconds of sudden-death overtime. Next goal wins."});
+   if(["classic","time-attack"].includes(state.gameType)&&state.puck.score1===state.puck.score2){
+    const enteringOvertime=!state.overtime;
+    state.overtime=true;state.overtimePeriod=enteringOvertime?1:(state.overtimePeriod||1)+1;state.matchTime=60;state.countdown=0;
+    const message=enteringOvertime?"Tied at full time — 60 seconds of sudden-death overtime. Next goal wins.":"Still tied — another sudden-death minute. Next goal wins.";
+    this.broadcast(enteringOvertime?"overtimeStarted":"overtimeContinues",{seconds:60,period:state.overtimePeriod,score1:state.puck.score1,score2:state.puck.score2,message});
     return;
    }
    this.finishMatch();return;
