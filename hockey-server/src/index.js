@@ -144,12 +144,44 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!this.state||client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status))return;
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));if(!humans.length)return;
   const notReady=humans.filter(p=>!p.ready);if(notReady.length){client.send("lobbyNotice",{message:"Everyone must ready up before the host can start the match."});return;}
-  this.cancelMatchmaking();this.resetMatchStats();
+  this.cancelMatchmaking();this.resetMatchStats();this.replayFrames=[];this.state.status="practice";
   for(const [id,p] of Array.from(this.state.players.entries()))if(id.startsWith("ai-")&&this.state.mode!=="2v2-ai")this.state.players.delete(id);
   const total=TOTAL_SLOTS[this.state.mode]||CAPACITY[this.state.mode],counts=[0,0];
   for(const p of this.state.players.values())if(!p.spectator)counts[p.team===2?1:0]++;
   let next=1;while(Array.from(this.state.players.values()).filter(p=>!p.spectator).length<total){const team=counts[0]<=counts[1]?1:2;while(this.state.players.has("ai-"+team+"-"+next))next++;addAI(this,team,next++);counts[team-1]++;}
   for(const p of humans)p.ready=false;this.broadcastLobby();this.broadcast("matchStarting",{gameType:this.state.gameType,mode:this.state.mode,message:"Match starting"});this.startFaceoff();
+ }
+ createCompetition(client,msg){
+  if(client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status)){client.send("lobbyNotice",{message:"Only the host can create a league or tournament from the lobby."});return;}
+  if(this.state.tournamentCode){client.send("lobbyNotice",{message:"This lobby is already enrolled in "+this.state.tournamentName+" ("+this.state.tournamentCode+")."});return;}
+  const name=cleanRoomName(msg?.name||this.state.lobbyName+" League"),format=["league","cup"].includes(msg?.format)?msg.format:"league",code=makeCode();
+  const tournament={code,name,format,status:"active",createdAt:Date.now(),entries:new Map(),results:[]};competitions.set(code,tournament);
+  this.state.tournamentCode=code;this.state.tournamentName=name;this.state.competitionFormat=format;this.registerCompetitionTeams(tournament);
+  this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,tournamentCode:code,tournamentName:name,competitionFormat:format,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
+  this.broadcastLobby();this.broadcast("competitionUpdated",tournamentSummary(tournament));this.broadcast("lobbyNotice",{message:name+" "+(format==="cup"?"cup":"league")+" created · competition code "+code+"."});
+ }
+ joinCompetition(client,msg){
+  if(client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status)){client.send("lobbyNotice",{message:"Only the host can enrol this lobby in a competition."});return;}
+  const code=String(msg?.code||"").trim().toUpperCase(),tournament=competitions.get(code);if(!tournament){client.send("lobbyNotice",{message:"That league/tournament code wasn't found."});return;}
+  if(tournament.status==="completed"){client.send("lobbyNotice",{message:"That competition has finished."});return;}
+  if(this.state.tournamentCode&&this.state.tournamentCode!==code){client.send("lobbyNotice",{message:"Leave the current competition before joining another."});return;}
+  this.state.tournamentCode=code;this.state.tournamentName=tournament.name;this.state.competitionFormat=tournament.format;this.registerCompetitionTeams(tournament);
+  this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,tournamentCode:code,tournamentName:tournament.name,competitionFormat:tournament.format,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
+  this.broadcastLobby();this.broadcast("competitionUpdated",tournamentSummary(tournament));this.broadcast("lobbyNotice",{message:"This lobby joined "+tournament.name+" · code "+code+"."});
+ }
+ registerCompetitionTeams(tournament){
+  for(const team of [1,2]){const id=this.roomId+":"+team,name=team===1?this.state.teamName1:this.state.teamName2;let entry=tournament.entries.get(id);if(!entry)entry={id,roomId:this.roomId,roomCode:this.roomCode,lobbyName:this.state.lobbyName,name,team,played:0,wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0,points:0,eliminated:false};entry.name=name||("Team "+team);entry.roomCode=this.roomCode;entry.lobbyName=this.state.lobbyName;tournament.entries.set(id,entry);}
+ }
+ recordCompetitionMatch(matchRecord){
+  const code=this.state.tournamentCode,tournament=competitions.get(code);if(!tournament)return;this.registerCompetitionTeams(tournament);
+  const a=tournament.entries.get(this.roomId+":1"),b=tournament.entries.get(this.roomId+":2");if(!a||!b)return;
+  const s1=matchRecord.score1||0,s2=matchRecord.score2||0;a.played++;b.played++;a.goalsFor+=s1;a.goalsAgainst+=s2;b.goalsFor+=s2;b.goalsAgainst+=s1;
+  if(s1>s2){a.wins++;b.losses++;a.points+=3;if(tournament.format==="cup")b.eliminated=true;}
+  else if(s2>s1){b.wins++;a.losses++;b.points+=3;if(tournament.format==="cup")a.eliminated=true;}
+  else{a.draws++;b.draws++;a.points++;b.points++;}
+  tournament.results.unshift({roomCode:this.roomCode,lobbyName:this.state.lobbyName,team1:a.name,team2:b.name,score1:s1,score2:s2,finishedAt:Date.now()});tournament.results=tournament.results.slice(0,50);
+  if(tournament.format==="cup"&&tournament.entries.size>=2&&Array.from(tournament.entries.values()).filter(entry=>!entry.eliminated).length<=1)tournament.status="completed";
+  this.broadcast("competitionUpdated",tournamentSummary(tournament));
  }
  recordGoal(team){const puck=this.state.puck,scorer=this.state.players.get(puck.lastTouchId),assister=this.state.players.get(puck.previousTouchId);if(scorer&&!scorer.spectator&&scorer.team===team)scorer.goals++;if(assister&&assister!==scorer&&!assister.spectator&&assister.team===team)assister.assists++;this.broadcast("matchStats",this.matchStatsSnapshot());}
  matchStatsSnapshot(){return {score1:this.state.puck.score1,score2:this.state.puck.score2,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).map(p=>({id:p.sessionId,name:p.name,team:p.team,spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,hits:p.hits,saves:p.saves}))};}
@@ -178,7 +210,8 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!state||state.status==="finished")return;
   this.cancelMatchmaking();state.status="finished";state.countdown=0;
   const result={score1:state.puck.score1,score2:state.puck.score2};
-  const matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,finishedAt:Date.now(),winner:result.score1===result.score2?0:result.score1>result.score2?1:2};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
+  const matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,tournamentCode:state.tournamentCode,tournamentName:state.tournamentName,finishedAt:Date.now(),winner:result.score1===result.score2?0:result.score1>result.score2?1:2};
+  this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);this.recordCompetitionMatch(matchRecord);
   this.broadcast("finished",{...result,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
   this.finishTimer=setTimeout(()=>{
