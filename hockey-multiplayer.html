@@ -252,7 +252,7 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0; 
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -345,6 +345,7 @@ function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!ra
 async function connect(kind,roomId=null,extra={}){
  let justCreated=null;
  try{
+  if(kind!=="reconnect"){reconnectAttempts=0;if(sessionStorage.getItem("hockeyReconnectToken"))sessionStorage.removeItem("hockeyReconnectToken");}
   const privatePassword=String(extra.privatePassword||"").trim(),lobbyName=String(extra.lobbyName||"").trim();
   if(kind==="create-private"&&(privatePassword.length<4||privatePassword.length>64))throw Error("Use a private lobby password between 4 and 64 characters.");
   if(kind==="create-public"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
@@ -354,10 +355,12 @@ async function connect(kind,roomId=null,extra={}){
   markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:true,code:room.state.code||""};say("Private lobby created: "+lobbyName+".");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:false,code:room.state.code||""};say("Public lobby created: "+lobbyName+".");}
-  else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has already started a match.");room=await c.joinById(data.roomId,{...o,privatePassword});say("Joined private lobby "+(data.lobbyName||code)+".");}
-  else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,o);say("Joined the selected public practice rink.");}
+  else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword,spectator:!!extra.spectator})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!extra.spectator&&!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has started. Choose Spectate to watch.");room=await c.joinById(data.roomId,{...o,privatePassword,spectator:!!extra.spectator});say(extra.spectator?"Now spectating "+(data.lobbyName||code)+".":"Joined private lobby "+(data.lobbyName||code)+".");}
+  else if(kind==="join-room"){if(!roomId)throw Error("Choose a room from the public room browser.");room=await c.joinById(roomId,{...o,spectator:!!extra.spectator});say(extra.spectator?"Joined as a spectator.":"Joined the selected public lobby.");}
+  else if(kind==="reconnect"){const token=String(extra.token||sessionStorage.getItem("hockeyReconnectToken")||"");if(!token)throw Error("Reconnect token expired.");room=await c.reconnect(token);say("Connection restored.");}
   else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
-  room.send("customize",{name:o.name,skin:o.skin,trail:0});
+  userRequestedLeave=false;reconnectAttempts=0;try{sessionStorage.setItem("hockeyReconnectToken",room.reconnectionToken);}catch{}
+  if(kind!=="reconnect")room.send("customize",{name:o.name,skin:o.skin,trail:0});
   room.onStateChange(state=>{
    latestState=state;targetPlayers={};if(state.code){$("code").value=state.code;if(pendingCreatedLobby){pendingCreatedLobby.code=state.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=state.code;$("copyCreatedCode").disabled=false;}}}
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);if(state.gameType!==undefined)$("gameType").value=state.gameType;
@@ -503,13 +506,14 @@ function renderLobbyPeople(){
 }
 function leaveCurrentLobby(){
  const oldRoom=room;if(!oldRoom){say("You are not in a lobby.");return;}
+ userRequestedLeave=true;try{sessionStorage.removeItem("hockeyReconnectToken");}catch{}
  room=null;markConnected(false);
  document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("lobbyCreated").classList.add("hidden");
  $("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");
  viewPlayers={};targetPlayers={};latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
  if(oldRoom){try{oldRoom.leave().catch(()=>{});}catch{}}
 }
-$("lobbyPlayersBtn").onclick=()=>{renderLobbyPeople();$("lobbyPeopleDialog").classList.remove("hidden");};
+$("lobbyPlayersBtn").onclick=()=>{if(latestState)populateHostSettings(latestState);renderLobbyPeople();$("lobbyPeopleDialog").classList.remove("hidden");};
 $("leaveLobby").onclick=leaveCurrentLobby;
 $("leaveLobbyFromPeople").onclick=leaveCurrentLobby;
 $("copyLobbyCode").onclick=async()=>{const code=latestState?.code||$("code").value.trim().toUpperCase();if(!code)return;try{await navigator.clipboard.writeText(code);say("Copied lobby code "+code+".");}catch{say("Lobby code: "+code+" (select it in the room-code field to copy).");}};
@@ -584,6 +588,7 @@ function draw(){
  // Puck trail and skater trails are retained between server snapshots for smooth animation.
  for(let i=1;i<puckHistory.length;i++){ctx.globalAlpha=(i/puckHistory.length)*.28;ctx.strokeStyle=theme.line;ctx.lineWidth=2+(i/puckHistory.length)*3;ctx.beginPath();ctx.moveTo(puckHistory[i-1].x,puckHistory[i-1].y);ctx.lineTo(puckHistory[i].x,puckHistory[i].y);ctx.stroke();}ctx.globalAlpha=1;
  for(const p of Object.values(viewPlayers)){
+  if(p.spectator)continue;
   const sk=normalizedSkin(p.skin),rr=19;
   ctx.save();ctx.translate(p.x,p.y);
   const g=ctx.createRadialGradient(-rr*.35,-rr*.4,1,0,0,rr*1.15);g.addColorStop(0,sk.accent);g.addColorStop(.52,sk.base);g.addColorStop(1,"#07101c");
@@ -623,7 +628,7 @@ function formatTime(seconds){const s=Math.max(0,Math.floor(seconds||0));return M
 function updateRender(){
  const now=performance.now(),dt=lastDraw?Math.min(.05,(now-lastDraw)/1000):.016;lastDraw=now;
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=180*dt;p.vx*=Math.pow(.16,dt);p.spin+=dt*4;if(p.life<=0)particles.splice(i,1);}
- for(const [id,t] of Object.entries(targetPlayers)){let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}p.x+=(t.x-p.x)*Math.min(1,dt*18);p.y+=(t.y-p.y)*Math.min(1,dt*18);p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;}
+ for(const [id,t] of Object.entries(targetPlayers)){let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}p.x+=(t.x-p.x)*Math.min(1,dt*18);p.y+=(t.y-p.y)*Math.min(1,dt*18);p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;}
  puck.x+=(targetPuck.x-puck.x)*Math.min(1,dt*22);puck.y+=(targetPuck.y-puck.y)*Math.min(1,dt*22);puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
  puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  draw();renderId=requestAnimationFrame(updateRender);
