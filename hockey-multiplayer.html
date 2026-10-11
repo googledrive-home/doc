@@ -440,19 +440,28 @@ async function loadRooms(kind=activeBrowserKind){
  try{
   const response=await fetch(base+endpoint,{cache:"no-store"});if(!response.ok)throw Error("Server returned "+response.status);
   const data=await response.json();list.replaceChildren();const rooms=Array.isArray(data.rooms)?data.rooms:[];
-  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
+  if(pendingInviteCode){
+   const invited=rooms.find(item=>String(item.code||"").toUpperCase()===pendingInviteCode);
+   if(invited){
+    pendingInviteCode="";$("lobbyBrowser").classList.add("hidden");
+    if(isPrivate){selectedPrivateRoom=invited;pendingLobbySpectator=false;openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Invite for "+(invited.lobbyName||"private lobby")+". Enter the host's password; it is never included in the link.";}
+    else{const live=["countdown","playing","goal","finished"].includes(invited.status),full=(invited.playerCount||0)>=(invited.capacity||2);$("mode").value=invited.mode||"1v1";$("map").value=invited.map||"Classic";connect("join-room",invited.roomId,{spectator:live||full});}
+    return;
+   }
+  }
+  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=pendingInviteCode?"Invite room not found yet. It may have closed or the server may be waking up — press Refresh to try again.":isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
   for(const item of rooms){
-   const card=document.createElement("div");card.className="room-card";
+   const card=document.createElement("div");card.className="room-card";card.dataset.mode=String(item.mode||"1v1");card.dataset.search=[item.lobbyName,item.code,item.mode,item.gameType,item.map,...(item.players||[]),...(item.roster||[]).map(p=>p.name)].join(" ").toLowerCase();
    const meta=document.createElement("span");meta.className="room-meta";
    const title=document.createElement("strong");title.textContent=(item.lobbyName||"Hockey Lobby")+" · "+String(item.mode||"1v1").toUpperCase();
    const rosterNames=(item.roster||[]).map(p=>(p.spectator?"👁 ":"")+p.name+(p.bot?" (AI)":p.ready?" ✓":""));
    const names=document.createElement("span");names.textContent="Players: "+(rosterNames.length?rosterNames.join(", "):(item.players?.length?item.players.join(", "):"Waiting for players"));
-   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.spectatorCount||0)+" watching · "+(item.map||"Classic")+" · "+(item.status||"waiting")+" · "+item.code;
+   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.spectatorCount||0)+" watching · "+(item.gameType||"classic")+" · "+(item.map||"Classic")+" · "+(item.readyCount||0)+" ready · "+(item.status||"waiting")+" · "+item.code;
    meta.append(title,names,sub);
    const actions=document.createElement("div");actions.className="room-actions";
    const join=document.createElement("button");join.type="button";join.className="join-label";const isLive=["countdown","playing","goal","finished"].includes(item.status),isFull=(item.playerCount||0)>=(item.capacity||2);
-   join.textContent=isPrivate?"PASSWORD →":isLive?"IN MATCH":isFull?"FULL":"JOIN →";
-   join.disabled=!isPrivate&&(isLive||isFull);
+   join.textContent=isPrivate?(isLive?"MATCH LIVE":isFull?"FULL · WATCH":"PASSWORD →"):isLive?"IN MATCH":isFull?"FULL · WATCH":"JOIN →";
+   join.disabled=isLive||isFull;
    const watch=document.createElement("button");watch.type="button";watch.className="secondary watch-label";watch.textContent=isPrivate?"WATCH · PASSWORD":"👁 WATCH";
    join.onclick=()=>{
     if(isLive||isFull){if(!isPrivate)say("That room is already in a match or full. Use WATCH to spectate.");return;}
