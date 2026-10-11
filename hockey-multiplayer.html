@@ -409,7 +409,7 @@ async function connect(kind,roomId=null,extra={}){
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
   markConnected(true);document.body.classList.add("in-lobby");$("arenaIntro").classList.add("hidden");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say(justCreated?(justCreated.private?"Private lobby created · code "+(justCreated.code||"syncing…")+". You're in.":"Public lobby created · code "+(justCreated.code||"syncing…")+". You're in."):"Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
   if(justCreated){pendingCreatedLobby=justCreated;showLobbyCreated(justCreated);}
- }catch(e){label("NOT CONNECTED");markConnected(false);document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),900*reconnectAttempts);}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
+ }catch(e){label("NOT CONNECTED");markConnected(false);document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){reconnectAttempts++;say("Reconnection attempt "+reconnectAttempts+" of 3…");setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),650*reconnectAttempts);}else if(kind==="reconnect"){try{sessionStorage.removeItem("hockeyReconnectToken");}catch{};say("Could not reconnect. The lobby may have closed; use the room code to join again.");}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
 }
 $("playMatch").onclick=()=>{if(!room||!["practice","waiting"].includes(latestState?.status))return;const me=targetPlayers[room.sessionId];if(me?.spectator)return;room.send("ready",{ready:!me?.ready});};
 $("teamChoice").onchange=()=>{if(room)room.send("setTeam",{team:Number($("teamChoice").value)});};
@@ -476,6 +476,7 @@ async function loadRooms(kind=activeBrowserKind){
    };
    actions.append(join,watch);card.append(meta,actions);list.appendChild(card);
   }
+  filterRoomCards();
  }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load lobbies: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
 }
 function openLobbyPrompt(action){
@@ -551,6 +552,7 @@ $("closeLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden")
 $("doneLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden");
 $("lobbyPeopleDialog").addEventListener("click",e=>{if(e.target===$("lobbyPeopleDialog"))$("lobbyPeopleDialog").classList.add("hidden");});
 $("refreshRooms").onclick=()=>loadRooms(activeBrowserKind);
+setInterval(()=>{if(!$("lobbyBrowser").classList.contains("hidden"))loadRooms(activeBrowserKind);},15000);
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
 $("lobbyPrompt").addEventListener("click",e=>{if(e.target===$("lobbyPrompt"))$("lobbyPrompt").classList.add("hidden");});
@@ -697,7 +699,8 @@ $("map").addEventListener("change",draw);$("skin").addEventListener("change",dra
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 const params=new URLSearchParams(location.search);
 if(params.has("kind"))document.body.dataset.fullscreen="true";
-if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyPrompt("create-private");
+if(params.get("invite")){pendingInviteCode=String(params.get("invite")||"").trim().toUpperCase();const inviteKind=params.get("kind")==="private"?"private":"public";$("lobbyBrowser").classList.remove("hidden");loadRooms(inviteKind);}
+else if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyPrompt("create-private");
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms("private");}
 else if(params.get("kind")==="public"&&params.get("action")==="create")openLobbyPrompt("create-public");
 else if(params.get("kind")==="public"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms();}
