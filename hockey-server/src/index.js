@@ -219,6 +219,8 @@ function addAI(room,team,index){
 class HockeyRoom extends (await import("@colyseus/core")).Room {
  onCreate(options){
   this.maxClients=12;this.autoDispose=true;this.setState(new MatchState());
+  // Send movement state at 60 Hz so remote players and puck need less visual guesswork between snapshots.
+  this.setPatchRate(1000/60);
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
   this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
@@ -253,7 +255,8 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    this.puckContacts.add(client.sessionId);p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=now;
    this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:720*power,player:p.name,shot:true});
   });
-  this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
+  // Run collisions at 60 Hz and bound delayed frames to avoid huge physics jumps after a brief server stall.
+  this.setSimulationInterval(dt=>this.tick(Math.min(dt,33.333)/1000),1000/60);
  }
  onJoin(client,options){
   const spectator=!!options?.spectator;
