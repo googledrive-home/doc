@@ -424,15 +424,29 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     }
    }
    const len=Math.hypot(p.inputX,p.inputY)||1,scale=len>1?1/len:1,ax=p.inputX*scale,ay=p.inputY*scale,isAI=p.sessionId.startsWith("ai-"),speed=isAI?state.aiSpeed*diffScale:state.playerSpeed*trainingScale,control=isAI?1:state.playerControl;
-   const friction=Math.pow(.13/control,dt);
    if(p.role==="goalie"&&!isAI){
-    p.x=p.team===1?50:850;p.vx=0;p.vy+=ay*720*speed*control*dt;p.vy*=friction;
-    const goalieMax=250,goalieSpeed=Math.hypot(0,p.vy);if(goalieSpeed>goalieMax)p.vy=Math.sign(p.vy)*goalieMax;
+    // Goalie Challenge is intentionally constrained to vertical crease movement.
+    const goalieFriction=Math.pow(.12/control,dt);
+    p.x=p.team===1?50:850;p.vx=0;p.vy+=ay*620*speed*control*dt;p.vy*=goalieFriction;
+    const goalieMax=250,goalieSpeed=Math.abs(p.vy);if(goalieSpeed>goalieMax)p.vy=Math.sign(p.vy)*goalieMax;
     p.y=Math.max(60,Math.min(540,p.y+p.vy*dt));continue;
    }
-   p.vx+=ax*720*speed*control*dt;p.vy+=ay*720*speed*control*dt;p.vx*=friction;p.vy*=friction;
-   const vmax=365*speed,sp=Math.hypot(p.vx,p.vy);if(sp>vmax){p.vx=p.vx/sp*vmax;p.vy=p.vy/sp*vmax;}
-   p.x=Math.max(40,Math.min(860,p.x+p.vx*dt));p.y=Math.max(50,Math.min(550,p.y+p.vy*dt));
+   if(isAI){
+    // AI steering has its own difficulty-tuned movement.
+    const friction=Math.pow(.13,dt);
+    p.vx+=ax*720*speed*dt;p.vy+=ay*720*speed*dt;p.vx*=friction;p.vy*=friction;
+    const vmax=365*speed,sp=Math.hypot(p.vx,p.vy);if(sp>vmax){p.vx=p.vx/sp*vmax;p.vy=p.vy/sp*vmax;}
+    p.x=Math.max(40,Math.min(860,p.x+p.vx*dt));p.y=Math.max(50,Math.min(550,p.y+p.vy*dt));
+   }else{
+    // Match the original single-player moveP physics: 620 acceleration, control-scaled
+    // .12 friction, a 390 * speed cap, and the original rink movement bounds.
+    const playerSpeed=state.playerSpeed*trainingScale;
+    const friction=Math.pow(.12/control,dt);
+    p.vx+=ax*620*playerSpeed*control*dt;p.vy+=ay*620*playerSpeed*control*dt;
+    p.vx*=friction;p.vy*=friction;
+    const vmax=390*playerSpeed,sp=Math.hypot(p.vx,p.vy);if(sp>vmax){p.vx=p.vx/sp*vmax;p.vy=p.vy/sp*vmax;}
+    p.x=Math.max(28,Math.min(872,p.x+p.vx*dt));p.y=Math.max(50,Math.min(550,p.y+p.vy*dt));
+   }
   }
   // Elastic player collisions with soft separation and limited impulse.
   for(let pass=0;pass<3;pass++)for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
