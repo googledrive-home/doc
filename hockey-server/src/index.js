@@ -244,7 +244,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    const p=this.state.players.get(client.sessionId);if(!p||p.spectator||!["practice","matchmaking","playing"].includes(this.state.status))return;
    const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=30;
    // Power hits are explicit and only register at true close contact. In shootouts only the active team may shoot.
-   if(p.role==="goalie"||d>=contactRadius||(this.state.gameType==="shootout"&&p.team!==this.state.shootoutTeam))return;
+   if(p.role==="goalie"||d>contactRadius||(this.state.gameType==="shootout"&&p.team!==this.state.shootoutTeam))return;
    const now=Date.now(),last=this.lastShootAt.get(client.sessionId)||0;if(now-last<180)return;this.lastShootAt.set(client.sessionId,now);
    let nx=0,ny=0;
    if(d>.001){nx=dx/d;ny=dy/d;}else{const n=Math.hypot(p.inputX,p.inputY);if(n>.001){nx=p.inputX/n;ny=p.inputY/n;}else{nx=p.team===1?1:-1;ny=0;}}
