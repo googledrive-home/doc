@@ -318,7 +318,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!this.state||client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status))return;
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));if(!humans.length)return;
   const notReady=humans.filter(p=>!p.ready);if(notReady.length){client.send("lobbyNotice",{message:"Everyone must ready up before the host can start the match."});return;}
-  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.matchStartedAt=Date.now();
+  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
   for(const [id,p] of Array.from(this.state.players.entries()))if(id.startsWith("ai-"))this.state.players.delete(id);
   if(this.state.gameType==="goalie"){
    for(const p of humans){p.role="goalie";p.team=2;p.x=850;p.y=300;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.ready=false;}
@@ -342,7 +342,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const a1=state.shootoutAttempts1,a2=state.shootoutAttempts2,g1=puck.score1,g2=puck.score2,remaining1=Math.max(0,5-a1),remaining2=Math.max(0,5-a2);
   const clinched=(a1<5||a2<5)&&(g1>g2+remaining2||g2>g1+remaining1);
   const pairedSuddenDeath=a1>=5&&a2>=5&&a1===a2;
-  if(clinched||(pairedSuddenDeath&&g1!==g2)){this.broadcast("goalReplay",{team:scoredTeam,frames:this.goalReplayFrames.slice(-60),score1:g1,score2:g2,shootout:true});this.finishMatch();return;}
+  if(clinched||(pairedSuddenDeath&&g1!==g2)){this.finishMatch();return;}
   state.shootoutTeam=attemptingTeam===1?2:1;state.status="goal";state.countdown=0;this.goalPause=1.65;this.resetPuck();this.resetPlayers();
   this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:puck.score1,score2:puck.score2,attempts1:a1,attempts2:a2,nextAttempt:Math.max(a1,a2)+1,suddenDeath:a1>=5&&a2>=5});
  }
@@ -494,10 +494,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
-  else if(!practice&&state.gameType==="shootout"&&(crossedLeft||crossedRight)){this.broadcast("goalReplay",{team:crossedLeft?2:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.completeShootoutAttempt(crossedLeft?2:1);}
+  else if(!practice&&state.gameType==="shootout"&&(crossedLeft||crossedRight)){this.broadcast("goalReplay",{team:crossedLeft?2:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.completeShootoutAttempt(crossedLeft?2:1);}
   else if(!practice&&state.gameType==="goalie"&&crossedLeft){this.resetPuck();this.broadcast("goalieClear",{message:"The puck cleared the goalie zone. Keep defending!"});}
-  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goalReplay",{team:2,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score2>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
-  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goalReplay",{team:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score1>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goalReplay",{team:2,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score2>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goalReplay",{team:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score1>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
  }
  beginMatchmaking(){
   if(!this.state||!["practice","waiting"].includes(this.state.status)||this.matchmakingStarted)return;
