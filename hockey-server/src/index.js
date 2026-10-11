@@ -425,9 +425,8 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    }
    const len=Math.hypot(p.inputX,p.inputY)||1,scale=len>1?1/len:1,ax=p.inputX*scale,ay=p.inputY*scale,isAI=p.sessionId.startsWith("ai-"),speed=isAI?state.aiSpeed*diffScale:state.playerSpeed*trainingScale,control=isAI?1:state.playerControl;
    if(p.role==="goalie"&&!isAI){
-    // Goalie Challenge is intentionally constrained to vertical crease movement.
-    const goalieFriction=Math.pow(.12/control,dt);
-    p.x=p.team===1?50:850;p.vx=0;p.vy+=ay*620*speed*control*dt;p.vy*=goalieFriction;
+    // Keep the dedicated Goalie Challenge movement unchanged.
+    p.x=p.team===1?50:850;p.vx=0;p.vy+=ay*720*speed*control*dt;p.vy*=Math.pow(.13/control,dt);
     const goalieMax=250,goalieSpeed=Math.abs(p.vy);if(goalieSpeed>goalieMax)p.vy=Math.sign(p.vy)*goalieMax;
     p.y=Math.max(60,Math.min(540,p.y+p.vy*dt));continue;
    }
