@@ -30,6 +30,93 @@ const TOTAL_SLOTS={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":4 };
 const playerCapacity=state=>state?.gameType==="goalie"?1:(CAPACITY[state?.mode]||2);
 const codes=new Map();
 const activeRooms=new Map();
+const competitions=new Map();
+function competitionStandings(comp){
+ const table=new Map(comp.teams.map(t=>[t.id,{id:t.id,name:t.name,captain:t.captain,played:0,wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0,goalDifference:0,points:0}]));
+ if(comp.format==="league")for(const match of comp.matches){if(match.status!=="complete"||match.homeScore===null||match.awayScore===null)continue;
+  const home=table.get(match.homeId),away=table.get(match.awayId);if(!home||!away)continue;
+  home.played++;away.played++;home.goalsFor+=match.homeScore;home.goalsAgainst+=match.awayScore;away.goalsFor+=match.awayScore;away.goalsAgainst+=match.homeScore;
+  if(match.homeScore>match.awayScore){home.wins++;away.losses++;home.points+=3;}else if(match.homeScore<match.awayScore){away.wins++;home.losses++;away.points+=3;}else{home.draws++;away.draws++;home.points++;away.points++;}
+ }
+ const rows=[...table.values()];for(const team of rows)team.goalDifference=team.goalsFor-team.goalsAgainst;
+ return rows.sort((a,b)=>b.points-a.points||b.goalDifference-a.goalDifference||b.goalsFor-a.goalsFor||a.name.localeCompare(b.name));
+}
+function publicCompetition(comp){
+ const rounds=comp.rounds.map((ids,index)=>({round:index+1,matches:ids.map(id=>comp.matches.find(match=>match.id===id)).filter(Boolean).map(match=>({...match}))}));
+ return {id:comp.id,name:comp.name,format:comp.format,maxTeams:comp.maxTeams,status:comp.status,createdAt:comp.createdAt,startedAt:comp.startedAt||null,completedAt:comp.completedAt||null,champion:comp.champion||null,teams:comp.teams.map(team=>({id:team.id,name:team.name,captain:team.captain,registeredAt:team.registeredAt})),rounds,standings:comp.format==="league"?competitionStandings(comp):[],currentRound:comp.rounds.findIndex(ids=>ids.some(id=>comp.matches.find(match=>match.id===id)?.status==="scheduled"))+1};
+}
+function organizerAuthorized(comp,key){const left=Buffer.from(String(key||"")),right=Buffer.from(comp?.organizerKey||"");return !!comp&&left.length>0&&left.length===right.length&&timingSafeEqual(left,right);}
+function createMatch(comp,round,home,away){
+ const match={id:"m-"+randomBytes(5).toString("hex"),round,homeId:home.id,awayId:away.id,homeName:home.name,awayName:away.name,homeScore:null,awayScore:null,status:"scheduled",roomCode:"",winnerId:null,completedAt:null};
+ comp.matches.push(match);return match.id;
+}
+function startCompetition(comp){
+ comp.status="in-progress";comp.startedAt=Date.now();
+ if(comp.format==="tournament"){
+  const ids=[];for(let i=0;i<comp.teams.length;i+=2)ids.push(createMatch(comp,1,comp.teams[i],comp.teams[i+1]));
+  comp.rounds=[ids];return;
+ }
+ const rotating=[...comp.teams],roundCount=rotating.length-1,half=rotating.length/2,rounds=[];
+ for(let r=0;r<roundCount;r++){
+  const ids=[];
+  for(let i=0;i<half;i++){const home=rotating[i],away=rotating[rotating.length-1-i];ids.push(createMatch(comp,r+1,home,away));}
+  rounds.push(ids);rotating.splice(1,0,rotating.pop());
+ }
+ comp.rounds=rounds;
+}
+function progressCompetition(comp){
+ if(comp.format==="league"){
+  if(comp.rounds.every(round=>round.every(id=>comp.matches.find(m=>m.id===id)?.status==="complete"))){comp.status="completed";comp.completedAt=Date.now();const standings=competitionStandings(comp);comp.champion=standings.length?standings[0].name:null;}
+  return;
+ }
+ const current=comp.rounds[comp.rounds.length-1]||[];
+ if(!current.length||current.some(id=>comp.matches.find(m=>m.id===id)?.status!=="complete"))return;
+ const winners=current.map(id=>{const match=comp.matches.find(m=>m.id===id);return comp.teams.find(t=>t.id===match.winnerId);}).filter(Boolean);
+ if(winners.length===1){comp.status="completed";comp.completedAt=Date.now();comp.champion=winners[0].name;return;}
+ const nextRound=comp.rounds.length+1,ids=[];for(let i=0;i<winners.length;i+=2)ids.push(createMatch(comp,nextRound,winners[i],winners[i+1]));comp.rounds.push(ids);
+}
+app.get("/competitions",(_req,res)=>{res.setHeader("Cache-Control","no-store");res.json({competitions:[...competitions.values()].sort((a,b)=>b.createdAt-a.createdAt).map(publicCompetition)});});
+app.get("/competitions/:id",(req,res)=>{const comp=competitions.get(String(req.params.id||""));if(!comp)return res.status(404).json({error:"Competition not found."});res.setHeader("Cache-Control","no-store");res.json({competition:publicCompetition(comp)});});
+app.post("/competitions",(req,res)=>{
+ const name=String(req.body?.name||"").trim().replace(/\s+/g," "),format=req.body?.format==="league"?"league":"tournament",maxTeams=Number(req.body?.maxTeams)===8?8:4;
+ if(name.length<3||name.length>40)return res.status(400).json({error:"Competition name must be 3–40 characters."});
+ if(competitions.size>=100)return res.status(429).json({error:"Competition list is full for this server session."});
+ const id="comp-"+randomBytes(5).toString("hex"),organizerKey=randomBytes(24).toString("hex");
+ const comp={id,name,format,maxTeams,status:"registration",createdAt:Date.now(),startedAt:null,completedAt:null,champion:null,organizerKey,teams:[],matches:[],rounds:[]};
+ competitions.set(id,comp);res.status(201).json({competition:publicCompetition(comp),organizerKey});
+});
+app.post("/competitions/:id/register",(req,res)=>{
+ const comp=competitions.get(String(req.params.id||""));if(!comp)return res.status(404).json({error:"Competition not found."});
+ if(comp.status!=="registration")return res.status(409).json({error:"Registration is closed."});
+ if(comp.teams.length>=comp.maxTeams)return res.status(409).json({error:"All team slots are taken."});
+ const name=String(req.body?.teamName||"").trim().replace(/\s+/g," "),captain=String(req.body?.captain||"").trim().replace(/\s+/g," ");
+ if(name.length<2||name.length>32||captain.length<2||captain.length>24)return res.status(400).json({error:"Team names must be 2–32 characters and captains 2–24."});
+ if(comp.teams.some(team=>team.name.toLowerCase()===name.toLowerCase()))return res.status(409).json({error:"That team name is already registered."});
+ comp.teams.push({id:"team-"+randomBytes(5).toString("hex"),name,captain,registeredAt:Date.now()});
+ res.status(201).json({competition:publicCompetition(comp)});
+});
+app.post("/competitions/:id/start",(req,res)=>{
+ const comp=competitions.get(String(req.params.id||""));if(!comp)return res.status(404).json({error:"Competition not found."});
+ if(!organizerAuthorized(comp,req.body?.organizerKey))return res.status(403).json({error:"Only the organizer can start this competition."});
+ if(comp.status!=="registration")return res.status(409).json({error:"This competition has already started."});
+ if(comp.teams.length!==comp.maxTeams)return res.status(409).json({error:"Register all "+comp.maxTeams+" teams before starting."});
+ startCompetition(comp);res.json({competition:publicCompetition(comp)});
+});
+app.post("/competitions/:id/matches/:matchId/result",(req,res)=>{
+ const comp=competitions.get(String(req.params.id||""));if(!comp)return res.status(404).json({error:"Competition not found."});
+ if(!organizerAuthorized(comp,req.body?.organizerKey))return res.status(403).json({error:"Only the organizer can record results."});
+ if(comp.status!=="in-progress")return res.status(409).json({error:"This competition is not accepting results."});
+ const match=comp.matches.find(item=>item.id===String(req.params.matchId||""));if(!match)return res.status(404).json({error:"Match not found."});
+ const current=comp.rounds.find(ids=>ids.some(id=>comp.matches.find(item=>item.id===id)?.status==="scheduled"))||[];
+ if(!current.includes(match.id)||match.status!=="scheduled")return res.status(409).json({error:"That match is not in the current open round."});
+ const homeScore=Number(req.body?.homeScore),awayScore=Number(req.body?.awayScore),roomCode=String(req.body?.roomCode||"").trim().toUpperCase();
+ if(!Number.isInteger(homeScore)||!Number.isInteger(awayScore)||homeScore<0||awayScore<0||homeScore>99||awayScore>99)return res.status(400).json({error:"Enter whole-number scores from 0 to 99."});
+ if(comp.format==="tournament"&&homeScore===awayScore)return res.status(400).json({error:"Knockout games need a winner. Enter the score after overtime or a shootout."});
+ match.homeScore=homeScore;match.awayScore=awayScore;match.roomCode=roomCode.slice(0,12);match.completedAt=Date.now();match.status="complete";
+ match.winnerId=homeScore===awayScore?null:homeScore>awayScore?match.homeId:match.awayId;
+ progressCompetition(comp);res.json({competition:publicCompetition(comp)});
+});
+
 app.get("/rooms",(_req,res)=>{const rooms=[];for(const room of activeRooms.values()){const st=room.state;if(st.private||!["practice","matchmaking","waiting","countdown","playing","goal","finished"].includes(st.status))continue;const people=Array.from(st.players.values()).map(p=>({name:p.name,team:p.team,skin:p.skin,bot:p.sessionId.startsWith("ai-"),spectator:!!p.spectator,ready:!!p.ready}));const humans=people.filter(p=>!p.bot&&!p.spectator),spectators=people.filter(p=>p.spectator&&!p.bot),capacity=playerCapacity(st),readyCount=humans.filter(p=>p.ready).length;rooms.push({roomId:room.roomId,code:room.roomCode,lobbyName:st.lobbyName||"Public Lobby",mode:st.mode,gameType:st.gameType||"classic",map:st.map,status:st.status,playerCount:humans.length,spectatorCount:spectators.length,readyCount,allReady:humans.length>0&&readyCount===humans.length,capacity,players:humans.map(p=>p.name),roster:people.map(p=>({name:p.name,team:p.team,bot:p.bot,spectator:p.spectator,ready:p.ready}))});}res.setHeader("Cache-Control","no-store");res.json({rooms});});
 app.get("/private-rooms",(_req,res)=>{const rooms=[];for(const room of activeRooms.values()){const st=room.state;if(!st.private||!["practice","matchmaking","waiting","countdown","playing","goal","finished"].includes(st.status))continue;const people=Array.from(st.players.values()).map(p=>({name:p.name,team:p.team,bot:p.sessionId.startsWith("ai-"),spectator:!!p.spectator,ready:!!p.ready}));const humans=people.filter(p=>!p.bot&&!p.spectator),spectators=people.filter(p=>p.spectator&&!p.bot),capacity=playerCapacity(st),readyCount=humans.filter(p=>p.ready).length;rooms.push({roomId:room.roomId,code:room.roomCode,lobbyName:st.lobbyName||"Private Lobby",mode:st.mode,gameType:st.gameType||"classic",map:st.map,status:st.status,playerCount:humans.length,spectatorCount:spectators.length,readyCount,allReady:humans.length>0&&readyCount===humans.length,capacity,players:humans.map(p=>p.name),roster:people});}res.setHeader("Cache-Control","no-store");res.json({rooms});});
 app.get("/room/:roomId/history",(req,res)=>{const room=activeRooms.get(String(req.params.roomId||""));if(!room)return res.status(404).json({error:"Room not found or expired."});res.setHeader("Cache-Control","no-store");res.json({matches:(room.matchHistory||[]).slice(0,10)});});
@@ -39,6 +126,92 @@ app.get("/room/:code",(req,res)=>{const code=String(req.params.code||"").toUpper
 app.post("/room/:code/join",(req,res)=>{const code=String(req.params.code||"").toUpperCase(),room=findRoomByCode(code);res.setHeader("Cache-Control","no-store");if(!room)return res.status(404).json({error:"Room code not found or lobby has closed."});if(!room.state.private)return res.status(400).json({error:"That code belongs to a public lobby."});if(!room.matchesPrivatePassword(req.body?.password))return res.status(401).json({error:"Incorrect private lobby password."});if(!["practice","matchmaking","waiting"].includes(room.state.status)&&!req.body?.spectator)return res.status(409).json({error:"That match has started. Choose Spectate to watch it."});const humans=Array.from(room.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")&&!p.spectator).length,spectators=Array.from(room.state.players.values()).filter(p=>p.spectator).length;if(req.body?.spectator?spectators>=8:humans>=playerCapacity(room.state))return res.status(409).json({error:req.body?.spectator?"That match has no spectator slots left.":"That lobby is full."});res.json(roomSummary(room));});
 const cleanName=v=>String(v??"Player").replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,18)||"Player";
 const cleanRoomName=v=>String(v??"Hockey Lobby").replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,32)||"Hockey Lobby";
+const tournaments=new Map();
+const tournamentSummary=t=>({id:t.id,name:t.name,kind:t.kind,status:t.status,createdAt:t.createdAt,maxEntrants:t.maxEntrants,entrantCount:t.entrants.length,entrants:t.entrants.map(({id,name,played,wins,draws,losses,points,goalsFor,goalsAgainst})=>({id,name,played,wins,draws,losses,points,goalsFor,goalsAgainst})),matches:t.matches.map(m=>({...m})),champion:t.champion||null});
+function tournamentById(id){return tournaments.get(String(id||"").toUpperCase());}
+function addTournamentMatch(t,round,slot,a,b){
+ const match={id:randomBytes(4).toString("hex").toUpperCase(),round,slot,entrant1Id:a?.id||null,entrant2Id:b?.id||null,status:"scheduled",score1:null,score2:null,winnerId:null,bye:!a||!b};
+ if(match.bye){match.status="complete";match.winnerId=(a||b)?.id||null;match.score1=a?0:null;match.score2=b?0:null;}
+ t.matches.push(match);return match;
+}
+function advanceCup(t){
+ while(t.kind==="cup"&&t.status==="live"){
+  const round=Math.max(0,...t.matches.map(m=>m.round)),fixtures=t.matches.filter(m=>m.round===round);
+  if(!fixtures.length||!fixtures.every(m=>m.status==="complete"))return;
+  const winners=fixtures.map(m=>t.entrants.find(e=>e.id===m.winnerId)).filter(Boolean);
+  if(winners.length<=1){t.champion=winners[0]?.id||null;t.status="complete";return;}
+  const nextRound=round+1;
+  for(let i=0;i<winners.length;i+=2)addTournamentMatch(t,nextRound,Math.floor(i/2)+1,winners[i],winners[i+1]||null);
+ }
+}
+function startTournament(t){
+ if(t.status!=="registration"||t.entrants.length<2)return false;
+ t.status="live";
+ if(t.kind==="cup"){
+  for(let i=0;i<t.entrants.length;i+=2)addTournamentMatch(t,1,Math.floor(i/2)+1,t.entrants[i],t.entrants[i+1]||null);
+  advanceCup(t);
+ }else{
+  const list=[...t.entrants];if(list.length%2)list.push(null);
+  let rotating=[...list],slot=1;
+  for(let round=1;round<list.length;round++){
+   for(let i=0;i<list.length/2;i++){
+    const a=rotating[i],b=rotating[list.length-1-i];
+    if(a&&b)addTournamentMatch(t,round,slot++,a,b);
+   }
+   rotating=[rotating[0],rotating[rotating.length-1],...rotating.slice(1,-1)];
+  }
+ }
+ return true;
+}
+function applyTournamentResult(t,m,score1,score2){
+ const a=t.entrants.find(e=>e.id===m.entrant1Id),b=t.entrants.find(e=>e.id===m.entrant2Id);
+ m.score1=score1;m.score2=score2;m.status="complete";m.completedAt=Date.now();
+ if(!a||!b)return;
+ a.played++;b.played++;a.goalsFor+=score1;a.goalsAgainst+=score2;b.goalsFor+=score2;b.goalsAgainst+=score1;
+ if(score1>score2){m.winnerId=a.id;a.wins++;a.points+=t.kind==="league"?3:0;b.losses++;}
+ else if(score2>score1){m.winnerId=b.id;b.wins++;b.points+=t.kind==="league"?3:0;a.losses++;}
+ else{m.winnerId=null;if(t.kind==="league"){a.draws++;b.draws++;a.points++;b.points++;} }
+ if(t.kind==="cup")advanceCup(t);
+ if(t.kind==="league"&&t.matches.every(f=>f.status==="complete"))t.status="complete";
+}
+app.get("/tournaments",(_req,res)=>{res.setHeader("Cache-Control","no-store");res.json({tournaments:[...tournaments.values()].filter(t=>t.status!=="complete"||Date.now()-t.completedAt<86400000).map(tournamentSummary)});});
+app.post("/tournaments",(req,res)=>{
+ const name=cleanRoomName(req.body?.name),kind=req.body?.kind==="league"?"league":"cup",hostName=cleanName(req.body?.teamName||"Host"),maxEntrants=Math.max(2,Math.min(32,Math.trunc(Number(req.body?.maxEntrants)||16)));
+ if(tournaments.size>=100)return res.status(429).json({error:"Tournament capacity reached. Try again later."});
+ const t={id:randomBytes(4).toString("hex").toUpperCase(),name,kind,status:"registration",hostKey:randomBytes(24).toString("hex"),createdAt:Date.now(),maxEntrants,entrants:[],matches:[],champion:null,completedAt:null};
+ t.entrants.push({id:randomBytes(4).toString("hex").toUpperCase(),name:hostName,played:0,wins:0,draws:0,losses:0,points:0,goalsFor:0,goalsAgainst:0});
+ tournaments.set(t.id,t);res.status(201).json({tournament:tournamentSummary(t),hostKey:t.hostKey});
+});
+app.get("/tournaments/:id",(req,res)=>{const t=tournamentById(req.params.id);if(!t)return res.status(404).json({error:"Tournament not found."});res.setHeader("Cache-Control","no-store");res.json({tournament:tournamentSummary(t)});});
+app.post("/tournaments/:id/join",(req,res)=>{
+ const t=tournamentById(req.params.id);if(!t)return res.status(404).json({error:"Tournament not found."});
+ if(t.status!=="registration")return res.status(409).json({error:"Registration has closed."});
+ const name=cleanName(req.body?.teamName||"Player");
+ const existing=t.entrants.find(e=>e.name.toLowerCase()===name.toLowerCase());
+ if(existing)return res.json({tournament:tournamentSummary(t),entrantId:existing.id,alreadyJoined:true});
+ if(t.entrants.length>=t.maxEntrants)return res.status(409).json({error:"This tournament is full."});
+ const entrant={id:randomBytes(4).toString("hex").toUpperCase(),name,played:0,wins:0,draws:0,losses:0,points:0,goalsFor:0,goalsAgainst:0};t.entrants.push(entrant);
+ res.status(201).json({tournament:tournamentSummary(t),entrantId:entrant.id});
+});
+app.post("/tournaments/:id/start",(req,res)=>{
+ const t=tournamentById(req.params.id);if(!t)return res.status(404).json({error:"Tournament not found."});
+ if(String(req.body?.hostKey||"")!==t.hostKey)return res.status(403).json({error:"Only the tournament host can start it."});
+ if(t.status!=="registration")return res.status(409).json({error:"This tournament has already started."});
+ if(t.entrants.length<2)return res.status(400).json({error:"At least two entrants are needed."});
+ startTournament(t);res.json({tournament:tournamentSummary(t)});
+});
+app.post("/tournaments/:id/result",(req,res)=>{
+ const t=tournamentById(req.params.id);if(!t)return res.status(404).json({error:"Tournament not found."});
+ if(String(req.body?.hostKey||"")!==t.hostKey)return res.status(403).json({error:"Only the tournament host can submit results."});
+ if(t.status!=="live")return res.status(409).json({error:"This tournament is not live."});
+ const m=t.matches.find(item=>item.id===String(req.body?.matchId||"").toUpperCase());
+ if(!m||m.status!=="scheduled"||m.bye)return res.status(404).json({error:"Open match fixture not found."});
+ const score1=Number(req.body?.score1),score2=Number(req.body?.score2);
+ if(!Number.isInteger(score1)||!Number.isInteger(score2)||score1<0||score2<0||score1>99||score2>99)return res.status(400).json({error:"Scores must be whole numbers from 0 to 99."});
+ if(t.kind==="cup"&&score1===score2)return res.status(400).json({error:"Cup matches cannot be tied. Record the overtime or shootout winner."});
+ applyTournamentResult(t,m,score1,score2);if(t.status==="complete")t.completedAt=Date.now();
+ res.json({tournament:tournamentSummary(t)});
+});
 function makeCode(){let code;do{code=randomBytes(3).toString("hex").toUpperCase()}while(codes.has(code));return code}
 function addAI(room,team,index){
  const p=new Player();p.sessionId="ai-"+team+"-"+index;p.name="CPU "+index;p.team=team;p.x=team===1?130:770;p.y=180+index*65;p.skin=(team===1?index+3:index+5)%14;p.trail=(index+team)%8;room.state.players.set(p.sessionId,p);
@@ -50,7 +223,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
-  this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
+  this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
   if(mode==="2v2-ai"){addAI(this,1,1);addAI(this,2,1);addAI(this,2,2);}
 
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||p.spectator||this.state.status==="finished")return;
@@ -145,7 +318,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(!this.state||client.sessionId!==this.state.hostId||!["practice","waiting"].includes(this.state.status))return;
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));if(!humans.length)return;
   const notReady=humans.filter(p=>!p.ready);if(notReady.length){client.send("lobbyNotice",{message:"Everyone must ready up before the host can start the match."});return;}
-  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.matchStartedAt=Date.now();
+  this.cancelMatchmaking();this.resetMatchStats();this.state.puck.score1=0;this.state.puck.score2=0;this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.matchStartedAt=Date.now();
   for(const [id,p] of Array.from(this.state.players.entries()))if(id.startsWith("ai-"))this.state.players.delete(id);
   if(this.state.gameType==="goalie"){
    for(const p of humans){p.role="goalie";p.team=2;p.x=850;p.y=300;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.ready=false;}
@@ -173,6 +346,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   state.shootoutTeam=attemptingTeam===1?2:1;state.status="goal";state.countdown=0;this.goalPause=1.65;this.resetPuck();this.resetPlayers();
   this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:puck.score1,score2:puck.score2,attempts1:a1,attempts2:a2,nextAttempt:Math.max(a1,a2)+1,suddenDeath:a1>=5&&a2>=5});
  }
+ captureGoalReplayFrame(){const now=Date.now();if(now-this.lastGoalReplayAt<100)return;this.lastGoalReplayAt=now;const state=this.state;this.goalReplayFrames.push({t:now,puck:{x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2},players:Array.from(state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,spectator:p.spectator,role:p.role||"skater",bot:p.sessionId.startsWith("ai-"),goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves}))});if(this.goalReplayFrames.length>70)this.goalReplayFrames.splice(0,this.goalReplayFrames.length-70);}
  recordShotOnGoal(team){const shooter=this.state.players.get(this.state.puck.lastTouchId);if(shooter&&!shooter.spectator&&shooter.team===team)shooter.shotsOnGoal++;}
  recordGoal(team){const puck=this.state.puck,scorer=this.state.players.get(puck.lastTouchId),assister=this.state.players.get(puck.previousTouchId);if(scorer&&!scorer.spectator&&scorer.team===team){scorer.goals++;scorer.shotsOnGoal++;}if(assister&&assister!==scorer&&!assister.spectator&&assister.team===team)assister.assists++;this.broadcast("matchStats",this.matchStatsSnapshot());}
  matchStatsSnapshot(){const players=Array.from(this.state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,role:p.role,bot:p.sessionId.startsWith("ai-"),spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves,shootingPct:p.shots?Math.round(p.goals/p.shots*100):0}));const team=(n)=>({goals:n===1?this.state.puck.score1:this.state.puck.score2,shots:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shots,0),shotsOnGoal:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shotsOnGoal,0),saves:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.saves,0)});return {score1:this.state.puck.score1,score2:this.state.puck.score2,gameType:this.state.gameType,mode:this.state.mode,map:this.state.map,teamName1:this.state.teamName1,teamName2:this.state.teamName2,team1:team(1),team2:team(2),players};}
@@ -235,6 +409,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const state=this.state,puck=state.puck;
   const rinkW=900,rinkH=600,playerR=19,puckR=10,diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,trainingScale=state.training==="warmup"?.82:state.training==="speed"?1.18:state.training==="conditioning"?1.05:1;
   const ps=Array.from(state.players.values()).filter(p=>!p.spectator);
+  if(!practice&&state.status==="playing")this.captureGoalReplayFrame();
   for(const p of ps){
    if(p.sessionId.startsWith("ai-")){
     if(state.gameType==="shootout"&&p.team!==state.shootoutTeam){p.inputX=0;p.inputY=0;continue;}
@@ -319,10 +494,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
-  else if(!practice&&state.gameType==="shootout"&&(crossedLeft||crossedRight)){this.completeShootoutAttempt(crossedLeft?2:1);}
+  else if(!practice&&state.gameType==="shootout"&&(crossedLeft||crossedRight)){this.broadcast("goalReplay",{team:crossedLeft?2:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.completeShootoutAttempt(crossedLeft?2:1);}
   else if(!practice&&state.gameType==="goalie"&&crossedLeft){this.resetPuck();this.broadcast("goalieClear",{message:"The puck cleared the goalie zone. Keep defending!"});}
-  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score2>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
-  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score1>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedLeft){puck.score2++;this.recordGoal(2);this.broadcast("goalReplay",{team:2,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:2,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score2>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
+  else if(!practice&&crossedRight){puck.score1++;this.recordGoal(1);this.broadcast("goalReplay",{team:1,frames:this.goalReplayFrames.slice(-60),score1:puck.score1,score2:puck.score2});this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.broadcast("goal",{team:1,score1:puck.score1,score2:puck.score2});this.resetPuck();this.resetPlayers();if(state.competition&&puck.score1>=5){this.finishMatch();}else{state.status="goal";state.countdown=2;this.goalPause=2;}}
  }
  beginMatchmaking(){
   if(!this.state||!["practice","waiting"].includes(this.state.status)||this.matchmakingStarted)return;
