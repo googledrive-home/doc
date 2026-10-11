@@ -387,7 +387,13 @@ async function connect(kind,roomId=null,extra={}){
    else if(state.status==="matchmaking"){label("MATCHMAKING");say("Practice continues while we wait · AI fills empty slots in "+Math.max(0,state.countdown)+"s");}
    else if(state.status==="countdown"){label("FACE-OFF");say("Face-off countdown…");}
    else if(state.status==="goal"){label("GOAL!");say("Goal scored — players resetting for face-off.");}
-   else if(state.status==="playing"){label("LIVE MATCH");say(state.teamName1+" vs "+state.teamName2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");}
+   else if(state.status==="playing"){
+    label(state.gameType==="shootout"?"SHOOTOUT":state.gameType==="goalie"?"GOALIE CHALLENGE":state.gameType==="time-attack"?"TIME ATTACK":"LIVE MATCH");
+    if(state.gameType==="shootout")say("SHOOTOUT · "+(state.shootoutTeam===1?state.teamName1:state.teamName2)+" shooting · "+state.puck.score1+" — "+state.puck.score2+" · "+(state.shootoutAttempts1||0)+"/5 – "+(state.shootoutAttempts2||0)+"/5 attempts"+(state.shootoutAttempts1>=5&&state.shootoutAttempts2>=5?" · SUDDEN DEATH":"")+" · "+Math.max(0,state.countdown||0)+"s");
+    else if(state.gameType==="goalie"){const me=targetPlayers[room.sessionId];say("GOALIE CHALLENGE · "+(me?.saves||0)+" saves · "+state.puck.score1+" goals allowed · "+Math.max(0,Math.ceil(state.matchTime))+"s left");}
+    else if(state.gameType==="time-attack")say("TIME ATTACK · "+state.puck.score1+" — "+state.puck.score2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");
+    else say(state.teamName1+" vs "+state.teamName2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");
+   }
    else if(state.status==="finished"){label("FINAL");say("Full time · "+state.puck.score1+" — "+state.puck.score2);overlay=state.puck.score1===state.puck.score2?"DRAW":(state.puck.score1>state.puck.score2?state.teamName1:state.teamName2)+" WINS";overlayKind="finish";overlayUntil=performance.now()+5000;}
    draw();
   });
@@ -670,7 +676,8 @@ function draw(){
  const t1=latestState?.teamName1||"Team 1",t2=latestState?.teamName2||"Team 2",score1=latestState?.puck?.score1??puck.score1,score2=latestState?.puck?.score2??puck.score2;
  ctx.fillStyle="#071725d9";ctx.fillRect(20,35,215,31);ctx.fillStyle="#eaf8ff";ctx.font="800 12px system-ui";ctx.textAlign="left";ctx.fillText(t1+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===1).length+" skaters",30,55);
  ctx.fillStyle="#071725d9";ctx.fillRect(665,35,215,31);ctx.fillStyle="#eaf8ff";ctx.textAlign="right";ctx.fillText(t2+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===2).length+" skaters",870,55);
- ctx.fillStyle="#03101de8";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff2a";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);ctx.fillText((map.toUpperCase())+" RINK  ·  "+formatTime(secs)+" LEFT  ·  "+((latestState?.training||$("training").value)==="none"?"EXHIBITION":(latestState?.training||$("training").value).toUpperCase())+((latestState?.competition??($("competition").value==="true"))?" · FIRST TO 5":""),450,66);
+ ctx.fillStyle="#03101de8";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff2a";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);const gameType=latestState?.gameType||$("gameType").value,shootClock=gameType==="shootout"?Math.max(0,Number(latestState?.countdown)||0):secs,modeLabel=gameType==="shootout"?"SHOOTOUT · "+(latestState?.shootoutAttempts1||0)+"/5 – "+(latestState?.shootoutAttempts2||0)+"/5":gameType==="goalie"?"GOALIE CHALLENGE · "+(Object.values(viewPlayers).find(p=>p.role==="goalie")?.saves||0)+" SAVES · "+(latestState?.puck?.score1||0)+" GOALS ALLOWED":gameType==="time-attack"?"TIME ATTACK · "+(latestState?.puck?.score1||0)+" GOALS · "+formatTime(secs)+" LEFT":((latestState?.training||$("training").value)==="none"?"EXHIBITION":(latestState?.training||$("training").value).toUpperCase())+((latestState?.competition??($("competition").value==="true"))?" · FIRST TO 5":"");
+  ctx.fillText((map.toUpperCase())+" RINK  ·  "+(gameType==="shootout"?"SHOT CLOCK "+formatTime(shootClock):formatTime(secs)+" LEFT")+"  ·  "+modeLabel,450,66);
  if(overlay&&now>=overlayUntil){overlay="";overlayKind="";}
  if(overlay&&overlayKind==="start"&&now<overlayUntil){
   const remaining=(overlayUntil-now)/1000,n=remaining>.45?Math.min(3,Math.ceil(remaining-.35)):0;
