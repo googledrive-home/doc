@@ -181,7 +181,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <div class="field"><label for="player">Player name</label><input id="player" maxlength="18" value="Player" autocomplete="nickname"></div>
 <div class="field"><label for="mode">Team format</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">Solo vs AI squad</option></select></div>
 <div class="field"><label for="gameType">Game type</label><select id="gameType"><option value="classic">Classic match</option><option value="shootout">Shootout</option><option value="goalie">Goalie challenge</option><option value="time-attack">Time attack</option></select><p id="gameTypeHelp" class="browser-help">Classic match · standard timed team hockey with goals, assists and rematches.</p></div>
-<div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select></div>
+<div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select><p id="rinkThemeHelp" class="browser-help">Classic · clear ice, crisp markings and balanced lighting.</p></div>
 <div class="field"><label for="skin">Player skin</label><select id="skin"><option value="0">Blue Burst</option><option value="1">Gold Stripes</option><option value="2">Ice Crystal</option><option value="3">Lime Grid</option><option value="4">Purple Wave</option><option value="5">Fire Rush</option><option value="6">Chrome Check</option><option value="7">Carbon</option><option value="8">Rainbow Pulse</option><option value="9">Circuit</option><option value="10">Sunset Split</option><option value="11">Polar Camo</option><option value="12">Galaxy</option><option value="13">Mint Dots</option></select></div>
 
 
@@ -244,19 +244,82 @@ const SKINS=[
  {name:"Blue Burst",base:"#2979ff",accent:"#9ceaff",style:"burst"},{name:"Gold Stripes",base:"#ffd35b",accent:"#fff2a6",style:"stripes"},{name:"Ice Crystal",base:"#bcecff",accent:"#ffffff",style:"crystal"},{name:"Lime Grid",base:"#63f36d",accent:"#0e7f53",style:"grid"},{name:"Purple Wave",base:"#a56cff",accent:"#f0d7ff",style:"wave"},{name:"Fire Rush",base:"#ff5d4d",accent:"#ffd35b",style:"flame"},{name:"Chrome Check",base:"#dfe9f2",accent:"#7f9ab2",style:"check"},{name:"Carbon",base:"#27313b",accent:"#91a7b8",style:"carbon"},{name:"Rainbow Pulse",base:"#ff65c3",accent:"#5ee7ff",style:"rainbow"},{name:"Circuit",base:"#142f48",accent:"#43eaff",style:"circuit"},{name:"Sunset Split",base:"#ff7b45",accent:"#8457ff",style:"split"},{name:"Polar Camo",base:"#d8fbff",accent:"#6aa6c7",style:"camo"},{name:"Galaxy",base:"#32235f",accent:"#8df8ff",style:"stars"},{name:"Mint Dots",base:"#48e6bd",accent:"#eafff9",style:"dots"}
 ];
 const PALETTES={
- Classic:{bg:"#dff9ff",line:"#76bfd0",goal1:"#ff5570",goal2:"#49e3ff",crease:"#a7d8ea",crowd:false},
- Arctic:{bg:"#eef7ff",line:"#6d91b3",goal1:"#8f6bff",goal2:"#4be3ff",crease:"#bcd8ff",crowd:false},
- Midnight:{bg:"#0c1626",line:"#79a6d6",goal1:"#ff5ea0",goal2:"#62a4ff",crease:"#284b70",crowd:false},
- Neon:{bg:"#071017",line:"#38d9ff",goal1:"#ff5b65",goal2:"#ffd35b",crease:"#123b46",crowd:false},
- Sunset:{bg:"#39233a",line:"#ffd1a3",goal1:"#ff7b45",goal2:"#ffd35b",crease:"#704052",crowd:false},
- Storm:{bg:"#16202b",line:"#b9d4ee",goal1:"#73a6ff",goal2:"#9bffea",crease:"#314c62",crowd:true},
- Aurora:{bg:"#10283a",line:"#a6ffef",goal1:"#b76cff",goal2:"#53f6d1",crease:"#225b62",crowd:true},
- Stadium:{bg:"#dbeaf7",line:"#5d83a3",goal1:"#ff5570",goal2:"#49d9ff",crease:"#b8cfe2",crowd:true},
- Championship:{bg:"#e9f5ff",line:"#6d9fc0",goal1:"#ffbf45",goal2:"#51dfff",crease:"#c3dff2",crowd:true},
- Harbor:{bg:"#163447",line:"#77d4e8",goal1:"#ff687a",goal2:"#76f0d2",crease:"#2b6274",crowd:true},
- Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
- Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
+ Classic:{bg:"#dff9ff",line:"#76bfd0",goal1:"#ff5570",goal2:"#49e3ff",crease:"#a7d8ea",crowd:false,environment:"classic"},
+ Arctic:{bg:"#eef7ff",line:"#6d91b3",goal1:"#8f6bff",goal2:"#4be3ff",crease:"#bcd8ff",crowd:false,environment:"arctic"},
+ Midnight:{bg:"#0c1626",line:"#79a6d6",goal1:"#ff5ea0",goal2:"#62a4ff",crease:"#284b70",crowd:false,environment:"midnight"},
+ Neon:{bg:"#071017",line:"#38d9ff",goal1:"#ff5b65",goal2:"#ffd35b",crease:"#123b46",crowd:false,environment:"neon"},
+ Sunset:{bg:"#39233a",line:"#ffd1a3",goal1:"#ff7b45",goal2:"#ffd35b",crease:"#704052",crowd:false,environment:"sunset"},
+ Storm:{bg:"#16202b",line:"#b9d4ee",goal1:"#73a6ff",goal2:"#9bffea",crease:"#314c62",crowd:true,environment:"storm"},
+ Aurora:{bg:"#10283a",line:"#a6ffef",goal1:"#b76cff",goal2:"#53f6d1",crease:"#225b62",crowd:true,environment:"aurora"},
+ Stadium:{bg:"#dbeaf7",line:"#5d83a3",goal1:"#ff5570",goal2:"#49d9ff",crease:"#b8cfe2",crowd:true,environment:"stadium"},
+ Championship:{bg:"#e9f5ff",line:"#6d9fc0",goal1:"#ffbf45",goal2:"#51dfff",crease:"#c3dff2",crowd:true,environment:"championship"},
+ Harbor:{bg:"#163447",line:"#77d4e8",goal1:"#ff687a",goal2:"#76f0d2",crease:"#2b6274",crowd:true,environment:"harbor"},
+ Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true,environment:"metro"},
+ Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true,environment:"galaxy"}
 };
+function drawRinkEnvironment(ctx,map,theme,now){
+ const env=theme.environment||"classic";ctx.save();ctx.lineCap="round";ctx.lineJoin="round";
+ // Low-contrast scene details sit under markings and players, so every environment remains playable.
+ ctx.globalAlpha=.12;ctx.strokeStyle=theme.line;ctx.lineWidth=1;
+ for(let y=46;y<570;y+=38){ctx.beginPath();ctx.moveTo(22,y+Math.sin(y)*2);ctx.lineTo(878,y+Math.sin(y)*2);ctx.stroke();}
+ if(env==="arctic"){
+  ctx.globalAlpha=.25;ctx.strokeStyle="#ffffff";ctx.lineWidth=2;
+  for(const [x,y,r] of [[90,110,42],[178,475,28],[730,118,30],[796,470,48],[450,300,70]]){
+   ctx.beginPath();ctx.moveTo(x-r,y-r*.35);ctx.lineTo(x+r,y+r*.4);ctx.moveTo(x-r*.6,y+r);ctx.lineTo(x+r*.7,y-r);ctx.stroke();
+  }
+  ctx.globalAlpha=.62;ctx.fillStyle="#ffffff";
+  for(let i=0;i<72;i++){const x=(i*137+33)%880+10,y=(i*91+19)%552+24,r=1+(i%3)*.55;ctx.beginPath();ctx.arc(x,y, r*(.6+.4*Math.sin(now/420+i)),0,Math.PI*2);ctx.fill();}
+ }else if(env==="midnight"){
+  const g=ctx.createLinearGradient(0,30,900,570);g.addColorStop(0,"#4d7dff");g.addColorStop(.48,"#ffffff");g.addColorStop(1,"#ff559f");
+  ctx.globalAlpha=.16;ctx.strokeStyle=g;ctx.lineWidth=3;
+  for(let i=0;i<8;i++){const y=76+i*62+Math.sin(now/1600+i)*5;ctx.beginPath();ctx.moveTo(30,y);ctx.bezierCurveTo(260,y-24,640,y+24,870,y);ctx.stroke();}
+  ctx.globalAlpha=.7;ctx.fillStyle="#a9c8ff";for(let i=0;i<40;i++){const x=(i*181+37)%870+15,y=(i*73+29)%545+25;ctx.fillRect(x,y,1.5,1.5);}
+ }else if(env==="neon"){
+  ctx.globalAlpha=.55;ctx.shadowColor=theme.line;ctx.shadowBlur=10;ctx.strokeStyle=theme.line;ctx.lineWidth=2;
+  for(let i=0;i<4;i++){const inset=36+i*16;ctx.strokeRect(inset,48+inset*.45,900-inset*2,504-inset*.9);}
+  ctx.shadowBlur=0;ctx.globalAlpha=.38;ctx.strokeStyle=theme.goal1;ctx.lineWidth=3;
+  for(let i=0;i<6;i++){const x=70+i*150;ctx.beginPath();ctx.moveTo(x,25);ctx.lineTo(x+60,70);ctx.lineTo(x+25,108);ctx.stroke();}
+ }else if(env==="sunset"){
+  const glow=ctx.createRadialGradient(690,132,8,690,132,260);glow.addColorStop(0,"#ffd78666");glow.addColorStop(.45,"#ff77552a");glow.addColorStop(1,"#ff775500");
+  ctx.globalAlpha=.8;ctx.fillStyle=glow;ctx.fillRect(400,24,490,360);
+  ctx.globalAlpha=.45;ctx.strokeStyle="#ffb16b";ctx.lineWidth=2;
+  for(let i=0;i<7;i++){const r=44+i*16;ctx.beginPath();ctx.ellipse(690,135,r*1.45,r*.52,0,0,Math.PI*2);ctx.stroke();}
+  ctx.globalAlpha=.22;ctx.fillStyle="#ffb16b";for(let y=36;y<170;y+=18)ctx.fillRect(610,y,180,2);
+ }else if(env==="storm"){
+  ctx.globalAlpha=.22;ctx.strokeStyle="#bdeaff";ctx.lineWidth=1.5;
+  for(let i=0;i<80;i++){const x=(i*97+now*.055)%930-15,y=(i*67+19)%580+12;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-8,y+19);ctx.stroke();}
+  ctx.globalAlpha=.12;ctx.fillStyle="#bdeaff";for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(i*205+35,42+Math.sin(now/900+i)*5,95,24,0,0,Math.PI*2);ctx.fill();}
+ }else if(env==="aurora"){
+  const colors=["#53f6d1","#52d9ff","#b76cff","#7bffbe"];
+  for(let i=0;i<8;i++){ctx.globalAlpha=.14+(i%3)*.035;ctx.strokeStyle=colors[i%colors.length];ctx.lineWidth=8+i%3*3;ctx.beginPath();ctx.moveTo(-20,80+i*19);ctx.bezierCurveTo(200,10+i*32,280,185+i*13,500,80+i*20);ctx.bezierCurveTo(650,5+i*22,790,160+i*12,930,42+i*22);ctx.stroke();}
+  ctx.globalAlpha=.13;ctx.fillStyle="#8dffed";ctx.fillRect(18,38,864,2);
+ }else if(env==="stadium"){
+  for(let side=0;side<2;side++){const y=side===0?26:540;ctx.globalAlpha=.28;ctx.fillStyle=side===0?"#09233c":"#0c2d46";ctx.fillRect(15,y,870,30);for(let i=0;i<58;i++){const x=22+i*15;ctx.globalAlpha=.45+.2*Math.sin(now/240+i);ctx.fillStyle=["#ff5f7b","#49d9ff","#ffd35b","#ffffff"][i%4];ctx.beginPath();ctx.arc(x,y+7+(i%2)*13,2,0,Math.PI*2);ctx.fill();}}
+  ctx.globalAlpha=.16;for(const x of [80,820]){const beam=ctx.createLinearGradient(x,28,x+(x<450?130:-130),350);beam.addColorStop(0,"#ffffff");beam.addColorStop(1,"#ffffff00");ctx.fillStyle=beam;ctx.beginPath();ctx.moveTo(x-12,26);ctx.lineTo(x+12,26);ctx.lineTo(x+(x<450?150:-150),370);ctx.closePath();ctx.fill();}
+ }else if(env==="championship"){
+  ctx.globalAlpha=.28;ctx.strokeStyle="#c59a35";ctx.lineWidth=3;
+  for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(450+side*110,300,31,70,side*.45,0,Math.PI*2);ctx.stroke();for(let i=0;i<7;i++){const y=245+i*18;ctx.beginPath();ctx.moveTo(450+side*110,y);ctx.lineTo(450+side*(125+(i%2)*8),y-10);ctx.stroke();}}
+  ctx.globalAlpha=.3;ctx.fillStyle="#d9aa4b";ctx.font="900 25px system-ui";ctx.textAlign="center";ctx.fillText("★",450,308);ctx.fillText("★",440,308);ctx.fillText("★",460,308);
+ }else if(env==="harbor"){
+  ctx.globalAlpha=.24;ctx.strokeStyle="#75d9ee";ctx.lineWidth=2;
+  for(let row=0;row<8;row++){const y=36+row*74;ctx.beginPath();ctx.moveTo(20,y);for(let x=20;x<=880;x+=44)ctx.lineTo(x,y+Math.sin(x/70+now/950+row)*5);ctx.stroke();}
+  ctx.globalAlpha=.32;ctx.strokeStyle="#a6e9f4";ctx.lineWidth=4;
+  for(const x of [65,835]){ctx.beginPath();ctx.moveTo(x,35);ctx.lineTo(x,125);ctx.lineTo(x+(x<450?50:-50),125);ctx.stroke();}
+ }else if(env==="metro"){
+  ctx.globalAlpha=.4;ctx.fillStyle="#091523";for(let i=0;i<28;i++){const x=i*33,h=26+(i*47%60);ctx.fillRect(x,24,23,h);ctx.fillRect(x,576-h,23,h);}
+  ctx.globalAlpha=.6;for(let i=0;i<95;i++){const x=(i*37)%895+2,y=i%2===0?29+(i*13%52):571-(i*11%52);ctx.fillStyle=i%4===0?"#ffd35b":theme.line;ctx.fillRect(x,y,2,3);}
+  ctx.globalAlpha=.18;ctx.strokeStyle=theme.line;ctx.lineWidth=1;for(let x=30;x<900;x+=45){ctx.beginPath();ctx.moveTo(x,25);ctx.lineTo(x,575);ctx.stroke();}
+ }else if(env==="galaxy"){
+  const nebula=ctx.createRadialGradient(500,270,10,500,270,430);nebula.addColorStop(0,"#9f67ff24");nebula.addColorStop(.48,"#416bff18");nebula.addColorStop(1,"#12102b00");
+  ctx.globalAlpha=.8;ctx.fillStyle=nebula;ctx.fillRect(0,24,900,552);
+  for(let i=0;i<150;i++){const x=(i*137+23)%890+5,y=(i*83+17)%555+22,twinkle=.35+.65*(.5+.5*Math.sin(now/430+i));ctx.globalAlpha=.25+twinkle*.62;ctx.fillStyle=i%9===0?"#ffb9e9":"#d4d4ff";const size=i%11===0?2.6:1.1;ctx.fillRect(x,y,size,size);}
+  ctx.globalAlpha=.25;ctx.strokeStyle="#a993ff";ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(460,300,200,94,-.2,0,Math.PI*2);ctx.stroke();
+ }else{
+  ctx.globalAlpha=.12;ctx.strokeStyle="#ffffff";ctx.lineWidth=1;
+  for(let i=0;i<28;i++){const y=40+i*19;ctx.beginPath();ctx.moveTo(24,y);ctx.lineTo(876,y+Math.sin(i)*2);ctx.stroke();}
+ }
+ ctx.restore();
+}
 let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode=""; 
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
@@ -638,6 +701,7 @@ function draw(){
  const map=latestState?.map||$("map").value,theme=PALETTES[map]||PALETTES.Classic,now=performance.now();
  ctx.fillStyle=theme.bg;ctx.fillRect(0,0,c.width,c.height);ctx.setTransform(sx,0,0,sy,0,0);
  ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);
+ drawRinkEnvironment(ctx,map,theme,now);
  if(theme.crowd){ctx.fillStyle="#071321";ctx.fillRect(0,0,900,24);ctx.fillRect(0,576,900,24);for(let x=8;x<900;x+=15){const colors=["#ff6b86","#ffd35b","#49e3ff","#7cf2a6","#c49cff"];ctx.fillStyle=colors[Math.floor(x/15)%colors.length];ctx.beginPath();ctx.arc(x,10+Math.sin(now/260+x)*1.2,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x,590+Math.sin(now/280+x)*1.2,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.32;ctx.fillStyle=theme.line;for(let x=8;x<900;x+=30){ctx.fillRect(x,3,18,3);ctx.fillRect(x,594,18,3);}ctx.globalAlpha=1;}
  ctx.strokeStyle=theme.line;ctx.lineWidth=3;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
  ctx.beginPath();ctx.arc(450,300,52,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(260,160,35,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(640,440,35,0,Math.PI*2);ctx.stroke();
