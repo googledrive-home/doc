@@ -479,17 +479,26 @@ $("lobbyPromptCancel").onclick=()=>{
 function renderLobbyPeople(){
  const list=$("lobbyPeopleList"),summary=$("lobbyPeopleSummary");list.replaceChildren();
  if(!room||!latestState){summary.textContent="Join a lobby to see its players and room details.";const p=document.createElement("p");p.className="browser-help";p.textContent="You are not currently in a lobby.";list.appendChild(p);$("copyLobbyCode").disabled=true;return;}
- const mode=latestState.mode||$("mode").value,capacity=mode==="2v2-ai"?1:({"1v1":2,"2v2":4,"3v3":6}[mode]||2),people=Object.values(targetPlayers).sort((a,b)=>a.team-b.team||a.name.localeCompare(b.name)),humans=people.filter(p=>!String(p.id).startsWith("ai-")).length,code=latestState.code||$("code").value.trim().toUpperCase(),status=latestState.status==="practice"?"Practice lobby":latestState.status==="matchmaking"?"Matchmaking":latestState.status==="waiting"?"Waiting to start":latestState.status==="finished"?"Match finished":latestState.status==="playing"?"Match in progress":latestState.status==="goal"?"Face-off after goal":"Face-off countdown";
- $("lobbyPeopleTitle").textContent=(latestState.private?"Private":"Public")+" lobby · players";
- summary.textContent=humans+"/"+capacity+" players · "+status+" · "+(latestState.map||"Classic")+" rink · "+(code?"Room code "+code:"No room code");
+ const mode=latestState.mode||$("mode").value,capacity=mode==="2v2-ai"?1:({"1v1":2,"2v2":4,"3v3":6}[mode]||2),people=Object.values(targetPlayers).sort((a,b)=>(a.spectator?2:a.team)-(b.spectator?2:b.team)||a.name.localeCompare(b.name)),humans=people.filter(p=>!String(p.id).startsWith("ai-")&&!p.spectator),watchers=people.filter(p=>p.spectator&&!String(p.id).startsWith("ai-")),code=latestState.code||$("code").value.trim().toUpperCase(),status=latestState.status==="practice"?"Lobby open":latestState.status==="matchmaking"?"Matchmaking":latestState.status==="waiting"?"Waiting to start":latestState.status==="finished"?"Match finished":latestState.status==="playing"?"Live match":latestState.status==="goal"?"Face-off after goal":"Face-off countdown";
+ $("lobbyPeopleTitle").textContent=(latestState.private?"Private":"Public")+" lobby · control room";
+ summary.textContent=humans.length+"/"+capacity+" players · "+watchers.length+" watching · "+status+" · "+(latestState.map||"Classic")+" rink · "+(code?"Room code "+code:"No room code");
  $("copyLobbyCode").disabled=!code;
+ const amSpectating=!!targetPlayers[room.sessionId]?.spectator;
+ $("teamChoice").value=String(targetPlayers[room.sessionId]?.team||1);$("teamChoice").disabled=amSpectating||mode==="2v2-ai"||!["practice","waiting"].includes(latestState.status);
+ $("readyToggle").disabled=amSpectating||!["practice","waiting"].includes(latestState.status);
+ $("hostTools").classList.toggle("hidden",room.sessionId!==latestState.hostId);
+ $("spectateCurrent").classList.toggle("hidden",amSpectating||!["practice","waiting","playing","countdown","goal"].includes(latestState.status));
+ $("playAsPlayer").classList.toggle("hidden",!amSpectating||!["practice","waiting"].includes(latestState.status));
  if(!people.length){const p=document.createElement("p");p.className="browser-help";p.textContent="No players are listed yet.";list.appendChild(p);return;}
  for(const p of people){
-  const card=document.createElement("div");card.className="room-card";
+  const card=document.createElement("div");card.className="player-row";
   const meta=document.createElement("span");meta.className="room-meta";
   const title=document.createElement("strong");title.textContent=p.name+(p.id===room.sessionId?" · YOU":String(p.id).startsWith("ai-")?" · AI":"")+(p.id===latestState.hostId?" · HOST":"");
-  const sub=document.createElement("span");sub.textContent="Team "+p.team+(p.ready?" · Ready":"");
-  meta.append(title,sub);card.append(meta);list.appendChild(card);
+  const sub=document.createElement("span");sub.textContent=p.spectator?"Spectator · watching the match":(p.team===1?(latestState.teamName1||"Team 1"):(latestState.teamName2||"Team 2"))+(p.ready?" · Ready ✓":" · Not ready")+(p.goals?" · "+p.goals+" goals":"");
+  meta.append(title,sub);card.append(meta);
+  if(!p.spectator&&!String(p.id).startsWith("ai-")){const badge=document.createElement("span");badge.className="player-badge"+(p.ready?" ready":"");badge.textContent=p.ready?"READY":"WAITING";card.append(badge);}
+  if(room.sessionId===latestState.hostId&&p.id!==room.sessionId&&!String(p.id).startsWith("ai-")){const kick=document.createElement("button");kick.type="button";kick.className="secondary";kick.textContent="REMOVE";kick.title="Remove player from lobby";kick.onclick=()=>{if(room&&confirm("Remove "+p.name+" from this lobby?"))room.send("kick",{sessionId:p.id});};card.append(kick);}
+  list.appendChild(card);
  }
 }
 function leaveCurrentLobby(){
