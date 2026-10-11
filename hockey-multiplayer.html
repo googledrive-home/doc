@@ -638,6 +638,159 @@ function renderMatchStats(){
   list.appendChild(row);
  }
 }
+function competitionNode(tag,className,text){
+ const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=String(text);return node;
+}
+async function competitionRequest(path,options={}){
+ const base=$("server").value.trim().replace(/\/$/,"");
+ const config={method:options.method||"GET",headers:{"Content-Type":"application/json"},cache:"no-store"};
+ if(options.body)config.body=JSON.stringify(options.body);
+ const response=await fetch(base+"/competitions"+path,config),data=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(data.error||("Competition server returned "+response.status));
+ return data;
+}
+function getCompetitionKey(id){
+ try{return sessionStorage.getItem("hockeyCompetitionKey:"+id)||"";}catch{return "";}
+}
+function saveCompetitionKey(id,key){
+ try{sessionStorage.setItem("hockeyCompetitionKey:"+id,key);}catch{}
+}
+function setCompetitionFeedback(message){$("competitionFeedback").textContent=message;}
+function selectCompetition(id){
+ selectedCompetitionId=id;renderCompetitionList();
+ const comp=competitionsCache.find(item=>item.id===id);
+ renderCompetitionDetails(comp||null);
+}
+async function loadCompetitions(preferred=selectedCompetitionId){
+ try{
+  const data=await competitionRequest("");
+  competitionsCache=Array.isArray(data.competitions)?data.competitions:[];
+  const selected=competitionsCache.some(item=>item.id===preferred)?preferred:(competitionsCache[0]?.id||"");
+  selectedCompetitionId=selected;renderCompetitionList();
+  renderCompetitionDetails(competitionsCache.find(item=>item.id===selected)||null);
+  if(!competitionsCache.length)setCompetitionFeedback("No events yet. Create a cup or league to start one.");
+ }catch(error){$("competitionList").replaceChildren(competitionNode("p","competition-empty","Couldn't load competitions: "+error.message));setCompetitionFeedback("Check the server URL and refresh the event list.");}
+}
+function renderCompetitionList(){
+ const list=$("competitionList");list.replaceChildren();
+ if(!competitionsCache.length){list.appendChild(competitionNode("p","competition-empty","No competitions have been created on this server yet."));return;}
+ for(const comp of competitionsCache){
+  const row=competitionNode("button","competition-card-row"+(comp.id===selectedCompetitionId?" selected":""));
+  row.type="button";
+  row.appendChild(competitionNode("strong","",comp.name));
+  const label=comp.format==="league"?"LEAGUE":"KNOCKOUT CUP";
+  row.appendChild(competitionNode("span","",label+" · "+comp.status.toUpperCase()));
+  row.appendChild(competitionNode("span","",comp.teams.length+"/"+comp.maxTeams+" teams"+(comp.champion?" · Champion: "+comp.champion:"")));
+  row.onclick=()=>selectCompetition(comp.id);list.appendChild(row);
+ }
+}
+function renderCompetitionDetails(comp){
+ const summary=$("competitionDetailSummary"),register=$("competitionRegisterForm"),tools=$("competitionOrganizerTools"),standings=$("competitionStandings"),schedule=$("competitionSchedule"),resultForms=$("competitionResultForms"),keyNote=$("competitionOrganizerNote");
+ summary.replaceChildren();standings.replaceChildren();schedule.replaceChildren();resultForms.replaceChildren();
+ const key=comp?getCompetitionKey(comp.id):"";currentCompetitionKey=key;
+ keyNote.classList.toggle("hidden",!key);
+ if(!comp){
+  summary.append(competitionNode("h3","","SELECT AN EVENT"),competitionNode("p","competition-empty","Choose a competition to view teams, fixtures and standings."));
+  register.classList.add("hidden");tools.classList.add("hidden");standings.classList.add("hidden");schedule.classList.add("hidden");return;
+ }
+ summary.appendChild(competitionNode("h3","",comp.name));
+ const statusText=comp.status==="registration"?"REGISTRATION OPEN":comp.status==="in-progress"?"IN PROGRESS":"COMPLETED";
+ summary.appendChild(competitionNode("p","competition-empty",(comp.format==="league"?"ROUND-ROBIN LEAGUE":"KNOCKOUT TOURNAMENT")+" · "+statusText+" · "+comp.teams.length+"/"+comp.maxTeams+" teams"));
+ const roster=competitionNode("div","");roster.appendChild(competitionNode("strong","","REGISTERED TEAMS"));
+ if(!comp.teams.length)roster.appendChild(competitionNode("p","competition-empty","No teams registered yet."));
+ else for(const team of comp.teams)roster.appendChild(competitionNode("p","competition-empty",(team.name||"Team")+" · Captain: "+(team.captain||"—")));
+ summary.appendChild(roster);
+ if(comp.status==="completed")summary.appendChild(competitionNode("p","competition-empty","Competition complete · "+(comp.champion?"Champion: "+comp.champion:"No champion recorded")+"."));
+ else if(comp.status==="registration")summary.appendChild(competitionNode("p","competition-empty","Register "+Math.max(0,comp.maxTeams-comp.teams.length)+" more team(s) before the organizer can start."));
+ register.classList.toggle("hidden",comp.status!=="registration"||comp.teams.length>=comp.maxTeams);
+ tools.classList.toggle("hidden",!key);
+ $("startCompetition").classList.toggle("hidden",comp.status!=="registration");
+ $("startCompetition").disabled=comp.teams.length!==comp.maxTeams;
+ if(key&&comp.status==="registration")setCompetitionFeedback("Organizer controls enabled for "+comp.name+".");
+ else if(key)setCompetitionFeedback("Organizer key recognised for "+comp.name+".");
+ if(comp.format==="league"&&comp.standings?.length){
+  standings.classList.remove("hidden");standings.appendChild(competitionNode("h3","","LEAGUE TABLE"));
+  const table=competitionNode("table","competition-standings"),thead=document.createElement("thead"),head=document.createElement("tr");
+  for(const text of ["#","Team","P","W","D","L","GD","Pts"])head.appendChild(competitionNode("th","",text));thead.appendChild(head);table.appendChild(thead);
+  const body=document.createElement("tbody");
+  comp.standings.forEach((team,index)=>{const tr=document.createElement("tr");for(const val of [index+1,team.name,team.played,team.wins,team.draws,team.losses,(team.goalDifference>0?"+":"")+team.goalDifference,team.points])tr.appendChild(competitionNode("td","",val));body.appendChild(tr);});
+  table.appendChild(body);standings.appendChild(table);
+ }else if(comp.format==="league"){standings.classList.remove("hidden");standings.appendChild(competitionNode("h3","","LEAGUE TABLE"));standings.appendChild(competitionNode("p","competition-empty","The table appears once the league has started."));}
+ const rounds=comp.rounds||[];
+ schedule.classList.remove("hidden");schedule.appendChild(competitionNode("h3","",comp.format==="league"?"FIXTURES":"BRACKET"));
+ if(!rounds.length){schedule.appendChild(competitionNode("p","competition-empty","Fixtures will be generated after all team slots are filled and the organizer starts the event."));return;}
+ let activeRound=null;
+ for(const round of rounds){
+  const roundBlock=competitionNode("div","competition-round");
+  let roundTitle="ROUND "+round.round;
+  if(comp.format==="tournament"){roundTitle=round.matches.length===1?"FINAL":round.matches.length===2?"SEMI-FINALS":round.matches.length===4?"QUARTER-FINALS":roundTitle;}
+  roundBlock.appendChild(competitionNode("h4","",roundTitle));
+  for(const match of round.matches){
+   const card=competitionNode("div","competition-match"),line=competitionNode("div","competition-match-head");
+   line.appendChild(competitionNode("span","",(match.homeName||"TBD")+"  vs  "+(match.awayName||"TBD")));
+   line.appendChild(competitionNode("strong","",match.status==="complete"?match.homeScore+" — "+match.awayScore:"VS"));
+   card.append(line);
+   if(match.status==="complete"){
+    card.appendChild(competitionNode("small","",match.roomCode?"ROOM "+match.roomCode:"RESULT RECORDED"));
+    if(match.roomCode){const link=competitionNode("a","competition-link","OPEN MATCH LOBBY");const url=new URL(location.href);url.search="";url.searchParams.set("kind","public");url.searchParams.set("action","join");url.searchParams.set("invite",match.roomCode);link.href=url.toString();link.target="_blank";link.rel="noopener";card.appendChild(link);}
+   }else card.appendChild(competitionNode("small","","Awaiting result"));
+   roundBlock.appendChild(card);
+  }
+  schedule.appendChild(roundBlock);
+ }
+ activeRound=rounds.find(round=>round.matches.some(match=>match.status==="scheduled"));
+ if(key&&comp.status==="in-progress"&&activeRound){
+  resultForms.appendChild(competitionNode("h4","", "RECORD "+(comp.format==="league"?"ROUND "+activeRound.round:"CURRENT ROUND")+" RESULTS"));
+  for(const match of activeRound.matches.filter(item=>item.status==="scheduled")){
+   const form=competitionNode("form","competition-match");form.appendChild(competitionNode("div","competition-match-head",(match.homeName||"Team")+" vs "+(match.awayName||"Team")));
+   const actions=competitionNode("div","competition-match-actions"),home=document.createElement("input"),away=document.createElement("input"),roomCode=document.createElement("input"),save=competitionNode("button","","SAVE RESULT");
+   for(const input of [home,away]){input.type="number";input.min="0";input.max="99";input.step="1";input.required=true;input.setAttribute("aria-label","Score");input.placeholder="0";}
+   home.value="";away.value="";roomCode.type="text";roomCode.maxLength=12;roomCode.placeholder="Optional room code";roomCode.setAttribute("aria-label","Match room code");
+   save.type="submit";actions.append(home,competitionNode("span","","—"),away,roomCode,save);form.appendChild(actions);
+   form.addEventListener("submit",async event=>{
+    event.preventDefault();save.disabled=true;save.textContent="SAVING…";
+    try{const data=await competitionRequest("/"+encodeURIComponent(comp.id)+"/matches/"+encodeURIComponent(match.id)+"/result",{method:"POST",body:{organizerKey:currentCompetitionKey,homeScore:Number(home.value),awayScore:Number(away.value),roomCode:roomCode.value}});upsertCompetition(data.competition);selectCompetition(comp.id);setCompetitionFeedback("Result saved. Bracket / league table updated.");}
+    catch(error){setCompetitionFeedback(error.message);save.disabled=false;save.textContent="SAVE RESULT";}
+   });
+   resultForms.appendChild(form);
+  }
+ }else if(key&&comp.status==="in-progress")resultForms.appendChild(competitionNode("p","competition-empty","All fixtures are recorded."));
+}
+function upsertCompetition(comp){
+ const index=competitionsCache.findIndex(item=>item.id===comp.id);
+ if(index>=0)competitionsCache[index]=comp;else competitionsCache.unshift(comp);
+}
+$("competitionsToggle").onclick=()=>{$("competitionDialog").classList.remove("hidden");loadCompetitions();};
+$("closeCompetitionDialog").onclick=()=>$("competitionDialog").classList.add("hidden");
+$("competitionDialog").addEventListener("click",event=>{if(event.target===$("competitionDialog"))$("competitionDialog").classList.add("hidden");});
+$("refreshCompetitions").onclick=()=>loadCompetitions();
+$("copyCompetitionKey").onclick=async()=>{
+ if(!selectedCompetitionId||!currentCompetitionKey)return;
+ try{await navigator.clipboard.writeText(currentCompetitionKey);setCompetitionFeedback("Organizer key copied. Treat it like a password.");}
+ catch{setCompetitionFeedback("Clipboard unavailable. The organizer key remains stored in this browser session.");}
+};
+$("competitionCreateForm").addEventListener("submit",async event=>{
+ event.preventDefault();const submit=$("competitionCreateForm").querySelector('button[type="submit"]');submit.disabled=true;
+ try{
+  const result=await competitionRequest("",{method:"POST",body:{name:$("competitionName").value,format:$("competitionFormat").value,maxTeams:Number($("competitionSize").value)}});
+  const comp=result.competition;saveCompetitionKey(comp.id,result.organizerKey);selectedCompetitionId=comp.id;$("competitionName").value="";
+  await loadCompetitions(comp.id);setCompetitionFeedback("Created "+comp.name+". Organizer key saved to this browser session.");
+ }catch(error){setCompetitionFeedback(error.message);}finally{submit.disabled=false;}
+});
+$("competitionRegisterForm").addEventListener("submit",async event=>{
+ event.preventDefault();if(!selectedCompetitionId)return;
+ const submit=$("competitionRegisterForm").querySelector('button[type="submit"]');submit.disabled=true;
+ try{
+  const data=await competitionRequest("/"+encodeURIComponent(selectedCompetitionId)+"/register",{method:"POST",body:{teamName:$("competitionTeamName").value,captain:$("competitionCaptain").value}});
+  const id=selectedCompetitionId;upsertCompetition(data.competition);$("competitionTeamName").value="";$("competitionCaptain").value="";selectCompetition(id);setCompetitionFeedback("Team registered successfully.");
+ }catch(error){setCompetitionFeedback(error.message);}finally{submit.disabled=false;}
+});
+$("startCompetition").onclick=async()=>{
+ const comp=competitionsCache.find(item=>item.id===selectedCompetitionId),key=currentCompetitionKey;if(!comp||!key)return;
+ $("startCompetition").disabled=true;
+ try{const data=await competitionRequest("/"+encodeURIComponent(comp.id)+"/start",{method:"POST",body:{organizerKey:key}});upsertCompetition(data.competition);selectCompetition(comp.id);setCompetitionFeedback("Competition started. Record results in the organizer desk.");}
+ catch(error){setCompetitionFeedback(error.message);$("startCompetition").disabled=false;}
+};
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
 async function loadRooms(kind=activeBrowserKind){
  activeBrowserKind=kind==="private"?"private":"public";
