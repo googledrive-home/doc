@@ -172,8 +172,10 @@ body.in-lobby .statusbar{position:fixed;z-index:15;top:6px;left:6px;right:6px;wi
 body.in-lobby .statusbar .grow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:20px}
 body.in-lobby #playMatch,body.in-lobby #toggleSetup{display:block!important}
 body.in-lobby.config-open .config{display:grid;position:fixed;top:45px;left:8px;right:8px;z-index:30;width:auto;max-height:calc(100vh - 53px);overflow:auto;box-shadow:0 18px 70px #000b;background:#071a2bf5}
-body.match-live .statusbar{left:auto;right:7px;top:7px;width:176px;max-width:176px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:3px}
-body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby):not(#soundToggle){display:none!important}
+body.match-live .statusbar{left:auto;right:7px;top:7px;width:280px;max-width:280px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:3px;flex-wrap:nowrap}
+body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby):not(#soundToggle):not(#statsToggle):not(#competitionToggle):not(#lastReplayToggle){display:none!important}
+body.match-live #statsToggle,body.match-live #competitionToggle,body.match-live #lastReplayToggle{display:block!important;opacity:.93}
+body.match-live #statsToggle:disabled{opacity:.4}
 body.match-live #toggleSetup{height:29px;width:34px;background:#061421aa;border:1px solid #ffffff22;opacity:.7}
 body.match-live.config-open .config{display:grid}
 body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!important}
@@ -184,7 +186,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  body.in-lobby .statusbar{right:5px;left:5px;top:4px;max-width:none;gap:5px}
  body.in-lobby #playerCount{display:none}
  body.in-lobby #playMatch{min-width:83px;padding:4px 7px}
- body.match-live .statusbar{right:5px;width:176px;max-width:176px}
+ body.match-live .statusbar{right:5px;width:270px;max-width:270px}
  body.in-lobby.config-open .config{top:40px;left:4px;right:4px;max-height:calc(100vh - 46px)}
 }
 </style>
@@ -423,7 +425,7 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
   room.onMessage("practiceGoal",m=>{playSound("practiceGoal");say(m.message||"Practice goal — puck back at centre.");});
   room.onMessage("goal",m=>{playSound("goal");const title=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";spawnCelebration(m.team===1?themeColor(2):themeColor(1));if(Array.isArray(m.replay)&&m.replay.length>8)startGoalReplay(m.replay,title);else{overlay=title;overlayKind="goal";overlayUntil=performance.now()+1850;}});
-  room.onMessage("finished",m=>{playSound("finish");overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";overlayUntil=performance.now()+3300;say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");});
+  room.onMessage("finished",m=>{playSound("finish");const finale=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";if(replayPlayback)replayPlayback.finishOverlay=finale;else{overlay=finale;overlayKind="finish";overlayUntil=performance.now()+3300;}say("Full time · "+m.score1+" — "+m.score2+" · Returning to lobby…");if(m.stats?.players){for(const p of m.stats.players)if(targetPlayers[p.id])Object.assign(targetPlayers[p.id],p);}renderMatchStats();renderRecentMatches(m.history||[]);});
    room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");renderLobbyPeople();});
   room.onMessage("lobbyNotice",m=>{say(m.message||"Lobby updated.");renderLobbyPeople();});
   room.onMessage("competitionUpdated",m=>{if(m?.code)$("competitionCode").value=m.code;renderCompetitionBoard();});
@@ -474,6 +476,11 @@ function renderMatchStats(){
  list.replaceChildren();const head=document.createElement("div");head.className="stat-row";head.innerHTML="<strong>Player</strong><span>G</span><span>A</span><span>S</span><span>H</span><span>SV</span>";list.appendChild(head);
  if(!people.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="Player stats appear when you join a lobby.";list.appendChild(empty);return;}
  for(const p of people){const row=document.createElement("div");row.className="stat-row";const name=document.createElement("strong");name.textContent=(p.name||"Player")+" · T"+p.team;row.appendChild(name);for(const key of ["goals","assists","shots","hits","saves"]){const v=document.createElement("span");v.textContent=String(p[key]||0);row.appendChild(v);}list.appendChild(row);}
+}
+function renderRecentMatches(history){
+ const list=$("recentMatches");if(!list)return;list.replaceChildren();if(!Array.isArray(history)||!history.length)return;
+ const title=document.createElement("h3");title.textContent="RECENT MATCHES";title.style.margin="10px 0 4px";list.appendChild(title);
+ for(const m of history.slice(0,8)){const row=document.createElement("div");row.className="competition-row";const name=document.createElement("span");name.className="room-meta";const strong=document.createElement("strong");strong.textContent=(m.mode||"1v1").toUpperCase()+" · "+(m.gameType||"classic").toUpperCase()+" · "+(m.map||"Classic");const sub=document.createElement("span");sub.textContent=m.tournamentName?m.tournamentName+" · "+new Date(m.finishedAt||Date.now()).toLocaleString():"Completed "+new Date(m.finishedAt||Date.now()).toLocaleString();name.append(strong,sub);const score=document.createElement("span");score.className="points";score.textContent=(m.score1||0)+" — "+(m.score2||0);row.append(name,score);list.appendChild(row);}
 }
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
 async function loadRooms(kind=activeBrowserKind){
@@ -696,7 +703,9 @@ function startGoalReplay(frames,title="GOAL REPLAY"){
  lastGoalReplay={frames,title};replayPlayback={frames,title,startedAt:performance.now()};overlay="";overlayKind="";$("replayMessage").textContent=title+" · REPLAY";$("replayBanner").classList.remove("hidden");$("lastReplayToggle").classList.remove("hidden");
 }
 function stopGoalReplay(){
- if(!replayPlayback)return;const title=replayPlayback.title;replayPlayback=null;$("replayBanner").classList.add("hidden");overlay=title;overlayKind="goal";overlayUntil=performance.now()+1450;
+ if(!replayPlayback)return;const active=replayPlayback,title=active.title;replayPlayback=null;$("replayBanner").classList.add("hidden");
+ if(active.finishOverlay){overlay=active.finishOverlay;overlayKind="finish";overlayUntil=performance.now()+3300;}
+ else{overlay=title;overlayKind="goal";overlayUntil=performance.now()+1450;}
 }
 $("skipReplay").onclick=stopGoalReplay;
 $("lastReplayToggle").onclick=()=>{if(lastGoalReplay)startGoalReplay(lastGoalReplay.frames,lastGoalReplay.title);};
