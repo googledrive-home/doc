@@ -513,7 +513,12 @@ $("statsLastTab").onclick=()=>setStatsView("last");
 $("statsHistoryTab").onclick=()=>setStatsView("history");
 $("closeStats").onclick=()=>$("statsDialog").classList.add("hidden");
 $("statsDialog").addEventListener("click",e=>{if(e.target===$("statsDialog"))$("statsDialog").classList.add("hidden");});
-function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){const el=$(id);if(el&&document.activeElement!==el)el.valfunction makeStatChip(label,value){
+function populateHostSettings(state){
+ for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){
+  const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);
+ }
+}
+function makeStatChip(label,value){
  const chip=document.createElement("div");chip.className="stat-chip";
  const small=document.createElement("small");small.textContent=label;
  const strong=document.createElement("strong");strong.textContent=String(value);
@@ -523,12 +528,19 @@ function setStatsView(view){statsView=view;renderedStatsSignature="";renderMatch
 async function loadRoomHistory(){
  if(!room)return;
  const base=$("server").value.trim().replace(/\/$/,"");
- try{const response=await fetch(base+"/room/"+encodeURIComponent(room.roomId)+"/history",{cache:"no-store"});if(!response.ok)throw Error("History not available");const data=await response.json();roomMatchHistory=Array.isArray(data.matches)?data.matches:roomMatchHistory;if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];renderedStatsSignature="";renderMatchStats();}
- catch{if(!roomMatchHistory.length){const list=$("statsHistory");list.replaceChildren();const message=document.createElement("p");message.className="browser-help";message.textContent="No saved matches are available yet for this lobby.";list.appendChild(message);}}
+ try{
+  const response=await fetch(base+"/room/"+encodeURIComponent(room.roomId)+"/history",{cache:"no-store"});
+  if(!response.ok)throw Error("History not available");
+  const data=await response.json();roomMatchHistory=Array.isArray(data.matches)?data.matches:roomMatchHistory;
+  if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];
+  renderedStatsSignature="";renderMatchStats();
+ }catch{
+  if(!roomMatchHistory.length){const list=$("statsHistory");list.replaceChildren();const message=document.createElement("p");message.className="browser-help";message.textContent="No saved matches are available yet for this lobby.";list.appendChild(message);}
+ }
 }
 function renderMatchStats(){
  const list=$("statsList"),history=$("statsHistory"),highlights=$("statsHighlights"),tableWrap=$("statsTableWrap");
- if(!list||!history||!highlights)return;
+ if(!list||!history||!highlights||!tableWrap)return;
  const record=statsView==="last"?lastMatchRecord:null,isHistory=statsView==="history";
  const livePeople=Object.values(targetPlayers).filter(p=>!p.spectator).map(p=>({...p,bot:p.bot||String(p.id||"").startsWith("ai-")}));
  const people=statsView==="last"?(record?.players||[]):livePeople;
@@ -552,17 +564,15 @@ function renderMatchStats(){
    const meta=document.createElement("p");meta.className="stats-history-meta";meta.textContent=(match.gameType||"classic").toUpperCase()+" · "+(match.mode||"1v1")+" · "+(match.map||"Classic")+" · "+(match.elapsedSeconds??"—")+" seconds";
    const winner=document.createElement("p");winner.className="stats-history-meta";
    winner.textContent=match.winner===0?"Result: draw":match.winner===1?"Winner: "+(match.teamName1||"Team 1"):match.winner===2?"Winner: "+(match.teamName2||"Team 2"):"Result recorded";
-   const view=document.createElement("button");view.type="button";view.className="secondary";view.textContent="VIEW REPORT";
-   view.onclick=()=>{lastMatchRecord=match;setStatsView("last");};
+   const view=document.createElement("button");view.type="button";view.className="secondary";view.textContent="VIEW REPORT";view.onclick=()=>{lastMatchRecord=match;setStatsView("last");};
    card.append(head,meta,winner,view);history.appendChild(card);
   }
   return;
  }
  const teamName1=record?.teamName1||latestState?.teamName1||"Team 1",teamName2=record?.teamName2||latestState?.teamName2||"Team 2";
- const teamAgg=(teamNo)=>{
-  const key=teamNo===1?"team1":"team2",saved=record?.[key];
-  if(saved)return saved;
-  return {goals:teamNo===1?score1:score2,shots:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shots||0),0),shotsOnGoal:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shotsOnGoal||0),0),saves:people.filter(p=>p.team!==teamNo).reduce((n,p)=>n+(p.saves||0),0)};
+ const teamAgg=teamNo=>{
+  const saved=record?.[teamNo===1?"team1":"team2"];if(saved)return saved;
+  return {goals:teamNo===1?score1:score2,shots:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shots||0),0),shotsOnGoal:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.shotsOnGoal||0),0),saves:people.filter(p=>p.team===teamNo).reduce((n,p)=>n+(p.saves||0),0)};
  };
  const team1=teamAgg(1),team2=teamAgg(2),topScorer=[...people].filter(p=>!p.spectator).sort((x,y)=>(y.goals||0)-(x.goals||0)||(y.assists||0)-(x.assists||0))[0];
  $("statsSummary").textContent=statsView==="last"
@@ -589,8 +599,6 @@ function renderMatchStats(){
   values.forEach((value,i)=>{const cell=document.createElement("span");cell.textContent=String(value||0)+(i===6?"%":"");row.appendChild(cell);});
   list.appendChild(row);
  }
-}
-ppendChild(row);}
 }
 $("toggleSetup").onclick=()=>{document.body.classList.toggle("config-open");$("toggleSetup").setAttribute("aria-label",document.body.classList.contains("config-open")?"Close settings":"Open settings");};
 async function loadRooms(kind=activeBrowserKind){
