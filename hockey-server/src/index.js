@@ -213,7 +213,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;
    this.resetPuck();this.resetPlayers();this.state.status="practice";
    this.broadcast("lobbyReady",{message:"Match finished — back in the lobby. Press PLAY for a rematch."});
-   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length,capacity:CAPACITY[this.state.mode]});
+   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,gameType:this.state.gameType,private:this.state.private,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length,capacity:playerCapacity(this.state)});
   },3300);
  }
  tick(dt){
