@@ -143,8 +143,22 @@ body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 .player-badge{font-size:10px;font-weight:900;white-space:nowrap;color:#9fefff}
 .player-badge.ready{color:#7bffc1}
 .player-row button{width:auto;min-width:64px;height:30px;padding:4px 8px;font-size:10px}
-.stat-row{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(40px,.6fr));gap:8px;align-items:center;padding:9px 10px;background:#ffffff06;border:1px solid #ffffff13;border-radius:9px;font-size:12px}
+.stats-highlights{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.stat-chip{min-width:0;padding:10px 11px;border:1px solid #ffffff16;border-radius:11px;background:linear-gradient(145deg,#102c42,#091826);box-shadow:inset 0 1px #ffffff0c}
+.stat-chip small{display:block;color:#82a9c2;font-size:9px;letter-spacing:.11em;font-weight:900;text-transform:uppercase}
+.stat-chip strong{display:block;color:#eafbff;margin-top:6px;font-size:clamp(16px,2.2vw,22px);font-weight:1000;overflow-wrap:anywhere}
+.stats-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:5px 0 11px}
+.stats-tabs button{flex:1;min-width:105px;font-size:10px;padding:8px 10px}
+.stats-tabs button.active{background:linear-gradient(180deg,#197797,#14506a);outline:1px solid #49e3ff70}
+.stats-table-wrap{overflow:auto;max-width:100%;border-radius:10px}
+.stat-row{display:grid;grid-template-columns:minmax(115px,1.45fr) repeat(7,minmax(34px,.48fr));gap:8px;align-items:center;padding:9px 10px;background:#ffffff06;border:1px solid #ffffff13;border-radius:9px;font-size:11px;min-width:660px}
 .stat-row strong{overflow-wrap:anywhere}.stat-row span{text-align:right;color:#b6d1e4;font-variant-numeric:tabular-nums}
+.stat-row.header{background:#15344a;color:#95c5de;text-transform:uppercase;font-size:9px;letter-spacing:.08em}
+.stats-history-card{padding:12px;border:1px solid #ffffff19;border-radius:12px;background:linear-gradient(145deg,#102c42,#091826);display:flex;flex-direction:column;gap:8px}
+.stats-history-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-weight:950;color:#f0fbff}
+.stats-history-score{font-size:20px;color:#94efff;font-weight:1000}
+.stats-history-meta{font-size:11px;color:#93afc5;line-height:1.5}
+@media(max-width:650px){.stats-highlights{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-tabs button{min-width:90px}.stats-history-head{align-items:flex-start;flex-direction:column}}
 @media(max-width:650px){.host-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lobby-control-row button{flex:1}.stat-row{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(36px,.5fr))}.stat-row span:nth-last-child(-n+2){display:none}}
 #leaveLobby{flex:none;width:55px;min-width:55px;height:32px;padding:3px 6px;background:#773844;border:1px solid #c86a7a;font-size:11px;letter-spacing:.03em}
 #leaveLobby:hover{background:linear-gradient(180deg,#aa5060,#843744)}
@@ -223,7 +237,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  </div>
 </div>
 <div id="lobbyPeopleList" class="room-list"></div><div class="people-actions"><button id="leaveLobbyFromPeople" type="button">LEAVE LOBBY</button><button id="doneLobbyPeople" class="secondary" type="button">DONE</button></div></div></div>
-<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Stats update as the match is played.</p><div id="statsList" class="room-list"></div></div></div>
+<div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Live stats, a final match report and recent results from this lobby.</p><div id="statsHighlights" class="stats-highlights"></div><div class="stats-tabs"><button id="statsLiveTab" class="secondary" type="button">LIVE MATCH</button><button id="statsLastTab" class="secondary" type="button">LAST MATCH</button><button id="statsHistoryTab" class="secondary" type="button">ROOM HISTORY</button></div><div class="stats-table-wrap"><div id="statsList" class="room-list"></div></div><div id="statsHistory" class="room-list hidden"></div></div></div>
 <div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
@@ -320,7 +334,7 @@ function drawRinkEnvironment(ctx,map,theme,now){
  }
  ctx.restore();
 }
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode=""; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[]; 
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -780,7 +794,9 @@ window.addEventListener("keydown",e=>{
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;sendMove()});
 const moveKeys={up:"arrowup",down:"arrowdown",left:"arrowleft",right:"arrowright"};
 document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()},release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
-$("map").addEventListener("change",draw);$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
+const rinkDescriptions={Classic:"Classic · clear ice, crisp markings and balanced lighting.",Arctic:"Arctic · frost cracks, drifting snow and cold blue ice.",Midnight:"Midnight · deep navy ice, moonlit streaks and blue-pink glows.",Neon:"Neon · electric circuit borders and glowing rink lines.",Sunset:"Sunset · warm horizon glow and amber reflection rings.",Storm:"Storm · wind-driven rain streaks and storm clouds around the rink.",Aurora:"Aurora · flowing green, cyan and violet light ribbons.",Stadium:"Stadium · floodlights, animated stands and a big-game atmosphere.",Championship:"Championship · gold laurel details and a trophy-style centre mark.",Harbor:"Harbor · shifting water lines and dockside crane silhouettes.",Metro:"Metro · city skyline edges, windows and urban grid lighting.",Galaxy:"Galaxy · nebula glow, twinkling stars and orbital rink accents."};
+function updateRinkThemeHelp(){$("rinkThemeHelp").textContent=rinkDescriptions[$("map").value]||rinkDescriptions.Classic;}
+$("map").addEventListener("change",()=>{updateRinkThemeHelp();draw();});$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 function updateGameTypeHelp(){
  const descriptions={
