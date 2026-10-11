@@ -415,13 +415,13 @@ $("playMatch").onclick=()=>{if(!room||!["practice","waiting"].includes(latestSta
 $("teamChoice").onchange=()=>{if(room)room.send("setTeam",{team:Number($("teamChoice").value)});};
 $("readyToggle").onclick=()=>{if(room){const me=targetPlayers[room.sessionId];room.send("ready",{ready:!me?.ready});}};
 $("hostStartMatch").onclick=()=>{if(room)room.send("startMatch",{});};
-$("applyLobbySettings").onclick=()=>{if(room)room.send("hostSettings",{mode:$("hostMode").value,gameType:$("hostGameType").value,map:$("hostMap").value,matchTime:Number($("hostDuration").value),difficulty:$("hostDifficulty").value,training:$("hostTraining").value,competition:false});};
+$("applyLobbySettings").onclick=()=>{if(room)room.send("hostSettings",{mode:$("hostMode").value,gameType:$("hostGameType").value,map:$("hostMap").value,matchTime:Number($("hostDuration").value),difficulty:$("hostDifficulty").value,training:$("hostTraining").value,competition:$("hostCompetition").value==="true"});};
 $("spectateCurrent").onclick=()=>{if(room)room.send("spectate",{});};
 $("playAsPlayer").onclick=()=>{if(room)room.send("playAsPlayer",{});};
 $("statsToggle").onclick=()=>{renderedStatsSignature="";renderMatchStats();$("statsDialog").classList.remove("hidden");};
 $("closeStats").onclick=()=>$("statsDialog").classList.add("hidden");
 $("statsDialog").addEventListener("click",e=>{if(e.target===$("statsDialog"))$("statsDialog").classList.add("hidden");});
-function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training]]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);}}
+function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);}}
 function renderMatchStats(){
  const list=$("statsList");if(!list)return;const people=Object.values(targetPlayers).filter(p=>!p.spectator&&!String(p.id).startsWith("ai-")).sort((a,b)=>a.team-b.team||b.goals-a.goals);
  const signature=[latestState?.puck?.score1||0,latestState?.puck?.score2||0,latestState?.gameType||"classic",...people.map(p=>[p.id,p.goals,p.assists,p.shots,p.hits,p.saves].join(":"))].join("|");if(signature===renderedStatsSignature)return;renderedStatsSignature=signature;
@@ -571,6 +571,23 @@ function advanceIntroSlide(){
  setTimeout(()=>{if(!document.body.classList.contains("in-lobby"))showIntroSlide(introIndex+1);art.classList.remove("swapping");},210);
 }
 setInterval(advanceIntroSlide,5200);
+function inviteUrl(code,isPrivate){
+ const url=new URL(location.href);url.search="";url.searchParams.set("kind",isPrivate?"private":"public");url.searchParams.set("action","join");url.searchParams.set("invite",String(code||"").trim().toUpperCase());return url.toString();
+}
+async function copyInviteLink(code,isPrivate){
+ if(!code){say("The lobby code is still syncing. Try again in a moment.");return;}
+ const link=inviteUrl(code,isPrivate);
+ try{await navigator.clipboard.writeText(link);say("Invite link copied. "+(isPrivate?"Share the room password separately.":"Friends can use this link to join or spectate."));}
+ catch{$("lobbyPeopleSummary").textContent="Copy this invite link manually: "+link+(isPrivate?" · share the password separately.":"");say("Clipboard unavailable — invite link shown in the lobby summary.");}
+}
+$("copyLobbyInvite").onclick=()=>copyInviteLink(latestState?.code||$("code").value.trim().toUpperCase(),!!latestState?.private);
+$("copyCreatedInvite").onclick=()=>copyInviteLink(pendingCreatedLobby?.code||$("createdRoomCode").textContent,pendingCreatedLobby?.private);
+$("roomSearch").addEventListener("input",filterRoomCards);$("roomModeFilter").addEventListener("change",filterRoomCards);
+function filterRoomCards(){
+ const query=$("roomSearch").value.trim().toLowerCase(),mode=$("roomModeFilter").value,cards=[...$("roomList").querySelectorAll(".room-card")];let visible=0;
+ for(const card of cards){const keep=(mode==="all"||card.dataset.mode===mode)&&(!query||card.dataset.search.includes(query));card.classList.toggle("hidden",!keep);if(keep)visible++;}
+ let empty=$("roomFilterEmpty");if(!visible&&cards.length){if(!empty){empty=document.createElement("p");empty.id="roomFilterEmpty";empty.className="browser-help";$("roomList").appendChild(empty);}empty.textContent="No lobbies match those filters.";}else if(empty)empty.remove();
+}
 function showLobbyCreated(info){
  pendingCreatedLobby=info;$("createdTitle").textContent=(info.private?"Private":"Public")+" lobby is live";
  $("createdDescription").textContent="Your lobby has been created and you're already inside. Copy this room code and share it"+(info.private?" with the private password you chose.":" with your friends.") ;
