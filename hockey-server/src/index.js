@@ -131,7 +131,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const humans=Array.from(this.state.players.values()).filter(p=>!p.spectator&&!p.sessionId.startsWith("ai-")),nextMode=CAPACITY[msg?.mode]?msg.mode:this.state.mode;
   if(humans.length>CAPACITY[nextMode]){client.send("lobbyNotice",{message:"That mode has fewer player slots than the current lobby roster."});return;}
   this.state.mode=nextMode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(msg?.gameType)?msg.gameType:"classic";
-  const maps=["Classic","Arctic","Midnight","Neon","Sunset","Storm","Aurora","Stadium","Championship","Harbor","Metro","Galaxy"];
+  const maps=["Classic","Arctic","Midnight","Neon","Sunset","Storm","Aurora","Stadium","Championship","Harbor","Metro","Galaxy","Frozen Lake","Rooftop","Volcanic","Lunar","Retro","Forest","Desert","Crystal","Rainy Night","Blue Ice"];
   this.state.map=maps.includes(msg?.map)?msg.map:"Classic";this.state.matchTime=Math.max(30,Math.min(600,Number(msg?.matchTime)||180));this.state.matchLength=this.state.matchTime;
   this.state.difficulty=["easy","medium","hard","extrahard"].includes(msg?.difficulty)?msg.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(msg?.training)?msg.training:"none";this.state.competition=!!msg?.competition;
   for(const p of humans)p.ready=false;
@@ -225,7 +225,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.state.countdown=0;
    this.resetPuck();this.resetPlayers();this.state.status="practice";
    this.broadcast("lobbyReady",{message:"Match finished — back in the lobby. Press PLAY for a rematch."});
-   this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length,capacity:CAPACITY[this.state.mode]});
+   this.broadcastLobby();
   },3300);
  }
  tick(dt){
