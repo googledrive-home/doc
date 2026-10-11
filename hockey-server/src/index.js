@@ -523,6 +523,28 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    }
   }
 
+  // Final non-penetration solver: after all player contacts, guarantee the puck is outside every
+  // active skater/goalie. This prevents a second nearby player from pushing it back inside a player
+  // that was already resolved earlier in the collision loop.
+  for(let pass=0;pass<6;pass++){
+   let changed=false;
+   for(const p of ps){
+    if(state.gameType==="shootout"&&p.team!==state.shootoutTeam)continue;
+    const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);
+    if(d>=contactRadius-.01)continue;
+    let nx=0,ny=0;
+    if(d>.001){nx=dx/d;ny=dy/d;}
+    else{
+     const playerSpeed=Math.hypot(p.vx,p.vy),puckSpeed=Math.hypot(puck.vx,puck.vy);
+     if(playerSpeed>puckSpeed&&playerSpeed>.001){nx=p.vx/playerSpeed;ny=p.vy/playerSpeed;}
+     else if(puckSpeed>.001){nx=-puck.vx/puckSpeed;ny=-puck.vy/puckSpeed;}
+     else{nx=p.team===1?1:-1;ny=0;}
+    }
+    const target=contactRadius+.75;
+    puck.x=p.x+nx*target;puck.y=p.y+ny*target;changed=true;
+   }
+   if(!changed)break;
+  }
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
