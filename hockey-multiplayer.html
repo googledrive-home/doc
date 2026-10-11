@@ -518,7 +518,7 @@ $("lobbyPromptCancel").onclick=()=>{
 function renderLobbyPeople(){
  const list=$("lobbyPeopleList"),summary=$("lobbyPeopleSummary");list.replaceChildren();
  if(!room||!latestState){summary.textContent="Join a lobby to see its players and room details.";const p=document.createElement("p");p.className="browser-help";p.textContent="You are not currently in a lobby.";list.appendChild(p);$("copyLobbyCode").disabled=true;return;}
- const mode=latestState.mode||$("mode").value,capacity=mode==="2v2-ai"?1:({"1v1":2,"2v2":4,"3v3":6}[mode]||2),people=Object.values(targetPlayers).sort((a,b)=>(a.spectator?2:a.team)-(b.spectator?2:b.team)||a.name.localeCompare(b.name)),humans=people.filter(p=>!String(p.id).startsWith("ai-")&&!p.spectator),watchers=people.filter(p=>p.spectator&&!String(p.id).startsWith("ai-")),code=latestState.code||$("code").value.trim().toUpperCase(),status=latestState.status==="practice"?"Lobby open":latestState.status==="matchmaking"?"Matchmaking":latestState.status==="waiting"?"Waiting to start":latestState.status==="finished"?"Match finished":latestState.status==="playing"?"Live match":latestState.status==="goal"?"Face-off after goal":"Face-off countdown";
+ const mode=latestState.mode||$("mode").value,capacity=latestState.gameType==="goalie"?1:mode==="2v2-ai"?1:({"1v1":2,"2v2":4,"3v3":6}[mode]||2),people=Object.values(targetPlayers).sort((a,b)=>(a.spectator?2:a.team)-(b.spectator?2:b.team)||a.name.localeCompare(b.name)),humans=people.filter(p=>!String(p.id).startsWith("ai-")&&!p.spectator),watchers=people.filter(p=>p.spectator&&!String(p.id).startsWith("ai-")),code=latestState.code||$("code").value.trim().toUpperCase(),status=latestState.status==="practice"?"Lobby open":latestState.status==="matchmaking"?"Matchmaking":latestState.status==="waiting"?"Waiting to start":latestState.status==="finished"?"Match finished":latestState.status==="playing"?"Live match":latestState.status==="goal"?"Face-off after goal":"Face-off countdown";
  $("lobbyPeopleTitle").textContent=(latestState.private?"Private":"Public")+" lobby · control room";
  summary.textContent=humans.length+"/"+capacity+" players · "+watchers.length+" watching · "+status+" · "+(latestState.map||"Classic")+" rink · "+(code?"Room code "+code:"No room code");
  $("copyLobbyCode").disabled=!code;
@@ -646,8 +646,17 @@ function draw(){
   const sk=normalizedSkin(p.skin),rr=19;
   ctx.save();ctx.translate(p.x,p.y);
   const g=ctx.createRadialGradient(-rr*.35,-rr*.4,1,0,0,rr*1.15);g.addColorStop(0,sk.accent);g.addColorStop(.52,sk.base);g.addColorStop(1,"#07101c");
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();ctx.restore();
+  if(p.role==="goalie"){
+   ctx.fillStyle="#dceaf4";ctx.beginPath();ctx.roundRect(-15,3,10,18,4);ctx.roundRect(5,3,10,18,4);ctx.fill();
+   ctx.strokeStyle="#ffffff";ctx.lineWidth=2;ctx.strokeRect(-15,3,10,18);ctx.strokeRect(5,3,10,18);
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();
+   ctx.fillStyle="#f5fbff";ctx.beginPath();ctx.roundRect(-22,-5,9,15,4);ctx.fill();
+   ctx.fillStyle="#101d2b";ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+  }else{
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();
+  }ctx.restore();
   ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
  }
  ctx.save();ctx.translate(puck.x,puck.y);
