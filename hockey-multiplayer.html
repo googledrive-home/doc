@@ -26,7 +26,11 @@ button.active{outline:2px solid var(--cyan);background:linear-gradient(180deg,#1
 #browseRooms{grid-column:1/-1}
 .room-browser{position:fixed;inset:8px;z-index:80;display:flex;align-items:center;justify-content:center;background:#0209139c;backdrop-filter:blur(7px)}
 .room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:linear-gradient(145deg,#102a43f2,#081624f2);border:1px solid #8beaff38;border-radius:20px;box-shadow:0 25px 80px #0009,inset 0 1px #ffffff13;backdrop-filter:blur(16px);animation:modalIn .22s cubic-bezier(.2,.8,.2,1) both}
-.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff;transform:translateY(-1px);box-shadow:0 9px 20px #0003}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}.room-preview{padding:13px;border:1px solid #ffffff24;border-radius:12px;background:#102740b8}.room-preview h3{margin:0 0 8px;font-size:17px}.room-preview p{font-size:13px;color:#aec4d8;line-height:1.5;margin:6px 0}.room-preview .names{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.room-preview .names span{border:1px solid #ffffff24;background:#ffffff0b;border-radius:9px;padding:6px 8px;font-size:12px;color:#f4fbff}.room-preview .join-preview{max-width:240px;margin-top:12px}.prompt-fields{display:flex;flex-direction:column;gap:10px}.prompt-field{display:flex;flex-direction:column;gap:5px}.prompt-field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a8c4db;font-weight:850}.prompt-field input{width:100%;height:42px}.prompt-actions{display:flex;justify-content:flex-end;gap:8px}.prompt-actions button{width:auto;min-width:110px}.room-card .room-meta strong{font-size:14px}
+.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff;transform:translateY(-1px);box-shadow:0 9px 20px #0003}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}
+.room-actions{display:flex;align-items:center;gap:6px}
+.room-actions button{width:auto;min-width:92px;white-space:nowrap;padding:7px 10px;font-size:11px}
+.room-actions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:650px){.room-card{align-items:flex-start;flex-direction:column}.room-actions{width:100%}.room-actions button{flex:1}}.room-preview{padding:13px;border:1px solid #ffffff24;border-radius:12px;background:#102740b8}.room-preview h3{margin:0 0 8px;font-size:17px}.room-preview p{font-size:13px;color:#aec4d8;line-height:1.5;margin:6px 0}.room-preview .names{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.room-preview .names span{border:1px solid #ffffff24;background:#ffffff0b;border-radius:9px;padding:6px 8px;font-size:12px;color:#f4fbff}.room-preview .join-preview{max-width:240px;margin-top:12px}.prompt-fields{display:flex;flex-direction:column;gap:10px}.prompt-field{display:flex;flex-direction:column;gap:5px}.prompt-field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a8c4db;font-weight:850}.prompt-field input{width:100%;height:42px}.prompt-actions{display:flex;justify-content:flex-end;gap:8px}.prompt-actions button{width:auto;min-width:110px}.room-card .room-meta strong{font-size:14px}
 .roster-panel{position:absolute;top:78px;left:12px;z-index:3;max-width:min(245px,44vw);padding:7px 9px;border:1px solid #ffffff1e;border-radius:10px;background:rgba(2,10,18,.27);backdrop-filter:blur(3px);color:#f5fbff;pointer-events:none;opacity:.72}
 .roster-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#a9eaff;margin-bottom:4px}.roster-names{display:flex;flex-direction:column;gap:3px}.roster-name{font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.match-live .roster-panel{opacity:.34}
@@ -252,7 +256,7 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature=""; 
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -436,19 +440,30 @@ async function loadRooms(kind=activeBrowserKind){
   const data=await response.json();list.replaceChildren();const rooms=Array.isArray(data.rooms)?data.rooms:[];
   if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
   for(const item of rooms){
-   const card=document.createElement("button");card.className="room-card";card.type="button";
+   const card=document.createElement("div");card.className="room-card";
    const meta=document.createElement("span");meta.className="room-meta";
    const title=document.createElement("strong");title.textContent=(item.lobbyName||"Hockey Lobby")+" · "+String(item.mode||"1v1").toUpperCase();
-   const names=document.createElement("span");const rosterNames=(item.roster||[]).map(p=>p.name+(p.bot?" (AI)":""));names.textContent="Players: "+(rosterNames.length?rosterNames.join(", "):(item.players?.length?item.players.join(", "):"Waiting for players"));
-   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.map||"Classic")+" rink · "+(item.status||"waiting")+" · "+item.code;
-   meta.append(title,names,sub);const join=document.createElement("span");join.className="join-label";join.textContent=isPrivate?"PASSWORD REQUIRED →":"JOIN →";
-   card.append(meta,join);
-   card.onclick=()=>{
+   const rosterNames=(item.roster||[]).map(p=>(p.spectator?"👁 ":"")+p.name+(p.bot?" (AI)":p.ready?" ✓":""));
+   const names=document.createElement("span");names.textContent="Players: "+(rosterNames.length?rosterNames.join(", "):(item.players?.length?item.players.join(", "):"Waiting for players"));
+   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.spectatorCount||0)+" watching · "+(item.map||"Classic")+" · "+(item.status||"waiting")+" · "+item.code;
+   meta.append(title,names,sub);
+   const actions=document.createElement("div");actions.className="room-actions";
+   const join=document.createElement("button");join.type="button";join.className="join-label";const isLive=["countdown","playing","goal","finished"].includes(item.status),isFull=(item.playerCount||0)>=(item.capacity||2);
+   join.textContent=isPrivate?"PASSWORD →":isLive?"IN MATCH":isFull?"FULL":"JOIN →";
+   join.disabled=!isPrivate&&(isLive||isFull);
+   const watch=document.createElement("button");watch.type="button";watch.className="secondary watch-label";watch.textContent=isPrivate?"WATCH · PASSWORD":"👁 WATCH";
+   join.onclick=()=>{
+    if(isLive||isFull){if(!isPrivate)say("That room is already in a match or full. Use WATCH to spectate.");return;}
     $("lobbyBrowser").classList.add("hidden");
-    if(isPrivate){selectedPrivateRoom=item;openLobbyPrompt("join-private");}
+    if(isPrivate){selectedPrivateRoom=item;pendingLobbySpectator=false;openLobbyPrompt("join-private");}
     else{$("mode").value=item.mode;$("map").value=item.map;connect("join-room",item.roomId);}
    };
-   list.appendChild(card);
+   watch.onclick=()=>{
+    $("lobbyBrowser").classList.add("hidden");
+    if(isPrivate){selectedPrivateRoom=item;pendingLobbySpectator=true;openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Enter this private lobby's password to watch the match without taking a player slot.";}
+    else connect("join-room",item.roomId,{spectator:true});
+   };
+   actions.append(join,watch);card.append(meta,actions);list.appendChild(card);
   }
  }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load lobbies: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
 }
@@ -475,7 +490,8 @@ $("lobbyPromptForm").addEventListener("submit",event=>{
  $("lobbyPrompt").classList.add("hidden");
  if(action==="join-private"){
   if(!selectedPrivateRoom){say("Choose a private lobby first.");return;}
-  connect("join-private",selectedPrivateRoom.roomId,{code:selectedPrivateRoom.code,privatePassword});
+  connect("join-private",selectedPrivateRoom.roomId,{code:selectedPrivateRoom.code,privatePassword,spectator:pendingLobbySpectator});
+  pendingLobbySpectator=false;
  }else connect(action,null,{lobbyName,privatePassword});
 });
 $("lobbyPromptCancel").onclick=()=>{
