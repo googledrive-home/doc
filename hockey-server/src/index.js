@@ -242,9 +242,9 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.onMessage("playAsPlayer",(client)=>{const p=this.state.players.get(client.sessionId);if(!p||!p.spectator||!["practice","waiting"].includes(this.state.status))return;const humans=Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")&&!q.spectator).length;if(humans>=(CAPACITY[this.state.mode]||2)){client.send("lobbyNotice",{message:"The player slots are full."});return;}p.spectator=false;p.team=this.assignTeam();p.x=p.team===1?130:770;p.y=300;p.ready=false;if(!this.state.hostId)this.state.hostId=p.sessionId;this.broadcastLobby();});
   this.onMessage("shoot",(client,msg)=>{
    const p=this.state.players.get(client.sessionId);if(!p||p.spectator||!["practice","matchmaking","playing"].includes(this.state.status))return;
-   const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=29;
+   const puck=this.state.puck,dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),contactRadius=30;
    // Power hits are explicit and only register at true close contact. In shootouts only the active team may shoot.
-   if(p.role==="goalie"||d>=contactRadius||(this.state.gameType==="shootout"&&p.team!==this.state.shootoutTeam))return;
+   if(p.role==="goalie"||d>contactRadius||(this.state.gameType==="shootout"&&p.team!==this.state.shootoutTeam))return;
    const now=Date.now(),last=this.lastShootAt.get(client.sessionId)||0;if(now-last<180)return;this.lastShootAt.set(client.sessionId,now);
    let nx=0,ny=0;
    if(d>.001){nx=dx/d;ny=dy/d;}else{const n=Math.hypot(p.inputX,p.inputY);if(n>.001){nx=p.inputX/n;ny=p.inputY/n;}else{nx=p.team===1?1:-1;ny=0;}}
@@ -407,8 +407,10 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  }
  simulateRink(dt,practice=false){
   const state=this.state,puck=state.puck;
-  const rinkW=900,rinkH=600,playerR=19,puckR=10,diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,trainingScale=state.training==="warmup"?.82:state.training==="speed"?1.18:state.training==="conditioning"?1.05:1;
+  const rinkW=900,rinkH=600,playerR=19,puckR=11,diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,trainingScale=state.training==="warmup"?.82:state.training==="speed"?1.18:state.training==="conditioning"?1.05:1;
   const ps=Array.from(state.players.values()).filter(p=>!p.spectator);
+  // Save player start positions so collision checks use relative puck/player motion, not only end positions.
+  const playerStartPositions=new Map(ps.map(p=>[p.sessionId,{x:p.x,y:p.y}]));
   if(!practice&&state.status==="playing")this.captureGoalReplayFrame();
   for(const p of ps){
    if(p.sessionId.startsWith("ai-")){
@@ -465,45 +467,55 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const activePuckContacts=new Set(),contactRadius=playerR+puckR,travelX=puck.x-puckStartX,travelY=puck.y-puckStartY,travelSq=travelX*travelX+travelY*travelY;
   for(const p of ps){
    if(state.gameType==="shootout"&&p.team!==state.shootoutTeam)continue;
-   const t=travelSq>1e-5?Math.max(0,Math.min(1,((p.x-puckStartX)*travelX+(p.y-puckStartY)*travelY)/travelSq)):1;
-   const closestX=puckStartX+travelX*t,closestY=puckStartY+travelY*t;
-   let dx=closestX-p.x,dy=closestY-p.y,d=Math.hypot(dx,dy),endDx=puck.x-p.x,endDy=puck.y-p.y,endD=Math.hypot(endDx,endDy);
-   if(Math.min(d,endD)>contactRadius+3)continue;
-   activePuckContacts.add(p.sessionId);
+   const pStart=playerStartPositions.get(p.sessionId)||{x:p.x,y:p.y},playerTravelX=p.x-pStart.x,playerTravelY=p.y-pStart.y;
+   // Relative-motion sweep: the puck and skater may both cross the contact zone between 30 Hz server ticks.
+   const relStartX=puckStartX-pStart.x,relStartY=puckStartY-pStart.y,relTravelX=travelX-playerTravelX,relTravelY=travelY-playerTravelY;
+   const a=relTravelX*relTravelX+relTravelY*relTravelY,b=2*(relStartX*relTravelX+relStartY*relTravelY),c=relStartX*relStartX+relStartY*relStartY-contactRadius*contactRadius;
+   const endDx=puck.x-p.x,endDy=puck.y-p.y,endD=Math.hypot(endDx,endDy);
+   let impactT=null;
+   if(c<=0){
+    if(relStartX*relTravelX+relStartY*relTravelY<0)impactT=0;
+   }else if(a>1e-6){
+    const discriminant=b*b-4*a*c;
+    if(discriminant>=0){const entry=(-b-Math.sqrt(discriminant))/(2*a);if(entry>=0&&entry<=1)impactT=entry;}
+   }
+   const endOverlaps=endD<contactRadius;
+   if(impactT===null&&!endOverlaps)continue;
+   if(endD<contactRadius+3)activePuckContacts.add(p.sessionId);
    if(p.spectator)continue;
-   // Goalie Challenge: the human guards the right crease, moving only vertically. Fast incoming shots are pushed back into play and recorded as saves.
+   // For end-overlap use the current normal; for a fast crossing use the first point of impact.
+   const t=endOverlaps?1:impactT;
+   const impactPlayerX=pStart.x+playerTravelX*t,impactPlayerY=pStart.y+playerTravelY*t,impactPuckX=puckStartX+travelX*t,impactPuckY=puckStartY+travelY*t;
+   let dx=impactPuckX-impactPlayerX,dy=impactPuckY-impactPlayerY,d=Math.hypot(dx,dy);
+   if(d<.001){const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>.001){dx=-puck.vx/puckSpeed;dy=-puck.vy/puckSpeed;}else{dx=p.inputX|| (p.team===1?1:-1);dy=p.inputY||0;}d=Math.hypot(dx,dy)||1;}
+   let nx=dx/d,ny=dy/d;
+   // Goalie Challenge: resolve fast shots at the true swept impact point so pucks cannot tunnel through the crease.
    if(p.role==="goalie"){
     const incoming=p.team===2?puck.vx>35:puck.vx< -35,puckSpeed=Math.hypot(puck.vx,puck.vy);
-    if(incoming&&puckSpeed>70&&(d<contactRadius||endD<contactRadius)){
-     dx=endDx;dy=endDy;d=endD;if(d<.001){dx=p.team===2?-1:1;dy=0;d=1;}
-     const nx=dx/d,ny=dy/d,rebound=Math.max(180,Math.min(560,puckSpeed*.78));
-     puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=(p.team===2?-1:1)*rebound;puck.vy=puck.vy*.35+p.vy*.5;
+    if(incoming&&puckSpeed>70&&(impactT!==null||endOverlaps)){
+     const gx=endOverlaps?p.x:impactPlayerX,gy=endOverlaps?p.y:impactPlayerY;
+     puck.x=gx+nx*(contactRadius+1);puck.y=gy+ny*(contactRadius+1);puck.vx=(p.team===2?-1:1)*Math.max(180,Math.min(560,puckSpeed*.78));puck.vy=puck.vy*.35+p.vy*.5;
      p.saves++;p.hits++;this.recordShotOnGoal(p.team===2?1:2);this.puckContacts.add(p.sessionId);puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();
      this.broadcast("goalieSave",{player:p.name,saves:p.saves,speed:puckSpeed});this.broadcast("puckTouch",{speed:puckSpeed,player:p.name,save:true});this.broadcast("matchStats",this.matchStatsSnapshot());continue;
     }
    }
-   if(d>=contactRadius&&endD>=contactRadius)continue;
-   // Prefer the actual end position for the response normal. The swept closest point is only used to detect high-speed crossings.
-   if(endD>.001){dx=endDx;dy=endDy;d=endD;}else{const n=Math.hypot(p.inputX,p.inputY);dx=n>.001?p.inputX/n:(p.team===1?1:-1);dy=n>.001?p.inputY/n:0;d=1;}
-   const nx=dx/d,ny=dy/d,playerDrive=p.vx*nx+p.vy*ny,puckNormalSpeed=puck.vx*nx+puck.vy*ny;
-   if(this.puckContacts.has(p.sessionId)){
-    // A previous hit during the same touch cannot add another impulse; separate overlapping circles to avoid visual sticking.
-    if(endD<contactRadius){puck.x=p.x+nx*35;puck.y=p.y+ny*35;}continue;
-   }
-   if(playerDrive>24){
-    const isAI=p.sessionId.startsWith("ai-"),diffScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*diffScale:1,force=360*power+Math.min(130,playerDrive*.2);
-    puck.x=p.x+nx*35;puck.y=p.y+ny*35;puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();
+   const latched=this.puckContacts.has(p.sessionId);
+   const playerDrive=p.vx*nx+p.vy*ny,puckNormalSpeed=puck.vx*nx+puck.vy*ny;
+   // Always resolve a real collision; the latch prevents a second boosted hit during the same touch only.
+   if(playerDrive>24&&!latched){
+    const isAI=p.sessionId.startsWith("ai-"),difficultyScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*difficultyScale:1,force=360*power+Math.min(130,playerDrive*.2);
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();
     const now=Date.now();if(now-this.lastPuckTouchAt>80){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:force,player:p.name,shot:false});}
    }else if(puckNormalSpeed< -35){
-    // If an already-moving puck hits a stationary skater, reflect the incoming velocity instead of magnetising it.
-    puck.vx-=(1.78*puckNormalSpeed)*nx;puck.vy-=(1.78*puckNormalSpeed)*ny;
-    puck.x=p.x+nx*35;puck.y=p.y+ny*35;
-   }else if(endD<contactRadius){
-    // Keep the circles from overlapping, but add no energy unless the skater is actually driving into the puck.
-    puck.x=p.x+nx*35;puck.y=p.y+ny*35;
+    // Reflect an incoming puck even if the contact latch is active.
+    puck.vx-=1.78*puckNormalSpeed*nx;puck.vy-=1.78*puckNormalSpeed*ny;
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);
+   }else{
+    // A glancing / latched contact separates cleanly without injecting extra energy.
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);
    }
   }
-  for(const id of this.puckContacts)if(!activePuckContacts.has(id))this.puckContacts.delete(id);
+
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
