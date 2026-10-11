@@ -26,7 +26,7 @@ button.active{outline:2px solid var(--cyan);background:linear-gradient(180deg,#1
 #browseRooms{grid-column:1/-1}
 .room-browser{position:fixed;inset:8px;z-index:80;display:flex;align-items:center;justify-content:center;background:#0209139c;backdrop-filter:blur(7px)}
 .room-browser.hidden{display:none!important}.browser-card{width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:16px;background:linear-gradient(145deg,#102a43f2,#081624f2);border:1px solid #8beaff38;border-radius:20px;box-shadow:0 25px 80px #0009,inset 0 1px #ffffff13;backdrop-filter:blur(16px);animation:modalIn .22s cubic-bezier(.2,.8,.2,1) both}
-.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff;transform:translateY(-1px);box-shadow:0 9px 20px #0003}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}
+.browser-head{display:flex;align-items:center;gap:8px}.browser-head h2{font-size:20px;margin:0;color:#49e3ff}.browser-head button{width:auto;min-width:80px}.browser-help{margin:0;color:#a8bfd6;font-size:12px}.browser-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(125px,180px);gap:8px}.browser-filters input,.browser-filters select{height:38px}.room-list{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:100px}.room-card{height:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;background:#142b43c9;border:1px solid #ffffff20;border-radius:12px}.room-card:hover{border-color:#49e3ff;transform:translateY(-1px);box-shadow:0 9px 20px #0003}.room-card .room-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.room-card .room-meta strong{color:#fff}.room-card .room-meta span{font-size:12px;color:#a9bfd4;overflow-wrap:anywhere}.room-card .join-label{width:auto;white-space:nowrap;background:#087fa8;border-radius:7px;padding:7px 10px}
 .room-actions{display:flex;align-items:center;gap:6px}
 .room-actions button{width:auto;min-width:92px;white-space:nowrap;padding:7px 10px;font-size:11px}
 .room-actions button:disabled{opacity:.55;cursor:not-allowed}
@@ -203,9 +203,9 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <button id="createPrivate">🔒 Create private lobby</button><button id="createPublic" class="secondary">🌍 Create public lobby</button><button id="joinPrivate" class="secondary">🔐 Join private lobby</button><button id="joinPublic" class="secondary">🌍 Join public lobby</button>
 </div>
 </section>
-<div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Available lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p id="browserHelp" class="browser-help">Choose a lobby to join.</p><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
+<div id="lobbyBrowser" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="browserTitle"><div class="browser-card"><div class="browser-head"><h2 id="browserTitle">Available lobbies</h2><span style="flex:1"></span><button id="refreshRooms" class="secondary">↻ Refresh</button><button id="closeLobbyBrowser" class="secondary">✕</button></div><p id="browserHelp" class="browser-help">Choose a lobby to join.</p><div class="browser-filters"><input id="roomSearch" type="search" placeholder="Search lobby name or room code" aria-label="Search lobbies"><select id="roomModeFilter" aria-label="Filter lobbies by team format"><option value="all">All formats</option><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">Solo vs AI</option></select></div><div id="roomList" class="room-list"><p class="browser-help">Press Refresh to find rooms…</p></div></div></div>
 <div id="lobbyPrompt" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPromptTitle"><form id="lobbyPromptForm" class="browser-card"><div class="browser-head"><h2 id="lobbyPromptTitle">Lobby details</h2><span style="flex:1"></span></div><p id="lobbyPromptHelp" class="browser-help"></p><div id="lobbyPromptNameWrap" class="prompt-field"><label for="lobbyPromptName">Lobby name</label><input id="lobbyPromptName" type="text" maxlength="32" placeholder="e.g. Friday Night Hockey" autocomplete="off"></div><div id="lobbyPromptPasswordWrap" class="prompt-field hidden"><label for="lobbyPromptPassword">Lobby password</label><input id="lobbyPromptPassword" type="text" maxlength="64" placeholder="Enter a password (4–64 characters)" autocomplete="off" spellcheck="false"></div><div class="prompt-actions"><button id="lobbyPromptCancel" class="secondary" type="button">CANCEL</button><button id="lobbyPromptSubmit" type="submit">CONTINUE</button></div></form></div>
-<div id="lobbyPeopleDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPeopleTitle"><div class="browser-card"><div class="browser-head"><h2 id="lobbyPeopleTitle">Lobby control room</h2><span style="flex:1"></span><button id="copyLobbyCode" class="secondary" type="button">COPY CODE</button><button id="closeLobbyPeople" class="secondary" type="button">✕</button></div><p id="lobbyPeopleSummary" class="browser-help">Join a lobby to see its players and room details.</p>
+<div id="lobbyPeopleDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="lobbyPeopleTitle"><div class="browser-card"><div class="browser-head"><h2 id="lobbyPeopleTitle">Lobby control room</h2><span style="flex:1"></span><button id="copyLobbyCode" class="secondary" type="button">COPY CODE</button><button id="copyLobbyInvite" class="secondary" type="button">COPY INVITE</button><button id="closeLobbyPeople" class="secondary" type="button">✕</button></div><p id="lobbyPeopleSummary" class="browser-help">Join a lobby to see its players and room details.</p>
 <div class="lobby-controls">
  <div class="lobby-control-row"><label for="teamChoice">My team</label><select id="teamChoice"><option value="1">Team 1</option><option value="2">Team 2</option></select><button id="readyToggle" type="button">READY UP</button><button id="spectateCurrent" class="secondary" type="button">SPECTATE</button><button id="playAsPlayer" class="secondary hidden" type="button">JOIN AS PLAYER</button></div>
  <div id="hostTools" class="host-tools hidden">
@@ -217,6 +217,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
    <label>Match length<select id="hostDuration"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option></select></label>
    <label>AI difficulty<select id="hostDifficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="extrahard">Extra hard</option></select></label>
    <label>Training<select id="hostTraining"><option value="none">Standard</option><option value="warmup">Warm-up</option><option value="conditioning">Conditioning</option><option value="speed">Speed drill</option></select></label>
+   <label>Competition<select id="hostCompetition"><option value="false">Exhibition</option><option value="true">First to 5</option></select></label>
   </div>
   <div class="host-actions"><button id="applyLobbySettings" class="secondary" type="button">APPLY SETTINGS</button><button id="hostStartMatch" type="button" disabled>READY CHECK · 0/1</button></div>
  </div>
@@ -232,7 +233,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  </div>
  <div class="intro-copy"><p class="intro-eyebrow">HOCKEY ARENA · MULTIPLAYER</p><h2 id="introTitle">Under the lights.</h2><p id="introDescription" class="intro-description">Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready.</p><div class="intro-bottom"><span id="introCounter" class="intro-counter">01 / 04</span><div class="intro-progress"><span id="introProgressFill"></span></div></div><div class="intro-tip">PICK YOUR KIT · CHOOSE A RINK · HIT THE ICE</div></div>
 </div>
-<div id="lobbyCreated" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="createdTitle"><div class="browser-card lobby-created-card"><div class="browser-head"><span class="created-check">✓</span><h2 id="createdTitle">Your lobby is live</h2><span style="flex:1"></span><button id="closeCreated" class="secondary" type="button" aria-label="Close lobby confirmation">✕</button></div><p id="createdDescription" class="browser-help">You're inside the lobby now. Share the room code so your friends can join.</p><div class="created-code-row"><span><small>ROOM CODE</small><strong id="createdRoomCode">SYNCING…</strong></span><button id="copyCreatedCode" type="button">COPY CODE</button></div><p id="createdPrivacy" class="browser-help">Anyone with the code can join this lobby.</p><button id="enterCreatedLobby" type="button">ENTER LOBBY</button></div></div>
+<div id="lobbyCreated" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="createdTitle"><div class="browser-card lobby-created-card"><div class="browser-head"><span class="created-check">✓</span><h2 id="createdTitle">Your lobby is live</h2><span style="flex:1"></span><button id="closeCreated" class="secondary" type="button" aria-label="Close lobby confirmation">✕</button></div><p id="createdDescription" class="browser-help">You're inside the lobby now. Share the room code so your friends can join.</p><div class="created-code-row"><span><small>ROOM CODE</small><strong id="createdRoomCode">SYNCING…</strong></span><button id="copyCreatedCode" type="button">COPY CODE</button></div><button id="copyCreatedInvite" class="secondary" type="button">COPY INVITE LINK</button><p id="createdPrivacy" class="browser-help">Anyone with the code can join this lobby.</p><button id="enterCreatedLobby" type="button">ENTER LOBBY</button></div></div>
 <div class="hudbottom"><span class="hint">MOVE: WASD / ARROWS · AUTO-HIT ON CONTACT · SPACE / F FOR A POWER HIT</span><div class="touch-controls"><button data-move="up" aria-label="Move up">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="down" aria-label="Move down">▼</button><button data-move="right" aria-label="Move right">▶</button></div></div>
 <div id="rosterPanel" class="roster-panel hidden" aria-label="Players in this practice rink"><div id="rosterTitle" class="roster-title">Rink roster</div><div id="rosterNames" class="roster-names"></div></div>
 </section>
@@ -256,7 +257,7 @@ const PALETTES={
  Metro:{bg:"#202a38",line:"#a4b9cc",goal1:"#ff5f7b",goal2:"#52d9ff",crease:"#40546a",crowd:true},
  Galaxy:{bg:"#12102b",line:"#a993ff",goal1:"#ff63bc",goal2:"#5ed9ff",crease:"#372e61",crowd:true}
 };
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature=""; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode=""; 
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -408,19 +409,19 @@ async function connect(kind,roomId=null,extra={}){
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
   markConnected(true);document.body.classList.add("in-lobby");$("arenaIntro").classList.add("hidden");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say(justCreated?(justCreated.private?"Private lobby created · code "+(justCreated.code||"syncing…")+". You're in.":"Public lobby created · code "+(justCreated.code||"syncing…")+". You're in."):"Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
   if(justCreated){pendingCreatedLobby=justCreated;showLobbyCreated(justCreated);}
- }catch(e){label("NOT CONNECTED");markConnected(false);document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),900*reconnectAttempts);}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
+ }catch(e){label("NOT CONNECTED");markConnected(false);document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){reconnectAttempts++;say("Reconnection attempt "+reconnectAttempts+" of 3…");setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),650*reconnectAttempts);}else if(kind==="reconnect"){try{sessionStorage.removeItem("hockeyReconnectToken");}catch{};say("Could not reconnect. The lobby may have closed; use the room code to join again.");}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
 }
 $("playMatch").onclick=()=>{if(!room||!["practice","waiting"].includes(latestState?.status))return;const me=targetPlayers[room.sessionId];if(me?.spectator)return;room.send("ready",{ready:!me?.ready});};
 $("teamChoice").onchange=()=>{if(room)room.send("setTeam",{team:Number($("teamChoice").value)});};
 $("readyToggle").onclick=()=>{if(room){const me=targetPlayers[room.sessionId];room.send("ready",{ready:!me?.ready});}};
 $("hostStartMatch").onclick=()=>{if(room)room.send("startMatch",{});};
-$("applyLobbySettings").onclick=()=>{if(room)room.send("hostSettings",{mode:$("hostMode").value,gameType:$("hostGameType").value,map:$("hostMap").value,matchTime:Number($("hostDuration").value),difficulty:$("hostDifficulty").value,training:$("hostTraining").value,competition:false});};
+$("applyLobbySettings").onclick=()=>{if(room)room.send("hostSettings",{mode:$("hostMode").value,gameType:$("hostGameType").value,map:$("hostMap").value,matchTime:Number($("hostDuration").value),difficulty:$("hostDifficulty").value,training:$("hostTraining").value,competition:$("hostCompetition").value==="true"});};
 $("spectateCurrent").onclick=()=>{if(room)room.send("spectate",{});};
 $("playAsPlayer").onclick=()=>{if(room)room.send("playAsPlayer",{});};
 $("statsToggle").onclick=()=>{renderedStatsSignature="";renderMatchStats();$("statsDialog").classList.remove("hidden");};
 $("closeStats").onclick=()=>$("statsDialog").classList.add("hidden");
 $("statsDialog").addEventListener("click",e=>{if(e.target===$("statsDialog"))$("statsDialog").classList.add("hidden");});
-function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training]]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);}}
+function populateHostSettings(state){for(const [id,value] of [["hostMode",state.mode],["hostGameType",state.gameType||"classic"],["hostMap",state.map],["hostDuration",String(state.matchLength||state.matchTime)],["hostDifficulty",state.difficulty],["hostTraining",state.training],["hostCompetition",String(!!state.competition)]]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(value);}}
 function renderMatchStats(){
  const list=$("statsList");if(!list)return;const people=Object.values(targetPlayers).filter(p=>!p.spectator&&!String(p.id).startsWith("ai-")).sort((a,b)=>a.team-b.team||b.goals-a.goals);
  const signature=[latestState?.puck?.score1||0,latestState?.puck?.score2||0,latestState?.gameType||"classic",...people.map(p=>[p.id,p.goals,p.assists,p.shots,p.hits,p.saves].join(":"))].join("|");if(signature===renderedStatsSignature)return;renderedStatsSignature=signature;
@@ -439,19 +440,28 @@ async function loadRooms(kind=activeBrowserKind){
  try{
   const response=await fetch(base+endpoint,{cache:"no-store"});if(!response.ok)throw Error("Server returned "+response.status);
   const data=await response.json();list.replaceChildren();const rooms=Array.isArray(data.rooms)?data.rooms:[];
-  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
+  if(pendingInviteCode){
+   const invited=rooms.find(item=>String(item.code||"").toUpperCase()===pendingInviteCode);
+   if(invited){
+    pendingInviteCode="";$("lobbyBrowser").classList.add("hidden");
+    if(isPrivate){selectedPrivateRoom=invited;pendingLobbySpectator=false;openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Invite for "+(invited.lobbyName||"private lobby")+". Enter the host's password; it is never included in the link.";}
+    else{const live=["countdown","playing","goal","finished"].includes(invited.status),full=(invited.playerCount||0)>=(invited.capacity||2);$("mode").value=invited.mode||"1v1";$("map").value=invited.map||"Classic";connect("join-room",invited.roomId,{spectator:live||full});}
+    return;
+   }
+  }
+  if(!rooms.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent=pendingInviteCode?"Invite room not found yet. It may have closed or the server may be waking up — press Refresh to try again.":isPrivate?"No private lobbies are waiting right now. Create one and share its room code and password.":"No public lobbies are waiting right now. Create a public lobby or refresh in a moment.";list.appendChild(empty);return;}
   for(const item of rooms){
-   const card=document.createElement("div");card.className="room-card";
+   const card=document.createElement("div");card.className="room-card";card.dataset.mode=String(item.mode||"1v1");card.dataset.search=[item.lobbyName,item.code,item.mode,item.gameType,item.map,...(item.players||[]),...(item.roster||[]).map(p=>p.name)].join(" ").toLowerCase();
    const meta=document.createElement("span");meta.className="room-meta";
    const title=document.createElement("strong");title.textContent=(item.lobbyName||"Hockey Lobby")+" · "+String(item.mode||"1v1").toUpperCase();
    const rosterNames=(item.roster||[]).map(p=>(p.spectator?"👁 ":"")+p.name+(p.bot?" (AI)":p.ready?" ✓":""));
    const names=document.createElement("span");names.textContent="Players: "+(rosterNames.length?rosterNames.join(", "):(item.players?.length?item.players.join(", "):"Waiting for players"));
-   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.spectatorCount||0)+" watching · "+(item.map||"Classic")+" · "+(item.status||"waiting")+" · "+item.code;
+   const sub=document.createElement("span");sub.textContent=(item.playerCount||0)+"/"+item.capacity+" players · "+(item.spectatorCount||0)+" watching · "+(item.gameType||"classic")+" · "+(item.map||"Classic")+" · "+(item.readyCount||0)+" ready · "+(item.status||"waiting")+" · "+item.code;
    meta.append(title,names,sub);
    const actions=document.createElement("div");actions.className="room-actions";
    const join=document.createElement("button");join.type="button";join.className="join-label";const isLive=["countdown","playing","goal","finished"].includes(item.status),isFull=(item.playerCount||0)>=(item.capacity||2);
-   join.textContent=isPrivate?"PASSWORD →":isLive?"IN MATCH":isFull?"FULL":"JOIN →";
-   join.disabled=!isPrivate&&(isLive||isFull);
+   join.textContent=isPrivate?(isLive?"MATCH LIVE":isFull?"FULL · WATCH":"PASSWORD →"):isLive?"IN MATCH":isFull?"FULL · WATCH":"JOIN →";
+   join.disabled=isLive||isFull;
    const watch=document.createElement("button");watch.type="button";watch.className="secondary watch-label";watch.textContent=isPrivate?"WATCH · PASSWORD":"👁 WATCH";
    join.onclick=()=>{
     if(isLive||isFull){if(!isPrivate)say("That room is already in a match or full. Use WATCH to spectate.");return;}
@@ -466,6 +476,7 @@ async function loadRooms(kind=activeBrowserKind){
    };
    actions.append(join,watch);card.append(meta,actions);list.appendChild(card);
   }
+  filterRoomCards();
  }catch(e){list.replaceChildren();const err=document.createElement("p");err.className="browser-help";err.textContent="Couldn't load lobbies: "+(e?.message||e)+". Check the server URL and try again.";list.appendChild(err);}
 }
 function openLobbyPrompt(action){
@@ -541,6 +552,7 @@ $("closeLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden")
 $("doneLobbyPeople").onclick=()=>$("lobbyPeopleDialog").classList.add("hidden");
 $("lobbyPeopleDialog").addEventListener("click",e=>{if(e.target===$("lobbyPeopleDialog"))$("lobbyPeopleDialog").classList.add("hidden");});
 $("refreshRooms").onclick=()=>loadRooms(activeBrowserKind);
+setInterval(()=>{if(!$("lobbyBrowser").classList.contains("hidden"))loadRooms(activeBrowserKind);},15000);
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
 $("lobbyPrompt").addEventListener("click",e=>{if(e.target===$("lobbyPrompt"))$("lobbyPrompt").classList.add("hidden");});
@@ -570,6 +582,23 @@ function advanceIntroSlide(){
  setTimeout(()=>{if(!document.body.classList.contains("in-lobby"))showIntroSlide(introIndex+1);art.classList.remove("swapping");},210);
 }
 setInterval(advanceIntroSlide,5200);
+function inviteUrl(code,isPrivate){
+ const url=new URL(location.href);url.search="";url.searchParams.set("kind",isPrivate?"private":"public");url.searchParams.set("action","join");url.searchParams.set("invite",String(code||"").trim().toUpperCase());return url.toString();
+}
+async function copyInviteLink(code,isPrivate){
+ if(!code){say("The lobby code is still syncing. Try again in a moment.");return;}
+ const link=inviteUrl(code,isPrivate);
+ try{await navigator.clipboard.writeText(link);say("Invite link copied. "+(isPrivate?"Share the room password separately.":"Friends can use this link to join or spectate."));}
+ catch{$("lobbyPeopleSummary").textContent="Copy this invite link manually: "+link+(isPrivate?" · share the password separately.":"");say("Clipboard unavailable — invite link shown in the lobby summary.");}
+}
+$("copyLobbyInvite").onclick=()=>copyInviteLink(latestState?.code||$("code").value.trim().toUpperCase(),!!latestState?.private);
+$("copyCreatedInvite").onclick=()=>copyInviteLink(pendingCreatedLobby?.code||$("createdRoomCode").textContent,pendingCreatedLobby?.private);
+$("roomSearch").addEventListener("input",filterRoomCards);$("roomModeFilter").addEventListener("change",filterRoomCards);
+function filterRoomCards(){
+ const query=$("roomSearch").value.trim().toLowerCase(),mode=$("roomModeFilter").value,cards=[...$("roomList").querySelectorAll(".room-card")];let visible=0;
+ for(const card of cards){const keep=(mode==="all"||card.dataset.mode===mode)&&(!query||card.dataset.search.includes(query));card.classList.toggle("hidden",!keep);if(keep)visible++;}
+ let empty=$("roomFilterEmpty");if(!visible&&cards.length){if(!empty){empty=document.createElement("p");empty.id="roomFilterEmpty";empty.className="browser-help";$("roomList").appendChild(empty);}empty.textContent="No lobbies match those filters.";}else if(empty)empty.remove();
+}
 function showLobbyCreated(info){
  pendingCreatedLobby=info;$("createdTitle").textContent=(info.private?"Private":"Public")+" lobby is live";
  $("createdDescription").textContent="Your lobby has been created and you're already inside. Copy this room code and share it"+(info.private?" with the private password you chose.":" with your friends.") ;
@@ -670,7 +699,8 @@ $("map").addEventListener("change",draw);$("skin").addEventListener("change",dra
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 const params=new URLSearchParams(location.search);
 if(params.has("kind"))document.body.dataset.fullscreen="true";
-if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyPrompt("create-private");
+if(params.get("invite")){pendingInviteCode=String(params.get("invite")||"").trim().toUpperCase();const inviteKind=params.get("kind")==="private"?"private":"public";$("lobbyBrowser").classList.remove("hidden");loadRooms(inviteKind);}
+else if(params.get("kind")==="private"&&params.get("action")==="create")openLobbyPrompt("create-private");
 else if(params.get("kind")==="private"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms("private");}
 else if(params.get("kind")==="public"&&params.get("action")==="create")openLobbyPrompt("create-public");
 else if(params.get("kind")==="public"&&params.get("action")==="join"){$("lobbyBrowser").classList.remove("hidden");loadRooms();}
