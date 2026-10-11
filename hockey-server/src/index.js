@@ -53,6 +53,8 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(mode==="2v2-ai"){addAI(this,1,1);addAI(this,2,1);addAI(this,2,2);}
 
   this.onMessage("move",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||p.spectator||this.state.status==="finished")return;
+   if(this.state.gameType==="shootout"&&p.team!==this.state.shootoutTeam){p.inputX=0;p.inputY=0;return;}
+   if(p.role==="goalie"){p.inputX=0;p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));return;}
    p.inputX=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
   this.onMessage("customize",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;this.updateTeamNames();this.broadcastLobby();});
@@ -197,7 +199,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.cancelMatchmaking();state.status="finished";state.countdown=0;
   const result={score1:state.puck.score1,score2:state.puck.score2};
   const goalie=state.gameType==="goalie"?Array.from(state.players.values()).find(p=>p.role==="goalie"&&!p.spectator):null;
-  const winner=goalie?(goalie.saves>=result.score1?2:1):result.score1===result.score2?0:result.score1>result.score2?1:2;
+  const winner=goalie?(goalie.saves>result.score1?2:goalie.saves<result.score1?1:0):result.score1===result.score2?0:result.score1>result.score2?1:2;
   const matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,finishedAt:Date.now(),winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
   this.broadcast("finished",{...result,gameType:state.gameType,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
@@ -232,6 +234,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const ps=Array.from(state.players.values()).filter(p=>!p.spectator);
   for(const p of ps){
    if(p.sessionId.startsWith("ai-")){
+    if(state.gameType==="shootout"&&p.team!==state.shootoutTeam){p.inputX=0;p.inputY=0;continue;}
     const teamDir=p.team===1?1:-1,index=Number(p.sessionId.split("-")[2])||1;
     const tx=Math.max(50,Math.min(850,puck.x-teamDir*(index===1?24:75))),ty=Math.max(55,Math.min(545,puck.y+(index===1?-22:35)));
     let dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy)||1;p.inputX=dx/d*.86;p.inputY=dy/d*.86;
