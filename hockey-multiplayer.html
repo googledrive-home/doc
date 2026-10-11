@@ -250,7 +250,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
      <label for="competitionName">Name</label><input id="competitionName" minlength="3" maxlength="40" required placeholder="e.g. Friday Night Cup">
      <div class="competition-form-row"><label for="competitionFormat">Format<select id="competitionFormat"><option value="tournament">Knockout tournament</option><option value="league">Round-robin league</option></select></label><label for="competitionSize">Teams<select id="competitionSize"><option value="4">4 teams</option><option value="8">8 teams</option></select></label></div>
      <button type="submit">CREATE EVENT</button>
-     <div id="competitionOrganizerNote" class="competition-key-note hidden"><strong>Organizer key saved for this browser tab.</strong><p>Keep this browser session open to manage results. Copy the key somewhere safe in case you need it again during this session.</p><button id="copyCompetitionKey" class="secondary" type="button">COPY ORGANIZER KEY</button></div>
+     <div id="competitionOrganizerNote" class="competition-key-note hidden"><strong id="competitionOrganizerStatus">Organizer key saved for this browser tab.</strong><p id="competitionOrganizerHelp">Keep this browser session open to manage results. You can also paste a saved key to manage an event from another tab.</p><label for="competitionKeyInput">Organizer key</label><input id="competitionKeyInput" type="password" autocomplete="off" maxlength="48" placeholder="Paste a 48-character organizer key"><div class="competition-form-row"><button id="applyCompetitionKey" class="secondary" type="button">USE KEY</button><button id="copyCompetitionKey" class="secondary" type="button">COPY KEY</button></div></div>
     </form>
     <div class="competition-panel"><div class="competition-panel-head"><h3>COMPETITIONS</h3><button id="refreshCompetitions" class="secondary" type="button">↻</button></div><div id="competitionList" class="competition-list"><p class="browser-help">Loading competitions…</p></div></div>
    </div>
@@ -689,7 +689,9 @@ function renderCompetitionDetails(comp){
  const summary=$("competitionDetailSummary"),register=$("competitionRegisterForm"),tools=$("competitionOrganizerTools"),standings=$("competitionStandings"),schedule=$("competitionSchedule"),resultForms=$("competitionResultForms"),keyNote=$("competitionOrganizerNote");
  summary.replaceChildren();standings.replaceChildren();schedule.replaceChildren();resultForms.replaceChildren();
  const key=comp?getCompetitionKey(comp.id):"";currentCompetitionKey=key;
- keyNote.classList.toggle("hidden",!key);
+ keyNote.classList.toggle("hidden",!comp);
+ $("competitionOrganizerStatus").textContent=key?"Organizer key saved for this browser tab.":"Organizer access";
+ $("competitionOrganizerHelp").textContent=key?"This key can manage this event. Keep it private; anyone with the key can enter results.":"Paste the organizer key you saved when creating this event. The key is not shown in the public event listing.";
  if(!comp){
   summary.append(competitionNode("h3","","SELECT AN EVENT"),competitionNode("p","competition-empty","Choose a competition to view teams, fixtures and standings."));
   register.classList.add("hidden");tools.classList.add("hidden");standings.classList.add("hidden");schedule.classList.add("hidden");return;
@@ -769,6 +771,13 @@ $("copyCompetitionKey").onclick=async()=>{
  if(!selectedCompetitionId||!currentCompetitionKey)return;
  try{await navigator.clipboard.writeText(currentCompetitionKey);setCompetitionFeedback("Organizer key copied. Treat it like a password.");}
  catch{setCompetitionFeedback("Clipboard unavailable. The organizer key remains stored in this browser session.");}
+};
+$("applyCompetitionKey").onclick=()=>{
+ if(!selectedCompetitionId){setCompetitionFeedback("Select a competition first.");return;}
+ const key=$("competitionKeyInput").value.trim();
+ if(!/^[a-f0-9]{48}$/i.test(key)){setCompetitionFeedback("Organizer key must be the 48-character key generated when the event was created.");return;}
+ saveCompetitionKey(selectedCompetitionId,key);$("competitionKeyInput").value="";
+ const comp=competitionsCache.find(item=>item.id===selectedCompetitionId);renderCompetitionDetails(comp||null);setCompetitionFeedback("Organizer access enabled for "+(comp?.name||"this competition")+".");
 };
 $("competitionCreateForm").addEventListener("submit",async event=>{
  event.preventDefault();const submit=$("competitionCreateForm").querySelector('button[type="submit"]');submit.disabled=true;
