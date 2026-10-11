@@ -524,8 +524,9 @@ async function connect(kind,roomId=null,extra={}){
    else if(state.status==="countdown"){label("FACE-OFF");say("Face-off countdown…");}
    else if(state.status==="goal"){if(state.gameType==="shootout"){label("NEXT SHOOTER");say("SHOOTOUT · "+(state.shootoutTeam===1?state.teamName1:state.teamName2)+" up next · "+state.puck.score1+" — "+state.puck.score2);}else if(state.gameType==="goalie"){label("GOALIE CHALLENGE");say("Goalie reset · "+(targetPlayers[room.sessionId]?.saves||0)+" saves · "+state.puck.score1+" goals allowed");}else{label("GOAL!");say("Goal scored — players resetting for face-off.");}}
    else if(state.status==="playing"){
-    label(state.gameType==="shootout"?"SHOOTOUT":state.gameType==="goalie"?"GOALIE CHALLENGE":state.gameType==="time-attack"?"TIME ATTACK":"LIVE MATCH");
-    if(state.gameType==="shootout")say("SHOOTOUT · "+(state.shootoutTeam===1?state.teamName1:state.teamName2)+" shooting · "+state.puck.score1+" — "+state.puck.score2+" · "+(state.shootoutAttempts1||0)+"/5 – "+(state.shootoutAttempts2||0)+"/5 attempts"+(state.shootoutAttempts1>=5&&state.shootoutAttempts2>=5?" · SUDDEN DEATH":"")+" · "+Math.max(0,state.countdown||0)+"s");
+    label(state.overtime?"OVERTIME":state.gameType==="shootout"?"SHOOTOUT":state.gameType==="goalie"?"GOALIE CHALLENGE":state.gameType==="time-attack"?"TIME ATTACK":"LIVE MATCH");
+    if(state.overtime)say("OVERTIME · PERIOD "+(state.overtimePeriod||1)+" · SUDDEN DEATH · NEXT GOAL WINS · "+Math.max(0,Math.ceil(state.matchTime))+"s");
+    else if(state.gameType==="shootout")say("SHOOTOUT · "+(state.shootoutTeam===1?state.teamName1:state.teamName2)+" shooting · "+state.puck.score1+" — "+state.puck.score2+" · "+(state.shootoutAttempts1||0)+"/5 – "+(state.shootoutAttempts2||0)+"/5 attempts"+(state.shootoutAttempts1>=5&&state.shootoutAttempts2>=5?" · SUDDEN DEATH":"")+" · "+Math.max(0,state.countdown||0)+"s");
     else if(state.gameType==="goalie"){const me=targetPlayers[room.sessionId];say("GOALIE CHALLENGE · "+(me?.saves||0)+" saves · "+state.puck.score1+" goals allowed · "+Math.max(0,Math.ceil(state.matchTime))+"s left");}
     else if(state.gameType==="time-attack")say("TIME ATTACK · "+state.puck.score1+" — "+state.puck.score2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");
     else say(state.teamName1+" vs "+state.teamName2+" · "+Math.max(0,Math.ceil(state.matchTime))+"s left");
@@ -537,6 +538,8 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
   room.onMessage("faceoff",m=>{if(!m.seconds||m.seconds<=0)return;playSound("faceoff");overlay="FACE-OFF";overlayKind="start";overlayUntil=performance.now()+3000;});
   room.onMessage("matchStarting",m=>{lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("replayBadge").classList.add("hidden");});
+  room.onMessage("overtimeStarted",m=>{playSound("matchStart");overlay="OVERTIME!";overlayKind="overtime";overlayUntil=performance.now()+2600;say(m.message||"Overtime · sudden death · next goal wins.");});
+  room.onMessage("overtimeContinues",m=>say(m.message||("Still tied — overtime period "+m.period+". Next goal wins.")));
   room.onMessage("matchStarted",m=>{playSound("matchStart");overlay="";overlayKind="";noticeMessage="";if(m?.gameType==="shootout")say("SHOOTOUT · alternating 8-second attempts · sudden death if tied");else if(m?.gameType==="goalie")say("GOALIE CHALLENGE · move up and down to block incoming shots");else if(m?.gameType==="time-attack")say("TIME ATTACK · 60 seconds on the clock · score as many as possible");});
   room.onMessage("playerLeft",m=>{noticeMessage=m.message||((m.name||"A player")+" left. Match stopped — settings restored.");document.body.classList.add("in-lobby","config-open");document.body.classList.remove("match-live");$("playMatch").classList.remove("hidden");$("playMatch").disabled=false;$("playMatch").textContent="▶ PLAY";$("toggleSetup").classList.remove("hidden");label("PLAYER LEFT");say(noticeMessage);overlay="";overlayKind="";$("toggleSetup").setAttribute("aria-label","Close settings");});
   room.onMessage("practiceGoal",m=>{playSound("practiceGoal");say(m.message||"Practice goal — puck back at centre.");});
@@ -546,7 +549,7 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("goalieClear",m=>say(m.message||"Puck cleared from the crease."));
   room.onMessage("goalReplay",m=>{if(Array.isArray(m?.frames)&&m.frames.length>=4){lastGoalReplay=m.frames;$("goalReplayButton").classList.remove("hidden");$("goalReplayButton").textContent="▶ GOAL REPLAY";}});
   room.onMessage("goal",m=>{if(replayMode){replayMode=false;$("replayBadge").classList.add("hidden");}playSound("goal");overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
-  room.onMessage("finished",m=>{lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" WINS";overlayKind="finish";say((m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
+  room.onMessage("finished",m=>{lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+(m.overtime?" WINS IN OVERTIME":" WINS");overlayKind="finish";say((m.overtime?"OVERTIME FINAL · ":m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
    room.onMessage("matchHistory",m=>{roomMatchHistory=Array.isArray(m.matches)?m.matches:roomMatchHistory;if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];renderedStatsSignature="";if(!$("statsDialog").classList.contains("hidden"))renderMatchStats();});
   room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");renderLobbyPeople();});
   room.onMessage("lobbyNotice",m=>{say(m.message||"Lobby updated.");renderLobbyPeople();});
@@ -1074,14 +1077,14 @@ function draw(){
  ctx.fillStyle="#07172558";ctx.fillRect(20,35,215,31);ctx.strokeStyle="#ffffff1f";ctx.strokeRect(20,35,215,31);ctx.fillStyle="#eaf8ff";ctx.font="800 12px system-ui";ctx.textAlign="left";ctx.fillText(t1+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===1).length+" skaters",30,55);
  ctx.fillStyle="#07172558";ctx.fillRect(665,35,215,31);ctx.strokeStyle="#ffffff1f";ctx.strokeRect(665,35,215,31);ctx.fillStyle="#eaf8ff";ctx.textAlign="right";ctx.fillText(t2+"  ·  "+Object.values(viewPlayers).filter(p=>p.team===2).length+" skaters",870,55);
  ctx.fillStyle="#03101d66";ctx.fillRect(286,28,328,49);ctx.strokeStyle="#ffffff30";ctx.strokeRect(286,28,328,49);ctx.textAlign="center";ctx.fillStyle="#e7faff";ctx.font="900 17px system-ui";ctx.fillText(t1+"  "+score1+"  —  "+score2+"  "+t2,450,49);ctx.fillStyle="#97bbd5";ctx.font="800 10px system-ui";const secs=latestState?Math.max(0,Math.ceil(latestState.matchTime||0)):Number($("duration").value);const gameType=latestState?.gameType||$("gameType").value,shootClock=gameType==="shootout"?Math.max(0,Number(latestState?.countdown)||0):secs,modeLabel=gameType==="shootout"?"SHOOTOUT · "+(latestState?.shootoutAttempts1||0)+"/5 – "+(latestState?.shootoutAttempts2||0)+"/5":gameType==="goalie"?"GOALIE CHALLENGE · "+(Object.values(viewPlayers).find(p=>p.role==="goalie")?.saves||0)+" SAVES · "+(latestState?.puck?.score1||0)+" GOALS ALLOWED":gameType==="time-attack"?"TIME ATTACK · "+(latestState?.puck?.score1||0)+" GOALS · "+formatTime(secs)+" LEFT":((latestState?.training||$("training").value)==="none"?"EXHIBITION":(latestState?.training||$("training").value).toUpperCase())+((latestState?.competition??($("competition").value==="true"))?" · FIRST TO 5":"");
-  ctx.fillText((map.toUpperCase())+" RINK  ·  "+(gameType==="shootout"?"SHOT CLOCK "+formatTime(shootClock):formatTime(secs)+" LEFT")+"  ·  "+modeLabel,450,66);
+  ctx.fillText((map.toUpperCase())+" RINK  ·  "+(latestState?.overtime?"OVERTIME "+formatTime(secs)+" LEFT":gameType==="shootout"?"SHOT CLOCK "+formatTime(shootClock):formatTime(secs)+" LEFT")+"  ·  "+(latestState?.overtime?"SUDDEN DEATH · NEXT GOAL WINS · OT "+(latestState.overtimePeriod||1):modeLabel),450,66);
  if(overlay&&now>=overlayUntil){overlay="";overlayKind="";}
  if(overlay&&overlayKind==="start"&&now<overlayUntil){
   const remaining=(overlayUntil-now)/1000,n=remaining>.45?Math.min(3,Math.ceil(remaining-.35)):0;
   ctx.fillStyle="rgba(2,8,18,.25)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.shadowColor="#000";ctx.shadowBlur=12;ctx.font="900 88px system-ui";ctx.fillText(n?String(n):"GO!",450,270);ctx.shadowBlur=0;ctx.fillStyle="#9eefff";ctx.font="900 20px system-ui";ctx.fillText("FACE-OFF",450,328);ctx.font="700 13px system-ui";ctx.fillStyle="#fff";ctx.fillText((latestState?.teamName1||"Team 1")+"  vs  "+(latestState?.teamName2||"Team 2"),450,360);
  }
  else if(overlay&&now<overlayUntil){
-  ctx.fillStyle="rgba(2,8,18,.26)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle=overlay.includes("SCORES")?theme.goal2:"#f8fcff";ctx.font="1000 48px system-ui";ctx.shadowColor="#000";ctx.shadowBlur=12;ctx.fillText(overlay,450,278);ctx.shadowBlur=0;ctx.fillStyle="#a9efff";ctx.font="900 18px system-ui";ctx.fillText(overlayKind==="goal"?(latestState?.puck?.score1||0)+" — "+(latestState?.puck?.score2||0):"HOCKEY ARENA ONLINE",450,319);
+  ctx.fillStyle="rgba(2,8,18,.26)";ctx.fillRect(12,24,876,552);ctx.textAlign="center";ctx.fillStyle=overlay.includes("SCORES")?theme.goal2:"#f8fcff";ctx.font="1000 48px system-ui";ctx.shadowColor="#000";ctx.shadowBlur=12;ctx.fillText(overlay,450,278);ctx.shadowBlur=0;ctx.fillStyle="#a9efff";ctx.font="900 18px system-ui";ctx.fillText(overlayKind==="goal"?(latestState?.puck?.score1||0)+" — "+(latestState?.puck?.score2||0):overlayKind==="overtime"?"NEXT GOAL WINS · SUDDEN DEATH":"HOCKEY ARENA ONLINE",450,319);
  }
  else if(latestState&&latestState.status==="waiting"){
   ctx.fillStyle="rgba(2,8,18,.35)";ctx.fillRect(350,83,200,27);ctx.textAlign="center";ctx.fillStyle="#f5fbff";ctx.font="800 11px system-ui";ctx.fillText(latestState.countdown>0?"MATCHMAKING · "+latestState.countdown+"s":"LOBBY READY · PRESS PLAY",450,101);
@@ -1128,9 +1131,34 @@ function updateRender(){
   }
   const puckAge=Math.min(.024,Math.max(0,(now-targetPuckReceivedAt)/1000)),estimatedPuckX=Math.max(1,Math.min(899,targetPuck.x+(targetPuck.vx||0)*puckAge)),estimatedPuckY=Math.max(1,Math.min(599,targetPuck.y+(targetPuck.vy||0)*puckAge));
   puck.x+=(estimatedPuckX-puck.x)*Math.min(1,dt*48);puck.y+=(estimatedPuckY-puck.y)*Math.min(1,dt*48);puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
+  keepRenderedPuckOutsidePlayers();
   puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  }
  draw();renderId=requestAnimationFrame(updateRender);
+}
+function keepRenderedPuckOutsidePlayers(){
+ if(replayMode)return;
+ const radius=30.8;
+ // Prevent snapshot interpolation from briefly drawing the puck inside a player while the server resolves the actual collision.
+ for(let pass=0;pass<4;pass++){
+  let corrected=false;
+  for(const player of Object.values(viewPlayers)){
+   if(player.spectator)continue;
+   const dx=puck.x-player.x,dy=puck.y-player.y,d=Math.hypot(dx,dy);
+   if(d>=radius)continue;
+   let nx=0,ny=0;
+   if(d>.001){nx=dx/d;ny=dy/d;}
+   else{
+    const pvx=Number(targetPuck.vx)||0,pvy=Number(targetPuck.vy)||0,svx=Number(player.vx)||0,svy=Number(player.vy)||0;
+    const ps=Math.hypot(pvx,pvy),ss=Math.hypot(svx,svy);
+    if(ss>ps&&ss>.001){nx=svx/ss;ny=svy/ss;}
+    else if(ps>.001){nx=-pvx/ps;ny=-pvy/ps;}
+    else{nx=player.team===1?1:-1;ny=0;}
+   }
+   puck.x=player.x+nx*radius;puck.y=player.y+ny*radius;corrected=true;
+  }
+  if(!corrected)break;
+ }
 }
 function getSpectatorFocusPoint(){
  const selection=$("spectatorFocus").value||"puck";
