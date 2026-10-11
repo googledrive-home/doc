@@ -79,42 +79,44 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,50)/1000),1000/30);
  }
  onJoin(client,options){
-  const humanCount=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
-  if(!["practice","matchmaking","waiting"].includes(this.state.status)){client.leave(4002,"Match already started");return;}
-  if(humanCount>=CAPACITY[this.state.mode]){client.leave(4001,"Lobby full");return}
-  const team=this.state.mode==="2v2-ai"?1:(humanCount%2===0?1:2);
-  const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.x=team===1?130:770;p.y=150+humanCount*55;p.skin=Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=Math.max(0,Math.min(7,Number(options?.trail)||0));
-  this.state.players.set(client.sessionId,p);if(!this.state.hostId)this.state.hostId=client.sessionId;this.updateTeamNames();
-  const humansNow=Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length;
-  if(this.matchmakingStarted&&humansNow>=CAPACITY[this.state.mode])this.startFaceoff();
-  this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
+  const spectator=!!options?.spectator;
+  const humans=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")&&!p.spectator);
+  if(!spectator&&!["practice","waiting"].includes(this.state.status)){client.leave(4002,"This match has started; join as a spectator instead.");return;}
+  if(!spectator&&humans.length>=CAPACITY[this.state.mode]){client.leave(4001,"Lobby full");return;}
+  if(spectator&&Array.from(this.state.players.values()).filter(p=>p.spectator).length>=8){client.leave(4003,"Spectator slots are full");return;}
+  const team=spectator?0:this.assignTeam();
+  const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.spectator=spectator;p.ready=false;p.x=team===1?130:team===2?770:450;p.y=300;p.skin=Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=0;
+  this.state.players.set(client.sessionId,p);
+  if(!this.state.hostId&&!spectator)this.state.hostId=client.sessionId;
+  this.updateTeamNames();this.broadcastLobby();
+  if(spectator)this.broadcast("lobbyNotice",{message:p.name+" joined as a spectator."});
  }
  onLeave(client){
   const leaving=this.state.players.get(client.sessionId);
-  if(!leaving)return; // A rejected late/full-room join must not stop the current match.
+  if(!leaving)return;
   this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);
-  const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status);
+  const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status),wasSpectator=!!leaving.spectator;
   this.state.players.delete(client.sessionId);
-  if(this.state.hostId===client.sessionId){const next=this.state.players.keys().next();this.state.hostId=next.done?"":next.value;}
+  if(this.state.hostId===client.sessionId){const next=Array.from(this.state.players.values()).find(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));this.state.hostId=next?.sessionId||"";}
   this.updateTeamNames();
-  const humansRemaining=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")).length;
+  if(wasSpectator){this.broadcastLobby();this.broadcast("lobbyNotice",{message:leavingName+" stopped spectating."});return;}
+  const humansRemaining=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")&&!p.spectator).length;
   if(!humansRemaining){
    clearTimeout(this.finishTimer);this.finishTimer=null;this.cancelMatchmaking();
    for(const id of Array.from(this.state.players.keys()))this.state.players.delete(id);
-   this.state.hostId="";this.state.status="practice";this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.resetPuck();
-   if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);
-   return;
+   this.state.hostId="";this.state.status="practice";this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.resetPuck();this.broadcast("roomClosed",{message:"The last player left. This lobby has closed."});
+   for(const connectedClient of this.clients){try{connectedClient.leave(4005,"Lobby closed");}catch{}}
+   if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);return;
   }
   if(wasMatchActive){
    clearTimeout(this.finishTimer);this.finishTimer=null;this.cancelMatchmaking();
-   for(const [id,p] of Array.from(this.state.players.entries())){if(id.startsWith("ai-")){this.state.players.delete(id);continue;}p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.x=p.team===1?130:770;p.y=300;}
+   for(const [id,p] of Array.from(this.state.players.entries())){if(id.startsWith("ai-")){this.state.players.delete(id);continue;}if(p.spectator)continue;p.ready=false;p.vx=0;p.vy=0;p.inputX=0;p.inputY=0;p.x=p.team===1?130:770;p.y=300;}
    this.state.puck.score1=0;this.state.puck.score2=0;this.state.matchTime=this.state.matchLength;this.resetPuck();this.state.status="practice";this.state.countdown=0;
-   this.broadcast("playerLeft",{name:leavingName,message:leavingName+" left. Match stopped — back to practice."});
+   this.broadcast("playerLeft",{name:leavingName,message:leavingName+" left. Match stopped — back to the lobby."});
   }else{
-   if(this.matchmakingStarted&&Array.from(this.state.players.values()).filter(q=>!q.sessionId.startsWith("ai-")).length===0)this.cancelMatchmaking();
-   this.broadcast("playerLeft",{name:leavingName,message:leavingName+" left the practice rink."});
+   this.broadcast("playerLeft",{name:leavingName,message:leavingName+" left the lobby."});
   }
-  this.broadcast("lobby",{code:this.roomCode,mode:this.state.mode,private:this.state.private,players:this.state.players.size,capacity:CAPACITY[this.state.mode]});
+  this.broadcastLobby();
  }
  emitBoardHit(speed){const now=Date.now();if(speed<110||now-this.lastBoardSoundAt<130)return;this.lastBoardSoundAt=now;this.broadcast("boardHit",{speed});}
  matchesPrivatePassword(value){
