@@ -525,27 +525,33 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    }
   }
 
-  // Final non-penetration solver: after all player contacts, guarantee the puck is outside every
-  // active skater/goalie. This prevents a second nearby player from pushing it back inside a player
-  // that was already resolved earlier in the collision loop.
-  for(let pass=0;pass<6;pass++){
-   let changed=false;
-   for(const p of ps){
-    if(state.gameType==="shootout"&&p.team!==state.shootoutTeam)continue;
-    const dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy);
-    if(d>=contactRadius-.01)continue;
-    let nx=0,ny=0;
-    if(d>.001){nx=dx/d;ny=dy/d;}
-    else{
-     const playerSpeed=Math.hypot(p.vx,p.vy),puckSpeed=Math.hypot(puck.vx,puck.vy);
-     if(playerSpeed>puckSpeed&&playerSpeed>.001){nx=p.vx/playerSpeed;ny=p.vy/playerSpeed;}
-     else if(puckSpeed>.001){nx=-puck.vx/puckSpeed;ny=-puck.vy/puckSpeed;}
-     else{nx=p.team===1?1:-1;ny=0;}
+  // Final non-penetration solver: if multiple nearby skaters overlap the puck in one tick,
+  // find the nearest point outside every player instead of alternately pushing it between them.
+  const solidPlayers=ps.filter(p=>!(state.gameType==="shootout"&&p.team!==state.shootoutTeam));
+  const separationRadius=contactRadius+.75;
+  if(solidPlayers.some(p=>Math.hypot(puck.x-p.x,puck.y-p.y)<separationRadius)){
+   const originX=puck.x,originY=puck.y;let best=null,bestDistance=Infinity;
+   for(const p of solidPlayers){
+    const base=Math.atan2(originY-p.y,originX-p.x);
+    for(let sample=0;sample<72;sample++){
+     const angle=base+sample*Math.PI*2/72,cx=p.x+Math.cos(angle)*separationRadius,cy=p.y+Math.sin(angle)*separationRadius;
+     let clear=true;
+     for(const q of solidPlayers){if(Math.hypot(cx-q.x,cy-q.y)<separationRadius-.15){clear=false;break;}}
+     if(!clear)continue;
+     const distance=(cx-originX)*(cx-originX)+(cy-originY)*(cy-originY);
+     if(distance<bestDistance){bestDistance=distance;best={x:cx,y:cy};}
     }
-    const target=contactRadius+.75;
-    puck.x=p.x+nx*target;puck.y=p.y+ny*target;changed=true;
    }
-   if(!changed)break;
+   if(best){puck.x=best.x;puck.y=best.y;}
+   else{
+    // Dense pile-up fallback: eject the puck out beyond the nearest side of the player cluster.
+    const near=solidPlayers.filter(p=>Math.hypot(originX-p.x,originY-p.y)<separationRadius),cx=near.reduce((n,p)=>n+p.x,0)/near.length,cy=near.reduce((n,p)=>n+p.y,0)/near.length;
+    let dx=originX-cx,dy=originY-cy,d=Math.hypot(dx,dy);
+    if(d<.001){dx=puck.vx!==0?-puck.vx:(near[0]?.team===1?1:-1);dy=puck.vy!==0?-puck.vy:0;d=Math.hypot(dx,dy)||1;}
+    dx/=d;dy/=d;
+    const edge=Math.max(...near.map(p=>Math.hypot(p.x-cx,p.y-cy)))+separationRadius;
+    puck.x=cx+dx*edge;puck.y=cy+dy*edge;
+   }
   }
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
