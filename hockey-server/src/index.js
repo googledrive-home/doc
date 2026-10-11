@@ -150,6 +150,8 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const total=TOTAL_SLOTS[this.state.mode]||CAPACITY[this.state.mode],counts=[0,0];
   for(const p of this.state.players.values())if(!p.spectator)counts[p.team===2?1:0]++;
   let next=1;while(Array.from(this.state.players.values()).filter(p=>!p.spectator).length<total){const team=counts[0]<=counts[1]?1:2;while(this.state.players.has("ai-"+team+"-"+next))next++;addAI(this,team,next++);counts[team-1]++;}
+  // Goalie Challenge always supplies an AI goalkeeper at each end, even when all regular skater slots are filled by humans.
+  if(this.state.gameType==="goalie"){for(const team of [1,2])if(!this.state.players.has("ai-"+team+"-1"))addAI(this,team,1);}
   for(const p of humans)p.ready=false;this.broadcastLobby();this.broadcast("matchStarting",{gameType:this.state.gameType,mode:this.state.mode,message:"Match starting"});this.startFaceoff();
  }
  createCompetition(client,msg){
