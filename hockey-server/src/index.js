@@ -440,7 +440,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     // Match the original single-player moveP physics: 620 acceleration, control-scaled
     // .12 friction, a 390 * speed cap, and the original rink movement bounds.
     const playerSpeed=state.playerSpeed*trainingScale;
-    const friction=Math.pow(.12/control,dt);
+    const friction=Math.pow(.09/control,dt);
     p.vx+=ax*620*playerSpeed*control*dt;p.vy+=ay*620*playerSpeed*control*dt;
     p.vx*=friction;p.vy*=friction;
     const vmax=390*playerSpeed,sp=Math.hypot(p.vx,p.vy);if(sp>vmax){p.vx=p.vx/sp*vmax;p.vy=p.vy/sp*vmax;}
