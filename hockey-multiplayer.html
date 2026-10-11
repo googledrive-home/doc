@@ -369,7 +369,7 @@ async function connect(kind,roomId=null,extra={}){
   if(kind!=="reconnect")room.send("customize",{name:o.name,skin:o.skin,trail:0});
   room.onStateChange(state=>{
    latestState=state;targetPlayers={};if(state.code){$("code").value=state.code;if(pendingCreatedLobby){pendingCreatedLobby.code=state.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=state.code;$("copyCreatedCode").disabled=false;}}}
-   $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);if(state.gameType!==undefined)$("gameType").value=state.gameType;
+   $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);if(state.gameType!==undefined){$("gameType").value=state.gameType;updateGameTypeHelp();}
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready,spectator:p.spectator,role:p.role||"skater",goals:p.goals,assists:p.assists,shots:p.shots,hits:p.hits,saves:p.saves};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id]};});
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
