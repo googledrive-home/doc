@@ -1375,8 +1375,8 @@ function renderRoster(){
  const people=Object.values(targetPlayers).sort((a,b)=>a.team-b.team||a.name.localeCompare(b.name));
  for(const p of people){const row=document.createElement("div");row.className="roster-name";row.style.color=p.team===1?"#bceeff":"#ffb6c3";row.textContent=(p.id?.startsWith("ai-")?"🤖 ":"")+p.name;names.appendChild(row);}
 }
-$("partyChatToggle").onclick=()=>{if(!room||!connected)return;$("partyChatDialog").classList.remove("hidden");$("partyChatInput").focus();};
-$("partyVoiceToggle").onclick=()=>{if(!room||!connected)return;$("partyVoiceDialog").classList.remove("hidden");updateVoiceUI();};
+$("partyChatToggle").onclick=()=>{if(!room||!connected)return;$("partyVoiceDialog").classList.add("hidden");$("partyChatDialog").classList.remove("hidden");$("partyChatInput").focus();};
+$("partyVoiceToggle").onclick=()=>{if(!room||!connected)return;$("partyChatDialog").classList.add("hidden");$("partyVoiceDialog").classList.remove("hidden");updateVoiceUI();};
 $("closePartyVoice").onclick=()=>$("partyVoiceDialog").classList.add("hidden");
 $("partyVoiceDialog").addEventListener("click",event=>{if(event.target===$("partyVoiceDialog"))$("partyVoiceDialog").classList.add("hidden");});
 $("joinPartyVoice").onclick=()=>void joinPartyVoice();
