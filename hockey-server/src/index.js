@@ -479,11 +479,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(spectator)this.broadcast("lobbyNotice",{message:p.name+" joined as a spectator."});
  }
  onLeave(client){
+  const voicePeer=this.voicePeers.get(client.sessionId);if(voicePeer){this.voicePeers.delete(client.sessionId);this.broadcast("voicePeerLeft",{sessionId:client.sessionId,name:voicePeer.name});}this.voiceSignalRate.delete(client.sessionId);
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return;
   this.checkpointAccountPlaytime(Date.now(),client.sessionId);
   this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);this.partyChatRate.delete(client.sessionId);
-  const voicePeer=this.voicePeers.get(client.sessionId);if(voicePeer){this.voicePeers.delete(client.sessionId);this.broadcast("voicePeerLeft",{sessionId:client.sessionId,name:voicePeer.name});}this.voiceSignalRate.delete(client.sessionId);
   const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status),wasSpectator=!!leaving.spectator;
   this.state.players.delete(client.sessionId);
   if(this.state.hostId===client.sessionId){const next=Array.from(this.state.players.values()).find(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));this.state.hostId=next?.sessionId||"";}
