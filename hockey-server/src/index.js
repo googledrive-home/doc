@@ -387,7 +387,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.onMessage("partyChat",(client,msg)=>{
    const player=this.state.players.get(client.sessionId);
    if(!player||player.sessionId.startsWith("ai-"))return;
-   const text=String(msg?.text??"").replace(/[\\u0000-\\u001f\\u007f]/g," ").trim().slice(0,280);
+   const text=String(msg?.text??"").replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,280);
    if(!text)return;
    const now=Date.now(),recent=(this.partyChatRate.get(client.sessionId)||[]).filter(at=>now-at<5000);
    if(recent.length>=5||(recent.length>0&&now-recent[recent.length-1]<650)){
