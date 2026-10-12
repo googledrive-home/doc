@@ -357,7 +357,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // Send movement state at 60 Hz so remote players and puck need less visual guesswork between snapshots.
   this.setPatchRate(1000/60);
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
-  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();this.partyChatRate=new Map();
+  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();this.partyChatRate=new Map();this.voicePeers=new Map();this.voiceSignalRate=new Map();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
@@ -398,6 +398,37 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    recent.push(now);this.partyChatRate.set(client.sessionId,recent);
    // Colyseus broadcasts are scoped to this room, so other lobbies never receive party chat.
    this.broadcast("partyChatMessage",{name:String(player.name||"Player").slice(0,24),text,at:now});
+  });
+  this.onMessage("voiceJoin",(client)=>{
+   const player=this.state.players.get(client.sessionId);if(!player||player.sessionId.startsWith("ai-"))return;
+   if(this.voicePeers.has(client.sessionId)){client.send("voicePeers",{peers:[...this.voicePeers.entries()].filter(([id])=>id!==client.sessionId).map(([sessionId,v])=>({sessionId,name:v.name}))});return;}
+   this.voicePeers.set(client.sessionId,{name:String(player.name||"Player").slice(0,24)});
+   client.send("voicePeers",{peers:[...this.voicePeers.entries()].filter(([id])=>id!==client.sessionId).map(([sessionId,v])=>({sessionId,name:v.name}))});
+   this.broadcast("voicePeerJoined",{sessionId:client.sessionId,name:String(player.name||"Player").slice(0,24)});
+  });
+  this.onMessage("voiceLeave",(client)=>{
+   const peer=this.voicePeers.get(client.sessionId);if(!peer)return;
+   this.voicePeers.delete(client.sessionId);this.voiceSignalRate.delete(client.sessionId);
+   this.broadcast("voicePeerLeft",{sessionId:client.sessionId,name:peer.name});
+  });
+  this.onMessage("voiceSignal",(client,msg)=>{
+   if(!this.voicePeers.has(client.sessionId))return;
+   const to=String(msg?.to||"");if(!to||to===client.sessionId||!this.voicePeers.has(to))return;
+   const signal=msg?.signal;if(!signal||typeof signal!=="object")return;
+   let size=0;try{size=JSON.stringify(signal).length;}catch{return;}if(size>24000)return;
+   const type=String(signal.type||"");let safeSignal=null;
+   if((type==="offer"||type==="answer")&&typeof signal.sdp==="string"&&signal.sdp.length>0&&signal.sdp.length<=18000){
+    safeSignal={type,sdp:signal.sdp};
+   }else if(type==="candidate"&&signal.candidate&&typeof signal.candidate.candidate==="string"&&signal.candidate.candidate.length<=4096){
+    safeSignal={type,candidate:{candidate:signal.candidate.candidate.slice(0,4096)}};
+    if(typeof signal.candidate.sdpMid==="string")safeSignal.candidate.sdpMid=signal.candidate.sdpMid.slice(0,128);
+    if(Number.isInteger(signal.candidate.sdpMLineIndex)&&signal.candidate.sdpMLineIndex>=0&&signal.candidate.sdpMLineIndex<=255)safeSignal.candidate.sdpMLineIndex=signal.candidate.sdpMLineIndex;
+    if(typeof signal.candidate.usernameFragment==="string")safeSignal.candidate.usernameFragment=signal.candidate.usernameFragment.slice(0,256);
+   }else return;
+   const now=Date.now(),recent=(this.voiceSignalRate.get(client.sessionId)||[]).filter(at=>now-at<10000);
+   if(recent.length>=300)return;
+   recent.push(now);this.voiceSignalRate.set(client.sessionId,recent);
+   const target=this.clients.find(c=>c.sessionId===to);if(target)target.send("voiceSignal",{from:client.sessionId,signal:safeSignal});
   });
   this.onMessage("customize",(client,msg)=>{
    const p=this.state.players.get(client.sessionId);if(!p)return;
@@ -448,6 +479,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(spectator)this.broadcast("lobbyNotice",{message:p.name+" joined as a spectator."});
  }
  onLeave(client){
+  const voicePeer=this.voicePeers.get(client.sessionId);if(voicePeer){this.voicePeers.delete(client.sessionId);this.broadcast("voicePeerLeft",{sessionId:client.sessionId,name:voicePeer.name});}this.voiceSignalRate.delete(client.sessionId);
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return;
   this.checkpointAccountPlaytime(Date.now(),client.sessionId);
