@@ -500,12 +500,22 @@ async function connect(kind,roomId=null,extra={}){
     localPrediction.x=local.x;localPrediction.y=local.y;localPrediction.vx=local.vx||0;localPrediction.vy=local.vy||0;
    }else{
     const ex=local.x-localPrediction.x,ey=local.y-localPrediction.y,error=Math.hypot(ex,ey);
-    // Ease ordinary network corrections; react more strongly to genuine collision corrections.
-    if(error>3){
-     const collisionCorrection=error>28,blend=collisionCorrection?.24:.10,limit=collisionCorrection?10:5;
-     localPrediction.x+=Math.max(-limit,Math.min(limit,ex))*blend;
-     localPrediction.y+=Math.max(-limit,Math.min(limit,ey))*blend;
-     if(error>12){localPrediction.vx=localPrediction.vx*.78+(local.vx||0)*.22;localPrediction.vy=localPrediction.vy*.78+(local.vy||0)*.22;}
+    // Reconcile quickly enough that the local prediction cannot keep driving through
+    // server-resolved collisions. Large corrections are authoritative teleports/resets.
+    if(error>2){
+     if(error>64){
+      localPrediction.x=local.x;localPrediction.y=local.y;
+      localPrediction.vx=local.vx||0;localPrediction.vy=local.vy||0;
+     }else{
+      const collisionCorrection=error>26,blend=collisionCorrection?.68:.32,limit=collisionCorrection?36:12;
+      localPrediction.x+=Math.max(-limit,Math.min(limit,ex))*blend;
+      localPrediction.y+=Math.max(-limit,Math.min(limit,ey))*blend;
+      if(error>8){
+       const velocityBlend=collisionCorrection?.72:.4;
+       localPrediction.vx=localPrediction.vx*(1-velocityBlend)+(local.vx||0)*velocityBlend;
+       localPrediction.vy=localPrediction.vy*(1-velocityBlend)+(local.vy||0)*velocityBlend;
+      }
+     }
     }
    }
    updateSpectatorControls();
@@ -1096,6 +1106,28 @@ function draw(){
 function themeColor(team){const th=PALETTES[latestState?.map||$("map").value]||PALETTES.Classic;return team===2?th.goal2:th.goal1}
 function spawnCelebration(color){for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,s=90+Math.random()*310,life=.6+Math.random()*.8;particles.push({x:450+(Math.random()-.5)*70,y:300+(Math.random()-.5)*65,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life,max:life,size:2+Math.random()*5,spin:Math.random()*3,color:i%3===0?"#ffffff":color});}}
 function formatTime(seconds){const s=Math.max(0,Math.floor(seconds||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function separateDisplayedPlayers(){
+ const players=Object.values(viewPlayers).filter(p=>!p.spectator).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+ const minimumDistance=38.6;
+ for(let pass=0;pass<30;pass++){
+  let overlapFound=false;
+  for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++){
+   const a=players[i],b=players[j];
+   let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),nx,ny;
+   if(d>=minimumDistance)continue;
+   overlapFound=true;
+   if(d<.001){
+    const pair=String(a.id)+"|"+String(b.id);let hash=2166136261;
+    for(let k=0;k<pair.length;k++)hash=Math.imul(hash^pair.charCodeAt(k),16777619);
+    const angle=(hash>>>0)/4294967296*Math.PI*2;nx=Math.cos(angle);ny=Math.sin(angle);d=0;
+   }else{nx=dx/d;ny=dy/d;}
+   const push=(minimumDistance-d+.02)*.5;
+   a.x=Math.max(28,Math.min(872,a.x-nx*push));a.y=Math.max(50,Math.min(550,a.y-ny*push));
+   b.x=Math.max(28,Math.min(872,b.x+nx*push));b.y=Math.max(50,Math.min(550,b.y+ny*push));
+  }
+  if(!overlapFound)break;
+ }
+}
 function predictLocalMovement(dt){
  const prediction=localPrediction,player=prediction&&targetPlayers[prediction.id],state=latestState;
  if(!prediction||!player||player.spectator||replayMode||!state||!["practice","matchmaking","playing"].includes(state.status))return;
@@ -1129,11 +1161,12 @@ function updateRender(){
   for(const [id,t] of Object.entries(targetPlayers)){
    if(id===localId&&me&&!me.spectator&&localPrediction){viewPlayers[id]={...t,x:localPrediction.x,y:localPrediction.y,vx:localPrediction.vx,vy:localPrediction.vy};continue;}
    let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}
-   const playerAge=Math.min(.05,Math.max(0,(now-targetPlayersReceivedAt)/1000)),remoteBlend=1-Math.exp(-dt*24);
+   const playerAge=Math.min(.025,Math.max(0,(now-targetPlayersReceivedAt)/1000)),remoteBlend=1-Math.exp(-dt*72);
    const targetX=Math.max(28,Math.min(872,t.x+(t.vx||0)*playerAge)),targetY=Math.max(50,Math.min(550,t.y+(t.vy||0)*playerAge));
    p.x+=(targetX-p.x)*remoteBlend;p.y+=(targetY-p.y)*remoteBlend;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
   }
-  const puckAge=Math.min(.05,Math.max(0,(now-targetPuckReceivedAt)/1000)),estimatedPuckX=Math.max(1,Math.min(899,targetPuck.x+(targetPuck.vx||0)*puckAge)),estimatedPuckY=Math.max(1,Math.min(599,targetPuck.y+(targetPuck.vy||0)*puckAge)),puckBlend=1-Math.exp(-dt*24);
+  separateDisplayedPlayers();
+  const puckAge=Math.min(.025,Math.max(0,(now-targetPuckReceivedAt)/1000)),estimatedPuckX=Math.max(1,Math.min(899,targetPuck.x+(targetPuck.vx||0)*puckAge)),estimatedPuckY=Math.max(1,Math.min(599,targetPuck.y+(targetPuck.vy||0)*puckAge)),puckBlend=1-Math.exp(-dt*72);
   puck.x+=(estimatedPuckX-puck.x)*puckBlend;puck.y+=(estimatedPuckY-puck.y)*puckBlend;puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
   puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  }
