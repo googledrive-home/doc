@@ -535,15 +535,23 @@ $("accountSignOut").onclick=async()=>{
  if(room)room.send("accountLink",{accountToken:""});
  clearAccount("Signed out. This browser will no longer automatically sign in to this account.");$("accountPassword").value="";
 };
-$("player").addEventListener("change",()=>{
+async function saveSetupAccountProfile(){
  if(!readAccountToken())return;
- if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+ try{
+  const data=await accountRequest("/account/profile",{method:"POST",body:{name:$("player").value.trim()||"Player",skin:Number($("skin").value)}});
+  applyAccountData(data,null,"Player name and skin saved to your account.");
+  if(room)room.send("accountLink",{accountToken:readAccountToken()});
+ }catch(error){setAccountNotice("Profile not saved: "+error.message);}
+}
+$("player").addEventListener("change",()=>{
  $("accountProfileName").value=$("player").value.trim()||"Player";
+ if(readAccountToken())saveSetupAccountProfile();
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
 });
 $("skin").addEventListener("change",()=>{
- if(!readAccountToken())return;
- if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
  $("accountProfileSkin").value=$("skin").value;
+ if(readAccountToken())saveSetupAccountProfile();
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
 });
 setAccountMode("login");updateAccountButtons();
 if(readAccountToken())refreshAccount(true);
