@@ -62,8 +62,11 @@ async function initialiseAccountStore(){
  }
 }
 function persistAccountStore(){
- const snapshot=JSON.stringify(accountStore);
  accountWriteQueue=accountWriteQueue.catch(()=>{}).then(async()=>{
+  // Take the snapshot when this queued write begins, not when it is enqueued.
+  // Otherwise several quick playtime/stat updates can overwrite one another with
+  // an older snapshot while waiting for a slower database/filesystem write.
+  const snapshot=JSON.stringify(accountStore);
   if(accountPool){await accountPool.query("INSERT INTO hockey_account_store (id,data,updated_at) VALUES (1,$1::jsonb,now()) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data,updated_at=now()",[snapshot]);return;}
   await mkdir(ACCOUNT_DATA_DIR,{recursive:true});
   const temp=ACCOUNT_FILE+".tmp";await writeFile(temp,snapshot,{encoding:"utf8",mode:0o600});await rename(temp,ACCOUNT_FILE);
