@@ -3,7 +3,9 @@ import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, defineTypes } from "@colyseus/schema";
 import express from "express";
 import { createServer } from "node:http";
-import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt, scryptSync, timingSafeEqual, createHash } from "node:crypto";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 class Player extends Schema {
   constructor() { super(); this.sessionId=""; this.name="Player"; this.team=0; this.x=0; this.y=0; this.vx=0; this.vy=0; this.inputX=0; this.inputY=0; this.skin=0; this.trail=0; this.ready=false; this.spectator=false; this.role="skater"; this.goals=0; this.assists=0; this.shots=0; this.shotsOnGoal=0; this.hits=0; this.saves=0; }
@@ -19,10 +21,143 @@ class MatchState extends Schema {
 defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",overtimePeriod:"number",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
 
 const app=express();
-app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
+app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type,Authorization");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
 app.use(express.json({limit:"4kb"}));
 app.get("/",(_req,res)=>res.json({name:"Hockey Multiplayer",status:"ok",protocol:"Colyseus WebSocket",version:1}));
 app.get("/health",(_req,res)=>res.status(200).json({ok:true}));
+// Account storage uses PostgreSQL when DATABASE_URL is configured. Local JSON fallback
+// is for development only; deployed production accounts need durable database storage.
+const ACCOUNT_SESSION_MS=30*24*60*60*1000;
+const ACCOUNT_DATA_DIR=process.env.DATA_DIR||path.join(process.cwd(),"data");
+const ACCOUNT_FILE=path.join(ACCOUNT_DATA_DIR,"accounts.json");
+let accountPool=null;
+let accountStore={version:1,accounts:[],sessions:[]};
+let accountWriteQueue=Promise.resolve();
+const accountRateLimits=new Map();
+const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{}});
+function cleanAccountStore(value){
+ const data=value&&typeof value==="object"?value:{};
+ data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
+ for(const account of data.accounts){
+  if(!account.stats||typeof account.stats!=="object")account.stats=emptyAccountStats();
+  const defaults=emptyAccountStats();
+  for(const [key,defaultValue] of Object.entries(defaults))if(account.stats[key]===undefined)account.stats[key]=key==="modes"||key==="maps"?{}:defaultValue;
+  if(!account.stats.modes||typeof account.stats.modes!=="object"||Array.isArray(account.stats.modes))account.stats.modes={};
+  if(!account.stats.maps||typeof account.stats.maps!=="object"||Array.isArray(account.stats.maps))account.stats.maps={};
+  if(!Array.isArray(account.recentMatches))account.recentMatches=[];
+ }
+ return data;
+}
+async function initialiseAccountStore(){
+ let fileStore=null;
+ try{fileStore=cleanAccountStore(JSON.parse(await readFile(ACCOUNT_FILE,"utf8")));}catch(error){if(error.code!=="ENOENT")throw error;}
+ if(process.env.DATABASE_URL){
+  const {Pool}=await import("pg");
+  accountPool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_URL.includes("localhost")||process.env.DATABASE_URL.includes("127.0.0.1")?false:{rejectUnauthorized:false},max:4});
+  await accountPool.query("CREATE TABLE IF NOT EXISTS hockey_account_store (id integer PRIMARY KEY CHECK (id = 1), data jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())");
+  const result=await accountPool.query("SELECT data FROM hockey_account_store WHERE id = 1");
+  if(result.rowCount)accountStore=cleanAccountStore(result.rows[0].data);
+  else{accountStore=fileStore||accountStore;await accountPool.query("INSERT INTO hockey_account_store (id,data) VALUES (1,$1::jsonb)",[JSON.stringify(accountStore)]);}
+ }else{
+  accountStore=fileStore||accountStore;await mkdir(ACCOUNT_DATA_DIR,{recursive:true});
+  if(!fileStore)await persistAccountStore();
+ }
+}
+function persistAccountStore(){
+ accountWriteQueue=accountWriteQueue.catch(()=>{}).then(async()=>{
+  // Take the snapshot when this queued write begins, not when it is enqueued.
+  // Otherwise several quick playtime/stat updates can overwrite one another with
+  // an older snapshot while waiting for a slower database/filesystem write.
+  const snapshot=JSON.stringify(accountStore);
+  if(accountPool){await accountPool.query("INSERT INTO hockey_account_store (id,data,updated_at) VALUES (1,$1::jsonb,now()) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data,updated_at=now()",[snapshot]);return;}
+  await mkdir(ACCOUNT_DATA_DIR,{recursive:true});
+  const temp=ACCOUNT_FILE+".tmp";await writeFile(temp,snapshot,{encoding:"utf8",mode:0o600});await rename(temp,ACCOUNT_FILE);
+ });
+ return accountWriteQueue;
+}
+const tokenDigest=token=>createHash("sha256").update(String(token)).digest("hex");
+function resolveAccountToken(token){
+ if(typeof token!=="string"||token.length<32||token.length>200)return null;
+ const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
+ return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
+}
+function accountProfile(account){return {id:account.id,email:account.email,name:account.name,skin:account.skin||0,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null};}
+function accountPayload(account){
+ const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
+ const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[]};
+}
+function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
+function requirePersistentAccountStorage(res){
+ if(!accountPool&&process.env.NODE_ENV==="production"){
+  res.status(503).json({error:"Persistent accounts are not enabled on this server yet. The site owner must connect a persistent PostgreSQL database (DATABASE_URL) and redeploy. Game play is still available."});
+  return false;
+ }
+ return true;
+}
+function loginRateLimit(req,key){
+ const now=Date.now(),ip=String(req.ip||req.socket?.remoteAddress||"unknown"),id=ip+"|"+key,entry=accountRateLimits.get(id);
+ if(!entry||now-entry.startAt>15*60*1000){accountRateLimits.set(id,{startAt:now,count:1});return true;}
+ entry.count++;return entry.count<=10;
+}
+function createAccountSession(account){
+ const now=Date.now(),token=randomBytes(32).toString("base64url");
+ accountStore.sessions=accountStore.sessions.filter(s=>s.expiresAt>now);
+ accountStore.sessions.push({tokenHash:tokenDigest(token),accountId:account.id,createdAt:now,expiresAt:now+ACCOUNT_SESSION_MS});
+ const own=accountStore.sessions.filter(s=>s.accountId===account.id).sort((a,b)=>b.createdAt-a.createdAt),keep=new Set(own.slice(0,5).map(s=>s.tokenHash));
+ accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id||keep.has(s.tokenHash));
+ return token;
+}
+app.post("/account/register",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\s+/g," ");
+ if(!loginRateLimit(req,"register"))return res.status(429).json({error:"Too many account requests. Please try again in 15 minutes."});
+ if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
+ if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
+ if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ if(accountStore.accounts.some(a=>a.email===email))return res.status(409).json({error:"An account with that email already exists. Sign in instead."});
+ const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
+ const account={id:randomBytes(12).toString("hex"),email,name:cleanName(name),skin:Math.max(0,Math.min(13,Number(req.body?.skin)||0)),createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ accountStore.accounts.push(account);const token=createAccountSession(account);
+ try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
+ catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
+});
+app.post("/account/login",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||"");
+ if(!loginRateLimit(req,"login:"+email))return res.status(429).json({error:"Too many sign-in attempts. Please try again in 15 minutes."});
+ const account=accountStore.accounts.find(a=>a.email===email),salt=account?Buffer.from(account.passwordSalt,"base64"):Buffer.alloc(16,7),expected=account?Buffer.from(account.passwordHash,"base64"):Buffer.alloc(64);
+ const actual=scryptSync(password.slice(0,128),salt,64),valid=actual.length===expected.length&&timingSafeEqual(actual,expected);
+ if(!account||!valid)return res.status(401).json({error:"Email or password is incorrect."});
+ account.lastLoginAt=Date.now();const token=createAccountSession(account);
+ try{await persistAccountStore();res.json({token,...accountPayload(account)});}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
+});
+app.get("/account/me",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=resolveAccountToken(getRequestToken(req));res.setHeader("Cache-Control","no-store");
+ if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
+ try{await accountWriteQueue;res.json(accountPayload(account));}
+ catch(error){console.error("Account read error:",error.message);res.status(503).json({error:"Could not load your saved stats right now."});}
+});
+app.post("/account/profile",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=resolveAccountToken(getRequestToken(req));
+ if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
+ const name=String(req.body?.name??account.name).trim().replace(/\s+/g," "),skin=Number(req.body?.skin??account.skin);
+ if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid player skin."});
+ account.name=cleanName(name);account.skin=skin;
+ try{await persistAccountStore();res.json(accountPayload(account));}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't save your profile. Please try again."});}
+});
+app.post("/account/logout",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const token=getRequestToken(req),digest=token?tokenDigest(token):"";
+ accountStore.sessions=accountStore.sessions.filter(s=>s.tokenHash!==digest);
+ try{await persistAccountStore();res.json({ok:true});}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't sign out cleanly. Please close this tab."});}
+});
 const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
@@ -222,7 +357,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // Send movement state at 60 Hz so remote players and puck need less visual guesswork between snapshots.
   this.setPatchRate(1000/60);
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
-  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();
+  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
@@ -233,7 +368,31 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    if(p.role==="goalie"){p.inputX=0;p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));return;}
    p.inputX=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
-  this.onMessage("customize",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;this.updateTeamNames();this.broadcastLobby();});
+  this.onMessage("accountLink",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p||p.sessionId.startsWith("ai-"))return;
+   const token=String(msg?.accountToken||""),account=token?resolveAccountToken(token):null;
+   if(token&&!account){client.send("accountLinked",{error:"Account session expired. Sign in again."});return;}
+   this.checkpointAccountPlaytime(Date.now(),client.sessionId);
+   if(account){
+    this.accountBySessionId.set(client.sessionId,account.id);this.accountLastActiveAt.set(client.sessionId,Date.now());
+    p.name=account.name;p.skin=account.skin||0;account.lastLoginAt=Date.now();
+    void persistAccountStore().catch(error=>console.error("Account save error:",error.message));
+    client.send("accountLinked",accountPayload(account));
+   }else{
+    this.accountBySessionId.delete(client.sessionId);this.accountLastActiveAt.delete(client.sessionId);
+    client.send("accountLinked",{guest:true});
+   }
+   this.updateTeamNames();this.broadcastLobby();
+  });
+  this.onMessage("customize",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p)return;
+   const accountId=this.accountBySessionId.get(client.sessionId),account=accountStore.accounts.find(a=>a.id===accountId);
+   // A signed-in profile is the source of truth. Do not let the initial guest-style
+   // customize packet overwrite it while the browser is still loading profile data.
+   if(account){p.name=account.name;p.skin=account.skin||0;}
+   else{p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));}
+   p.trail=0;this.updateTeamNames();this.broadcastLobby();
+  });
   this.onMessage("ready",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||p.spectator||!["practice","waiting"].includes(this.state.status))return;p.ready=msg?.ready===undefined?!p.ready:!!msg.ready;this.broadcastLobby();this.broadcast("lobbyNotice",{message:p.name+(p.ready?" is ready.":" is changing settings.")});});
   this.onMessage("play",(client)=>this.startMatch(client));
   this.onMessage("startMatch",(client)=>this.startMatch(client));
@@ -259,14 +418,15 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,33.333)/1000),1000/60);
  }
  onJoin(client,options){
-  const spectator=!!options?.spectator;
+  const spectator=!!options?.spectator,account=resolveAccountToken(String(options?.accountToken||""));
   const humans=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")&&!p.spectator);
   if(!spectator&&!["practice","waiting"].includes(this.state.status)){client.leave(4002,"This match has started; join as a spectator instead.");return;}
   if(!spectator&&humans.length>=playerCapacity(this.state)){client.leave(4001,this.state.gameType==="goalie"?"Goalie Challenge is a solo mode; join as a spectator instead.":"Lobby full");return;}
   if(spectator&&Array.from(this.state.players.values()).filter(p=>p.spectator).length>=8){client.leave(4003,"Spectator slots are full");return;}
   const team=spectator?0:this.assignTeam();
-  const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.spectator=spectator;p.role=!spectator&&this.state.gameType==="goalie"?"goalie":"skater";p.ready=false;p.x=p.role==="goalie"?850:team===1?130:team===2?770:450;p.y=300;p.skin=Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=0;
+  const p=new Player();p.sessionId=client.sessionId;p.name=account?account.name:cleanName(options?.name);p.team=team;p.spectator=spectator;p.role=!spectator&&this.state.gameType==="goalie"?"goalie":"skater";p.ready=false;p.x=p.role==="goalie"?850:team===1?130:team===2?770:450;p.y=300;p.skin=account?account.skin:Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=0;
   this.state.players.set(client.sessionId,p);
+  if(account){this.accountBySessionId.set(client.sessionId,account.id);this.accountLastActiveAt.set(client.sessionId,Date.now());account.lastLoginAt=Date.now();void persistAccountStore().catch(error=>console.error("Account join save error:",error.message));}
   if(!this.state.hostId&&!spectator)this.state.hostId=client.sessionId;
   this.updateTeamNames();this.broadcastLobby();
   if(this.matchHistory?.length)client.send("matchHistory",{matches:this.matchHistory});
@@ -275,6 +435,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  onLeave(client){
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return;
+  this.checkpointAccountPlaytime(Date.now(),client.sessionId);
   this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);
   const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status),wasSpectator=!!leaving.spectator;
   this.state.players.delete(client.sessionId);
@@ -350,9 +511,48 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:puck.score1,score2:puck.score2,attempts1:a1,attempts2:a2,nextAttempt:Math.max(a1,a2)+1,suddenDeath:a1>=5&&a2>=5});
  }
  captureGoalReplayFrame(){const now=Date.now();if(now-this.lastGoalReplayAt<100)return;this.lastGoalReplayAt=now;const state=this.state;this.goalReplayFrames.push({t:now,puck:{x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2},players:Array.from(state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,spectator:p.spectator,role:p.role||"skater",bot:p.sessionId.startsWith("ai-"),goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves}))});if(this.goalReplayFrames.length>70)this.goalReplayFrames.splice(0,this.goalReplayFrames.length-70);}
- recordShotOnGoal(team){const shooter=this.state.players.get(this.state.puck.lastTouchId);if(shooter&&!shooter.spectator&&shooter.team===team)shooter.shotsOnGoal++;}
+ checkpointAccountPlaytime(now=Date.now(),onlySessionId=null){
+   if(!onlySessionId&&now-this.lastAccountTimePersistAt<30000)return;
+   let changed=false;
+   for(const [sessionId,accountId] of this.accountBySessionId){
+    if(onlySessionId&&sessionId!==onlySessionId)continue;
+    const account=accountStore.accounts.find(a=>a.id===accountId),last=this.accountLastActiveAt.get(sessionId)||now;
+    const elapsed=Math.floor(Math.max(0,now-last)/1000);
+    if(account&&elapsed>0){account.stats.timePlayedSeconds+=elapsed;changed=true;this.accountLastActiveAt.set(sessionId,last+elapsed*1000);}
+    if(onlySessionId&&sessionId===onlySessionId){this.accountBySessionId.delete(sessionId);this.accountLastActiveAt.delete(sessionId);}
+   }
+   if(!onlySessionId)this.lastAccountTimePersistAt=now;
+   if(changed)void persistAccountStore().catch(error=>console.error("Playtime save error:",error.message));
+  }
+  recordAccountMatches(matchRecord){
+   let changed=false;
+   for(const [sessionId,accountId] of this.accountBySessionId){
+    const account=accountStore.accounts.find(a=>a.id===accountId),player=matchRecord.players.find(p=>p.id===sessionId);
+    if(!account||!player||player.spectator||player.bot)continue;
+    const stats=account.stats,team=player.team,opposingScore=team===1?matchRecord.score2:matchRecord.score1;
+    const won=matchRecord.winner===team,draw=matchRecord.winner===0;
+    stats.matchesPlayed++;stats.goals+=player.goals||0;stats.assists+=player.assists||0;stats.shots+=player.shots||0;
+    stats.shotsOnGoal+=player.shotsOnGoal||0;stats.hits+=player.hits||0;stats.saves+=player.saves||0;
+    stats.goalsAgainst+=player.role==="goalie"?(matchRecord.goalsAllowed||0):opposingScore;
+    stats.matchTimeSeconds+=matchRecord.elapsedSeconds||0;
+    if(opposingScore===0)stats.cleanSheets++;
+    if(won){stats.wins++;stats.currentWinStreak++;stats.bestWinStreak=Math.max(stats.bestWinStreak,stats.currentWinStreak);if(matchRecord.overtime)stats.overtimeWins++;}
+    else{if(draw)stats.draws++;else stats.losses++;stats.currentWinStreak=0;}
+    stats.modes[matchRecord.gameType]=(stats.modes[matchRecord.gameType]||0)+1;stats.maps[matchRecord.map]=(stats.maps[matchRecord.map]||0)+1;
+    account.recentMatches.unshift({
+     id:this.roomId+":"+matchRecord.finishedAt+":"+sessionId,finishedAt:matchRecord.finishedAt,result:won?"WIN":draw?"DRAW":"LOSS",
+     gameType:matchRecord.gameType,mode:matchRecord.mode,map:matchRecord.map,score1:matchRecord.score1,score2:matchRecord.score2,
+     winner:matchRecord.winner,team,teamName:team===1?matchRecord.teamName1:matchRecord.teamName2,elapsedSeconds:matchRecord.elapsedSeconds,overtime:!!matchRecord.overtime,
+     goals:player.goals||0,assists:player.assists||0,shots:player.shots||0,shotsOnGoal:player.shotsOnGoal||0,hits:player.hits||0,saves:player.saves||0,
+     goalsAgainst:player.role==="goalie"?(matchRecord.goalsAllowed||0):opposingScore
+    });
+    account.recentMatches=account.recentMatches.slice(0,30);account.lastPlayedAt=matchRecord.finishedAt;changed=true;
+   }
+   if(changed)void persistAccountStore().catch(error=>console.error("Match stats save error:",error.message));
+  }
+  recordShotOnGoal(team){const shooter=this.state.players.get(this.state.puck.lastTouchId);if(shooter&&!shooter.spectator&&shooter.team===team)shooter.shotsOnGoal++;}
  recordGoal(team){const puck=this.state.puck,scorer=this.state.players.get(puck.lastTouchId),assister=this.state.players.get(puck.previousTouchId);if(scorer&&!scorer.spectator&&scorer.team===team){scorer.goals++;scorer.shotsOnGoal++;}if(assister&&assister!==scorer&&!assister.spectator&&assister.team===team)assister.assists++;this.broadcast("matchStats",this.matchStatsSnapshot());}
- matchStatsSnapshot(){const players=Array.from(this.state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,role:p.role,bot:p.sessionId.startsWith("ai-"),spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves,shootingPct:p.shots?Math.round(p.goals/p.shots*100):0}));const team=(n)=>({goals:n===1?this.state.puck.score1:this.state.puck.score2,shots:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shots,0),shotsOnGoal:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shotsOnGoal,0),saves:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.saves,0)});return {score1:this.state.puck.score1,score2:this.state.puck.score2,gameType:this.state.gameType,mode:this.state.mode,map:this.state.map,teamName1:this.state.teamName1,teamName2:this.state.teamName2,team1:team(1),team2:team(2),players};}
+ matchStatsSnapshot(){const players=Array.from(this.state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,role:p.role,bot:p.sessionId.startsWith("ai-"),spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves,shootingPct:p.shotsOnGoal?Math.round(p.goals/p.shotsOnGoal*100):0}));const team=(n)=>({goals:n===1?this.state.puck.score1:this.state.puck.score2,shots:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shots,0),shotsOnGoal:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shotsOnGoal,0),saves:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.saves,0)});return {score1:this.state.puck.score1,score2:this.state.puck.score2,gameType:this.state.gameType,mode:this.state.mode,map:this.state.map,teamName1:this.state.teamName1,teamName2:this.state.teamName2,team1:team(1),team2:team(2),players};}
  resetMatchStats(){for(const p of this.state.players.values()){p.goals=0;p.assists=0;p.shots=0;p.shotsOnGoal=0;p.hits=0;p.saves=0;}this.state.puck.lastTouchId="";this.state.puck.previousTouchId="";this.state.puck.lastTouchAt=0;}
  onDrop(client,code){try{this.allowReconnection(client,18).then(()=>this.broadcast("playerReconnected",{name:this.state.players.get(client.sessionId)?.name||"Player"})).catch(()=>{});}catch{}}
  onReconnect(client){this.broadcast("playerReconnected",{name:this.state.players.get(client.sessionId)?.name||"Player"});this.broadcastLobby();}
@@ -366,6 +566,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  }
  onAuth(client,options){
   if(this.state.private&&!this.matchesPrivatePassword(options?.privatePassword))throw new Error("Incorrect private lobby password.");
+  if(options?.accountToken&&!resolveAccountToken(String(options.accountToken)))throw new Error("Account session expired. Please sign in again.");
   return true;
  }
  updateTeamNames(){
@@ -380,7 +581,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const result={score1:state.puck.score1,score2:state.puck.score2,overtime:!!state.overtime};
   const goalie=state.gameType==="goalie"?Array.from(state.players.values()).find(p=>p.role==="goalie"&&!p.spectator):null;
   const winner=goalie?(goalie.saves>result.score1?2:goalie.saves<result.score1?1:0):result.score1===result.score2?0:result.score1>result.score2?1:2;
-  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,overtime:!!state.overtime,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
+  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,overtime:!!state.overtime,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);this.recordAccountMatches(matchRecord);
   this.broadcast("finished",{...result,gameType:state.gameType,winner,overtime:!!state.overtime,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
   this.finishTimer=setTimeout(()=>{
@@ -397,6 +598,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   },3300);
  }
  tick(dt){
+  this.checkpointAccountPlaytime();
   const state=this.state;
   if(state.status==="practice"){this.simulateRink(dt,true);return;}
   if(state.status==="matchmaking"){this.waitSeconds=Math.max(0,this.waitSeconds-dt);state.countdown=Math.ceil(this.waitSeconds);this.simulateRink(dt,true);return;}
@@ -532,7 +734,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    // Always resolve a real collision; the latch prevents a second boosted hit during the same touch only.
    if(playerDrive>24&&!latched){
     const isAI=p.sessionId.startsWith("ai-"),difficultyScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*difficultyScale:1,force=360*power+Math.min(130,playerDrive*.2);
-    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
     const now=Date.now();if(now-this.lastPuckTouchAt>80){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:force,player:p.name,shot:false});}
    }else if(puckNormalSpeed< -35){
     // Reflect an incoming puck even if the contact latch is active.
@@ -605,10 +807,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  startFaceoff(){if(!["goal","playing","countdown"].includes(this.state.status))this.matchStartedAt=Date.now();this.cancelMatchmaking();this.resetPuck();this.resetPlayers();if(this.state.gameType==="shootout"){this.state.puck.x=this.state.shootoutTeam===1?270:630;this.state.puck.y=300;}this.startSeconds=3;this.state.status="countdown";this.state.countdown=3;this.broadcast("faceoff",{seconds:3,team1:this.state.teamName1,team2:this.state.teamName2,gameType:this.state.gameType,shootoutTeam:this.state.shootoutTeam,attempts1:this.state.shootoutAttempts1,attempts2:this.state.shootoutAttempts2});}
  resetPuck(){this.state.puck.x=450;this.state.puck.y=300;this.state.puck.vx=0;this.state.puck.vy=0;this.state.puck.lastTouchId="";this.state.puck.previousTouchId="";this.state.puck.lastTouchAt=0;this.puckContacts.clear();}
 
- onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);clearTimeout(this.finishTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
+ onDispose(){for(const sessionId of Array.from(this.accountBySessionId.keys()))this.checkpointAccountPlaytime(Date.now(),sessionId);void persistAccountStore().catch(error=>console.error("Account dispose save error:",error.message));clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);clearTimeout(this.finishTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
 }
 gameServer.define("hockey",HockeyRoom);
 gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","gameType","map","difficulty","training","competition"]);
 const port=Number(process.env.PORT||2567);
+await initialiseAccountStore();
 await gameServer.listen(port,"0.0.0.0");
 console.log("Hockey multiplayer listening on",port);

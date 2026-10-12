@@ -166,7 +166,25 @@ body[data-fullscreen="true"] .rink-panel{border-radius:8px}
 .stats-history-meta{font-size:11px;color:#93afc5;line-height:1.5}
 @media(max-width:760px){.competition-columns{grid-template-columns:1fr}.competition-list{max-height:210px}.competition-card{max-height:88vh}.spectator-bar{left:8px;right:8px;transform:none;max-width:none;justify-content:center;gap:5px}.spectator-bar label{font-size:8px}.spectator-bar select{max-width:135px;min-width:82px;padding:6px;font-size:10px}.replay-badge{top:57px}}@media(max-width:650px){.stats-highlights{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-tabs button{min-width:90px}.stats-history-head{align-items:flex-start;flex-direction:column}.competition-form-row{grid-template-columns:1fr 1fr}.competition-panel{padding:10px}}
 @media(max-width:650px){.host-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lobby-control-row button{flex:1}.stat-row{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(36px,.5fr))}.stat-row span:nth-last-child(-n+2){display:none}}
-#leaveLobby{flex:none;width:55px;min-width:55px;height:32px;padding:3px 6px;background:#773844;border:1px solid #c86a7a;font-size:11px;letter-spacing:.03em}
+#accountToggleHeader{width:auto;min-width:105px;height:32px;padding:4px 10px;white-space:nowrap}
+#accountQuick{width:35px;min-width:35px;height:29px;padding:2px;font-size:15px}
+.account-card{width:min(860px,100%);max-height:min(92vh,900px);overflow:auto}
+.account-auth-form{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.account-auth-form label,.account-profile-grid label{display:flex;flex-direction:column;gap:5px;color:#9dbbd1;text-transform:uppercase;font-size:10px;font-weight:850;letter-spacing:.08em}
+.account-auth-form button{margin-top:5px}
+.account-profile-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:12px 0}
+.account-profile-grid input,.account-profile-grid select{width:100%}
+.account-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.account-actions button{width:auto;min-width:120px}
+.account-identity{font-weight:850;color:#eafaff;font-size:13px}
+.account-security-note{font-size:11px;color:#86a9c1;line-height:1.55;margin:3px 0}
+.account-stat-section{margin-top:14px}
+.account-stat-section h3{font-size:11px;color:#91eaff;letter-spacing:.1em;margin:0 0 8px}
+.account-recent-item{padding:10px;border:1px solid #ffffff18;border-radius:10px;background:#ffffff07;display:flex;flex-direction:column;gap:5px}
+.account-recent-item strong{font-size:12px;color:#edfbff}
+.account-recent-item span{font-size:10px;color:#91b0c5;line-height:1.5}
+.account-card .stats-highlights{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:650px){#accountToggleHeader{min-width:76px;padding:3px 7px;font-size:10px}.account-profile-grid{grid-template-columns:1fr}.account-card .stats-highlights{grid-template-columns:repeat(2,minmax(0,1fr))}.account-actions button{flex:1;min-width:95px}}
 #leaveLobby:hover{background:linear-gradient(180deg,#aa5060,#843744)}
 #soundToggle{flex:none;width:35px;min-width:35px;height:29px;padding:2px;font-size:15px;border:1px solid #6bdff15c;background:linear-gradient(180deg,#17415b,#0b2438);box-shadow:0 2px 0 #041522,0 5px 12px #0003}
 #soundToggle[aria-pressed="false"]{border-color:#6c7e90;background:linear-gradient(180deg,#293b4c,#182838)}
@@ -179,7 +197,7 @@ body.in-lobby .statusbar .grow{white-space:nowrap;overflow:hidden;text-overflow:
 body.in-lobby #playMatch,body.in-lobby #toggleSetup{display:block!important}
 body.in-lobby.config-open .config{display:grid;position:fixed;top:45px;left:8px;right:8px;z-index:30;width:auto;max-height:calc(100vh - 53px);overflow:auto;box-shadow:0 18px 70px #000b;background:#071a2bf5}
 body.match-live .statusbar{left:auto;right:7px;top:7px;width:176px;max-width:176px;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;gap:3px}
-body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby):not(#soundToggle){display:none!important}
+body.match-live .statusbar>:not(#toggleSetup):not(#lobbyPlayersBtn):not(#leaveLobby):not(#soundToggle):not(#accountQuick){display:none!important}
 body.match-live #toggleSetup{height:29px;width:34px;background:#061421aa;border:1px solid #ffffff22;opacity:.7}
 body.match-live.config-open .config{display:grid}
 body:not(.in-lobby) #playMatch,body:not(.in-lobby) #toggleSetup{display:none!important}
@@ -196,7 +214,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 </style>
 </head>
 <body>
-<header><h1>🏒 Hockey Arena</h1><span class="tag">Live multiplayer · smooth rink physics</span><span style="flex:1"></span><span class="help">WASD / arrows · Space or F to shoot</span></header>
+<header><h1>🏒 Hockey Arena</h1><span class="tag">Live multiplayer · smooth rink physics</span><span style="flex:1"></span><span class="help">WASD / arrows · Space or F to shoot</span><button id="accountToggleHeader" class="secondary" type="button">👤 SIGN IN</button></header>
 <section class="config" aria-label="Hockey setup">
 <div class="field"><label for="player">Player name</label><input id="player" maxlength="18" value="Player" autocomplete="nickname"></div>
 <div class="field"><label for="mode">Team format</label><select id="mode"><option value="1v1">1 v 1</option><option value="2v2">2 v 2</option><option value="3v3">3 v 3</option><option value="2v2-ai">Solo vs AI squad</option></select></div>
@@ -274,7 +292,31 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  </div>
 </div>
 <div id="statsDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle"><div class="browser-card"><div class="browser-head"><h2 id="statsTitle">Match statistics</h2><span style="flex:1"></span><button id="closeStats" class="secondary" type="button">✕</button></div><p id="statsSummary" class="browser-help">Live stats, a final match report and recent results from this lobby.</p><div id="statsHighlights" class="stats-highlights"></div><div class="stats-tabs"><button id="statsLiveTab" class="secondary" type="button">LIVE MATCH</button><button id="statsLastTab" class="secondary" type="button">LAST MATCH</button><button id="statsHistoryTab" class="secondary" type="button">ROOM HISTORY</button></div><div id="statsTableWrap" class="stats-table-wrap"><div id="statsList" class="room-list"></div></div><div id="statsHistory" class="room-list hidden"></div></div></div>
-<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="goalReplayButton" class="secondary hidden" type="button" title="Replay the latest goal">▶ REPLAY</button><button id="competitionsToggle" class="secondary" type="button" title="Tournaments, leagues and standings">🏆 EVENTS</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
+<div id="accountDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="accountTitle"><div class="browser-card account-card">
+ <div class="browser-head"><h2 id="accountTitle">Hockey account</h2><span style="flex:1"></span><button id="closeAccount" class="secondary" type="button">✕</button></div>
+ <p id="accountNotice" class="browser-help" aria-live="polite">Create an account to keep your player profile and lifetime stats together.</p>
+ <div id="accountAuthPane">
+  <div class="stats-tabs"><button id="accountLoginTab" class="secondary active" type="button">SIGN IN</button><button id="accountRegisterTab" class="secondary" type="button">CREATE ACCOUNT</button></div>
+  <form id="accountAuthForm" class="account-auth-form">
+   <label for="accountEmail">Email address</label><input id="accountEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com">
+   <div id="accountNameField"><label for="accountName">Player name</label><input id="accountName" type="text" maxlength="18" autocomplete="nickname" required placeholder="Your name"></div>
+   <label for="accountPassword">Password</label><input id="accountPassword" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters">
+   <p class="account-security-note">Passwords are stored as salted password hashes, not plain text. Signing in on this browser can be remembered for 30 days.</p>
+   <button id="accountSubmit" type="submit">SIGN IN</button>
+  </form>
+ </div>
+ <div id="accountProfilePane" class="hidden">
+  <p id="accountIdentity" class="account-identity"></p>
+  <div class="account-profile-grid">
+   <label for="accountProfileName">Player name<input id="accountProfileName" type="text" maxlength="18" autocomplete="nickname"></label>
+   <label for="accountProfileSkin">Player skin<select id="accountProfileSkin"><option value="0">Blue Burst</option><option value="1">Gold Stripes</option><option value="2">Ice Crystal</option><option value="3">Lime Grid</option><option value="4">Purple Wave</option><option value="5">Fire Rush</option><option value="6">Chrome Check</option><option value="7">Carbon</option><option value="8">Rainbow Pulse</option><option value="9">Circuit</option><option value="10">Sunset Split</option><option value="11">Polar Camo</option><option value="12">Galaxy</option><option value="13">Mint Dots</option></select></label>
+  </div>
+  <div class="account-actions"><button id="accountSaveProfile" type="button">SAVE PROFILE</button><button id="accountRefresh" class="secondary" type="button">↻ REFRESH STATS</button><button id="accountSignOut" class="secondary" type="button">SIGN OUT</button></div>
+  <div class="account-stat-section"><h3>LIFETIME STATISTICS</h3><div id="accountStatsGrid" class="stats-highlights"></div></div>
+  <div class="account-stat-section"><h3>RECENT MATCHES</h3><div id="accountMatchHistory" class="room-list"></div></div>
+ </div>
+</div></div>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="accountQuick" class="secondary" type="button" aria-label="Account" title="Sign in or view your account">👤</button><button id="goalReplayButton" class="secondary hidden" type="button" title="Replay the latest goal">▶ REPLAY</button><button id="competitionsToggle" class="secondary" type="button" title="Tournaments, leagues and standings">🏆 EVENTS</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div id="spectatorBar" class="spectator-bar hidden" aria-label="Spectator camera controls">
@@ -375,7 +417,145 @@ function drawRinkEnvironment(ctx,map,theme,now){
  }
  ctx.restore();
 }
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
+
+let accountInfo=null,accountData=null,accountMode="login";
+function readAccountToken(){try{return localStorage.getItem("hockeyAccountToken")||"";}catch{return "";}}
+async function accountRequest(path,options={}){
+ const base=$("server").value.trim().replace(/\/$/,"");if(!base)throw Error("Enter the multiplayer server URL first.");
+ const headers={"Content-Type":"application/json"},token=options.token===undefined?readAccountToken():options.token;
+ if(token)headers.Authorization="Bearer "+token;
+ const config={method:options.method||"GET",headers,cache:"no-store"};if(options.body!==undefined)config.body=JSON.stringify(options.body);
+ const response=await fetch(base+path,config),data=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(data.error||("Server returned "+response.status));return data;
+}
+function setAccountNotice(message){$("accountNotice").textContent=message||"";}
+function setAccountMode(mode){
+ accountMode=mode==="register"?"register":"login";const register=accountMode==="register";
+ $("accountLoginTab").classList.toggle("active",!register);$("accountRegisterTab").classList.toggle("active",register);
+ $("accountNameField").classList.toggle("hidden",!register);$("accountName").disabled=!register;$("accountName").required=register;
+ $("accountPassword").autocomplete=register?"new-password":"current-password";$("accountSubmit").textContent=register?"CREATE ACCOUNT":"SIGN IN";
+ $("accountTitle").textContent=register?"Create your hockey account":"Sign in to Hockey Arena";
+ if(register&&!$("accountName").value)$("accountName").value=$("player").value.trim()||"Player";
+}
+function accountDuration(seconds){
+ seconds=Math.max(0,Math.floor(Number(seconds)||0));const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;
+ return h?h+"h "+m+"m":m+"m "+s+"s";
+}
+function updateAccountButtons(){
+ const signedIn=!!accountInfo,name=accountInfo?.name||"";
+ $("accountToggleHeader").textContent=signedIn?"👤 "+name.slice(0,9):"👤 SIGN IN";
+ $("accountToggleHeader").title=signedIn?"Signed in as "+name+" · open your profile":"Sign in or create a player account";
+ $("accountQuick").title=signedIn?"Account: "+name:"Sign in or create an account";
+}
+function renderAccountData(data){
+ const grid=$("accountStatsGrid"),history=$("accountMatchHistory");if(!grid||!history)return;
+ grid.replaceChildren();history.replaceChildren();const s=data?.stats||{},matches=Array.isArray(data?.recentMatches)?data.recentMatches:[];
+ const cards=[
+  ["Matches",s.matchesPlayed||0],["Win rate",(s.winRate||0)+"%"],["Wins · draws · losses",(s.wins||0)+" · "+(s.draws||0)+" · "+(s.losses||0)],
+  ["Goals",s.goals||0],["Assists",s.assists||0],["Shots",s.shots||0],["Goal conversion",(s.shootingAccuracy||0)+"%"],["Goals conceded",s.goalsAgainst||0],
+  ["Hits",s.hits||0],["Saves",s.saves||0],["Clean sheets",s.cleanSheets||0],["Overtime wins",s.overtimeWins||0],
+  ["Best win streak",s.bestWinStreak||0],["Current streak",s.currentWinStreak||0],["Time online",accountDuration(s.timePlayedSeconds)],["Match time",accountDuration(s.matchTimeSeconds)],
+  ["Favourite mode",s.favoriteMode||"—"],["Favourite rink",s.favoriteMap||"—"]
+ ];
+ for(const [label,value] of cards)grid.appendChild(makeStatChip(label,value));
+ if(!matches.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="No completed matches have been recorded yet. Your match reports and lifetime totals will appear here.";history.appendChild(empty);return;}
+ for(const match of matches.slice(0,12)){
+  const card=document.createElement("div");card.className="account-recent-item";
+  const title=document.createElement("strong");title.textContent=(match.result||"MATCH")+" · "+(match.teamName||"Your team")+" · "+match.score1+" — "+match.score2;
+  const meta=document.createElement("span");meta.textContent=(match.finishedAt?new Date(match.finishedAt).toLocaleString():"Completed match")+" · "+String(match.gameType||"classic").toUpperCase()+" · "+(match.mode||"1v1")+" · "+(match.map||"Classic")+" · "+accountDuration(match.elapsedSeconds||0);
+  const statLine=document.createElement("span");statLine.textContent="G "+(match.goals||0)+" · A "+(match.assists||0)+" · Shots "+(match.shots||0)+" · On target "+(match.shotsOnGoal||0)+" · Hits "+(match.hits||0)+" · Saves "+(match.saves||0);
+  card.append(title,meta,statLine);history.appendChild(card);
+ }
+}
+function applyAccountData(data,token=null,message=""){
+ if(!data||!data.profile)return;
+ if(token){try{localStorage.setItem("hockeyAccountToken",token);}catch{}}
+ const {token:unusedToken,...safeData}=data;accountData=safeData;accountInfo=safeData.profile;
+ $("accountAuthPane").classList.add("hidden");$("accountProfilePane").classList.remove("hidden");
+ $("accountIdentity").textContent=accountInfo.email+" · member since "+new Date(accountInfo.createdAt).toLocaleDateString();
+ $("accountProfileName").value=accountInfo.name||"Player";$("accountProfileSkin").value=String(accountInfo.skin||0);
+ $("player").value=accountInfo.name||"Player";$("skin").value=String(accountInfo.skin||0);
+ renderAccountData(accountData);updateAccountButtons();if(message)setAccountNotice(message);
+}
+function clearAccount(message=""){
+ accountInfo=null;accountData=null;$("accountAuthPane").classList.remove("hidden");$("accountProfilePane").classList.add("hidden");
+ updateAccountButtons();if(message)setAccountNotice(message);
+}
+async function refreshAccount(quiet=false){
+ const token=readAccountToken();
+ if(!token){clearAccount("Create an account to keep your player profile and stats, or sign in to an existing account.");return;}
+ try{
+  const data=await accountRequest("/account/me",{token});applyAccountData(data,null,"Account synced · lifetime stats and recent match reports loaded.");
+  if(room)room.send("accountLink",{accountToken:token});
+ }catch(error){
+  if(/expired|sign in again/i.test(error.message)){try{localStorage.removeItem("hockeyAccountToken");}catch{}clearAccount("Your saved session has expired. Please sign in again.");}
+  else if(!quiet)setAccountNotice(error.message);
+ }
+}
+function openAccount(){
+ $("accountDialog").classList.remove("hidden");
+ if(readAccountToken())refreshAccount(true);
+ else{clearAccount("Create an account to keep your player profile and stats, or sign in to an existing account.");setAccountMode("login");$("accountName").value=$("player").value.trim()||"Player";}
+}
+$("accountToggleHeader").onclick=openAccount;$("accountQuick").onclick=openAccount;
+$("closeAccount").onclick=()=>$("accountDialog").classList.add("hidden");
+$("accountDialog").addEventListener("click",event=>{if(event.target===$("accountDialog"))$("accountDialog").classList.add("hidden");});
+$("accountLoginTab").onclick=()=>setAccountMode("login");$("accountRegisterTab").onclick=()=>setAccountMode("register");
+$("accountAuthForm").addEventListener("submit",async event=>{
+ event.preventDefault();if($("accountSubmit").disabled)return;
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value,body={email,password};
+ if(accountMode==="register"){body.name=$("accountName").value.trim();body.skin=Number($("skin").value)||0;}
+ $("accountSubmit").disabled=true;setAccountNotice(accountMode==="register"?"Creating your account…":"Signing in…");
+ try{
+  const data=await accountRequest(accountMode==="register"?"/account/register":"/account/login",{method:"POST",body,token:""});
+  if(!data.token)throw Error("The server did not return an account session.");
+  const savedToken=data.token;$("accountPassword").value="";
+  applyAccountData(data,savedToken,accountMode==="register"?"Account created. Your profile and statistics are ready to save.":"Signed in successfully. Your saved profile and statistics have been restored.");
+  if(room)room.send("accountLink",{accountToken:savedToken});
+ }catch(error){setAccountNotice(error.message);}
+ finally{$("accountSubmit").disabled=false;}
+});
+$("accountSaveProfile").onclick=async()=>{
+ if(!readAccountToken())return;
+ const name=$("accountProfileName").value.trim(),skin=Number($("accountProfileSkin").value);
+ $("accountSaveProfile").disabled=true;setAccountNotice("Saving your player profile…");
+ try{
+  const data=await accountRequest("/account/profile",{method:"POST",body:{name,skin}});
+  applyAccountData(data,null,"Profile saved. Your player name and skin will be used next time you sign in.");
+  if(room)room.send("accountLink",{accountToken:readAccountToken()});
+ }catch(error){setAccountNotice(error.message);}
+ finally{$("accountSaveProfile").disabled=false;}
+};
+$("accountRefresh").onclick=()=>refreshAccount(false);
+$("accountSignOut").onclick=async()=>{
+ const token=readAccountToken();
+ try{if(token)await accountRequest("/account/logout",{method:"POST",token});}catch{}
+ try{localStorage.removeItem("hockeyAccountToken");}catch{}
+ if(room)room.send("accountLink",{accountToken:""});
+ clearAccount("Signed out. This browser will no longer automatically sign in to this account.");$("accountPassword").value="";
+};
+async function saveSetupAccountProfile(){
+ if(!readAccountToken())return;
+ try{
+  const data=await accountRequest("/account/profile",{method:"POST",body:{name:$("player").value.trim()||"Player",skin:Number($("skin").value)}});
+  applyAccountData(data,null,"Player name and skin saved to your account.");
+  if(room)room.send("accountLink",{accountToken:readAccountToken()});
+ }catch(error){setAccountNotice("Profile not saved: "+error.message);}
+}
+$("player").addEventListener("change",()=>{
+ $("accountProfileName").value=$("player").value.trim()||"Player";
+ if(readAccountToken())saveSetupAccountProfile();
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+});
+$("skin").addEventListener("change",()=>{
+ $("accountProfileSkin").value=$("skin").value;
+ if(readAccountToken())saveSetupAccountProfile();
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+});
+setAccountMode("login");updateAccountButtons();
+if(readAccountToken())refreshAccount(true);
+
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -464,7 +644,7 @@ function playSound(kind,detail={}){
 document.addEventListener("pointerdown",event=>{const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(soundOn){initAudio();if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");}},{capture:true,passive:true});
 document.addEventListener("click",event=>{if(event.detail!==0)return;const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");},true);
 $("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;if(soundOn){initAudio();playSound("ui");}else if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(0,audioCtx.currentTime,.035);setSoundButton();});
-function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
+function options(){return {name:$("player").value.trim()||"Player",accountToken:readAccountToken(),mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null,extra={}){
  let justCreated=null;
@@ -560,8 +740,9 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("goalieClear",m=>say(m.message||"Puck cleared from the crease."));
   room.onMessage("goalReplay",m=>{if(Array.isArray(m?.frames)&&m.frames.length>=4){lastGoalReplay=m.frames;$("goalReplayButton").classList.remove("hidden");$("goalReplayButton").textContent="▶ GOAL REPLAY";}});
   room.onMessage("goal",m=>{if(replayMode){replayMode=false;$("replayBadge").classList.add("hidden");}playSound("goal");overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
-  room.onMessage("finished",m=>{lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+(m.overtime?" WINS IN OVERTIME":" WINS");overlayKind="finish";say((m.overtime?"OVERTIME FINAL · ":m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
+  room.onMessage("finished",m=>{if(readAccountToken())refreshAccount(true);lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+(m.overtime?" WINS IN OVERTIME":" WINS");overlayKind="finish";say((m.overtime?"OVERTIME FINAL · ":m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
    room.onMessage("matchHistory",m=>{roomMatchHistory=Array.isArray(m.matches)?m.matches:roomMatchHistory;if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];renderedStatsSignature="";if(!$("statsDialog").classList.contains("hidden"))renderMatchStats();});
+  room.onMessage("accountLinked",m=>{if(m?.error){setAccountNotice(m.error);return;}if(m?.profile&&readAccountToken())applyAccountData(m,null,"Account linked to this player.");});
   room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");renderLobbyPeople();});
   room.onMessage("lobbyNotice",m=>{say(m.message||"Lobby updated.");renderLobbyPeople();});
   room.onMessage("playerReconnected",m=>{say((m.name||"A player")+" reconnected.");renderLobbyPeople();});
@@ -670,7 +851,7 @@ function renderMatchStats(){
  for(const p of people){
   const row=document.createElement("div");row.className="stat-row";
   const name=document.createElement("strong");name.textContent=(p.bot?"🤖 ":"")+(p.name||"Player")+(p.role==="goalie"?" · G":p.team?" · T"+p.team:"");row.appendChild(name);
-  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shots||0)?Math.round((p.goals||0)/(p.shots||1)*100):0)];
+  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shotsOnGoal||0)?Math.round((p.goals||0)/(p.shotsOnGoal||1)*100):0)];
   values.forEach((value,i)=>{const cell=document.createElement("span");cell.textContent=String(value||0)+(i===6?"%":"");row.appendChild(cell);});
   list.appendChild(row);
  }
@@ -966,7 +1147,7 @@ setInterval(()=>{if(!$("lobbyBrowser").classList.contains("hidden"))loadRooms(ac
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
 $("lobbyPrompt").addEventListener("click",e=>{if(e.target===$("lobbyPrompt"))$("lobbyPrompt").classList.add("hidden");});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");$("accountDialog").classList.add("hidden");}});
 function renderRoster(){
  const roster=$("rosterPanel"),names=$("rosterNames");if(!connected||!Object.keys(targetPlayers).length){roster.classList.add("hidden");return;}
  roster.classList.remove("hidden");$("rosterTitle").textContent="PRACTICE RINK · "+Object.keys(targetPlayers).length;
