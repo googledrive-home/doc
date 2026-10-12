@@ -97,11 +97,11 @@ function createAccountSession(account){
  return token;
 }
 app.post("/account/register",async(req,res)=>{
- const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\\s+/g," ");
+ const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\s+/g," ");
  if(!loginRateLimit(req,"register"))return res.status(429).json({error:"Too many account requests. Please try again in 15 minutes."});
- if(email.length>254||! /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
+ if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
  if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
- if(name.length<1||name.length>18||/[<>\\u0000-\\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
  if(accountStore.accounts.some(a=>a.email===email))return res.status(409).json({error:"An account with that email already exists. Sign in instead."});
  const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
  const account={id:randomBytes(12).toString("hex"),email,name:cleanName(name),skin:Math.max(0,Math.min(13,Number(req.body?.skin)||0)),createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
@@ -127,8 +127,8 @@ app.get("/account/me",(req,res)=>{
 app.post("/account/profile",async(req,res)=>{
  const account=resolveAccountToken(getRequestToken(req));
  if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
- const name=String(req.body?.name??account.name).trim().replace(/\\s+/g," "),skin=Number(req.body?.skin??account.skin);
- if(name.length<1||name.length>18||/[<>\\u0000-\\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ const name=String(req.body?.name??account.name).trim().replace(/\s+/g," "),skin=Number(req.body?.skin??account.skin);
+ if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
  if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid player skin."});
  account.name=cleanName(name);account.skin=skin;
  try{await persistAccountStore();res.json(accountPayload(account));}
