@@ -3,7 +3,9 @@ import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, defineTypes } from "@colyseus/schema";
 import express from "express";
 import { createServer } from "node:http";
-import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt, scryptSync, timingSafeEqual, createHash } from "node:crypto";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 class Player extends Schema {
   constructor() { super(); this.sessionId=""; this.name="Player"; this.team=0; this.x=0; this.y=0; this.vx=0; this.vy=0; this.inputX=0; this.inputY=0; this.skin=0; this.trail=0; this.ready=false; this.spectator=false; this.role="skater"; this.goals=0; this.assists=0; this.shots=0; this.shotsOnGoal=0; this.hits=0; this.saves=0; }
@@ -19,10 +21,125 @@ class MatchState extends Schema {
 defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",overtimePeriod:"number",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
 
 const app=express();
-app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
+app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type,Authorization");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
 app.use(express.json({limit:"4kb"}));
 app.get("/",(_req,res)=>res.json({name:"Hockey Multiplayer",status:"ok",protocol:"Colyseus WebSocket",version:1}));
 app.get("/health",(_req,res)=>res.status(200).json({ok:true}));
+// Account storage uses PostgreSQL when DATABASE_URL is configured. Local JSON fallback
+// is for development only; deployed production accounts need durable database storage.
+const ACCOUNT_SESSION_MS=30*24*60*60*1000;
+const ACCOUNT_DATA_DIR=process.env.DATA_DIR||path.join(process.cwd(),"data");
+const ACCOUNT_FILE=path.join(ACCOUNT_DATA_DIR,"accounts.json");
+let accountPool=null;
+let accountStore={version:1,accounts:[],sessions:[]};
+let accountWriteQueue=Promise.resolve();
+const accountRateLimits=new Map();
+const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{}});
+function cleanAccountStore(value){
+ const data=value&&typeof value==="object"?value:{};
+ data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
+ for(const account of data.accounts){
+  if(!account.stats||typeof account.stats!=="object")account.stats=emptyAccountStats();
+  const defaults=emptyAccountStats();
+  for(const [key,defaultValue] of Object.entries(defaults))if(account.stats[key]===undefined)account.stats[key]=key==="modes"||key==="maps"?{}:defaultValue;
+  if(!Array.isArray(account.recentMatches))account.recentMatches=[];
+ }
+ return data;
+}
+async function initialiseAccountStore(){
+ let fileStore=null;
+ try{fileStore=cleanAccountStore(JSON.parse(await readFile(ACCOUNT_FILE,"utf8")));}catch(error){if(error.code!=="ENOENT")throw error;}
+ if(process.env.DATABASE_URL){
+  const {Pool}=await import("pg");
+  accountPool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DATABASE_URL.includes("localhost")||process.env.DATABASE_URL.includes("127.0.0.1")?false:{rejectUnauthorized:false},max:4});
+  await accountPool.query("CREATE TABLE IF NOT EXISTS hockey_account_store (id integer PRIMARY KEY CHECK (id = 1), data jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())");
+  const result=await accountPool.query("SELECT data FROM hockey_account_store WHERE id = 1");
+  if(result.rowCount)accountStore=cleanAccountStore(result.rows[0].data);
+  else{accountStore=fileStore||accountStore;await accountPool.query("INSERT INTO hockey_account_store (id,data) VALUES (1,$1::jsonb)",[JSON.stringify(accountStore)]);}
+ }else{
+  accountStore=fileStore||accountStore;await mkdir(ACCOUNT_DATA_DIR,{recursive:true});
+  if(!fileStore)await persistAccountStore();
+ }
+}
+function persistAccountStore(){
+ const snapshot=JSON.stringify(accountStore);
+ accountWriteQueue=accountWriteQueue.catch(()=>{}).then(async()=>{
+  if(accountPool){await accountPool.query("INSERT INTO hockey_account_store (id,data,updated_at) VALUES (1,$1::jsonb,now()) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data,updated_at=now()",[snapshot]);return;}
+  await mkdir(ACCOUNT_DATA_DIR,{recursive:true});
+  const temp=ACCOUNT_FILE+".tmp";await writeFile(temp,snapshot,{encoding:"utf8",mode:0o600});await rename(temp,ACCOUNT_FILE);
+ });
+ return accountWriteQueue;
+}
+const tokenDigest=token=>createHash("sha256").update(String(token)).digest("hex");
+function resolveAccountToken(token){
+ if(typeof token!=="string"||token.length<32||token.length>200)return null;
+ const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
+ return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
+}
+function accountProfile(account){return {id:account.id,email:account.email,name:account.name,skin:account.skin||0,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null};}
+function accountPayload(account){
+ const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
+ const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[]};
+}
+function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
+function loginRateLimit(req,key){
+ const now=Date.now(),ip=String(req.ip||req.socket?.remoteAddress||"unknown"),id=ip+"|"+key,entry=accountRateLimits.get(id);
+ if(!entry||now-entry.startAt>15*60*1000){accountRateLimits.set(id,{startAt:now,count:1});return true;}
+ entry.count++;return entry.count<=10;
+}
+function createAccountSession(account){
+ const now=Date.now(),token=randomBytes(32).toString("base64url");
+ accountStore.sessions=accountStore.sessions.filter(s=>s.expiresAt>now);
+ accountStore.sessions.push({tokenHash:tokenDigest(token),accountId:account.id,createdAt:now,expiresAt:now+ACCOUNT_SESSION_MS});
+ const own=accountStore.sessions.filter(s=>s.accountId===account.id).sort((a,b)=>b.createdAt-a.createdAt),keep=new Set(own.slice(0,5).map(s=>s.tokenHash));
+ accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id||keep.has(s.tokenHash));
+ return token;
+}
+app.post("/account/register",async(req,res)=>{
+ const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\\s+/g," ");
+ if(!loginRateLimit(req,"register"))return res.status(429).json({error:"Too many account requests. Please try again in 15 minutes."});
+ if(email.length>254||! /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
+ if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
+ if(name.length<1||name.length>18||/[<>\\u0000-\\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ if(accountStore.accounts.some(a=>a.email===email))return res.status(409).json({error:"An account with that email already exists. Sign in instead."});
+ const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
+ const account={id:randomBytes(12).toString("hex"),email,name:cleanName(name),skin:Math.max(0,Math.min(13,Number(req.body?.skin)||0)),createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ accountStore.accounts.push(account);const token=createAccountSession(account);
+ try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
+ catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
+});
+app.post("/account/login",async(req,res)=>{
+ const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||"");
+ if(!loginRateLimit(req,"login:"+email))return res.status(429).json({error:"Too many sign-in attempts. Please try again in 15 minutes."});
+ const account=accountStore.accounts.find(a=>a.email===email),salt=account?Buffer.from(account.passwordSalt,"base64"):Buffer.alloc(16,7),expected=account?Buffer.from(account.passwordHash,"base64"):Buffer.alloc(64);
+ const actual=scryptSync(password.slice(0,128),salt,64),valid=actual.length===expected.length&&timingSafeEqual(actual,expected);
+ if(!account||!valid)return res.status(401).json({error:"Email or password is incorrect."});
+ account.lastLoginAt=Date.now();const token=createAccountSession(account);
+ try{await persistAccountStore();res.json({token,...accountPayload(account)});}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
+});
+app.get("/account/me",(req,res)=>{
+ const account=resolveAccountToken(getRequestToken(req));res.setHeader("Cache-Control","no-store");
+ if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
+ res.json(accountPayload(account));
+});
+app.post("/account/profile",async(req,res)=>{
+ const account=resolveAccountToken(getRequestToken(req));
+ if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
+ const name=String(req.body?.name??account.name).trim().replace(/\\s+/g," "),skin=Number(req.body?.skin??account.skin);
+ if(name.length<1||name.length>18||/[<>\\u0000-\\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
+ if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid player skin."});
+ account.name=cleanName(name);account.skin=skin;
+ try{await persistAccountStore();res.json(accountPayload(account));}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't save your profile. Please try again."});}
+});
+app.post("/account/logout",async(req,res)=>{
+ const token=getRequestToken(req),digest=token?tokenDigest(token):"";
+ accountStore.sessions=accountStore.sessions.filter(s=>s.tokenHash!==digest);
+ try{await persistAccountStore();res.json({ok:true});}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't sign out cleanly. Please close this tab."});}
+});
 const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
