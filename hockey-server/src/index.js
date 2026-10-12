@@ -88,6 +88,13 @@ function accountPayload(account){
  return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[]};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
+function requirePersistentAccountStorage(res){
+ if(!accountPool&&process.env.NODE_ENV==="production"){
+  res.status(503).json({error:"Persistent accounts are not enabled on this server yet. The site owner must connect a persistent PostgreSQL database (DATABASE_URL) and redeploy. Game play is still available."});
+  return false;
+ }
+ return true;
+}
 function loginRateLimit(req,key){
  const now=Date.now(),ip=String(req.ip||req.socket?.remoteAddress||"unknown"),id=ip+"|"+key,entry=accountRateLimits.get(id);
  if(!entry||now-entry.startAt>15*60*1000){accountRateLimits.set(id,{startAt:now,count:1});return true;}
@@ -102,6 +109,7 @@ function createAccountSession(account){
  return token;
 }
 app.post("/account/register",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
  const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\s+/g," ");
  if(!loginRateLimit(req,"register"))return res.status(429).json({error:"Too many account requests. Please try again in 15 minutes."});
  if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
@@ -115,6 +123,7 @@ app.post("/account/register",async(req,res)=>{
  catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
 });
 app.post("/account/login",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
  const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||"");
  if(!loginRateLimit(req,"login:"+email))return res.status(429).json({error:"Too many sign-in attempts. Please try again in 15 minutes."});
  const account=accountStore.accounts.find(a=>a.email===email),salt=account?Buffer.from(account.passwordSalt,"base64"):Buffer.alloc(16,7),expected=account?Buffer.from(account.passwordHash,"base64"):Buffer.alloc(64);
@@ -125,12 +134,14 @@ app.post("/account/login",async(req,res)=>{
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
 });
 app.get("/account/me",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
  const account=resolveAccountToken(getRequestToken(req));res.setHeader("Cache-Control","no-store");
  if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
  try{await accountWriteQueue;res.json(accountPayload(account));}
  catch(error){console.error("Account read error:",error.message);res.status(503).json({error:"Could not load your saved stats right now."});}
 });
 app.post("/account/profile",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
  const account=resolveAccountToken(getRequestToken(req));
  if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
  const name=String(req.body?.name??account.name).trim().replace(/\s+/g," "),skin=Number(req.body?.skin??account.skin);
@@ -141,6 +152,7 @@ app.post("/account/profile",async(req,res)=>{
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't save your profile. Please try again."});}
 });
 app.post("/account/logout",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
  const token=getRequestToken(req),digest=token?tokenDigest(token):"";
  accountStore.sessions=accountStore.sessions.filter(s=>s.tokenHash!==digest);
  try{await persistAccountStore();res.json({ok:true});}
