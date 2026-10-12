@@ -339,7 +339,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // Send movement state at 60 Hz so remote players and puck need less visual guesswork between snapshots.
   this.setPatchRate(1000/60);
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
-  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();
+  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
@@ -350,7 +350,29 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    if(p.role==="goalie"){p.inputX=0;p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));return;}
    p.inputX=Math.max(-1,Math.min(1,Number(msg?.x)||0));p.inputY=Math.max(-1,Math.min(1,Number(msg?.y)||0));
   });
-  this.onMessage("customize",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p)return;p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;this.updateTeamNames();this.broadcastLobby();});
+  this.onMessage("accountLink",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p||p.sessionId.startsWith("ai-"))return;
+   const token=String(msg?.accountToken||""),account=token?resolveAccountToken(token):null;
+   if(token&&!account){client.send("accountLinked",{error:"Account session expired. Sign in again."});return;}
+   this.checkpointAccountPlaytime(Date.now(),client.sessionId);
+   if(account){
+    this.accountBySessionId.set(client.sessionId,account.id);this.accountLastActiveAt.set(client.sessionId,Date.now());
+    p.name=account.name;p.skin=account.skin||0;account.lastLoginAt=Date.now();
+    void persistAccountStore().catch(error=>console.error("Account save error:",error.message));
+    client.send("accountLinked",accountPayload(account));
+   }else{
+    this.accountBySessionId.delete(client.sessionId);this.accountLastActiveAt.delete(client.sessionId);
+    client.send("accountLinked",{guest:true});
+   }
+   this.updateTeamNames();this.broadcastLobby();
+  });
+  this.onMessage("customize",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p)return;
+   p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;
+   const accountId=this.accountBySessionId.get(client.sessionId),account=accountStore.accounts.find(a=>a.id===accountId);
+   if(account&&(account.name!==p.name||account.skin!==p.skin)){account.name=p.name;account.skin=p.skin;void persistAccountStore().catch(error=>console.error("Account save error:",error.message));}
+   this.updateTeamNames();this.broadcastLobby();
+  });
   this.onMessage("ready",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||p.spectator||!["practice","waiting"].includes(this.state.status))return;p.ready=msg?.ready===undefined?!p.ready:!!msg.ready;this.broadcastLobby();this.broadcast("lobbyNotice",{message:p.name+(p.ready?" is ready.":" is changing settings.")});});
   this.onMessage("play",(client)=>this.startMatch(client));
   this.onMessage("startMatch",(client)=>this.startMatch(client));
@@ -376,14 +398,15 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.setSimulationInterval(dt=>this.tick(Math.min(dt,33.333)/1000),1000/60);
  }
  onJoin(client,options){
-  const spectator=!!options?.spectator;
+  const spectator=!!options?.spectator,account=resolveAccountToken(String(options?.accountToken||""));
   const humans=Array.from(this.state.players.values()).filter(p=>!p.sessionId.startsWith("ai-")&&!p.spectator);
   if(!spectator&&!["practice","waiting"].includes(this.state.status)){client.leave(4002,"This match has started; join as a spectator instead.");return;}
   if(!spectator&&humans.length>=playerCapacity(this.state)){client.leave(4001,this.state.gameType==="goalie"?"Goalie Challenge is a solo mode; join as a spectator instead.":"Lobby full");return;}
   if(spectator&&Array.from(this.state.players.values()).filter(p=>p.spectator).length>=8){client.leave(4003,"Spectator slots are full");return;}
   const team=spectator?0:this.assignTeam();
-  const p=new Player();p.sessionId=client.sessionId;p.name=cleanName(options?.name);p.team=team;p.spectator=spectator;p.role=!spectator&&this.state.gameType==="goalie"?"goalie":"skater";p.ready=false;p.x=p.role==="goalie"?850:team===1?130:team===2?770:450;p.y=300;p.skin=Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=0;
+  const p=new Player();p.sessionId=client.sessionId;p.name=account?account.name:cleanName(options?.name);p.team=team;p.spectator=spectator;p.role=!spectator&&this.state.gameType==="goalie"?"goalie":"skater";p.ready=false;p.x=p.role==="goalie"?850:team===1?130:team===2?770:450;p.y=300;p.skin=account?account.skin:Math.max(0,Math.min(13,Number(options?.skin)||0));p.trail=0;
   this.state.players.set(client.sessionId,p);
+  if(account){this.accountBySessionId.set(client.sessionId,account.id);this.accountLastActiveAt.set(client.sessionId,Date.now());account.lastLoginAt=Date.now();void persistAccountStore().catch(error=>console.error("Account join save error:",error.message));}
   if(!this.state.hostId&&!spectator)this.state.hostId=client.sessionId;
   this.updateTeamNames();this.broadcastLobby();
   if(this.matchHistory?.length)client.send("matchHistory",{matches:this.matchHistory});
@@ -392,6 +415,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  onLeave(client){
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return;
+  this.checkpointAccountPlaytime(Date.now(),client.sessionId);
   this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);
   const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status),wasSpectator=!!leaving.spectator;
   this.state.players.delete(client.sessionId);
@@ -467,9 +491,48 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   this.broadcast("shootoutStatus",{team:state.shootoutTeam,score1:puck.score1,score2:puck.score2,attempts1:a1,attempts2:a2,nextAttempt:Math.max(a1,a2)+1,suddenDeath:a1>=5&&a2>=5});
  }
  captureGoalReplayFrame(){const now=Date.now();if(now-this.lastGoalReplayAt<100)return;this.lastGoalReplayAt=now;const state=this.state;this.goalReplayFrames.push({t:now,puck:{x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2},players:Array.from(state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,spectator:p.spectator,role:p.role||"skater",bot:p.sessionId.startsWith("ai-"),goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves}))});if(this.goalReplayFrames.length>70)this.goalReplayFrames.splice(0,this.goalReplayFrames.length-70);}
- recordShotOnGoal(team){const shooter=this.state.players.get(this.state.puck.lastTouchId);if(shooter&&!shooter.spectator&&shooter.team===team)shooter.shotsOnGoal++;}
+ checkpointAccountPlaytime(now=Date.now(),onlySessionId=null){
+   if(!onlySessionId&&now-this.lastAccountTimePersistAt<30000)return;
+   let changed=false;
+   for(const [sessionId,accountId] of this.accountBySessionId){
+    if(onlySessionId&&sessionId!==onlySessionId)continue;
+    const account=accountStore.accounts.find(a=>a.id===accountId),last=this.accountLastActiveAt.get(sessionId)||now;
+    const elapsed=Math.floor(Math.max(0,now-last)/1000);
+    if(account&&elapsed>0){account.stats.timePlayedSeconds+=elapsed;changed=true;this.accountLastActiveAt.set(sessionId,last+elapsed*1000);}
+    if(onlySessionId&&sessionId===onlySessionId){this.accountBySessionId.delete(sessionId);this.accountLastActiveAt.delete(sessionId);}
+   }
+   if(!onlySessionId)this.lastAccountTimePersistAt=now;
+   if(changed)void persistAccountStore().catch(error=>console.error("Playtime save error:",error.message));
+  }
+  recordAccountMatches(matchRecord){
+   let changed=false;
+   for(const [sessionId,accountId] of this.accountBySessionId){
+    const account=accountStore.accounts.find(a=>a.id===accountId),player=matchRecord.players.find(p=>p.id===sessionId);
+    if(!account||!player||player.spectator||player.bot)continue;
+    const stats=account.stats,team=player.team,opposingScore=team===1?matchRecord.score2:matchRecord.score1;
+    const won=matchRecord.winner===team,draw=matchRecord.winner===0;
+    stats.matchesPlayed++;stats.goals+=player.goals||0;stats.assists+=player.assists||0;stats.shots+=player.shots||0;
+    stats.shotsOnGoal+=player.shotsOnGoal||0;stats.hits+=player.hits||0;stats.saves+=player.saves||0;
+    stats.goalsAgainst+=player.role==="goalie"?(matchRecord.goalsAllowed||0):opposingScore;
+    stats.matchTimeSeconds+=matchRecord.elapsedSeconds||0;
+    if(opposingScore===0)stats.cleanSheets++;
+    if(won){stats.wins++;stats.currentWinStreak++;stats.bestWinStreak=Math.max(stats.bestWinStreak,stats.currentWinStreak);if(matchRecord.overtime)stats.overtimeWins++;}
+    else{if(draw)stats.draws++;else stats.losses++;stats.currentWinStreak=0;}
+    stats.modes[matchRecord.gameType]=(stats.modes[matchRecord.gameType]||0)+1;stats.maps[matchRecord.map]=(stats.maps[matchRecord.map]||0)+1;
+    account.recentMatches.unshift({
+     id:this.roomId+":"+matchRecord.finishedAt+":"+sessionId,finishedAt:matchRecord.finishedAt,result:won?"WIN":draw?"DRAW":"LOSS",
+     gameType:matchRecord.gameType,mode:matchRecord.mode,map:matchRecord.map,score1:matchRecord.score1,score2:matchRecord.score2,
+     winner:matchRecord.winner,team,teamName:team===1?matchRecord.teamName1:matchRecord.teamName2,elapsedSeconds:matchRecord.elapsedSeconds,overtime:!!matchRecord.overtime,
+     goals:player.goals||0,assists:player.assists||0,shots:player.shots||0,shotsOnGoal:player.shotsOnGoal||0,hits:player.hits||0,saves:player.saves||0,
+     goalsAgainst:player.role==="goalie"?(matchRecord.goalsAllowed||0):opposingScore
+    });
+    account.recentMatches=account.recentMatches.slice(0,30);account.lastPlayedAt=matchRecord.finishedAt;changed=true;
+   }
+   if(changed)void persistAccountStore().catch(error=>console.error("Match stats save error:",error.message));
+  }
+  recordShotOnGoal(team){const shooter=this.state.players.get(this.state.puck.lastTouchId);if(shooter&&!shooter.spectator&&shooter.team===team)shooter.shotsOnGoal++;}
  recordGoal(team){const puck=this.state.puck,scorer=this.state.players.get(puck.lastTouchId),assister=this.state.players.get(puck.previousTouchId);if(scorer&&!scorer.spectator&&scorer.team===team){scorer.goals++;scorer.shotsOnGoal++;}if(assister&&assister!==scorer&&!assister.spectator&&assister.team===team)assister.assists++;this.broadcast("matchStats",this.matchStatsSnapshot());}
- matchStatsSnapshot(){const players=Array.from(this.state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,role:p.role,bot:p.sessionId.startsWith("ai-"),spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves,shootingPct:p.shots?Math.round(p.goals/p.shots*100):0}));const team=(n)=>({goals:n===1?this.state.puck.score1:this.state.puck.score2,shots:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shots,0),shotsOnGoal:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shotsOnGoal,0),saves:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.saves,0)});return {score1:this.state.puck.score1,score2:this.state.puck.score2,gameType:this.state.gameType,mode:this.state.mode,map:this.state.map,teamName1:this.state.teamName1,teamName2:this.state.teamName2,team1:team(1),team2:team(2),players};}
+ matchStatsSnapshot(){const players=Array.from(this.state.players.values()).map(p=>({id:p.sessionId,name:p.name,team:p.team,role:p.role,bot:p.sessionId.startsWith("ai-"),spectator:p.spectator,goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves,shootingPct:p.shotsOnGoal?Math.round(p.goals/p.shotsOnGoal*100):0}));const team=(n)=>({goals:n===1?this.state.puck.score1:this.state.puck.score2,shots:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shots,0),shotsOnGoal:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.shotsOnGoal,0),saves:players.filter(p=>p.team===n&&!p.spectator).reduce((t,p)=>t+p.saves,0)});return {score1:this.state.puck.score1,score2:this.state.puck.score2,gameType:this.state.gameType,mode:this.state.mode,map:this.state.map,teamName1:this.state.teamName1,teamName2:this.state.teamName2,team1:team(1),team2:team(2),players};}
  resetMatchStats(){for(const p of this.state.players.values()){p.goals=0;p.assists=0;p.shots=0;p.shotsOnGoal=0;p.hits=0;p.saves=0;}this.state.puck.lastTouchId="";this.state.puck.previousTouchId="";this.state.puck.lastTouchAt=0;}
  onDrop(client,code){try{this.allowReconnection(client,18).then(()=>this.broadcast("playerReconnected",{name:this.state.players.get(client.sessionId)?.name||"Player"})).catch(()=>{});}catch{}}
  onReconnect(client){this.broadcast("playerReconnected",{name:this.state.players.get(client.sessionId)?.name||"Player"});this.broadcastLobby();}
@@ -483,6 +546,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  }
  onAuth(client,options){
   if(this.state.private&&!this.matchesPrivatePassword(options?.privatePassword))throw new Error("Incorrect private lobby password.");
+  if(options?.accountToken&&!resolveAccountToken(String(options.accountToken)))throw new Error("Account session expired. Please sign in again.");
   return true;
  }
  updateTeamNames(){
@@ -497,7 +561,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const result={score1:state.puck.score1,score2:state.puck.score2,overtime:!!state.overtime};
   const goalie=state.gameType==="goalie"?Array.from(state.players.values()).find(p=>p.role==="goalie"&&!p.spectator):null;
   const winner=goalie?(goalie.saves>result.score1?2:goalie.saves<result.score1?1:0):result.score1===result.score2?0:result.score1>result.score2?1:2;
-  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,overtime:!!state.overtime,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);
+  const finishedAt=Date.now(),matchRecord={...this.matchStatsSnapshot(),gameType:state.gameType,mode:state.mode,map:state.map,overtime:!!state.overtime,matchLength:state.matchLength,elapsedSeconds:Math.max(0,Math.round((finishedAt-(this.matchStartedAt||finishedAt))/1000)),finishedAt,winner,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0};this.matchHistory.unshift(matchRecord);this.matchHistory=this.matchHistory.slice(0,10);this.recordAccountMatches(matchRecord);
   this.broadcast("finished",{...result,gameType:state.gameType,winner,overtime:!!state.overtime,goalieSaves:goalie?.saves||0,goalsAllowed:goalie?result.score1:0,stats:matchRecord,history:this.matchHistory});
   clearTimeout(this.finishTimer);
   this.finishTimer=setTimeout(()=>{
@@ -514,6 +578,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   },3300);
  }
  tick(dt){
+  this.checkpointAccountPlaytime();
   const state=this.state;
   if(state.status==="practice"){this.simulateRink(dt,true);return;}
   if(state.status==="matchmaking"){this.waitSeconds=Math.max(0,this.waitSeconds-dt);state.countdown=Math.ceil(this.waitSeconds);this.simulateRink(dt,true);return;}
@@ -649,7 +714,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    // Always resolve a real collision; the latch prevents a second boosted hit during the same touch only.
    if(playerDrive>24&&!latched){
     const isAI=p.sessionId.startsWith("ai-"),difficultyScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*difficultyScale:1,force=360*power+Math.min(130,playerDrive*.2);
-    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
     const now=Date.now();if(now-this.lastPuckTouchAt>80){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:force,player:p.name,shot:false});}
    }else if(puckNormalSpeed< -35){
     // Reflect an incoming puck even if the contact latch is active.
@@ -722,10 +787,11 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
  startFaceoff(){if(!["goal","playing","countdown"].includes(this.state.status))this.matchStartedAt=Date.now();this.cancelMatchmaking();this.resetPuck();this.resetPlayers();if(this.state.gameType==="shootout"){this.state.puck.x=this.state.shootoutTeam===1?270:630;this.state.puck.y=300;}this.startSeconds=3;this.state.status="countdown";this.state.countdown=3;this.broadcast("faceoff",{seconds:3,team1:this.state.teamName1,team2:this.state.teamName2,gameType:this.state.gameType,shootoutTeam:this.state.shootoutTeam,attempts1:this.state.shootoutAttempts1,attempts2:this.state.shootoutAttempts2});}
  resetPuck(){this.state.puck.x=450;this.state.puck.y=300;this.state.puck.vx=0;this.state.puck.vy=0;this.state.puck.lastTouchId="";this.state.puck.previousTouchId="";this.state.puck.lastTouchAt=0;this.puckContacts.clear();}
 
- onDispose(){clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);clearTimeout(this.finishTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
+ onDispose(){for(const sessionId of Array.from(this.accountBySessionId.keys()))this.checkpointAccountPlaytime(Date.now(),sessionId);void persistAccountStore().catch(error=>console.error("Account dispose save error:",error.message));clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);clearTimeout(this.finishTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
 }
 gameServer.define("hockey",HockeyRoom);
 gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","gameType","map","difficulty","training","competition"]);
 const port=Number(process.env.PORT||2567);
+await initialiseAccountStore();
 await gameServer.listen(port,"0.0.0.0");
 console.log("Hockey multiplayer listening on",port);
