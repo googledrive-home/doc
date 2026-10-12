@@ -42,6 +42,8 @@ function cleanAccountStore(value){
   if(!account.stats||typeof account.stats!=="object")account.stats=emptyAccountStats();
   const defaults=emptyAccountStats();
   for(const [key,defaultValue] of Object.entries(defaults))if(account.stats[key]===undefined)account.stats[key]=key==="modes"||key==="maps"?{}:defaultValue;
+  if(!account.stats.modes||typeof account.stats.modes!=="object"||Array.isArray(account.stats.modes))account.stats.modes={};
+  if(!account.stats.maps||typeof account.stats.maps!=="object"||Array.isArray(account.stats.maps))account.stats.maps={};
   if(!Array.isArray(account.recentMatches))account.recentMatches=[];
  }
  return data;
@@ -122,10 +124,11 @@ app.post("/account/login",async(req,res)=>{
  try{await persistAccountStore();res.json({token,...accountPayload(account)});}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
 });
-app.get("/account/me",(req,res)=>{
+app.get("/account/me",async(req,res)=>{
  const account=resolveAccountToken(getRequestToken(req));res.setHeader("Cache-Control","no-store");
  if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
- res.json(accountPayload(account));
+ try{await accountWriteQueue;res.json(accountPayload(account));}
+ catch(error){console.error("Account read error:",error.message);res.status(503).json({error:"Could not load your saved stats right now."});}
 });
 app.post("/account/profile",async(req,res)=>{
  const account=resolveAccountToken(getRequestToken(req));
