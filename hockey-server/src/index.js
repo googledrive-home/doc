@@ -426,7 +426,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     if(typeof signal.candidate.usernameFragment==="string")safeSignal.candidate.usernameFragment=signal.candidate.usernameFragment.slice(0,256);
    }else return;
    const now=Date.now(),recent=(this.voiceSignalRate.get(client.sessionId)||[]).filter(at=>now-at<10000);
-   if(recent.length>=140)return;
+   if(recent.length>=300)return;
    recent.push(now);this.voiceSignalRate.set(client.sessionId,recent);
    const target=this.clients.find(c=>c.sessionId===to);if(target)target.send("voiceSignal",{from:client.sessionId,signal:safeSignal});
   });
