@@ -843,7 +843,7 @@ function renderMatchStats(){
  for(const p of people){
   const row=document.createElement("div");row.className="stat-row";
   const name=document.createElement("strong");name.textContent=(p.bot?"🤖 ":"")+(p.name||"Player")+(p.role==="goalie"?" · G":p.team?" · T"+p.team:"");row.appendChild(name);
-  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shots||0)?Math.round((p.goals||0)/(p.shotsOnGoal||1)*100):0)];
+  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shotsOnGoal||0)?Math.round((p.goals||0)/(p.shotsOnGoal||1)*100):0)];
   values.forEach((value,i)=>{const cell=document.createElement("span");cell.textContent=String(value||0)+(i===6?"%":"");row.appendChild(cell);});
   list.appendChild(row);
  }
