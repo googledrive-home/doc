@@ -1109,7 +1109,7 @@ function formatTime(seconds){const s=Math.max(0,Math.floor(seconds||0));return M
 function separateDisplayedPlayers(){
  const players=Object.values(viewPlayers).filter(p=>!p.spectator).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
  const minimumDistance=38.6;
- for(let pass=0;pass<12;pass++){
+ for(let pass=0;pass<30;pass++){
   let overlapFound=false;
   for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++){
    const a=players[i],b=players[j];
