@@ -461,13 +461,23 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     p.x=Math.max(28,Math.min(872,p.x+p.vx*dt));p.y=Math.max(50,Math.min(550,p.y+p.vy*dt));
    }
   }
-  // Elastic player collisions with soft separation and limited impulse.
-  for(let pass=0;pass<3;pass++)for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
-   const a=ps[i],b=ps[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
-   if(d>=playerR*2||d<.001)continue;const nx=dx/d,ny=dy/d,over=(playerR*2-d+.1)*.5;
-   a.x=Math.max(40,Math.min(860,a.x-nx*over));a.y=Math.max(50,Math.min(550,a.y-ny*over));
-   b.x=Math.max(40,Math.min(860,b.x+nx*over));b.y=Math.max(50,Math.min(550,b.y+ny*over));
-   const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;if(closing<0){const impulse=-closing*.58;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}
+  // Resolve skater overlap authoritatively, including coincident centres. Multiple
+  // passes are necessary because correcting one pair can push a player into a third.
+  const minimumPlayerDistance=playerR*2+.6;
+  for(let pass=0;pass<14;pass++){
+   let overlapFound=false;
+   for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+    const a=ps[i],b=ps[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),nx,ny;
+    if(d>=minimumPlayerDistance)continue;
+    overlapFound=true;
+    if(d<.001){const angle=(i+1)*12.9898+(j+1)*78.233;nx=Math.cos(angle);ny=Math.sin(angle);d=0;}
+    else{nx=dx/d;ny=dy/d;}
+    const over=(minimumPlayerDistance-d+.02)*.5;
+    a.x=Math.max(28,Math.min(872,a.x-nx*over));a.y=Math.max(50,Math.min(550,a.y-ny*over));
+    b.x=Math.max(28,Math.min(872,b.x+nx*over));b.y=Math.max(50,Math.min(550,b.y+ny*over));
+    if(pass===0){const closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;if(closing<0){const impulse=-closing*.58;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;}}
+   }
+   if(!overlapFound)break;
   }
   // Damped puck motion. Save the previous point for swept collision detection so a fast puck cannot tunnel through skaters.
   const puckStartX=puck.x,puckStartY=puck.y;
@@ -476,7 +486,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   if(puck.y<35||puck.y>rinkH-35){puck.y=Math.max(35,Math.min(rinkH-35,puck.y));puck.vy*=-.88;this.emitBoardHit(Math.abs(puck.vy));}
   if(puck.x<25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x=25;puck.vx=Math.abs(puck.vx)*.88;this.emitBoardHit(Math.abs(puck.vx));}
   if(puck.x>rinkW-25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x= rinkW-25;puck.vx=-Math.abs(puck.vx)*.88;this.emitBoardHit(Math.abs(puck.vx));}
-  const activePuckContacts=new Set(),contactRadius=playerR+puckR,travelX=puck.x-puckStartX,travelY=puck.y-puckStartY,travelSq=travelX*travelX+travelY*travelY;
+  const activePuckContacts=new Set(),contactRadius=playerR+puckR,travelX=puck.x-puckStartX,travelY=puck.y-puckStartY,travelSq=travelX*travelX+travelY*travelY;let puckImpulseResolved=false;
   for(const p of ps){
    if(state.gameType==="shootout"&&p.team!==state.shootoutTeam)continue;
    const pStart=playerStartPositions.get(p.sessionId)||{x:p.x,y:p.y},playerTravelX=p.x-pStart.x,playerTravelY=p.y-pStart.y;
@@ -496,7 +506,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    // Keep the contact latch only while a skater is genuinely touching the puck.
    // A permanent latch made later collisions depend on the player's collision history.
    activePuckContacts.add(p.sessionId);
-   if(p.spectator)continue;
+   if(p.spectator||puckImpulseResolved)continue;
    // For end-overlap use the current normal; for a fast crossing use the first point of impact.
    const t=endOverlaps?1:impactT;
    const impactPlayerX=pStart.x+playerTravelX*t,impactPlayerY=pStart.y+playerTravelY*t,impactPuckX=puckStartX+travelX*t,impactPuckY=puckStartY+travelY*t;
@@ -509,7 +519,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     if(incoming&&puckSpeed>70&&(impactT!==null||endOverlaps)){
      const gx=endOverlaps?p.x:impactPlayerX,gy=endOverlaps?p.y:impactPlayerY;
      puck.x=gx+nx*(contactRadius+1);puck.y=gy+ny*(contactRadius+1);puck.vx=(p.team===2?-1:1)*Math.max(180,Math.min(560,puckSpeed*.78));puck.vy=puck.vy*.35+p.vy*.5;
-     p.saves++;p.hits++;this.recordShotOnGoal(p.team===2?1:2);this.puckContacts.add(p.sessionId);puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();
+     p.saves++;p.hits++;this.recordShotOnGoal(p.team===2?1:2);this.puckContacts.add(p.sessionId);puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
      this.broadcast("goalieSave",{player:p.name,saves:p.saves,speed:puckSpeed});this.broadcast("puckTouch",{speed:puckSpeed,player:p.name,save:true});this.broadcast("matchStats",this.matchStatsSnapshot());continue;
     }
    }
@@ -518,12 +528,12 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
    // Always resolve a real collision; the latch prevents a second boosted hit during the same touch only.
    if(playerDrive>24&&!latched){
     const isAI=p.sessionId.startsWith("ai-"),difficultyScale=state.difficulty==="easy"?.72:state.difficulty==="hard"?1.16:state.difficulty==="extrahard"?1.32:1,power=isAI?state.aiPower*difficultyScale:1,force=360*power+Math.min(130,playerDrive*.2);
-    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puck.vx=nx*force+p.vx*.35;puck.vy=ny*force+p.vy*.35;this.puckContacts.add(p.sessionId);p.hits++;p.shots++;puck.previousTouchId=puck.lastTouchId;puck.lastTouchId=p.sessionId;puck.lastTouchAt=Date.now();puckImpulseResolved=true;
     const now=Date.now();if(now-this.lastPuckTouchAt>80){this.lastPuckTouchAt=now;this.broadcast("puckTouch",{speed:force,player:p.name,shot:false});}
    }else if(puckNormalSpeed< -35){
     // Reflect an incoming puck even if the contact latch is active.
     puck.vx-=1.78*puckNormalSpeed*nx;puck.vy-=1.78*puckNormalSpeed*ny;
-    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);
+    puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);puckImpulseResolved=true;
    }else{
     // A glancing / latched contact separates cleanly without injecting extra energy.
     puck.x=p.x+nx*(contactRadius+1);puck.y=p.y+ny*(contactRadius+1);
@@ -533,34 +543,29 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // the same impulse instead of making the puck mysteriously resistant after an earlier touch.
   this.puckContacts=activePuckContacts;
 
-  // Final non-penetration solver: if multiple nearby skaters overlap the puck in one tick,
-  // find the nearest point outside every player instead of alternately pushing it between them.
+  // Project the puck out of skaters incrementally. The old dense-pile fallback
+  // could eject it far outside the rink when no sampled point was clear.
   const solidPlayers=ps.filter(p=>!(state.gameType==="shootout"&&p.team!==state.shootoutTeam));
-  const separationRadius=contactRadius+.75;
-  if(solidPlayers.some(p=>Math.hypot(puck.x-p.x,puck.y-p.y)<separationRadius)){
-   const originX=puck.x,originY=puck.y;let best=null,bestDistance=Infinity;
+  const separationRadius=contactRadius+.9;
+  for(let pass=0;pass<18;pass++){
+   let overlapFound=false;
    for(const p of solidPlayers){
-    const base=Math.atan2(originY-p.y,originX-p.x);
-    for(let sample=0;sample<72;sample++){
-     const angle=base+sample*Math.PI*2/72,cx=p.x+Math.cos(angle)*separationRadius,cy=p.y+Math.sin(angle)*separationRadius;
-     let clear=true;
-     for(const q of solidPlayers){if(Math.hypot(cx-q.x,cy-q.y)<separationRadius-.15){clear=false;break;}}
-     if(!clear)continue;
-     const distance=(cx-originX)*(cx-originX)+(cy-originY)*(cy-originY);
-     if(distance<bestDistance){bestDistance=distance;best={x:cx,y:cy};}
-    }
+    let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),nx,ny;
+    if(d>=separationRadius)continue;
+    overlapFound=true;
+    if(d<.001){const speed=Math.hypot(puck.vx,puck.vy);if(speed>.001){nx=-puck.vx/speed;ny=-puck.vy/speed;}else{nx=p.team===1?-1:1;ny=0;}d=0;}
+    else{nx=dx/d;ny=dy/d;}
+    if((puck.x<=25&&nx<0)||(puck.x>=rinkW-25&&nx>0)){nx=0;ny=puck.y>=p.y?1:-1;}
+    if((puck.y<=35&&ny<0)||(puck.y>=rinkH-35&&ny>0)){nx=puck.x>=p.x?1:-1;ny=0;}
+    const push=separationRadius-d+.12;
+    puck.x+=nx*push;puck.y+=ny*push;
    }
-   if(best){puck.x=best.x;puck.y=best.y;}
-   else{
-    // Dense pile-up fallback: eject the puck out beyond the nearest side of the player cluster.
-    const near=solidPlayers.filter(p=>Math.hypot(originX-p.x,originY-p.y)<separationRadius),cx=near.reduce((n,p)=>n+p.x,0)/near.length,cy=near.reduce((n,p)=>n+p.y,0)/near.length;
-    let dx=originX-cx,dy=originY-cy,d=Math.hypot(dx,dy);
-    if(d<.001){dx=puck.vx!==0?-puck.vx:(near[0]?.team===1?1:-1);dy=puck.vy!==0?-puck.vy:0;d=Math.hypot(dx,dy)||1;}
-    dx/=d;dy/=d;
-    const edge=Math.max(...near.map(p=>Math.hypot(p.x-cx,p.y-cy)))+separationRadius;
-    puck.x=cx+dx*edge;puck.y=cy+dy*edge;
-   }
+   if(!overlapFound)break;
   }
+  if(puck.y<35){puck.y=35;if(puck.vy<0)puck.vy=Math.abs(puck.vy)*.5;}
+  if(puck.y>rinkH-35){puck.y=rinkH-35;if(puck.vy>0)puck.vy=-Math.abs(puck.vy)*.5;}
+  if(puck.x<25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x=25;if(puck.vx<0)puck.vx=Math.abs(puck.vx)*.5;}
+  if(puck.x>rinkW-25&&!(puck.y>goalTop&&puck.y<goalBottom)){puck.x= rinkW-25;if(puck.vx>0)puck.vx=-Math.abs(puck.vx)*.5;}
   const puckSpeed=Math.hypot(puck.vx,puck.vy);if(puckSpeed>900){puck.vx=puck.vx/puckSpeed*900;puck.vy=puck.vy/puckSpeed*900;}
   const crossedLeft=puck.x<2&&puck.y>goalTop&&puck.y<goalBottom,crossedRight=puck.x>rinkW-2&&puck.y>goalTop&&puck.y<goalBottom;
   if(practice&&(crossedLeft||crossedRight)){this.resetPuck();this.broadcast("practiceGoal",{message:"Practice shot! Puck reset to centre."});}
