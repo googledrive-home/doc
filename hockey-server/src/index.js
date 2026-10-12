@@ -357,7 +357,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // Send movement state at 60 Hz so remote players and puck need less visual guesswork between snapshots.
   this.setPatchRate(1000/60);
   const mode=CAPACITY[options.mode]?options.mode:"1v1";
-  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();
+  this.state.mode=mode;this.state.gameType=["classic","shootout","goalie","time-attack"].includes(options?.gameType)?options.gameType:"classic";this.state.private=!!options.private;this.state.lobbyName=cleanRoomName(options?.lobbyName||(cleanName(options?.name)+"’s Lobby"));this.state.map=String(options.map||"Classic").slice(0,24);this.state.teamName1="Team 1";this.state.teamName2="Team 2";this.state.matchTime=Number.isFinite(Number(options?.matchTime))?Math.max(60,Math.min(600,Number(options.matchTime))):180;this.state.matchLength=this.state.matchTime;this.state.difficulty=["easy","medium","hard","extrahard"].includes(options?.difficulty)?options.difficulty:"medium";this.state.training=["none","warmup","conditioning","speed"].includes(options?.training)?options.training:"none";this.state.competition=!!options?.competition;const clampStat=(v,lo=.65,hi=1.7)=>Math.max(lo,Math.min(hi,Number.isFinite(Number(v))?Number(v):1));this.state.playerSpeed=clampStat(options?.playerSpeed, .65,1.6);this.state.playerPower=clampStat(options?.playerPower,.65,1.7);this.state.playerControl=clampStat(options?.playerControl,.65,1.6);this.state.aiSpeed=clampStat(options?.aiSpeed,.65,1.6);this.state.aiPower=clampStat(options?.aiPower,.65,1.7);this.state.aiAccuracy=clampStat(options?.aiAccuracy,.65,1.6);this.state.countdown=0;this.waitSeconds=30;this.startSeconds=0;this.goalPause=0;this.finishTimer=null;this.lastPuckTouchAt=0;this.lastBoardSoundAt=0;this.matchStartedAt=0;this.lastShootAt=new Map();this.aiShotAt=new Map();this.puckContacts=new Set();this.accountBySessionId=new Map();this.accountLastActiveAt=new Map();this.lastAccountTimePersistAt=Date.now();this.partyChatRate=new Map();
   this.privatePasswordSalt=null;this.privatePasswordHash=null;
   if(this.state.private){const password=String(options?.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.state.hostId="";this.matchmakingStarted=false;this.matchHistory=[];this.goalReplayFrames=[];this.lastGoalReplayAt=0;this.roomCode=options.code||makeCode();this.state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.setMetadata({mode:this.state.mode,map:this.state.map,private:this.state.private,code:this.roomCode,lobbyName:this.state.lobbyName,gameType:this.state.gameType,difficulty:this.state.difficulty,training:this.state.training,competition:this.state.competition});
@@ -383,6 +383,21 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
     client.send("accountLinked",{guest:true});
    }
    this.updateTeamNames();this.broadcastLobby();
+  });
+  this.onMessage("partyChat",(client,msg)=>{
+   const player=this.state.players.get(client.sessionId);
+   if(!player||player.sessionId.startsWith("ai-"))return;
+   const text=String(msg?.text??"").replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,280);
+   if(!text)return;
+   const now=Date.now(),recent=(this.partyChatRate.get(client.sessionId)||[]).filter(at=>now-at<5000);
+   if(recent.length>=5||(recent.length>0&&now-recent[recent.length-1]<650)){
+    this.partyChatRate.set(client.sessionId,recent);
+    client.send("partyChatError",{message:"You're sending messages too quickly. Please wait a moment."});
+    return;
+   }
+   recent.push(now);this.partyChatRate.set(client.sessionId,recent);
+   // Colyseus broadcasts are scoped to this room, so other lobbies never receive party chat.
+   this.broadcast("partyChatMessage",{name:String(player.name||"Player").slice(0,24),text,at:now});
   });
   this.onMessage("customize",(client,msg)=>{
    const p=this.state.players.get(client.sessionId);if(!p)return;
@@ -436,7 +451,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   const leaving=this.state.players.get(client.sessionId);
   if(!leaving)return;
   this.checkpointAccountPlaytime(Date.now(),client.sessionId);
-  this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);
+  this.lastShootAt.delete(client.sessionId);this.aiShotAt.delete(client.sessionId);this.puckContacts.delete(client.sessionId);this.partyChatRate.delete(client.sessionId);
   const leavingName=leaving.name||"A player",wasMatchActive=["matchmaking","countdown","playing","goal","finished"].includes(this.state.status),wasSpectator=!!leaving.spectator;
   this.state.players.delete(client.sessionId);
   if(this.state.hostId===client.sessionId){const next=Array.from(this.state.players.values()).find(p=>!p.spectator&&!p.sessionId.startsWith("ai-"));this.state.hostId=next?.sessionId||"";}
