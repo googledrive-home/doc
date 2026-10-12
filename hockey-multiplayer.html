@@ -417,7 +417,137 @@ function drawRinkEnvironment(ctx,map,theme,now){
  }
  ctx.restore();
 }
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300; 
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
+
+let accountInfo=null,accountData=null,accountMode="login";
+function readAccountToken(){try{return localStorage.getItem("hockeyAccountToken")||"";}catch{return "";}}
+async function accountRequest(path,options={}){
+ const base=$("server").value.trim().replace(/\/$/,"");if(!base)throw Error("Enter the multiplayer server URL first.");
+ const headers={"Content-Type":"application/json"},token=options.token===undefined?readAccountToken():options.token;
+ if(token)headers.Authorization="Bearer "+token;
+ const config={method:options.method||"GET",headers,cache:"no-store"};if(options.body!==undefined)config.body=JSON.stringify(options.body);
+ const response=await fetch(base+path,config),data=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(data.error||("Server returned "+response.status));return data;
+}
+function setAccountNotice(message){$("accountNotice").textContent=message||"";}
+function setAccountMode(mode){
+ accountMode=mode==="register"?"register":"login";const register=accountMode==="register";
+ $("accountLoginTab").classList.toggle("active",!register);$("accountRegisterTab").classList.toggle("active",register);
+ $("accountNameField").classList.toggle("hidden",!register);$("accountName").disabled=!register;$("accountName").required=register;
+ $("accountPassword").autocomplete=register?"new-password":"current-password";$("accountSubmit").textContent=register?"CREATE ACCOUNT":"SIGN IN";
+ $("accountTitle").textContent=register?"Create your hockey account":"Sign in to Hockey Arena";
+ if(register&&!$("accountName").value)$("accountName").value=$("player").value.trim()||"Player";
+}
+function accountDuration(seconds){
+ seconds=Math.max(0,Math.floor(Number(seconds)||0));const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;
+ return h?h+"h "+m+"m":m+"m "+s+"s";
+}
+function updateAccountButtons(){
+ const signedIn=!!accountInfo,name=accountInfo?.name||"";
+ $("accountToggleHeader").textContent=signedIn?"👤 "+name.slice(0,9):"👤 SIGN IN";
+ $("accountToggleHeader").title=signedIn?"Signed in as "+name+" · open your profile":"Sign in or create a player account";
+ $("accountQuick").title=signedIn?"Account: "+name:"Sign in or create an account";
+}
+function renderAccountData(data){
+ const grid=$("accountStatsGrid"),history=$("accountMatchHistory");if(!grid||!history)return;
+ grid.replaceChildren();history.replaceChildren();const s=data?.stats||{},matches=Array.isArray(data?.recentMatches)?data.recentMatches:[];
+ const cards=[
+  ["Matches",s.matchesPlayed||0],["Win rate",(s.winRate||0)+"%"],["Wins · draws · losses",(s.wins||0)+" · "+(s.draws||0)+" · "+(s.losses||0)],
+  ["Goals",s.goals||0],["Assists",s.assists||0],["Shots",s.shots||0],["Goal conversion",(s.shootingAccuracy||0)+"%"],["Goals conceded",s.goalsAgainst||0],
+  ["Hits",s.hits||0],["Saves",s.saves||0],["Clean sheets",s.cleanSheets||0],["Overtime wins",s.overtimeWins||0],
+  ["Best win streak",s.bestWinStreak||0],["Current streak",s.currentWinStreak||0],["Time online",accountDuration(s.timePlayedSeconds)],["Match time",accountDuration(s.matchTimeSeconds)],
+  ["Favourite mode",s.favoriteMode||"—"],["Favourite rink",s.favoriteMap||"—"]
+ ];
+ for(const [label,value] of cards)grid.appendChild(makeStatChip(label,value));
+ if(!matches.length){const empty=document.createElement("p");empty.className="browser-help";empty.textContent="No completed matches have been recorded yet. Your match reports and lifetime totals will appear here.";history.appendChild(empty);return;}
+ for(const match of matches.slice(0,12)){
+  const card=document.createElement("div");card.className="account-recent-item";
+  const title=document.createElement("strong");title.textContent=(match.result||"MATCH")+" · "+(match.teamName||"Your team")+" · "+match.score1+" — "+match.score2;
+  const meta=document.createElement("span");meta.textContent=(match.finishedAt?new Date(match.finishedAt).toLocaleString():"Completed match")+" · "+String(match.gameType||"classic").toUpperCase()+" · "+(match.mode||"1v1")+" · "+(match.map||"Classic")+" · "+accountDuration(match.elapsedSeconds||0);
+  const statLine=document.createElement("span");statLine.textContent="G "+(match.goals||0)+" · A "+(match.assists||0)+" · Shots "+(match.shots||0)+" · On target "+(match.shotsOnGoal||0)+" · Hits "+(match.hits||0)+" · Saves "+(match.saves||0);
+  card.append(title,meta,statLine);history.appendChild(card);
+ }
+}
+function applyAccountData(data,token=null,message=""){
+ if(!data||!data.profile)return;
+ if(token){try{localStorage.setItem("hockeyAccountToken",token);}catch{}}
+ const {token:unusedToken,...safeData}=data;accountData=safeData;accountInfo=safeData.profile;
+ $("accountAuthPane").classList.add("hidden");$("accountProfilePane").classList.remove("hidden");
+ $("accountIdentity").textContent=accountInfo.email+" · member since "+new Date(accountInfo.createdAt).toLocaleDateString();
+ $("accountProfileName").value=accountInfo.name||"Player";$("accountProfileSkin").value=String(accountInfo.skin||0);
+ $("player").value=accountInfo.name||"Player";$("skin").value=String(accountInfo.skin||0);
+ renderAccountData(accountData);updateAccountButtons();if(message)setAccountNotice(message);
+}
+function clearAccount(message=""){
+ accountInfo=null;accountData=null;$("accountAuthPane").classList.remove("hidden");$("accountProfilePane").classList.add("hidden");
+ updateAccountButtons();if(message)setAccountNotice(message);
+}
+async function refreshAccount(quiet=false){
+ const token=readAccountToken();
+ if(!token){clearAccount("Create an account to keep your player profile and stats, or sign in to an existing account.");return;}
+ try{
+  const data=await accountRequest("/account/me",{token});applyAccountData(data,null,"Account synced · lifetime stats and recent match reports loaded.");
+  if(room)room.send("accountLink",{accountToken:token});
+ }catch(error){
+  if(/expired|sign in again/i.test(error.message)){try{localStorage.removeItem("hockeyAccountToken");}catch{}clearAccount("Your saved session has expired. Please sign in again.");}
+  else if(!quiet)setAccountNotice(error.message);
+ }
+}
+function openAccount(){
+ $("accountDialog").classList.remove("hidden");
+ if(readAccountToken())refreshAccount(true);
+ else{clearAccount("Create an account to keep your player profile and stats, or sign in to an existing account.");setAccountMode("login");$("accountName").value=$("player").value.trim()||"Player";}
+}
+$("accountToggleHeader").onclick=openAccount;$("accountQuick").onclick=openAccount;
+$("closeAccount").onclick=()=>$("accountDialog").classList.add("hidden");
+$("accountDialog").addEventListener("click",event=>{if(event.target===$("accountDialog"))$("accountDialog").classList.add("hidden");});
+$("accountLoginTab").onclick=()=>setAccountMode("login");$("accountRegisterTab").onclick=()=>setAccountMode("register");
+$("accountAuthForm").addEventListener("submit",async event=>{
+ event.preventDefault();if($("accountSubmit").disabled)return;
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value,body={email,password};
+ if(accountMode==="register"){body.name=$("accountName").value.trim();body.skin=Number($("skin").value)||0;}
+ $("accountSubmit").disabled=true;setAccountNotice(accountMode==="register"?"Creating your account…":"Signing in…");
+ try{
+  const data=await accountRequest(accountMode==="register"?"/account/register":"/account/login",{method:"POST",body,token:""});
+  if(!data.token)throw Error("The server did not return an account session.");
+  const savedToken=data.token;$("accountPassword").value="";
+  applyAccountData(data,savedToken,accountMode==="register"?"Account created. Your profile and statistics are ready to save.":"Signed in successfully. Your saved profile and statistics have been restored.");
+  if(room)room.send("accountLink",{accountToken:savedToken});
+ }catch(error){setAccountNotice(error.message);}
+ finally{$("accountSubmit").disabled=false;}
+});
+$("accountSaveProfile").onclick=async()=>{
+ if(!readAccountToken())return;
+ const name=$("accountProfileName").value.trim(),skin=Number($("accountProfileSkin").value);
+ $("accountSaveProfile").disabled=true;setAccountNotice("Saving your player profile…");
+ try{
+  const data=await accountRequest("/account/profile",{method:"POST",body:{name,skin}});
+  applyAccountData(data,null,"Profile saved. Your player name and skin will be used next time you sign in.");
+  if(room)room.send("accountLink",{accountToken:readAccountToken()});
+ }catch(error){setAccountNotice(error.message);}
+ finally{$("accountSaveProfile").disabled=false;}
+};
+$("accountRefresh").onclick=()=>refreshAccount(false);
+$("accountSignOut").onclick=async()=>{
+ const token=readAccountToken();
+ try{if(token)await accountRequest("/account/logout",{method:"POST",token});}catch{}
+ try{localStorage.removeItem("hockeyAccountToken");}catch{}
+ if(room)room.send("accountLink",{accountToken:""});
+ clearAccount("Signed out. This browser will no longer automatically sign in to this account.");$("accountPassword").value="";
+};
+$("player").addEventListener("change",()=>{
+ if(!readAccountToken())return;
+ if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+ $("accountProfileName").value=$("player").value.trim()||"Player";
+});
+$("skin").addEventListener("change",()=>{
+ if(!readAccountToken())return;
+ if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+ $("accountProfileSkin").value=$("skin").value;
+});
+setAccountMode("login");updateAccountButtons();
+if(readAccountToken())refreshAccount(true);
+
 const introSlides=[
  {scene:"arena",title:"Under the lights.",description:"Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready."},
  {scene:"faceoff",title:"Own the face-off.",description:"Find your angle, close the gap and win the puck through real contact."},
@@ -506,7 +636,7 @@ function playSound(kind,detail={}){
 document.addEventListener("pointerdown",event=>{const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(soundOn){initAudio();if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");}},{capture:true,passive:true});
 document.addEventListener("click",event=>{if(event.detail!==0)return;const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");},true);
 $("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;if(soundOn){initAudio();playSound("ui");}else if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(0,audioCtx.currentTime,.035);setSoundButton();});
-function options(){return {name:$("player").value.trim()||"Player",mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
+function options(){return {name:$("player").value.trim()||"Player",accountToken:readAccountToken(),mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null,extra={}){
  let justCreated=null;
@@ -602,8 +732,9 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("goalieClear",m=>say(m.message||"Puck cleared from the crease."));
   room.onMessage("goalReplay",m=>{if(Array.isArray(m?.frames)&&m.frames.length>=4){lastGoalReplay=m.frames;$("goalReplayButton").classList.remove("hidden");$("goalReplayButton").textContent="▶ GOAL REPLAY";}});
   room.onMessage("goal",m=>{if(replayMode){replayMode=false;$("replayBadge").classList.add("hidden");}playSound("goal");overlay=(m.team===1?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+" SCORES!";overlayKind="goal";overlayUntil=performance.now()+1850;spawnCelebration(m.team===1?themeColor(2):themeColor(1));});
-  room.onMessage("finished",m=>{lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+(m.overtime?" WINS IN OVERTIME":" WINS");overlayKind="finish";say((m.overtime?"OVERTIME FINAL · ":m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
+  room.onMessage("finished",m=>{if(readAccountToken())refreshAccount(true);lastMatchRecord=m.stats||null;roomMatchHistory=Array.isArray(m.history)?m.history:roomMatchHistory;if(lastMatchRecord){statsView="last";renderedStatsSignature="";renderMatchStats();$("statsToggle").disabled=false;$("statsToggle").textContent="MATCH REPORT";}playSound("finish");if(m.gameType==="goalie"){overlay=m.winner===2?"GOALIE WINS!":m.winner===1?"SHOOTERS WIN":"GOALIE CHALLENGE DRAW";overlayKind="finish";say("Goalie challenge · "+(m.goalieSaves||0)+" saves · "+(m.goalsAllowed||m.score1||0)+" goals allowed");}else if(m.gameType==="shootout"){overlay=m.score1===m.score2?"SHOOTOUT DRAW":m.score1>m.score2?(latestState?.teamName1||"TEAM 1")+" WINS SHOOTOUT":(latestState?.teamName2||"TEAM 2")+" WINS SHOOTOUT";overlayKind="finish";say("Shootout final · "+m.score1+" — "+m.score2);}else{overlay=m.score1===m.score2?"FULL TIME · DRAW":(m.score1>m.score2?(latestState?.teamName1||"TEAM 1"):(latestState?.teamName2||"TEAM 2"))+(m.overtime?" WINS IN OVERTIME":" WINS");overlayKind="finish";say((m.overtime?"OVERTIME FINAL · ":m.gameType==="time-attack"?"TIME ATTACK COMPLETE · ":"Full time · ")+m.score1+" — "+m.score2);}overlayUntil=performance.now()+3300;});
    room.onMessage("matchHistory",m=>{roomMatchHistory=Array.isArray(m.matches)?m.matches:roomMatchHistory;if(!lastMatchRecord&&roomMatchHistory.length)lastMatchRecord=roomMatchHistory[0];renderedStatsSignature="";if(!$("statsDialog").classList.contains("hidden"))renderMatchStats();});
+  room.onMessage("accountLinked",m=>{if(m?.error){setAccountNotice(m.error);return;}if(m?.profile&&readAccountToken())applyAccountData(m,null,"Account linked to this player.");});
   room.onMessage("lobbyReady",m=>{overlay="";overlayKind="";noticeMessage=m.message||"Back in the lobby — press PLAY for a rematch.";document.body.classList.add("in-lobby");document.body.classList.remove("match-live");renderLobbyPeople();});
   room.onMessage("lobbyNotice",m=>{say(m.message||"Lobby updated.");renderLobbyPeople();});
   room.onMessage("playerReconnected",m=>{say((m.name||"A player")+" reconnected.");renderLobbyPeople();});
@@ -712,7 +843,7 @@ function renderMatchStats(){
  for(const p of people){
   const row=document.createElement("div");row.className="stat-row";
   const name=document.createElement("strong");name.textContent=(p.bot?"🤖 ":"")+(p.name||"Player")+(p.role==="goalie"?" · G":p.team?" · T"+p.team:"");row.appendChild(name);
-  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shots||0)?Math.round((p.goals||0)/(p.shots||1)*100):0)];
+  const values=[p.goals,p.assists,p.shots,p.shotsOnGoal,p.hits,p.saves,p.shootingPct??((p.shots||0)?Math.round((p.goals||0)/(p.shotsOnGoal||1)*100):0)];
   values.forEach((value,i)=>{const cell=document.createElement("span");cell.textContent=String(value||0)+(i===6?"%":"");row.appendChild(cell);});
   list.appendChild(row);
  }
@@ -1008,7 +1139,7 @@ setInterval(()=>{if(!$("lobbyBrowser").classList.contains("hidden"))loadRooms(ac
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
 $("lobbyPrompt").addEventListener("click",e=>{if(e.target===$("lobbyPrompt"))$("lobbyPrompt").classList.add("hidden");});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");$("accountDialog").classList.add("hidden");}});
 function renderRoster(){
  const roster=$("rosterPanel"),names=$("rosterNames");if(!connected||!Object.keys(targetPlayers).length){roster.classList.add("hidden");return;}
  roster.classList.remove("hidden");$("rosterTitle").textContent="PRACTICE RINK · "+Object.keys(targetPlayers).length;
