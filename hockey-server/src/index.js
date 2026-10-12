@@ -368,10 +368,12 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   });
   this.onMessage("customize",(client,msg)=>{
    const p=this.state.players.get(client.sessionId);if(!p)return;
-   p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));p.trail=0;
    const accountId=this.accountBySessionId.get(client.sessionId),account=accountStore.accounts.find(a=>a.id===accountId);
-   if(account&&(account.name!==p.name||account.skin!==p.skin)){account.name=p.name;account.skin=p.skin;void persistAccountStore().catch(error=>console.error("Account save error:",error.message));}
-   this.updateTeamNames();this.broadcastLobby();
+   // A signed-in profile is the source of truth. Do not let the initial guest-style
+   // customize packet overwrite it while the browser is still loading profile data.
+   if(account){p.name=account.name;p.skin=account.skin||0;}
+   else{p.name=cleanName(msg?.name);p.skin=Math.max(0,Math.min(13,Number(msg?.skin)||0));}
+   p.trail=0;this.updateTeamNames();this.broadcastLobby();
   });
   this.onMessage("ready",(client,msg)=>{const p=this.state.players.get(client.sessionId);if(!p||p.spectator||!["practice","waiting"].includes(this.state.status))return;p.ready=msg?.ready===undefined?!p.ready:!!msg.ready;this.broadcastLobby();this.broadcast("lobbyNotice",{message:p.name+(p.ready?" is ready.":" is changing settings.")});});
   this.onMessage("play",(client)=>this.startMatch(client));
