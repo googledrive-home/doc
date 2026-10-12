@@ -464,7 +464,7 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
   // Resolve skater overlap authoritatively, including coincident centres. Multiple
   // passes are necessary because correcting one pair can push a player into a third.
   const minimumPlayerDistance=playerR*2+.6;
-  for(let pass=0;pass<14;pass++){
+  for(let pass=0;pass<30;pass++){
    let overlapFound=false;
    for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
     const a=ps[i],b=ps[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),nx,ny;
