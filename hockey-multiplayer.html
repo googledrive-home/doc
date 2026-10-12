@@ -731,7 +731,7 @@ async function joinPartyVoice(){
   renderVoicePeers();boundRoom.send("voiceJoin");
  }catch(error){
   const msg=error?.name==="NotAllowedError"||error?.name==="PermissionDeniedError"?"Microphone permission was denied. Allow microphone access in your browser settings, then try again.":error?.name==="NotFoundError"?"No microphone was found. Connect a microphone and try again.":(error?.message||"Couldn't access your microphone.");
-  updateVoiceUI(msg);
+  if(voiceJoined)stopPartyVoice(false,msg);else updateVoiceUI(msg);
  }finally{if(!voiceJoined)$("joinPartyVoice").disabled=!room||!connected;}
 }
 function togglePartyMic(){
