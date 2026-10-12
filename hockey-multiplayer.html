@@ -227,6 +227,25 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 #partyChatForm button{width:auto;min-width:94px}
 #partyChatNotice{min-height:16px;color:#ffcc8b}
 @media(max-width:650px){#partyChatToggle{min-width:62px;padding:3px 6px;font-size:10px}.party-chat-card{height:min(620px,92vh);padding:12px}#partyChatForm button{min-width:74px}}
+
+#partyVoiceToggle{width:auto;min-width:80px;height:32px;padding:4px 9px;flex:none;white-space:nowrap}
+.party-voice-card{width:min(560px,100%);max-height:92vh}
+.party-voice-intro{margin:0;color:#9cb8cf;font-size:12px;line-height:1.55}
+.party-voice-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.party-voice-actions button{width:100%;height:auto;min-height:40px;padding:8px 7px;font-size:12px}
+.party-voice-actions button:disabled{opacity:.45;cursor:not-allowed}
+.party-voice-meter{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #ffffff1b;background:#061522b8;border-radius:12px}
+.party-voice-meter label{flex:1;color:#b5ccdf;font-size:12px;font-weight:800}
+.party-voice-meter input[type=range]{width:100%;height:22px;padding:0;border:0;background:transparent;accent-color:#49e3ff}
+.party-voice-meter output{min-width:42px;text-align:right;color:#83edff;font-weight:900;font-variant-numeric:tabular-nums}
+#partyVoiceStatus{min-height:20px;margin:0;color:#a8bfd6;font-size:12px;line-height:1.5}
+#partyVoicePeers{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto}
+.party-voice-peer{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #ffffff16;border-radius:9px;background:#122b42;font-size:12px}
+.party-voice-peer .voice-dot{width:8px;height:8px;flex:none;background:#ffbd59;border-radius:50%}
+.party-voice-peer.connected .voice-dot{background:#55efa7;box-shadow:0 0 8px #55efa7}
+.party-voice-peer span:last-child{margin-left:auto;color:#9bb6cb;font-size:10px}
+.party-voice-note{margin:0;color:#809ab0;font-size:11px;line-height:1.45}
+@media(max-width:650px){#partyVoiceToggle{min-width:65px;padding:3px 6px;font-size:10px}.party-voice-card{padding:12px}.party-voice-actions{grid-template-columns:1fr 1fr}.party-voice-actions button:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -333,6 +352,21 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
  </div>
 </div></div>
 
+<div id="partyVoiceDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="partyVoiceTitle">
+ <div class="browser-card party-voice-card">
+  <div class="browser-head"><h2 id="partyVoiceTitle">🎧 Party voice chat</h2><span style="flex:1"></span><button id="closePartyVoice" class="secondary" type="button" aria-label="Close party voice chat">✕</button></div>
+  <p class="party-voice-intro">Talk to people in this same lobby. Join voice to connect; your microphone starts <strong>OFF</strong>, so you must switch it on to speak. Audio is not saved by the game.</p>
+  <div class="party-voice-actions">
+   <button id="joinPartyVoice" type="button">JOIN VOICE</button>
+   <button id="togglePartyMic" class="secondary" type="button" disabled>🎙 MIC OFF</button>
+   <button id="leavePartyVoice" class="secondary" type="button" disabled>LEAVE VOICE</button>
+  </div>
+  <p id="partyVoiceStatus" aria-live="polite">Not connected to voice.</p>
+  <div class="party-voice-meter"><label for="partyVoiceVolume">Party volume<input id="partyVoiceVolume" type="range" min="0" max="100" step="5" value="80"></label><output id="partyVoiceVolumeLabel" for="partyVoiceVolume">80%</output></div>
+  <div><h3 style="margin:0 0 7px;font-size:12px;color:#9feeff;letter-spacing:.08em">PARTY MEMBERS</h3><div id="partyVoicePeers"><p class="party-voice-note">Join voice to see who is connected.</p></div></div>
+  <p class="party-voice-note">Voice requires microphone permission and a secure HTTPS connection. Some restrictive networks may need a TURN relay to connect audio successfully.</p>
+ </div>
+</div>
 <div id="partyChatDialog" class="room-browser hidden" role="dialog" aria-modal="true" aria-labelledby="partyChatTitle">
  <div class="browser-card party-chat-card">
   <div class="browser-head"><h2 id="partyChatTitle">💬 Party chat</h2><span style="flex:1"></span><button id="closePartyChat" class="secondary" type="button" aria-label="Close party chat">✕</button></div>
@@ -342,7 +376,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
   <form id="partyChatForm"><input id="partyChatInput" type="text" maxlength="280" autocomplete="off" placeholder="Message your party…" aria-label="Party chat message" required><button type="submit">SEND</button></form>
  </div>
 </div>
-<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="accountQuick" class="secondary" type="button" aria-label="Account" title="Sign in or view your account">👤</button><button id="goalReplayButton" class="secondary hidden" type="button" title="Replay the latest goal">▶ REPLAY</button><button id="competitionsToggle" class="secondary" type="button" title="Tournaments, leagues and standings">🏆 EVENTS</button><button id="partyChatToggle" class="secondary hidden" type="button" aria-label="Open party chat" title="Chat live with people in this lobby">💬 CHAT</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
+<div class="statusbar"><span id="liveDot" class="live-dot"></span><strong id="stateLabel">READY</strong><span id="status" class="grow">Choose your pitch and create or join a lobby.</span><button id="playMatch" class="hidden" type="button">▶ PLAY</button><span id="playerCount">0 players</span><button id="statsToggle" class="secondary hidden" type="button" aria-label="Show match statistics" title="Match statistics">📊</button><button id="accountQuick" class="secondary" type="button" aria-label="Account" title="Sign in or view your account">👤</button><button id="goalReplayButton" class="secondary hidden" type="button" title="Replay the latest goal">▶ REPLAY</button><button id="competitionsToggle" class="secondary" type="button" title="Tournaments, leagues and standings">🏆 EVENTS</button><button id="partyChatToggle" class="secondary hidden" type="button" aria-label="Open party chat" title="Chat live with people in this lobby">💬 CHAT</button><button id="partyVoiceToggle" class="secondary hidden" type="button" aria-label="Open party voice chat" title="Talk live with your party">🎧 VOICE</button><button id="lobbyPlayersBtn" class="secondary hidden" type="button" aria-label="Show players in this lobby" title="Players in lobby">👥</button><button id="leaveLobby" class="secondary hidden" type="button" title="Leave this lobby">LEAVE</button><button id="soundToggle" class="secondary" type="button" aria-label="Toggle game audio" aria-pressed="true" title="Sound on · click to mute">🔊</button><button id="toggleSetup" class="secondary hidden" type="button" aria-label="Open settings" title="Open settings">⚙</button></div>
 <section id="rinkPanel" class="rink-panel" aria-label="Full-screen live hockey rink">
 <canvas id="rink" aria-label="Animated hockey game rink"></canvas>
 <div id="spectatorBar" class="spectator-bar hidden" aria-label="Spectator camera controls">
@@ -593,6 +627,145 @@ const introSlides=[
  {scene:"champion",title:"Play for the win.",description:"Celebrate big goals and chase the next victory with your team."}
 ];
 function say(text){$("status").textContent=text}
+
+let voiceLocalStream=null,voiceJoined=false,voiceMicOn=false,voiceConnections=new Map(),voiceRemoteAudio=new Map(),voicePeerNames=new Map(),voiceQueuedCandidates=new Map(),voiceVolume=.8,voiceRoomRef=null;
+const VOICE_RTC_CONFIG={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
+function setVoiceStatus(message){$("partyVoiceStatus").textContent=message||"";}
+function updateVoiceUI(message){
+ $("joinPartyVoice").disabled=voiceJoined||!room||!connected;
+ $("joinPartyVoice").textContent=voiceJoined?"VOICE JOINED":"JOIN VOICE";
+ $("togglePartyMic").disabled=!voiceJoined;
+ $("togglePartyMic").textContent=voiceMicOn?"🎙 MIC ON":"🎙 MIC OFF";
+ $("togglePartyMic").classList.toggle("active",voiceMicOn);
+ $("leavePartyVoice").disabled=!voiceJoined;
+ $("partyVoiceToggle").textContent=voiceJoined?"🎧 VOICE ON":"🎧 VOICE";
+ $("partyVoiceToggle").title=voiceJoined?"Open voice controls · microphone "+(voiceMicOn?"on":"off"):"Join live voice chat with your party";
+ if(message)setVoiceStatus(message);
+}
+function renderVoicePeers(){
+ const list=$("partyVoicePeers");list.replaceChildren();
+ if(!voiceJoined){const p=document.createElement("p");p.className="party-voice-note";p.textContent="Join voice to see who is connected.";list.appendChild(p);return;}
+ if(!voiceConnections.size){const p=document.createElement("p");p.className="party-voice-note";p.textContent="You're in voice chat. Waiting for party members…";list.appendChild(p);return;}
+ for(const [id,pc] of voiceConnections){
+  const row=document.createElement("div");row.className="party-voice-peer"+(pc.connectionState==="connected"?" connected":"");
+  const dot=document.createElement("span");dot.className="voice-dot";
+  const name=document.createElement("strong");name.textContent=voicePeerNames.get(id)||"Party member";
+  const state=document.createElement("span");state.textContent=pc.connectionState==="connected"?"CONNECTED":pc.connectionState==="failed"?"FAILED":"CONNECTING";
+  row.append(dot,name,state);list.appendChild(row);
+ }
+}
+function dropVoicePeer(peerId){
+ const pc=voiceConnections.get(peerId);if(pc){pc.onicecandidate=null;pc.ontrack=null;pc.onconnectionstatechange=null;try{pc.close();}catch{}voiceConnections.delete(peerId);}
+ const audio=voiceRemoteAudio.get(peerId);if(audio){audio.pause();audio.srcObject=null;audio.remove();voiceRemoteAudio.delete(peerId);}
+ voicePeerNames.delete(peerId);voiceQueuedCandidates.delete(peerId);renderVoicePeers();
+}
+function ensureVoicePeer(peerId,name){
+ if(!voiceJoined||!voiceRoomRef||!peerId||peerId===voiceRoomRef.sessionId)return null;
+ if(name)voicePeerNames.set(peerId,String(name).slice(0,24));
+ let pc=voiceConnections.get(peerId);if(pc)return pc;
+ try{pc=new RTCPeerConnection(VOICE_RTC_CONFIG);}catch(error){setVoiceStatus("Voice is not supported by this browser.");return null;}
+ voiceConnections.set(peerId,pc);
+ const audioTrack=voiceLocalStream?.getAudioTracks?.()[0];
+ if(audioTrack)pc.addTrack(audioTrack,voiceLocalStream);
+ else pc.addTransceiver("audio",{direction:"recvonly"});
+ pc.onicecandidate=event=>{
+  if(event.candidate&&voiceJoined&&voiceRoomRef)voiceRoomRef.send("voiceSignal",{to:peerId,signal:{type:"candidate",candidate:event.candidate.toJSON()}});
+ };
+ pc.ontrack=event=>{
+  let audio=voiceRemoteAudio.get(peerId);
+  if(!audio){audio=document.createElement("audio");audio.autoplay=true;audio.playsInline=true;audio.controls=false;audio.volume=voiceVolume;audio.setAttribute("aria-label","Voice audio from "+(voicePeerNames.get(peerId)||"party member"));audio.style.display="none";document.body.appendChild(audio);voiceRemoteAudio.set(peerId,audio);}
+  if(event.streams?.[0])audio.srcObject=event.streams[0];
+  else audio.srcObject=new MediaStream([event.track]);
+  audio.play().catch(()=>setVoiceStatus("Voice audio is ready. Tap the page once if your browser blocks playback."));
+ };
+ pc.onconnectionstatechange=()=>{
+  if(!voiceConnections.has(peerId))return;
+  renderVoicePeers();
+  if(pc.connectionState==="connected")setVoiceStatus("Voice connected to "+(voicePeerNames.get(peerId)||"a party member")+".");
+  else if(pc.connectionState==="failed")setVoiceStatus("Couldn't connect to "+(voicePeerNames.get(peerId)||"a party member")+". This network may need a TURN relay.");
+ };
+ renderVoicePeers();return pc;
+}
+async function startVoiceOffer(peerId){
+ const pc=ensureVoicePeer(peerId,voicePeerNames.get(peerId));if(!pc||!voiceRoomRef)return;
+ try{
+  const offer=await pc.createOffer();
+  if(!voiceJoined||!voiceRoomRef||voiceConnections.get(peerId)!==pc)return;
+  await pc.setLocalDescription(offer);
+  if(voiceJoined&&voiceRoomRef&&voiceConnections.get(peerId)===pc)voiceRoomRef.send("voiceSignal",{to:peerId,signal:{type:"offer",sdp:pc.localDescription.sdp}});
+ }catch(error){setVoiceStatus("Couldn't start voice with "+(voicePeerNames.get(peerId)||"a party member")+".");}
+}
+async function handleVoiceSignal(message){
+ if(!voiceJoined||!voiceRoomRef||!message||typeof message.from!=="string"||message.from===voiceRoomRef.sessionId)return;
+ const signal=message.signal,peerId=message.from;if(!signal||typeof signal.type!=="string")return;
+ const pc=ensureVoicePeer(peerId,voicePeerNames.get(peerId)||"Party member");if(!pc)return;
+ try{
+  if(signal.type==="offer"&&typeof signal.sdp==="string"){
+   await pc.setRemoteDescription({type:"offer",sdp:signal.sdp});
+   const queued=voiceQueuedCandidates.get(peerId)||[];voiceQueuedCandidates.delete(peerId);
+   for(const candidate of queued){try{await pc.addIceCandidate(candidate);}catch{}}
+   const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
+   if(voiceJoined&&voiceRoomRef&&voiceConnections.get(peerId)===pc)voiceRoomRef.send("voiceSignal",{to:peerId,signal:{type:"answer",sdp:pc.localDescription.sdp}});
+  }else if(signal.type==="answer"&&typeof signal.sdp==="string"){
+   await pc.setRemoteDescription({type:"answer",sdp:signal.sdp});
+   const queued=voiceQueuedCandidates.get(peerId)||[];voiceQueuedCandidates.delete(peerId);
+   for(const candidate of queued){try{await pc.addIceCandidate(candidate);}catch{}}
+  }else if(signal.type==="candidate"&&signal.candidate&&typeof signal.candidate.candidate==="string"){
+   if(pc.remoteDescription)await pc.addIceCandidate(signal.candidate);
+   else{const queued=voiceQueuedCandidates.get(peerId)||[];if(queued.length<64)queued.push(signal.candidate);voiceQueuedCandidates.set(peerId,queued);}
+  }
+ }catch(error){setVoiceStatus("Voice setup with "+(voicePeerNames.get(peerId)||"a party member")+" didn't complete. Try leaving and rejoining voice.");}
+}
+async function joinPartyVoice(){
+ if(!room||!connected){setVoiceStatus("Join a game lobby before joining voice.");return;}
+ if(voiceJoined)return;
+ const boundRoom=room;
+ $("joinPartyVoice").disabled=true;setVoiceStatus("Requesting microphone permission…");
+ try{
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error("Microphone access needs HTTPS and a browser that supports audio capture.");
+  const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+  if(room!==boundRoom||!connected){stream.getTracks().forEach(track=>track.stop());return;}
+  voiceLocalStream=stream;voiceLocalStream.getAudioTracks().forEach(track=>{track.enabled=false;});
+  voiceMicOn=false;voiceJoined=true;voiceRoomRef=boundRoom;
+  updateVoiceUI("Voice joined. Your microphone is OFF — switch it on when you're ready to talk.");
+  renderVoicePeers();boundRoom.send("voiceJoin");
+ }catch(error){
+  const msg=error?.name==="NotAllowedError"||error?.name==="PermissionDeniedError"?"Microphone permission was denied. Allow microphone access in your browser settings, then try again.":error?.name==="NotFoundError"?"No microphone was found. Connect a microphone and try again.":(error?.message||"Couldn't access your microphone.");
+  updateVoiceUI(msg);
+ }finally{if(!voiceJoined)$("joinPartyVoice").disabled=!room||!connected;}
+}
+function togglePartyMic(){
+ if(!voiceJoined||!voiceLocalStream)return;
+ voiceMicOn=!voiceMicOn;voiceLocalStream.getAudioTracks().forEach(track=>{track.enabled=voiceMicOn;});
+ updateVoiceUI(voiceMicOn?"Microphone ON — your party can hear you.":"Microphone OFF — you're muted.");
+}
+function stopPartyVoice(notifyServer=true,message="Voice chat left."){
+ const oldRoom=voiceRoomRef,wasJoined=voiceJoined;
+ if(notifyServer&&oldRoom&&wasJoined){try{oldRoom.send("voiceLeave");}catch{}}
+ voiceJoined=false;voiceMicOn=false;voiceRoomRef=null;
+ for(const peerId of [...voiceConnections.keys()])dropVoicePeer(peerId);
+ voiceQueuedCandidates.clear();voicePeerNames.clear();
+ if(voiceLocalStream){voiceLocalStream.getTracks().forEach(track=>{try{track.stop();}catch{}});voiceLocalStream=null;}
+ updateVoiceUI(message);renderVoicePeers();
+}
+function onVoicePeerRoster(message,boundRoom){
+ if(!voiceJoined||voiceRoomRef!==boundRoom)return;
+ for(const peer of (Array.isArray(message?.peers)?message.peers:[])){
+  if(!peer||typeof peer.sessionId!=="string"||peer.sessionId===boundRoom.sessionId)continue;
+  voicePeerNames.set(peer.sessionId,String(peer.name||"Party member").slice(0,24));
+  ensureVoicePeer(peer.sessionId,peer.name);
+  if(boundRoom.sessionId<peer.sessionId)void startVoiceOffer(peer.sessionId);
+ }
+ renderVoicePeers();setVoiceStatus("Voice joined. Microphone is "+(voiceMicOn?"ON":"OFF")+".");
+}
+function onVoicePeerJoined(message,boundRoom){
+ if(!voiceJoined||voiceRoomRef!==boundRoom||!message||typeof message.sessionId!=="string"||message.sessionId===boundRoom.sessionId)return;
+ voicePeerNames.set(message.sessionId,String(message.name||"Party member").slice(0,24));
+ ensureVoicePeer(message.sessionId,message.name);
+ if(boundRoom.sessionId<message.sessionId)void startVoiceOffer(message.sessionId);
+ renderVoicePeers();
+}
+
 function clearPartyChat(){const list=$("partyChatMessages");if(!list)return;list.replaceChildren();const empty=document.createElement("p");empty.className="party-chat-empty";empty.textContent="No messages yet. Say hi to your party!";list.appendChild(empty);$("partyChatNotice").textContent="";}
 function appendPartyChatMessage(message){
  if(!message||typeof message.text!=="string")return;
@@ -689,7 +862,7 @@ function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!ra
 async function connect(kind,roomId=null,extra={}){
  let justCreated=null;
  try{
-  if(kind!=="reconnect"){reconnectAttempts=0;if(sessionStorage.getItem("hockeyReconnectToken"))sessionStorage.removeItem("hockeyReconnectToken");clearPartyChat();$("partyChatDialog").classList.add("hidden");$("partyChatToggle").classList.add("hidden");}
+  if(kind!=="reconnect"){reconnectAttempts=0;if(sessionStorage.getItem("hockeyReconnectToken"))sessionStorage.removeItem("hockeyReconnectToken");clearPartyChat();$("partyChatDialog").classList.add("hidden");$("partyChatToggle").classList.add("hidden");stopPartyVoice(true,"Voice chat closed because you are changing lobbies.");$("partyVoiceDialog").classList.add("hidden");$("partyVoiceToggle").classList.add("hidden");}
   const privatePassword=String(extra.privatePassword||"").trim(),lobbyName=String(extra.lobbyName||"").trim();
   if(kind==="create-private"&&(privatePassword.length<4||privatePassword.length>64))throw Error("Use a private lobby password between 4 and 64 characters.");
   if(kind==="create-public"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
@@ -766,6 +939,11 @@ async function connect(kind,roomId=null,extra={}){
    draw();
   });
   room.onMessage("lobby",m=>{if(m.code){$("code").value=m.code;if(pendingCreatedLobby){pendingCreatedLobby.code=m.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=m.code;$("copyCreatedCode").disabled=false;}}}$("playerCount").textContent=m.players+" / "+m.capacity+" slots";renderRoster();});
+  const voiceBoundRoom=room;
+  room.onMessage("voicePeers",message=>onVoicePeerRoster(message,voiceBoundRoom));
+  room.onMessage("voicePeerJoined",message=>onVoicePeerJoined(message,voiceBoundRoom));
+  room.onMessage("voicePeerLeft",message=>{if(voiceRoomRef===voiceBoundRoom&&message?.sessionId)dropVoicePeer(message.sessionId);});
+  room.onMessage("voiceSignal",message=>{if(voiceRoomRef===voiceBoundRoom)void handleVoiceSignal(message);});
   room.onMessage("partyChatMessage",appendPartyChatMessage);
   room.onMessage("partyChatError",m=>{$("partyChatNotice").textContent=m?.message||"Message not sent. Please try again.";});
   room.onMessage("countdown",m=>{label("MATCHMAKING");say("Practice continues · AI fills empty slots in "+m.seconds+"s");$("playMatch").disabled=true;$("playMatch").textContent="MATCHMAKING…";});
@@ -792,11 +970,11 @@ async function connect(kind,roomId=null,extra={}){
   room.onMessage("puckTouch",m=>playSound(m.shot?"shoot":"touch",m));
   room.onMessage("boardHit",m=>playSound("board",m));
   const activeRoom=room;
-   room.onLeave(code=>{if(room!==activeRoom)return;const token=sessionStorage.getItem("hockeyReconnectToken"),shouldReconnect=!userRequestedLeave&&!!token&&reconnectAttempts<3&&![4004,4005].includes(code);markConnected(false);label(shouldReconnect?"RECONNECTING":"DISCONNECTED");say(shouldReconnect?"Connection interrupted · reconnecting to your lobby…":"Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("statsToggle").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("partyChatDialog").classList.add("hidden");$("partyChatToggle").classList.add("hidden");if(shouldReconnect){reconnectAttempts++;setTimeout(()=>connect("reconnect",null,{token}),750*reconnectAttempts);}});
+   room.onLeave(code=>{if(room!==activeRoom)return;const token=sessionStorage.getItem("hockeyReconnectToken"),shouldReconnect=!userRequestedLeave&&!!token&&reconnectAttempts<3&&![4004,4005].includes(code);markConnected(false);label(shouldReconnect?"RECONNECTING":"DISCONNECTED");say(shouldReconnect?"Connection interrupted · reconnecting to your lobby…":"Disconnected from the lobby ("+code+").");room=null;document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("statsToggle").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");stopPartyVoice(false,"Game connection lost. Rejoin voice after reconnecting.");$("partyChatDialog").classList.add("hidden");$("partyChatToggle").classList.add("hidden");$("partyVoiceDialog").classList.add("hidden");$("partyVoiceToggle").classList.add("hidden");if(shouldReconnect){reconnectAttempts++;setTimeout(()=>connect("reconnect",null,{token}),750*reconnectAttempts);}});
   room.onError((code,msg)=>{label("CONNECTION ERROR");say("Room error "+code+": "+msg);});
-  markConnected(true);$("partyChatToggle").classList.remove("hidden");document.body.classList.add("in-lobby");$("arenaIntro").classList.add("hidden");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say(justCreated?(justCreated.private?"Private lobby created · code "+(justCreated.code||"syncing…")+". You're in.":"Public lobby created · code "+(justCreated.code||"syncing…")+". You're in."):"Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
+  markConnected(true);$("partyChatToggle").classList.remove("hidden");$("partyVoiceToggle").classList.remove("hidden");document.body.classList.add("in-lobby");$("arenaIntro").classList.add("hidden");$("toggleSetup").classList.remove("hidden");$("lobbyPlayersBtn").classList.remove("hidden");$("leaveLobby").classList.remove("hidden");$("playMatch").classList.remove("hidden");label("LOBBY READY");say(justCreated?(justCreated.private?"Private lobby created · code "+(justCreated.code||"syncing…")+". You're in.":"Public lobby created · code "+(justCreated.code||"syncing…")+". You're in."):"Lobby connected · press PLAY when you are ready.");renderRoster();renderLobbyPeople();
   if(justCreated){pendingCreatedLobby=justCreated;showLobbyCreated(justCreated);}
- }catch(e){label("NOT CONNECTED");markConnected(false);$("partyChatToggle").classList.add("hidden");$("partyChatDialog").classList.add("hidden");document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){reconnectAttempts++;say("Reconnection attempt "+reconnectAttempts+" of 3…");setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),650*reconnectAttempts);}else if(kind==="reconnect"){try{sessionStorage.removeItem("hockeyReconnectToken");}catch{};say("Could not reconnect. The lobby may have closed; use the room code to join again.");}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
+ }catch(e){label("NOT CONNECTED");markConnected(false);stopPartyVoice(false,"Not connected to a game lobby.");$("partyVoiceToggle").classList.add("hidden");$("partyVoiceDialog").classList.add("hidden");$("partyChatToggle").classList.add("hidden");$("partyChatDialog").classList.add("hidden");document.body.classList.remove("in-lobby","match-live");$("arenaIntro").classList.remove("hidden");say("Lobby creation/join failed: "+(e?.message||e));if(kind==="reconnect"&&reconnectAttempts<3&&sessionStorage.getItem("hockeyReconnectToken")){reconnectAttempts++;say("Reconnection attempt "+reconnectAttempts+" of 3…");setTimeout(()=>connect("reconnect",null,{token:sessionStorage.getItem("hockeyReconnectToken")}),650*reconnectAttempts);}else if(kind==="reconnect"){try{sessionStorage.removeItem("hockeyReconnectToken");}catch{};say("Could not reconnect. The lobby may have closed; use the room code to join again.");}else if(kind==="join-private"&&selectedPrivateRoom){openLobbyPrompt("join-private");$("lobbyPromptHelp").textContent="Couldn't join "+(selectedPrivateRoom.lobbyName||"that lobby")+": "+(e?.message||e)+". Check the password and try again.";}else if(kind==="create-private"||kind==="create-public"){openLobbyPrompt(kind);$("lobbyPromptHelp").textContent="Couldn't create the lobby: "+(e?.message||e)+". Your settings are kept—check the server and try again.";}}
 }
 $("playMatch").onclick=()=>{if(!room||!["practice","waiting"].includes(latestState?.status))return;const me=targetPlayers[room.sessionId];if(me?.spectator)return;room.send("ready",{ready:!me?.ready});};
 $("teamChoice").onchange=()=>{if(room)room.send("setTeam",{team:Number($("teamChoice").value)});};
@@ -1189,7 +1367,7 @@ setInterval(()=>{if(!$("lobbyBrowser").classList.contains("hidden"))loadRooms(ac
 $("closeLobbyBrowser").onclick=()=>$("lobbyBrowser").classList.add("hidden");
 $("lobbyBrowser").addEventListener("click",e=>{if(e.target===$("lobbyBrowser"))$("lobbyBrowser").classList.add("hidden");});
 $("lobbyPrompt").addEventListener("click",e=>{if(e.target===$("lobbyPrompt"))$("lobbyPrompt").classList.add("hidden");});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");$("accountDialog").classList.add("hidden");$("partyChatDialog").classList.add("hidden");}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("lobbyPrompt").classList.add("hidden");$("lobbyBrowser").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");$("competitionDialog").classList.add("hidden");$("statsDialog").classList.add("hidden");$("accountDialog").classList.add("hidden");$("partyChatDialog").classList.add("hidden");$("partyVoiceDialog").classList.add("hidden");}});
 function renderRoster(){
  const roster=$("rosterPanel"),names=$("rosterNames");if(!connected||!Object.keys(targetPlayers).length){roster.classList.add("hidden");return;}
  roster.classList.remove("hidden");$("rosterTitle").textContent="PRACTICE RINK · "+Object.keys(targetPlayers).length;
@@ -1198,6 +1376,14 @@ function renderRoster(){
  for(const p of people){const row=document.createElement("div");row.className="roster-name";row.style.color=p.team===1?"#bceeff":"#ffb6c3";row.textContent=(p.id?.startsWith("ai-")?"🤖 ":"")+p.name;names.appendChild(row);}
 }
 $("partyChatToggle").onclick=()=>{if(!room||!connected)return;$("partyChatDialog").classList.remove("hidden");$("partyChatInput").focus();};
+$("partyVoiceToggle").onclick=()=>{if(!room||!connected)return;$("partyVoiceDialog").classList.remove("hidden");updateVoiceUI();};
+$("closePartyVoice").onclick=()=>$("partyVoiceDialog").classList.add("hidden");
+$("partyVoiceDialog").addEventListener("click",event=>{if(event.target===$("partyVoiceDialog"))$("partyVoiceDialog").classList.add("hidden");});
+$("joinPartyVoice").onclick=()=>void joinPartyVoice();
+$("togglePartyMic").onclick=togglePartyMic;
+$("leavePartyVoice").onclick=()=>stopPartyVoice(true,"You left party voice chat.");
+$("partyVoiceVolume").addEventListener("input",event=>{voiceVolume=Math.max(0,Math.min(1,Number(event.target.value)/100));$("partyVoiceVolumeLabel").textContent=Math.round(voiceVolume*100)+"%";for(const audio of voiceRemoteAudio.values())audio.volume=voiceVolume;});
+$("partyVoiceVolumeLabel").textContent="80%";
 $("closePartyChat").onclick=()=>$("partyChatDialog").classList.add("hidden");
 $("partyChatDialog").addEventListener("click",event=>{if(event.target===$("partyChatDialog"))$("partyChatDialog").classList.add("hidden");});
 $("partyChatForm").addEventListener("submit",event=>{event.preventDefault();const input=$("partyChatInput"),text=input.value.trim();if(!text)return;if(!room||!connected){$("partyChatNotice").textContent="You must be connected to a lobby to chat.";return;}try{room.send("partyChat",{text:text.slice(0,280)});input.value="";$("partyChatNotice").textContent="";}catch(error){$("partyChatNotice").textContent="Message could not be sent. Check your connection."; }});
