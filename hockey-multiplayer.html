@@ -1578,9 +1578,7 @@ function updateRender(){
    const targetX=Math.max(28,Math.min(872,t.x+(t.vx||0)*playerAge)),targetY=Math.max(50,Math.min(550,t.y+(t.vy||0)*playerAge));
    p.x+=(targetX-p.x)*remoteBlend;p.y+=(targetY-p.y)*remoteBlend;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
   }
-  // Player separation is authoritative on the server. Do not push interpolated
-  // render positions apart every animation frame; that fights local prediction and
-  // creates a visible vibration/jitter when players touch.
+  separateDisplayedPlayers();
   const puckAge=Math.min(.025,Math.max(0,(now-targetPuckReceivedAt)/1000));
   const rawPuckX=targetPuck.x+(targetPuck.vx||0)*puckAge,estimatedPuckY=Math.max(35,Math.min(565,targetPuck.y+(targetPuck.vy||0)*puckAge));
   const inGoalLane=estimatedPuckY>254&&estimatedPuckY<346,estimatedPuckX=Math.max(inGoalLane?2:25,Math.min(inGoalLane?898:875,rawPuckX)),puckBlend=1-Math.exp(-dt*180);
