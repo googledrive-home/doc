@@ -900,11 +900,11 @@ async function connect(kind,roomId=null,extra={}){
       localPrediction.x=local.x;localPrediction.y=local.y;
       localPrediction.vx=local.vx||0;localPrediction.vy=local.vy||0;
      }else{
-      const collisionCorrection=error>26,blend=collisionCorrection?.68:.32,limit=collisionCorrection?36:12;
+      const collisionCorrection=error>18,blend=collisionCorrection?.8:.46,limit=collisionCorrection?42:16;
       localPrediction.x+=Math.max(-limit,Math.min(limit,ex))*blend;
       localPrediction.y+=Math.max(-limit,Math.min(limit,ey))*blend;
-      if(error>8){
-       const velocityBlend=collisionCorrection?.72:.4;
+      if(error>5){
+       const velocityBlend=collisionCorrection?.82:.52;
        localPrediction.vx=localPrediction.vx*(1-velocityBlend)+(local.vx||0)*velocityBlend;
        localPrediction.vy=localPrediction.vy*(1-velocityBlend)+(local.vy||0)*velocityBlend;
       }
@@ -1574,12 +1574,14 @@ function updateRender(){
   for(const [id,t] of Object.entries(targetPlayers)){
    if(id===localId&&me&&!me.spectator&&localPrediction){viewPlayers[id]={...t,x:localPrediction.x,y:localPrediction.y,vx:localPrediction.vx,vy:localPrediction.vy};continue;}
    let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}
-   const playerAge=Math.min(.025,Math.max(0,(now-targetPlayersReceivedAt)/1000)),remoteBlend=1-Math.exp(-dt*72);
+   const playerAge=Math.min(.025,Math.max(0,(now-targetPlayersReceivedAt)/1000)),remoteBlend=1-Math.exp(-dt*110);
    const targetX=Math.max(28,Math.min(872,t.x+(t.vx||0)*playerAge)),targetY=Math.max(50,Math.min(550,t.y+(t.vy||0)*playerAge));
    p.x+=(targetX-p.x)*remoteBlend;p.y+=(targetY-p.y)*remoteBlend;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
   }
   separateDisplayedPlayers();
-  const puckAge=Math.min(.025,Math.max(0,(now-targetPuckReceivedAt)/1000)),estimatedPuckX=Math.max(1,Math.min(899,targetPuck.x+(targetPuck.vx||0)*puckAge)),estimatedPuckY=Math.max(1,Math.min(599,targetPuck.y+(targetPuck.vy||0)*puckAge)),puckBlend=1-Math.exp(-dt*72);
+  const puckAge=Math.min(.025,Math.max(0,(now-targetPuckReceivedAt)/1000));
+  const rawPuckX=targetPuck.x+(targetPuck.vx||0)*puckAge,estimatedPuckY=Math.max(35,Math.min(565,targetPuck.y+(targetPuck.vy||0)*puckAge));
+  const inGoalLane=estimatedPuckY>254&&estimatedPuckY<346,estimatedPuckX=Math.max(inGoalLane?2:25,Math.min(inGoalLane?898:875,rawPuckX)),puckBlend=1-Math.exp(-dt*180);
   puck.x+=(estimatedPuckX-puck.x)*puckBlend;puck.y+=(estimatedPuckY-puck.y)*puckBlend;puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
   puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  }
