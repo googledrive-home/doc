@@ -94,7 +94,7 @@ const canvas=$("gameCanvas"),ctx=canvas.getContext("2d");
 const WIDTH=900,HEIGHT=600;
 const COLORS=["#42eaff","#ff4fc3","#ffd34e","#75ff9a","#9b83ff","#ff8b54","#5db1ff","#fb78a7"];
 const keys=Object.create(null),views=new Map();
-let room=null,localPractice=false,localPlayers=[],localPickups=[],localTime=120,localPhase=0,localHazardX=450,localRound=1;
+let room=null,localPractice=false,localPlayers=[],localPickups=[],localTime=120,localPhase=0,localHazardX=450,localRound=1,localWinner="";
 let lastFrame=performance.now(),sendTimer=0,toastTimer=null,wasConnected=false,lastInput="",boostLatched=false,roundNotice="",client=null;
 let toastSequence=0;
 function setStatus(message,kind=""){const el=$("raceStatus");el.textContent=message;el.className="notice"+(kind?" "+kind:"");}
@@ -109,7 +109,7 @@ function getRemoteState(){
  return {players,pickups,timeLeft:s.timeLeft,phase:s.phase,hazardX:s.hazardX,status:s.status,countdown:s.countdown,round:s.round,winner:s.winner,localId:room.sessionId};
 }
 function getGameState(){
- if(localPractice)return {players:localPlayers,pickups:localPickups,timeLeft:localTime,phase:localPhase,hazardX:localHazardX,status:localTime>0?"playing":"finished",countdown:0,round:localRound,winner:"",localId:"local-player"};
+ if(localPractice)return {players:localPlayers,pickups:localPickups,timeLeft:localTime,phase:localPhase,hazardX:localHazardX,status:localTime>0?"playing":"finished",countdown:0,round:localRound,winner:localWinner,localId:"local-player"};
  return getRemoteState();
 }
 async function startOnline(){
@@ -140,7 +140,7 @@ async function startOnline(){
 }
 function startPractice(){
  if(room){try{room.leave()}catch{}room=null;}
- localPractice=true;views.clear();localTime=120;localPhase=0;localHazardX=450;localRound=1;
+ localPractice=true;views.clear();localTime=120;localPhase=0;localHazardX=450;localRound=1;localWinner="";
  localPlayers=[{id:"local-player",name:nameFromInput(),x:670,y:300,angle:Math.PI/2,vx:0,vy:0,score:0,color:COLORS[0],boosts:1,boostTime:0,shieldTime:0,stunTime:0,inputThrottle:0,inputSteer:0,drifting:false,ai:false}];
  for(let i=1;i<6;i++){const a=Math.PI*2*(i/6);localPlayers.push({id:"cpu-"+i,name:["Turbo Tessa","Crash Nova","Drift Bot","Pixel Racer","Nitro Fox"][i-1],x:450+Math.cos(a)*245,y:300+Math.sin(a)*145,angle:a+Math.PI/2,vx:0,vy:0,score:0,color:COLORS[i],boosts:i%2,boostTime:0,shieldTime:0,stunTime:0,inputThrottle:1,inputSteer:0,drifting:false,ai:true,aiPhase:a});}
  localPickups=makePracticePickups();$("menuOverlay").classList.add("hidden");$("leaveRace").disabled=false;
@@ -255,7 +255,7 @@ function render(){
  }
  // Current charge and defensive state.
  const own=state?.players.find(p=>p.id===state.localId);
- if(own){$("raceStatus").textContent="Your score: "+own.score+" pts · Turbo charges: "+(own.boosts||0)+(own.shieldTime>0?" · Shield active":"");}
+ if(state?.status==="finished"&&state.winner){setStatus("Round winner: "+state.winner+". A new round starts soon.","good");}else if(own){$("raceStatus").textContent="Your score: "+own.score+" pts · Turbo charges: "+(own.boosts||0)+(own.shieldTime>0?" · Shield active":"");}
  requestAnimationFrame(render);
 }
 function stepPractice(dt){
@@ -272,13 +272,13 @@ function stepPractice(dt){
  for(let i=0;i<localPlayers.length;i++)for(let j=i+1;j<localPlayers.length;j++){
   const a=localPlayers[i],b=localPlayers[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>=31)continue;
   const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0,over=(31-d)/2;a.x-=nx*over;b.x+=nx*over;a.y-=ny*over;b.y+=ny*over;
-  const rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
-  if(rel>75){a.vx-=nx*rel*.72;a.vy-=ny*rel*.72;b.vx+=nx*rel*.72;b.vy+=ny*rel*.72;const hitter=Math.hypot(a.vx,a.vy)>Math.hypot(b.vx,b.vy)?a:b,victim=hitter===a?b:a;if(!victim.shieldTime){hitter.score++;victim.stunTime=.22;victim.score=Math.max(0,victim.score-0.2);}}
+  const rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny,forwardA=a.vx*nx+a.vy*ny,forwardB=b.vx*nx+b.vy*ny;
+  if(rel>75){const hitter=forwardA>forwardB?a:b,victim=hitter===a?b:a;a.vx-=nx*rel*.72;a.vy-=ny*rel*.72;b.vx+=nx*rel*.72;b.vy+=ny*rel*.72;if(!victim.shieldTime){hitter.score++;victim.stunTime=.22;victim.score=Math.max(0,victim.score-0.2);}}
  }
  for(const p of localPlayers){
   for(const pk of localPickups){if(!pk.active||Math.hypot(p.x-pk.x,p.y-pk.y)>23)continue;pk.active=false;if(pk.type==="boost")p.boosts=Math.min(3,p.boosts+1);else if(pk.type==="shield")p.shieldTime=4;else{for(const rival of localPlayers){if(rival===p||Math.hypot(rival.x-p.x,rival.y-p.y)>150||rival.shieldTime)continue;const a=Math.atan2(rival.y-p.y,rival.x-p.x);rival.vx+=Math.cos(a)*260;rival.vy+=Math.sin(a)*260;if(!rival.ai)p.score++;} }showToast(pk.type==="boost"?"⚡ Turbo charge!":pk.type==="shield"?"🛡️ Shield activated!":"💥 Shockwave!");setTimeout(()=>{pk.x=70+Math.random()*760;pk.y=70+Math.random()*460;pk.active=true;pk.type=["boost","shield","shockwave"][Math.floor(Math.random()*3)];},4500);}
  }
- if(localTime<=0&&localRound===1){localRound=2;showToast("Practice round complete! Press Leave to restart.");setStatus("Practice round finished · top score: "+[...localPlayers].sort((a,b)=>b.score-a.score)[0].name);}
+ if(localTime<=0&&localRound===1){localRound=2;localWinner=[...localPlayers].sort((a,b)=>b.score-a.score)[0]?.name||"Nobody";showToast("Practice round complete!");setStatus("Practice round finished · winner: "+localWinner,"good");}
 }
 function physicsKart(p,dt){
  if((p.stunTime||0)>0){p.stunTime=Math.max(0,p.stunTime-dt);p.vx*=Math.exp(-2.4*dt);p.vy*=Math.exp(-2.4*dt);}
