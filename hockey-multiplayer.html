@@ -1593,7 +1593,7 @@ function sampleRenderSnapshot(now){
  const a=frames[index],b=frames[index+1];
  if(!b){
   const ahead=Math.min(.02,Math.max(0,(renderAt-a.at)/1000));
-  return {...a,players:a.players.map(p=>({...p,x:Math.max(28,Math.min(872,p.x+(p.vx||0)*ahead)),y:Math.max(50,Math.min(550,p.y+(p.vy||0)*ahead)})),puck:{...a.puck,x:a.puck.x+(a.puck.vx||0)*ahead,y:a.puck.y+(a.puck.vy||0)*ahead}};
+  return {...a,players:a.players.map(p=>({...p,x:Math.max(28,Math.min(872,p.x+(p.vx||0)*ahead)),y:Math.max(50,Math.min(550,p.y+(p.vy||0)*ahead))})),puck:{...a.puck,x:a.puck.x+(a.puck.vx||0)*ahead,y:a.puck.y+(a.puck.vy||0)*ahead}};
  }
  const span=Math.max(1,b.at-a.at),t=Math.max(0,Math.min(1,(renderAt-a.at)/span)),lerp=(x,y)=>x+(y-x)*t;
  const nextPlayers=new Map(b.players.map(p=>[p.id,p]));
