@@ -869,7 +869,7 @@ async function connect(kind,roomId=null,extra={}){
   if(kind==="create-private"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
   if(kind==="join-private"&&!privatePassword)throw Error("Enter the private lobby password.");
   if(room){const oldRoom=room;room=null;try{oldRoom.leave().catch(()=>{});}catch{}}
-  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
+  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};renderSnapshots.length=0;lastSnapshotStatus=null;targetPlayersReceivedAt=performance.now();targetPuckReceivedAt=performance.now();lastDraw=0;puckHistory=[];overlay="";overlayKind="";lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:true,code:room.state.code||""};say("Private lobby created: "+lobbyName+".");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:false,code:room.state.code||""};say("Public lobby created: "+lobbyName+".");}
   else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword,spectator:!!extra.spectator})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!extra.spectator&&!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has started. Choose Spectate to watch.");room=await c.joinById(data.roomId,{...o,privatePassword,spectator:!!extra.spectator});say(extra.spectator?"Now spectating "+(data.lobbyName||code)+".":"Joined private lobby "+(data.lobbyName||code)+".");}
@@ -1354,7 +1354,7 @@ function leaveCurrentLobby(){
  room=null;markConnected(false);
  document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("lobbyCreated").classList.add("hidden");
  $("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");
- viewPlayers={};targetPlayers={};latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
+ viewPlayers={};targetPlayers={};renderSnapshots.length=0;lastSnapshotStatus=null;latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
  if(oldRoom){try{oldRoom.leave().catch(()=>{});}catch{}}
 }
 $("lobbyPlayersBtn").onclick=()=>{if(latestState)populateHostSettings(latestState);renderLobbyPeople();$("lobbyPeopleDialog").classList.remove("hidden");};
@@ -1556,13 +1556,13 @@ function predictLocalMovement(dt){
  if(prediction.role==="goalie"){
   prediction.x=player.team===1?50:850;prediction.vx=0;prediction.vy+=ay*720*speed*control*dt;prediction.vy*=Math.pow(.13/control,dt);prediction.vy=Math.max(-250,Math.min(250,prediction.vy));prediction.y=Math.max(60,Math.min(540,prediction.y+prediction.vy*dt));return;
  }
- // Predict the local skater each animation frame; authoritative snapshots only correct large divergence.
+ // Keep local steering responsive while smoothing authoritative collision corrections.
  prediction.vx+=ax*620*speed*control*dt;prediction.vy+=ay*620*speed*control*dt;
  const friction=Math.pow(.09/control,dt);prediction.vx*=friction;prediction.vy*=friction;
  const max=390*speed,velocity=Math.hypot(prediction.vx,prediction.vy);if(velocity>max){prediction.vx=prediction.vx/velocity*max;prediction.vy=prediction.vy/velocity*max;}
  prediction.x=Math.max(28,Math.min(872,prediction.x+prediction.vx*dt));prediction.y=Math.max(50,Math.min(550,prediction.y+prediction.vy*dt));
 }
-const RENDER_INTERPOLATION_DELAY_MS=80;
+const RENDER_INTERPOLATION_DELAY_MS=55;
 function captureRenderSnapshot(state){
  const now=performance.now();
  const snapshot={at:now,status:state.status,players:Object.values(targetPlayers).map(p=>({...p})),puck:{...targetPuck}};
