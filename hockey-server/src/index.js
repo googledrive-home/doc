@@ -963,11 +963,12 @@ class KartRoom extends (await import("@colyseus/core")).Room {
    a.x-=nx*over;b.x+=nx*over;a.y-=ny*over;b.y+=ny*over;
    const relative=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
    if(relative>1){
+    const forwardA=a.vx*nx+a.vy*ny,forwardB=b.vx*nx+b.vy*ny;
     const impulse=relative*.78;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;
     if(relative>95){
      const key=a.sessionId+"|"+b.sessionId,last=this.hitCooldown.get(key)||-10;
      if(now-last>1.05){
-      const forwardA=a.vx*nx+a.vy*ny,forwardB=b.vx*nx+b.vy*ny,hitter=forwardA>forwardB?a:b,victim=hitter===a?b:a;
+      const hitter=forwardA>forwardB?a:b,victim=hitter===a?b:a;
       this.hitCooldown.set(key,now);this.hitCooldown.set(b.sessionId+"|"+a.sessionId,now);
       if(victim.shieldTime<=0){hitter.score++;victim.stunTime=Math.max(victim.stunTime,.18);this.broadcast("kartHit",{attacker:hitter.name,victim:victim.name,attackerId:hitter.sessionId,victimId:victim.sessionId,score:hitter.score});}
       else this.broadcast("kartHit",{attacker:hitter.name,victim:victim.name,blocked:true,attackerId:hitter.sessionId,victimId:victim.sessionId});
