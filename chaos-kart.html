@@ -100,11 +100,11 @@ let toastSequence=0;
 function setStatus(message,kind=""){const el=$("raceStatus");el.textContent=message;el.className="notice"+(kind?" "+kind:"");}
 function setOnlineStatus(message,kind=""){const el=$("onlineStatus");el.textContent=message;el.className="online-status"+(kind?" "+kind:"");}
 function showToast(message){const t=$("toast");t.textContent=message;t.classList.add("show");const seq=++toastSequence;setTimeout(()=>{if(seq===toastSequence)t.classList.remove("show");},1900);}
-function nameFromInput(){return ($("racerName").value.trim().replace(/[<>\\u0000-\\u001f]/g,"").slice(0,18)||"Racer");}
+function nameFromInput(){return ($("racerName").value.trim().replace(/[<>\u0000-\u001f]/g,"").slice(0,18)||"Racer");}
 function getRemoteState(){
  if(!room||!room.state)return null;
  const s=room.state,players=[],pickups=[];
- s.players.forEach(p=>players.push({id:p.sessionId,name:p.name,x:p.x,y:p.y,angle:p.angle,vx:p.vx,vy:p.vy,score:p.score,color:p.color,boosts:p.boosts,boostTime:p.boostTime,shieldTime:p.shieldTime,stunTime:p.stunTime}));
+ s.players.forEach(p=>players.push({id:p.sessionId,name:p.name,x:p.x,y:p.y,angle:p.angle,vx:p.vx,vy:p.vy,score:p.score,color:p.color,boosts:p.boosts,boostTime:p.boostTime,shieldTime:p.shieldTime,stunTime:p.stunTime,drifting:p.drifting}));
  if(s.pickups)s.pickups.forEach(p=>{if(p.active)pickups.push({id:p.id,x:p.x,y:p.y,type:p.type});});
  return {players,pickups,timeLeft:s.timeLeft,phase:s.phase,hazardX:s.hazardX,status:s.status,countdown:s.countdown,round:s.round,winner:s.winner,localId:room.sessionId};
 }
@@ -114,8 +114,8 @@ function getGameState(){
 }
 async function startOnline(){
  const btn=$("playOnline");btn.disabled=true;setOnlineStatus("Connecting to online matchmaking…");
- const raw=$("serverUrl").value.trim().replace(/\\/$/,"");
- if(!/^https?:\\/\\//i.test(raw)){setOnlineStatus("Enter a valid server URL beginning with https:// or http://.","error");btn.disabled=false;return;}
+ const raw=$("serverUrl").value.trim().replace(/\/$/,"");
+ if(!/^https?:\/\//i.test(raw)){setOnlineStatus("Enter a valid server URL beginning with https:// or http://.","error");btn.disabled=false;return;}
  try{
   client=new Client(raw.replace(/^https:/i,"wss:").replace(/^http:/i,"ws:"));
   room=await client.joinOrCreate("kart_arena",{name:nameFromInput()});
