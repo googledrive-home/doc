@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#080d25">
+<title>Chaos Kart Arena · Online</title>
+<style>
+:root{color-scheme:dark;--bg:#080d25;--panel:#111a38;--cyan:#50eaff;--pink:#ff4fc3;--gold:#ffd95e;--text:#f4f7ff;--muted:#a7b6d8}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(ellipse at 50% -15%,#203665 0,#080d25 55%);color:var(--text)}
+body{min-height:100vh;padding:14px;display:flex;justify-content:center;align-items:center}
+button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}
+.shell{width:min(1180px,100%);margin:auto}
+.topbar{display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:0 auto 12px}
+.brand{display:flex;align-items:center;gap:12px}.brand-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid #5beaff66;background:linear-gradient(145deg,#193e60,#251740);border-radius:15px;box-shadow:0 0 25px #37e7ff2b;font-size:28px}
+h1{font-size:clamp(21px,3vw,32px);line-height:1;margin:0;font-weight:1000;letter-spacing:-1.1px}.brand small{display:block;color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:2px;margin-top:6px}
+.top-actions{display:flex;gap:8px;align-items:center}.pill{border:1px solid #4d648f;background:#111b3a;color:#dce7ff;border-radius:999px;padding:8px 12px;font-weight:850;font-size:12px}
+.card{background:linear-gradient(145deg,#111c3c,#0b1230);border:1px solid #52699a66;border-radius:22px;overflow:hidden;box-shadow:0 20px 60px #0005}
+.hero{position:relative;padding:clamp(14px,3vw,26px);background:linear-gradient(110deg,#111b3e,#18214a 55%,#21153e);border-bottom:1px solid #ffffff12}
+.hero-line{color:#b7c9f0;max-width:700px;font-size:14px;line-height:1.6;margin:10px 0 0}.hero-line b{color:#fff}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 245px;gap:12px;padding:12px}
+.playfield{position:relative;min-width:0;border:1px solid #52699a77;background:#070d23;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 30px #0008}
+canvas{display:block;width:100%;height:auto;aspect-ratio:3/2;outline:none}
+.hud{position:absolute;inset:10px 10px auto;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.hud-chip{background:#071225d9;border:1px solid #96b5ee38;border-radius:12px;padding:8px 11px;backdrop-filter:blur(8px);font-size:11px;font-weight:900;box-shadow:0 4px 16px #0003}.hud-chip strong{display:block;font-size:18px;letter-spacing:.5px}.hud-chip small{color:#a7bfdc;letter-spacing:1px;font-size:9px}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ffbd59;margin-right:6px}.status-dot.live{background:#70ffb6;box-shadow:0 0 10px #70ffb6}
+.scoreboard{position:absolute;right:10px;top:74px;width:min(175px,38%);pointer-events:none;background:#071225c9;border:1px solid #96b5ee2b;border-radius:12px;padding:8px 9px;backdrop-filter:blur(7px)}
+.score-title{display:flex;justify-content:space-between;align-items:center;color:#a9bddf;font-size:9px;font-weight:1000;letter-spacing:1.4px;margin-bottom:4px}
+.score-row{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:850;padding:5px 0;border-bottom:1px solid #ffffff0b}.score-row:last-child{border-bottom:0}.score-row .place{color:#8194ba;width:13px}.score-row .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.score-row .points{font-variant-numeric:tabular-nums;font-weight:1000;color:var(--gold)}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0}.sidepanel{border:1px solid #566ba044;border-radius:16px;background:#0b1430;padding:13px}.sidepanel h2{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;margin:0 0 10px;color:#f4f7ff}
+.primary,.secondary,.smallbtn{border:0;border-radius:12px;padding:12px 14px;font-weight:1000;letter-spacing:.4px;transition:transform .12s ease,filter .12s ease}.primary{width:100%;color:#071127;background:linear-gradient(100deg,#53eaff,#9df9ed);box-shadow:0 5px 22px #3ce9ff26}.secondary{background:#1a2850;border:1px solid #5f75a966;color:#eff5ff}.smallbtn{background:#111e40;border:1px solid #576d9a77;color:#eaf0ff;padding:8px 10px;font-size:11px}.primary:hover,.secondary:hover,.smallbtn:hover{filter:brightness(1.12);transform:translateY(-1px)}button:disabled{opacity:.5;cursor:wait;transform:none}
+.field{display:grid;gap:6px;color:#adc1e5;font-size:11px;font-weight:850;margin:0 0 10px}.field input{width:100%;min-width:0;border-radius:10px;border:1px solid #445b8c;background:#060d24;color:#fff;padding:11px 12px;outline:none}.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #50eaff1b}
+.help{font-size:11px;color:#9db0d3;line-height:1.55;margin:10px 0 0}.help b{color:#ecf4ff}.divider{height:1px;background:#ffffff12;margin:11px 0}.powerlist{display:grid;gap:9px}.power{display:flex;gap:9px;align-items:center;font-size:11px;color:#bac9e4;line-height:1.35}.power i{font-style:normal;width:30px;height:30px;flex:none;display:grid;place-items:center;border:1px solid #ffffff20;border-radius:9px;background:#ffffff08;font-size:17px}.power b{display:block;color:#fff;font-size:11px;margin-bottom:2px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:5px}.key{padding:7px 3px;text-align:center;background:#142042;border:1px solid #42598a;border-radius:8px;color:#ecf5ff;font-size:10px;font-weight:1000}.controls .full{grid-column:1/-1}.notice{font-size:11px;line-height:1.45;color:#c8d8f8;min-height:30px}.notice.error{color:#ff9ebf}.notice.good{color:#84ffd0}
+.bottomline{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:0 15px 14px;color:#8fa4c9;font-size:10px}.bottomline a{color:#81ebff}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#060b20cc;backdrop-filter:blur(9px);z-index:5}.overlay.hidden{display:none}.menu-card{width:min(440px,100%);padding:clamp(17px,3vw,28px);border:1px solid #7c9ee65c;border-radius:20px;background:linear-gradient(145deg,#121e43f5,#0b1231f5);box-shadow:0 20px 70px #0008}.eyebrow{color:#61ebff;font-size:10px;letter-spacing:2px;font-weight:1000}.menu-card h2{font-size:clamp(30px,5vw,46px);line-height:.98;letter-spacing:-1.8px;margin:10px 0}.menu-card p{font-size:13px;line-height:1.6;color:#b6c6e4;margin:10px 0 16px}.menu-buttons{display:grid;gap:9px}.menu-buttons .secondary{width:100%}.online-status{margin-top:11px;min-height:16px;font-size:11px;color:#b4c4e7;line-height:1.45}.control-touch{display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px}.touch{min-height:38px;color:#fff;background:#14234a;border:1px solid #516a9b;border-radius:10px;font-weight:1000;font-size:13px;touch-action:none;user-select:none}.touch.active{background:#225d78;border-color:#50eaff}
+.toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:9px 14px;border-radius:999px;background:#071225e8;border:1px solid #74a9db66;color:#fff;font-weight:900;font-size:11px;white-space:nowrap;opacity:0;transition:opacity .14s;pointer-events:none;max-width:90%;overflow:hidden;text-overflow:ellipsis}.toast.show{opacity:1}
+@media(max-width:840px){body{padding:8px}.layout{grid-template-columns:1fr;padding:8px}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sidepanel:last-child{grid-column:1/-1}.topbar{margin-bottom:8px}.hero{padding:15px}.hero-line{font-size:12px}.scoreboard{top:68px}.sidepanel{padding:11px}}
+@media(max-width:560px){.side{grid-template-columns:1fr}.sidepanel:last-child{grid-column:auto}.hud-chip{padding:6px 8px}.hud-chip strong{font-size:15px}.hud-chip small{font-size:8px}.scoreboard{right:7px;top:64px;width:128px;padding:6px}.score-row{font-size:9px;padding:3px 0}.score-row .place{width:10px}.brand-icon{width:42px;height:42px}.top-actions .pill{font-size:10px;padding:7px 9px}.control-touch{display:grid}.bottomline{font-size:9px}}
+</style>
+</head>
+<body>
+<div class="shell">
+ <header class="topbar">
+  <div class="brand"><div class="brand-icon">🏎️</div><div><h1>CHAOS KART ARENA</h1><small>DRIFT · BOOST · OUTPLAY</small></div></div>
+  <div class="top-actions"><span id="connectionPill" class="pill">● NOT CONNECTED</span><button class="pill" id="backBtn" type="button">← SITE</button></div>
+ </header>
+ <section class="card">
+  <div class="hero"><div class="eyebrow">ARCADE MAYHEM • ONLINE MULTIPLAYER</div><p class="hero-line"><b>Race hard. Drift wild. Send rivals flying.</b> Grab turbo, shields and shockwaves while the arena's electric barrier sweeps across the track. First to dominate the scoreboard wins the round.</p></div>
+  <div class="layout">
+   <div>
+    <div class="playfield">
+     <canvas id="gameCanvas" width="900" height="600" aria-label="Top-down neon kart arena"></canvas>
+     <div class="hud">
+      <div class="hud-chip"><small><span id="liveDot" class="status-dot"></span><span id="modeLabel">READY TO RACE</span></small><strong id="timerText">2:00</strong></div>
+      <div class="hud-chip" style="text-align:right"><small>RACERS</small><strong id="playerCount">0/8</strong></div>
+     </div>
+     <div class="scoreboard"><div class="score-title"><span>LEADERBOARD</span><span>PTS</span></div><div id="scoreRows"><div class="score-row"><span class="place">—</span><span class="name">Waiting for racers</span><span class="points">0</span></div></div></div>
+     <div id="menuOverlay" class="overlay">
+      <div class="menu-card">
+       <div class="eyebrow">WELCOME TO THE MAYHEM</div>
+       <h2>CHAOS<br><span style="color:#5deaff">KART ARENA</span></h2>
+       <p>A neon bumper-battle race with turbo pickups, drifting and a moving shock barrier. Challenge players online or warm up against CPU racers.</p>
+       <label class="field">RACER NAME<input id="racerName" maxlength="18" autocomplete="nickname" value="NeonRacer"></label>
+       <label class="field">MULTIPLAYER SERVER<input id="serverUrl" value="https://hockey-multiplayer.onrender.com" autocomplete="url"></label>
+       <div class="menu-buttons"><button id="playOnline" class="primary">🌐 PLAY ONLINE</button><button id="playPractice" class="secondary">🏁 PRACTICE VS CPU</button></div>
+       <div id="onlineStatus" class="online-status">Online matchmaking uses the site's multiplayer server. Practice works without a connection.</div>
+      </div>
+     </div>
+     <div id="toast" class="toast"></div>
+    </div>
+    <div class="control-touch" aria-label="Touch controls">
+     <button class="touch" data-key="ArrowLeft">◀ TURN</button><button class="touch" data-key="ArrowUp">▲ GAS</button><button class="touch" data-key="ArrowRight">TURN ▶</button>
+     <button class="touch" data-key="ArrowDown">▼ BRAKE</button><button class="touch" data-key="Shift">DRIFT</button><button class="touch" id="touchBoost">⚡ BOOST</button>
+    </div>
+   </div>
+   <aside class="side">
+    <div class="sidepanel"><h2>🏆 Race status</h2><div id="raceStatus" class="notice">Pick an online lobby or start a practice race.</div><div class="divider"></div><button class="smallbtn" id="leaveRace" style="width:100%" disabled>LEAVE RACE</button><p class="help">Online play: join the shared public queue. A new room is created automatically if one is not waiting.</p></div>
+    <div class="sidepanel"><h2>⚡ Power-ups</h2><div class="powerlist">
+     <div class="power"><i>⚡</i><div><b>Turbo boost</b>Dash forward; save charges for straightaways.</div></div>
+     <div class="power"><i>🛡️</i><div><b>Bubble shield</b>Absorb a hit without giving up your position.</div></div>
+     <div class="power"><i>💥</i><div><b>Shockwave</b>Blast nearby rivals away from your kart.</div></div>
+    </div></div>
+    <div class="sidepanel"><h2>🎮 Controls</h2><div class="controls"><span class="key">W / ↑ · GAS</span><span class="key">S / ↓ · BRAKE</span><span class="key">A / ← · LEFT</span><span class="key">D / → · RIGHT</span><span class="key full">SHIFT · DRIFT &nbsp; SPACE · BOOST</span></div><p class="help">Drifting lets the kart slide around corners. Ram rivals at speed to score points. Avoid the moving electric barrier!</p></div>
+   </aside>
+  </div>
+  <div class="bottomline"><span>CHAOS KART ARENA · FIRST BUILD</span><span>Online play requires the updated game server · <a href="./index.html">Back to Google Drive</a></span></div>
+ </section>
+</div>
+<script type="module">
+import { Client } from "https://esm.sh/colyseus.js@0.16.22";
+const $=id=>document.getElementById(id);
+const canvas=$("gameCanvas"),ctx=canvas.getContext("2d");
+const WIDTH=900,HEIGHT=600;
+const COLORS=["#42eaff","#ff4fc3","#ffd34e","#75ff9a","#9b83ff","#ff8b54","#5db1ff","#fb78a7"];
+const keys=Object.create(null),views=new Map();
+let room=null,localPractice=false,localPlayers=[],localPickups=[],localTime=120,localPhase=0,localHazardX=450,localRound=1,localWinner="";
+let lastFrame=performance.now(),sendTimer=0,toastTimer=null,wasConnected=false,lastInput="",boostLatched=false,roundNotice="",client=null;
+let toastSequence=0;
+function setStatus(message,kind=""){const el=$("raceStatus");el.textContent=message;el.className="notice"+(kind?" "+kind:"");}
+function setOnlineStatus(message,kind=""){const el=$("onlineStatus");el.textContent=message;el.className="online-status"+(kind?" "+kind:"");}
+function showToast(message){const t=$("toast");t.textContent=message;t.classList.add("show");const seq=++toastSequence;setTimeout(()=>{if(seq===toastSequence)t.classList.remove("show");},1900);}
+function nameFromInput(){return ($("racerName").value.trim().replace(/[<>\u0000-\u001f]/g,"").slice(0,18)||"Racer");}
+function getRemoteState(){
+ if(!room||!room.state)return null;
+ const s=room.state,players=[],pickups=[];
+ s.players.forEach(p=>players.push({id:p.sessionId,name:p.name,x:p.x,y:p.y,angle:p.angle,vx:p.vx,vy:p.vy,score:p.score,color:p.color,boosts:p.boosts,boostTime:p.boostTime,shieldTime:p.shieldTime,stunTime:p.stunTime,drifting:p.drifting}));
+ if(s.pickups)s.pickups.forEach(p=>{if(p.active)pickups.push({id:p.id,x:p.x,y:p.y,type:p.type});});
+ return {players,pickups,timeLeft:s.timeLeft,phase:s.phase,hazardX:s.hazardX,status:s.status,countdown:s.countdown,round:s.round,winner:s.winner,localId:room.sessionId};
+}
+function getGameState(){
+ if(localPractice)return {players:localPlayers,pickups:localPickups,timeLeft:localTime,phase:localPhase,hazardX:localHazardX,status:localTime>0?"playing":"finished",countdown:0,round:localRound,winner:localWinner,localId:"local-player"};
+ return getRemoteState();
+}
+async function startOnline(){
+ const btn=$("playOnline");btn.disabled=true;setOnlineStatus("Connecting to online matchmaking…");
+ const raw=$("serverUrl").value.trim().replace(/\/$/,"");
+ if(!/^https?:\/\//i.test(raw)){setOnlineStatus("Enter a valid server URL beginning with https:// or http://.","error");btn.disabled=false;return;}
+ try{
+  client=new Client(raw.replace(/^https:/i,"wss:").replace(/^http:/i,"ws:"));
+  room=await client.joinOrCreate("kart_arena",{name:nameFromInput()});
+  localPractice=false;localPlayers=[];localPickups=[];views.clear();wasConnected=true;
+  $("menuOverlay").classList.add("hidden");$("leaveRace").disabled=false;
+  $("connectionPill").textContent="● ONLINE";$("connectionPill").style.borderColor="#62ffbd88";$("liveDot").classList.add("live");
+  $("modeLabel").textContent="ONLINE MAYHEM";
+  $("raceStatus").textContent="Connected to the public arena. Ram rivals, collect power-ups and climb the scoreboard.";
+  setOnlineStatus("Connected. You're in the shared public arena.","good");
+  room.onMessage("kartHit",m=>showToast((m.attacker||"A racer")+" hit "+(m.victim||"a rival")+"!"));
+  room.onMessage("kartPickup",m=>{if(m.player===nameFromInput())showToast(({boost:"⚡ Turbo charge!",shield:"🛡️ Shield activated!",shockwave:"💥 Shockwave unleashed!"})[m.type]||"Power-up collected!");});
+  room.onMessage("kartHazard",m=>{if(m.sessionId===room.sessionId)showToast("⚠️ Electric barrier!");});
+  room.onMessage("kartRoundEnd",m=>showToast((m.winner||"Round")+" takes the round!"));
+  room.onLeave((code,reason)=>{
+   if(room){room=null;views.clear();$("connectionPill").textContent="● DISCONNECTED";$("liveDot").classList.remove("live");$("leaveRace").disabled=true;setStatus("Disconnected from the online room. Start again to reconnect.","error");$("menuOverlay").classList.remove("hidden");}
+  });
+  localStorage.setItem("chaosKartName",nameFromInput());
+  setStatus("Online · "+nameFromInput()+" · room "+String(room.roomId||"connected").slice(0,8),"good");
+ }catch(error){
+  room=null;btn.disabled=false;setOnlineStatus("Couldn't connect: "+(error?.message||"server unavailable")+". If the update was just published, try again after the game server has redeployed.","error");
+ }
+}
+function startPractice(){
+ if(room){try{room.leave()}catch{}room=null;}
+ localPractice=true;views.clear();localTime=120;localPhase=0;localHazardX=450;localRound=1;localWinner="";
+ localPlayers=[{id:"local-player",name:nameFromInput(),x:670,y:300,angle:Math.PI/2,vx:0,vy:0,score:0,color:COLORS[0],boosts:1,boostTime:0,shieldTime:0,stunTime:0,inputThrottle:0,inputSteer:0,drifting:false,ai:false}];
+ for(let i=1;i<6;i++){const a=Math.PI*2*(i/6);localPlayers.push({id:"cpu-"+i,name:["Turbo Tessa","Crash Nova","Drift Bot","Pixel Racer","Nitro Fox"][i-1],x:450+Math.cos(a)*245,y:300+Math.sin(a)*145,angle:a+Math.PI/2,vx:0,vy:0,score:0,color:COLORS[i],boosts:i%2,boostTime:0,shieldTime:0,stunTime:0,inputThrottle:1,inputSteer:0,drifting:false,ai:true,aiPhase:a});}
+ localPickups=makePracticePickups();$("menuOverlay").classList.add("hidden");$("leaveRace").disabled=false;
+ $("connectionPill").textContent="● PRACTICE";$("connectionPill").style.borderColor="#ffd95e88";$("liveDot").classList.add("live");$("modeLabel").textContent="PRACTICE VS CPU";
+ setStatus("Local practice · six karts. Score by bumping CPU rivals or collecting power-ups.","good");showToast("Practice race started — go!");
+}
+function makePracticePickups(){return [{id:"a",x:175,y:135,type:"boost",active:true},{id:"b",x:450,y:90,type:"shield",active:true},{id:"c",x:725,y:135,type:"shockwave",active:true},{id:"d",x:765,y:300,type:"boost",active:true},{id:"e",x:725,y:465,type:"shield",active:true},{id:"f",x:450,y:510,type:"shockwave",active:true},{id:"g",x:175,y:465,type:"boost",active:true},{id:"h",x:135,y:300,type:"shockwave",active:true}];}
+function cleanInput(){
+ const throttle=(keys.ArrowUp||keys.w?1:0)-(keys.ArrowDown||keys.s?1:0);
+ const steer=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0);
+ return {throttle,steer,drift:!!(keys.Shift||keys.shift)};
+}
+function sendInput(force=false){
+ if(!room||localPractice)return;
+ const v=cleanInput(),sig=[v.throttle,v.steer,v.drift?1:0].join(",");
+ if(force||sig!==lastInput){room.send("drive",v);lastInput=sig;}
+}
+function fireBoost(){
+ if(localPractice){const p=localPlayers[0];if(p&&p.boosts>0){p.boosts--;p.boostTime=1.25;showToast("⚡ TURBO!");}return;}
+ if(room)room.send("boost");
+}
+function leaveRace(){
+ if(room){const r=room;room=null;try{r.leave()}catch{}}
+ localPractice=false;localPlayers=[];localPickups=[];views.clear();lastInput="";
+ for(const k of Object.keys(keys))delete keys[k];
+ $("menuOverlay").classList.remove("hidden");$("playOnline").disabled=false;$("leaveRace").disabled=true;
+ $("connectionPill").textContent="● NOT CONNECTED";$("connectionPill").style.borderColor="";$("liveDot").classList.remove("live");$("modeLabel").textContent="READY TO RACE";
+ setStatus("Race left. Join the online arena or start practice again.");setOnlineStatus("Online matchmaking uses the site's multiplayer server. Practice works without a connection.");
+}
+function updateHud(state){
+ if(!state){$("playerCount").textContent="0/8";$("timerText").textContent="2:00";$("scoreRows").innerHTML='<div class="score-row"><span class="place">—</span><span class="name">Waiting for racers</span><span class="points">0</span></div>';return;}
+ $("playerCount").textContent=state.players.length+"/8";
+ const secs=Math.max(0,Math.ceil(state.timeLeft||0));$("timerText").textContent=Math.floor(secs/60)+":"+String(secs%60).padStart(2,"0");
+ if(state.status==="countdown"){$("modeLabel").textContent="GET READY · "+Math.ceil(state.countdown||0);$("liveDot").classList.remove("live");}
+ else if(state.status==="finished"){$("modeLabel").textContent="ROUND OVER";$("liveDot").classList.remove("live");}
+ else{$("modeLabel").textContent=localPractice?"PRACTICE VS CPU":"ONLINE MAYHEM";$("liveDot").classList.add("live");}
+ const sorted=[...state.players].sort((a,b)=>(b.score||0)-(a.score||0)||String(a.name).localeCompare(String(b.name))).slice(0,5);
+ $("scoreRows").innerHTML=sorted.map((p,i)=>'<div class="score-row"><span class="place">'+(i+1)+'</span><span class="name" style="color:'+p.color+'">'+escapeHtml(p.name)+(p.id===state.localId?' ★':'')+'</span><span class="points">'+(p.score||0)+'</span></div>').join("")||'<div class="score-row"><span class="name">Waiting for racers</span></div>';
+ if(state.status==="finished"&&state.winner){setStatus("Round winner: "+state.winner+". Another round starts soon.");}
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function drawBackground(state,now){
+ const g=ctx.createLinearGradient(0,0,WIDTH,HEIGHT);g.addColorStop(0,"#0a1730");g.addColorStop(.53,"#111537");g.addColorStop(1,"#211336");ctx.fillStyle=g;ctx.fillRect(0,0,WIDTH,HEIGHT);
+ ctx.save();ctx.globalAlpha=.18;ctx.strokeStyle="#5074a8";ctx.lineWidth=1;
+ for(let x=0;x<=WIDTH;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,HEIGHT);ctx.stroke();}
+ for(let y=0;y<=HEIGHT;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WIDTH,y);ctx.stroke();}ctx.restore();
+ // The road is a wide rounded rectangle: asphalt, lit edge rails and a broken racing line.
+ ctx.save();ctx.shadowColor="#58eaff";ctx.shadowBlur=16;ctx.strokeStyle="#315b7a";ctx.lineWidth=88;ctx.beginPath();ctx.roundRect(42,42,816,516,105);ctx.stroke();ctx.shadowBlur=0;
+ ctx.strokeStyle="#17283e";ctx.lineWidth=75;ctx.beginPath();ctx.roundRect(42,42,816,516,105);ctx.stroke();
+ ctx.strokeStyle="#7bd9f544";ctx.lineWidth=2;ctx.setLineDash([18,18]);ctx.beginPath();ctx.roundRect(42,42,816,516,105);ctx.stroke();ctx.setLineDash([]);
+ // Infield island with neon trim.
+ ctx.shadowColor="#ff4fc3";ctx.shadowBlur=12;ctx.fillStyle="#0e282e";ctx.strokeStyle="#ff4fc38c";ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(200,162,500,276,74);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+ ctx.fillStyle="#122d32";ctx.strokeStyle="#357e7d";ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(225,184,450,232,60);ctx.fill();ctx.stroke();
+ // checker starting stripe
+ ctx.save();ctx.translate(450,77);for(let i=0;i<10;i++){ctx.fillStyle=i%2===0?"#eff8ff":"#1b2340";ctx.fillRect(-36+i*7.2,0,7.2,19);}ctx.restore();
+ // Static bumper pylons.
+ for(const p of [{x:450,y:300,r:28},{x:374,y:300,r:19},{x:526,y:300,r:19},{x:450,y:245,r:15},{x:450,y:355,r:15}]){
+  ctx.save();ctx.shadowColor="#ff4fc3";ctx.shadowBlur=13;ctx.fillStyle="#301f50";ctx.strokeStyle="#f77bdb";ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#ffb5eb";ctx.globalAlpha=.72;ctx.beginPath();ctx.arc(p.x-5,p.y-6,p.r*.25,0,Math.PI*2);ctx.fill();ctx.restore();
+ }
+ // Moving electric barrier in the inner arena.
+ const hx=state?.hazardX??(450+Math.sin(now/1300)*150),pulse=.6+.4*Math.sin(now/135);
+ ctx.save();ctx.globalAlpha=.34+pulse*.42;ctx.strokeStyle="#ff4fc3";ctx.lineWidth=3+pulse*3;ctx.shadowColor="#ff4fc3";ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(hx,209);ctx.lineTo(hx,391);ctx.stroke();ctx.shadowBlur=0;for(let y=216;y<390;y+=20){ctx.fillStyle="#ffd7f4";ctx.beginPath();ctx.arc(hx,y,2.3,0,Math.PI*2);ctx.fill();}ctx.restore();
+ // Corner lamps.
+ for(const [x,y] of [[68,68],[832,68],[68,532],[832,532]]){ctx.save();ctx.shadowColor="#55eaff";ctx.shadowBlur=14;ctx.fillStyle="#6beaff";ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.restore();}
+}
+function drawPickup(p,now){
+ const palette={boost:["#4deaff","⚡"],shield:["#8bffb5","⬡"],shockwave:["#ff5bc8","✦"]},v=palette[p.type]||palette.boost,angle=now/550+(String(p.id).charCodeAt(0)%9);
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.shadowColor=v[0];ctx.shadowBlur=18;ctx.strokeStyle=v[0];ctx.lineWidth=3;ctx.fillStyle="#0a1836";ctx.beginPath();ctx.roundRect(-14,-14,28,28,7);ctx.fill();ctx.stroke();ctx.rotate(-angle);ctx.fillStyle=v[0];ctx.font="bold 19px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(v[1],0,1);ctx.restore();
+}
+function drawKart(p,now,local){
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle||0);
+ const color=p.color||COLORS[0],speed=Math.hypot(p.vx||0,p.vy||0),boosting=(p.boostTime||0)>.01,shielding=(p.shieldTime||0)>.01,drifting=local?cleanInput().drift:!!p.drifting;
+ if(boosting){ctx.save();ctx.shadowColor="#53eaff";ctx.shadowBlur=18;ctx.fillStyle="#53eaff";ctx.beginPath();ctx.moveTo(-20,-5);ctx.lineTo(-32,0);ctx.lineTo(-20,5);ctx.closePath();ctx.fill();ctx.restore();}
+ // tire marks on drift
+ if(drifting&&speed>75){ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle="#eff5ff";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-17,-10);ctx.lineTo(-27,-15);ctx.moveTo(-17,10);ctx.lineTo(-27,15);ctx.stroke();ctx.restore();}
+ // underglow
+ ctx.save();ctx.shadowColor=color;ctx.shadowBlur=boosting?24:11;ctx.fillStyle=color+"44";ctx.beginPath();ctx.ellipse(0,0,24,18,0,0,Math.PI*2);ctx.fill();ctx.restore();
+ // tires
+ ctx.fillStyle="#070b18";ctx.strokeStyle="#5b6c8e";ctx.lineWidth=1;for(const [x,y] of [[-11,-12],[-11,12],[11,-12],[11,12]]){ctx.beginPath();ctx.roundRect(x-5,y-3,10,6,2);ctx.fill();ctx.stroke();}
+ // kart chassis
+ ctx.save();ctx.shadowColor=color;ctx.shadowBlur=8;ctx.fillStyle=color;ctx.strokeStyle="#f0f8ff";ctx.lineWidth=1.4;ctx.beginPath();ctx.roundRect(-19,-10,38,20,6);ctx.fill();ctx.stroke();ctx.restore();
+ // nose and side accents
+ ctx.fillStyle="#f8fbff";ctx.beginPath();ctx.moveTo(15,-6);ctx.lineTo(24,0);ctx.lineTo(15,6);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#142039";ctx.beginPath();ctx.roundRect(-8,-7,15,14,4);ctx.fill();
+ ctx.fillStyle="#b9f7ff";ctx.beginPath();ctx.roundRect(0,-5,6,10,2);ctx.fill();
+ ctx.fillStyle="#fff3a1";ctx.fillRect(15,-6,3,4);ctx.fillRect(15,2,3,4);
+ ctx.restore();
+ if(shielding){ctx.save();ctx.strokeStyle="#9dffcc";ctx.globalAlpha=.65+.2*Math.sin(now/110);ctx.lineWidth=2.5;ctx.shadowColor="#7bffbc";ctx.shadowBlur=14;ctx.beginPath();ctx.arc(p.x,p.y,25,0,Math.PI*2);ctx.stroke();ctx.restore();}
+ if(p.name){ctx.save();ctx.font="800 11px system-ui";ctx.textAlign="center";ctx.textBaseline="bottom";ctx.lineWidth=3;ctx.strokeStyle="#070d20";ctx.strokeText(p.name,p.x,p.y-19);ctx.fillStyle=local?"#ffffff":"#d9e8ff";ctx.fillText(p.name,p.x,p.y-19);ctx.restore();}
+}
+function render(){
+ const now=performance.now(),dt=Math.min(.05,Math.max(.001,(now-lastFrame)/1000));lastFrame=now;
+ if(localPractice)stepPractice(dt);
+ const state=getGameState();
+ drawBackground(state,now);
+ if(state){
+  for(const pk of state.pickups||[])drawPickup(pk,now);
+  for(const target of state.players){
+   let p=views.get(target.id);
+   if(!p){p={...target};views.set(target.id,p);}
+   const blend=1-Math.exp(-dt*22);
+   p.x+=(target.x-p.x)*blend;p.y+=(target.y-p.y)*blend;
+   let da=(target.angle||0)-(p.angle||0);while(da>Math.PI)da-=Math.PI*2;while(da< -Math.PI)da+=Math.PI*2;p.angle=(p.angle||0)+da*blend;
+   p.vx=target.vx;p.vy=target.vy;p.score=target.score;p.name=target.name;p.color=target.color;p.boostTime=target.boostTime;p.shieldTime=target.shieldTime;p.boosts=target.boosts;
+   drawKart(p,now,target.id===state.localId);
+  }
+  for(const id of [...views.keys()])if(!state.players.some(p=>p.id===id))views.delete(id);
+  updateHud(state);
+ }else{
+  for(const p of [...views.values()])views.delete(p.id);
+  updateHud(null);
+ }
+ // Current charge and defensive state.
+ const own=state?.players.find(p=>p.id===state.localId);
+ if(state?.status==="finished"&&state.winner){setStatus("Round winner: "+state.winner+". A new round starts soon.","good");}else if(own){$("raceStatus").textContent="Your score: "+own.score+" pts · Turbo charges: "+(own.boosts||0)+(own.shieldTime>0?" · Shield active":"");}
+ requestAnimationFrame(render);
+}
+function stepPractice(dt){
+ localPhase+=dt;localHazardX=450+Math.sin(localPhase*1.35)*145;localTime=Math.max(0,localTime-dt);
+ for(const p of localPlayers){
+  if(p.ai){
+   const tx=450+Math.cos(localPhase*.52+p.aiPhase)*265,ty=300+Math.sin(localPhase*.52+p.aiPhase)*170;
+   const targetAngle=Math.atan2(ty-p.y,tx-p.x);let diff=targetAngle-p.angle;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;
+   p.inputSteer=Math.max(-1,Math.min(1,diff*1.8));p.inputThrottle=1;p.drifting=Math.abs(diff)>.42;
+   if(Math.random()<dt*.08&&p.boosts>0){p.boosts--;p.boostTime=1.1;}
+  }else{const v=cleanInput();p.inputThrottle=v.throttle;p.inputSteer=v.steer;p.drifting=v.drift;}
+  physicsKart(p,dt);
+ }
+ for(let i=0;i<localPlayers.length;i++)for(let j=i+1;j<localPlayers.length;j++){
+  const a=localPlayers[i],b=localPlayers[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>=31)continue;
+  const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0,over=(31-d)/2;a.x-=nx*over;b.x+=nx*over;a.y-=ny*over;b.y+=ny*over;
+  const rel=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny,forwardA=a.vx*nx+a.vy*ny,forwardB=b.vx*nx+b.vy*ny;
+  if(rel>75){const hitter=forwardA>forwardB?a:b,victim=hitter===a?b:a;a.vx-=nx*rel*.72;a.vy-=ny*rel*.72;b.vx+=nx*rel*.72;b.vy+=ny*rel*.72;if(!victim.shieldTime){hitter.score++;victim.stunTime=.22;victim.score=Math.max(0,victim.score-0.2);}}
+ }
+ for(const p of localPlayers){
+  for(const pk of localPickups){if(!pk.active||Math.hypot(p.x-pk.x,p.y-pk.y)>23)continue;pk.active=false;if(pk.type==="boost")p.boosts=Math.min(3,p.boosts+1);else if(pk.type==="shield")p.shieldTime=4;else{for(const rival of localPlayers){if(rival===p||Math.hypot(rival.x-p.x,rival.y-p.y)>150||rival.shieldTime)continue;const a=Math.atan2(rival.y-p.y,rival.x-p.x);rival.vx+=Math.cos(a)*260;rival.vy+=Math.sin(a)*260;if(!rival.ai)p.score++;} }showToast(pk.type==="boost"?"⚡ Turbo charge!":pk.type==="shield"?"🛡️ Shield activated!":"💥 Shockwave!");setTimeout(()=>{pk.x=70+Math.random()*760;pk.y=70+Math.random()*460;pk.active=true;pk.type=["boost","shield","shockwave"][Math.floor(Math.random()*3)];},4500);}
+ }
+ if(localTime<=0&&localRound===1){localRound=2;localWinner=[...localPlayers].sort((a,b)=>b.score-a.score)[0]?.name||"Nobody";showToast("Practice round complete!");setStatus("Practice round finished · winner: "+localWinner,"good");}
+}
+function physicsKart(p,dt){
+ if((p.stunTime||0)>0){p.stunTime=Math.max(0,p.stunTime-dt);p.vx*=Math.exp(-2.4*dt);p.vy*=Math.exp(-2.4*dt);}
+ else{
+  const throttle=p.inputThrottle||0,steer=p.inputSteer||0,drifting=!!p.drifting;
+  const speed=Math.hypot(p.vx,p.vy),forward=(p.vx*Math.cos(p.angle)+p.vy*Math.sin(p.angle));
+  p.angle+=steer*(.38+Math.min(1.4,Math.abs(forward)/210))*dt*(forward< -5?-1:1);
+  p.vx+=Math.cos(p.angle)*throttle*430*dt;p.vy+=Math.sin(p.angle)*throttle*430*dt;
+  const c=Math.cos(p.angle),s=Math.sin(p.angle),f=p.vx*c+p.vy*s,l=-p.vx*s+p.vy*c;
+  const lateral=l*Math.exp(-(drifting?1.25:7.2)*dt),drag=Math.exp(-(drifting?.7:1.35)*dt),forwardV=f*drag;
+  p.vx=c*forwardV-s*lateral;p.vy=s*forwardV+c*lateral;
+  const max=(p.boostTime>0?510:330),v=Math.hypot(p.vx,p.vy);if(v>max){p.vx=p.vx/v*max;p.vy=p.vy/v*max;}
+ }
+ p.boostTime=Math.max(0,(p.boostTime||0)-dt);p.shieldTime=Math.max(0,(p.shieldTime||0)-dt);
+ p.x+=p.vx*dt;p.y+=p.vy*dt;
+ if(p.x<42){p.x=42;p.vx=Math.abs(p.vx)*.68;}if(p.x>858){p.x=858;p.vx=-Math.abs(p.vx)*.68;}
+ if(p.y<42){p.y=42;p.vy=Math.abs(p.vy)*.68;}if(p.y>558){p.y=558;p.vy=-Math.abs(p.vy)*.68;}
+ for(const o of [{x:450,y:300,r:28},{x:374,y:300,r:19},{x:526,y:300,r:19},{x:450,y:245,r:15},{x:450,y:355,r:15}]){
+  const dx=p.x-o.x,dy=p.y-o.y,d=Math.hypot(dx,dy),min=o.r+14;if(d<min){const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0;p.x=o.x+nx*min;p.y=o.y+ny*min;const dot=p.vx*nx+p.vy*ny;if(dot<0){p.vx-=(1.5*dot)*nx;p.vy-=(1.5*dot)*ny;}}
+ }
+ if(Math.abs(p.x-localHazardX)<15&&p.y>215&&p.y<385&&(p.lastHazard||0)<performance.now()){p.vx+=(p.x<localHazardX?-1:1)*110;p.stunTime=.12;p.lastHazard=performance.now()+1300;}
+}
+function handleBoostKey(e){
+ if(e.code==="Space"&&!e.repeat){e.preventDefault();if(!boostLatched){boostLatched=true;fireBoost();}}
+}
+window.addEventListener("keydown",e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();keys[k]=true;handleBoostKey(e);sendInput(true);});
+window.addEventListener("keyup",e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false;if(e.code==="Space")boostLatched=false;sendInput(true);});
+window.addEventListener("blur",()=>{for(const k of Object.keys(keys))delete keys[k];boostLatched=false;sendInput(true);});
+$("playOnline").addEventListener("click",startOnline);
+$("playPractice").addEventListener("click",startPractice);
+$("leaveRace").addEventListener("click",leaveRace);
+$("touchBoost").addEventListener("pointerdown",e=>{e.preventDefault();fireBoost();});
+document.querySelectorAll("[data-key]").forEach(btn=>{
+ const key=btn.dataset.key,down=e=>{e.preventDefault();keys[key]=true;btn.classList.add("active");sendInput(true);},up=e=>{e.preventDefault();keys[key]=false;btn.classList.remove("active");sendInput(true);};
+ btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);
+});
+$("backBtn").addEventListener("click",()=>{if(room||localPractice)leaveRace();window.location.href="./index.html";});
+$("racerName").value=localStorage.getItem("chaosKartName")||"NeonRacer";
+setInterval(()=>sendInput(),50);
+render();
+</script>
+</body>
+</html>
