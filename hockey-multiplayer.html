@@ -477,7 +477,7 @@ function drawRinkEnvironment(ctx,map,theme,now){
  }
  ctx.restore();
 }
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),renderSnapshots=[],lastSnapshotStatus=null,puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
 
 let accountInfo=null,accountData=null,accountMode="login";
 function readAccountToken(){try{return localStorage.getItem("hockeyAccountToken")||"";}catch{return "";}}
@@ -869,7 +869,7 @@ async function connect(kind,roomId=null,extra={}){
   if(kind==="create-private"&&(!lobbyName||lobbyName.length>32))throw Error("Enter a lobby name (1–32 characters).");
   if(kind==="join-private"&&!privatePassword)throw Error("Enter the private lobby password.");
   if(room){const oldRoom=room;room=null;try{oldRoom.leave().catch(()=>{});}catch{}}
-  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};puckHistory=[];overlay="";overlayKind="";lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
+  markConnected(false);noticeMessage="";viewPlayers={};targetPlayers={};renderSnapshots.length=0;lastSnapshotStatus=null;targetPlayersReceivedAt=performance.now();targetPuckReceivedAt=performance.now();lastDraw=0;puckHistory=[];overlay="";overlayKind="";lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");document.body.classList.remove("in-lobby","match-live","config-open");const c=getClient(),o=options();say("Connecting to the hockey server…");label("CONNECTING");
   if(kind==="create-private"){room=await c.create("hockey",{...o,private:true,privatePassword,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:true,code:room.state.code||""};say("Private lobby created: "+lobbyName+".");}
   else if(kind==="create-public"){room=await c.create("hockey_public",{...o,private:false,lobbyName});$("code").value=room.state.code||"";justCreated={lobbyName,private:false,code:room.state.code||""};say("Public lobby created: "+lobbyName+".");}
   else if(kind==="join-private"){const code=String(extra.code||"").trim().toUpperCase();if(!code)throw Error("Choose a private lobby first.");const raw=$("server").value.trim().replace(/\/$/,"");const res=await fetch(raw+"/room/"+encodeURIComponent(code)+"/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:privatePassword,spectator:!!extra.spectator})});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Room code or password is incorrect.");if(!data.private)throw Error("That code belongs to a public lobby.");if(!extra.spectator&&!["practice","matchmaking","waiting"].includes(data.status))throw Error("That lobby has started. Choose Spectate to watch.");room=await c.joinById(data.roomId,{...o,privatePassword,spectator:!!extra.spectator});say(extra.spectator?"Now spectating "+(data.lobbyName||code)+".":"Joined private lobby "+(data.lobbyName||code)+".");}
@@ -896,15 +896,19 @@ async function connect(kind,roomId=null,extra={}){
     // Reconcile quickly enough that the local prediction cannot keep driving through
     // server-resolved collisions. Large corrections are authoritative teleports/resets.
     if(error>2){
-     if(error>64){
+     // Small corrections are blended into prediction. Only extremely large state
+     // discontinuities (face-off/respawn-like relocations) are snapped immediately.
+     if(error>180){
       localPrediction.x=local.x;localPrediction.y=local.y;
       localPrediction.vx=local.vx||0;localPrediction.vy=local.vy||0;
      }else{
-      const collisionCorrection=error>18,blend=collisionCorrection?.8:.46,limit=collisionCorrection?42:16;
+      const severeCorrection=error>64,collisionCorrection=error>18;
+      const blend=severeCorrection?.28:collisionCorrection?.58:.34;
+      const limit=severeCorrection?24:collisionCorrection?22:10;
       localPrediction.x+=Math.max(-limit,Math.min(limit,ex))*blend;
       localPrediction.y+=Math.max(-limit,Math.min(limit,ey))*blend;
       if(error>5){
-       const velocityBlend=collisionCorrection?.82:.52;
+       const velocityBlend=severeCorrection?.76:collisionCorrection?.68:.48;
        localPrediction.vx=localPrediction.vx*(1-velocityBlend)+(local.vx||0)*velocityBlend;
        localPrediction.vy=localPrediction.vy*(1-velocityBlend)+(local.vy||0)*velocityBlend;
       }
@@ -914,6 +918,7 @@ async function connect(kind,roomId=null,extra={}){
    updateSpectatorControls();
    for(const id of Object.keys(viewPlayers))if(!targetPlayers[id])delete viewPlayers[id];
    targetPuck={x:state.puck.x,y:state.puck.y,vx:state.puck.vx,vy:state.puck.vy,score1:state.puck.score1,score2:state.puck.score2};targetPuckReceivedAt=performance.now();
+   captureRenderSnapshot(state);
    $("playerCount").textContent=Object.keys(targetPlayers).length+" skaters";renderRoster();renderLobbyPeople();
    const isMatchLive=["countdown","playing","goal","finished"].includes(state.status);
    document.body.classList.add("in-lobby");document.body.classList.toggle("match-live",isMatchLive);
@@ -1349,7 +1354,7 @@ function leaveCurrentLobby(){
  room=null;markConnected(false);
  document.body.classList.remove("in-lobby","match-live","config-open");$("arenaIntro").classList.remove("hidden");$("lobbyCreated").classList.add("hidden");
  $("toggleSetup").classList.add("hidden");$("playMatch").classList.add("hidden");$("lobbyPlayersBtn").classList.add("hidden");$("leaveLobby").classList.add("hidden");$("rosterPanel").classList.add("hidden");$("lobbyPeopleDialog").classList.add("hidden");
- viewPlayers={};targetPlayers={};latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
+ viewPlayers={};targetPlayers={};renderSnapshots.length=0;lastSnapshotStatus=null;latestState=null;overlay="";overlayKind="";noticeMessage="";puckHistory=[];particles=[];lastGoalReplay=[];replayMode=false;$("goalReplayButton").classList.add("hidden");$("spectatorBar").classList.add("hidden");$("replayBadge").classList.add("hidden");label("READY");say("You left the lobby. Connect, create a room, or join one to play online.");
  if(oldRoom){try{oldRoom.leave().catch(()=>{});}catch{}}
 }
 $("lobbyPlayersBtn").onclick=()=>{if(latestState)populateHostSettings(latestState);renderLobbyPeople();$("lobbyPeopleDialog").classList.remove("hidden");};
@@ -1551,11 +1556,54 @@ function predictLocalMovement(dt){
  if(prediction.role==="goalie"){
   prediction.x=player.team===1?50:850;prediction.vx=0;prediction.vy+=ay*720*speed*control*dt;prediction.vy*=Math.pow(.13/control,dt);prediction.vy=Math.max(-250,Math.min(250,prediction.vy));prediction.y=Math.max(60,Math.min(540,prediction.y+prediction.vy*dt));return;
  }
- // Predict the local skater each animation frame; authoritative snapshots only correct large divergence.
+ // Keep local steering responsive while smoothing authoritative collision corrections.
  prediction.vx+=ax*620*speed*control*dt;prediction.vy+=ay*620*speed*control*dt;
  const friction=Math.pow(.09/control,dt);prediction.vx*=friction;prediction.vy*=friction;
  const max=390*speed,velocity=Math.hypot(prediction.vx,prediction.vy);if(velocity>max){prediction.vx=prediction.vx/velocity*max;prediction.vy=prediction.vy/velocity*max;}
  prediction.x=Math.max(28,Math.min(872,prediction.x+prediction.vx*dt));prediction.y=Math.max(50,Math.min(550,prediction.y+prediction.vy*dt));
+}
+const RENDER_INTERPOLATION_DELAY_MS=55;
+function captureRenderSnapshot(state){
+ const now=performance.now();
+ const snapshot={at:now,status:state.status,players:Object.values(targetPlayers).map(p=>({...p})),puck:{...targetPuck}};
+ const previous=renderSnapshots[renderSnapshots.length-1];
+ let reset=lastSnapshotStatus!==null&&state.status!==lastSnapshotStatus;
+ if(previous&&!reset){
+  // Goals/practice goals can reset the puck without a status transition. Do not
+  // interpolate a reset across the rink; keep normal 20–40 px player contacts smooth.
+  if(Math.hypot(snapshot.puck.x-previous.puck.x,snapshot.puck.y-previous.puck.y)>150)reset=true;
+  if(!reset){
+   for(const p of snapshot.players){
+    const old=previous.players.find(q=>q.id===p.id);
+    if(old&&Math.hypot(p.x-old.x,p.y-old.y)>180){reset=true;break;}
+   }
+  }
+ }
+ if(reset)renderSnapshots.length=0;
+ lastSnapshotStatus=state.status;
+ renderSnapshots.push(snapshot);
+ while(renderSnapshots.length>20)renderSnapshots.shift();
+}
+function sampleRenderSnapshot(now){
+ const frames=renderSnapshots;if(!frames.length)return null;
+ const renderAt=now-RENDER_INTERPOLATION_DELAY_MS;
+ if(renderAt<=frames[0].at)return frames[0];
+ let index=0;
+ while(index+1<frames.length&&frames[index+1].at<renderAt)index++;
+ const a=frames[index],b=frames[index+1];
+ if(!b){
+  const ahead=Math.min(.02,Math.max(0,(renderAt-a.at)/1000));
+  return {...a,players:a.players.map(p=>({...p,x:Math.max(28,Math.min(872,p.x+(p.vx||0)*ahead)),y:Math.max(50,Math.min(550,p.y+(p.vy||0)*ahead))})),puck:{...a.puck,x:a.puck.x+(a.puck.vx||0)*ahead,y:a.puck.y+(a.puck.vy||0)*ahead}};
+ }
+ const span=Math.max(1,b.at-a.at),t=Math.max(0,Math.min(1,(renderAt-a.at)/span)),lerp=(x,y)=>x+(y-x)*t;
+ const nextPlayers=new Map(b.players.map(p=>[p.id,p]));
+ const players=a.players.flatMap(p=>{
+  const q=nextPlayers.get(p.id);if(!q)return [];
+  let angleDiff=(q.angle||0)-(p.angle||0);while(angleDiff>Math.PI)angleDiff-=Math.PI*2;while(angleDiff< -Math.PI)angleDiff+=Math.PI*2;
+  return [{...q,x:lerp(p.x,q.x),y:lerp(p.y,q.y),vx:lerp(p.vx||0,q.vx||0),vy:lerp(p.vy||0,q.vy||0),angle:(p.angle||0)+angleDiff*t}];
+ });
+ for(const p of b.players)if(!a.players.some(q=>q.id===p.id))players.push({...p});
+ return {...b,at:renderAt,players,puck:{...b.puck,x:lerp(a.puck.x,b.puck.x),y:lerp(a.puck.y,b.puck.y),vx:lerp(a.puck.vx||0,b.puck.vx||0),vy:lerp(a.puck.vy||0,b.puck.vy||0)}};
 }
 function updateRender(){
  const now=performance.now(),dt=lastDraw?Math.min(.05,(now-lastDraw)/1000):.016;lastDraw=now;
@@ -1570,19 +1618,18 @@ function updateRender(){
   if(frameIndex>=lastGoalReplay.length){replayMode=false;$("replayBadge").classList.add("hidden");$("goalReplayButton").textContent="▶ GOAL REPLAY";puckHistory=[];say("Goal replay finished · live view restored.");}
  }else{
   predictLocalMovement(dt);
+  const renderSnapshot=sampleRenderSnapshot(now),displayPlayers=renderSnapshot?.players||Object.values(targetPlayers);
   const localId=room?.sessionId,me=localId&&targetPlayers[localId];
-  for(const [id,t] of Object.entries(targetPlayers)){
+  for(const t of displayPlayers){
+   const id=t.id;
    if(id===localId&&me&&!me.spectator&&localPrediction){viewPlayers[id]={...t,x:localPrediction.x,y:localPrediction.y,vx:localPrediction.vx,vy:localPrediction.vy};continue;}
    let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}
-   const playerAge=Math.min(.025,Math.max(0,(now-targetPlayersReceivedAt)/1000)),remoteBlend=1-Math.exp(-dt*110);
-   const targetX=Math.max(28,Math.min(872,t.x+(t.vx||0)*playerAge)),targetY=Math.max(50,Math.min(550,t.y+(t.vy||0)*playerAge));
-   p.x+=(targetX-p.x)*remoteBlend;p.y+=(targetY-p.y)*remoteBlend;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
+   // Snapshot interpolation already gives a continuous position. Do not chase each
+   // packet with a second exponential filter or move every avatar apart every frame.
+   p.x=t.x;p.y=t.y;p.angle=t.angle;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
   }
-  separateDisplayedPlayers();
-  const puckAge=Math.min(.025,Math.max(0,(now-targetPuckReceivedAt)/1000));
-  const rawPuckX=targetPuck.x+(targetPuck.vx||0)*puckAge,estimatedPuckY=Math.max(35,Math.min(565,targetPuck.y+(targetPuck.vy||0)*puckAge));
-  const inGoalLane=estimatedPuckY>254&&estimatedPuckY<346,estimatedPuckX=Math.max(inGoalLane?2:25,Math.min(inGoalLane?898:875,rawPuckX)),puckBlend=1-Math.exp(-dt*180);
-  puck.x+=(estimatedPuckX-puck.x)*puckBlend;puck.y+=(estimatedPuckY-puck.y)*puckBlend;puck.score1=targetPuck.score1;puck.score2=targetPuck.score2;
+  const displayPuck=renderSnapshot?.puck||targetPuck;
+  puck.x=displayPuck.x;puck.y=displayPuck.y;puck.vx=displayPuck.vx||0;puck.vy=displayPuck.vy||0;puck.score1=displayPuck.score1;puck.score2=displayPuck.score2;
   puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  }
  draw();renderId=requestAnimationFrame(updateRender);
