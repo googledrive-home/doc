@@ -20,6 +20,20 @@ class MatchState extends Schema {
 }
 defineTypes(MatchState,{players:{map:Player},puck:Puck,mode:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",code:"string",teamName1:"string",teamName2:"string",countdown:"number",matchTime:"number",matchLength:"number",difficulty:"string",training:"string",competition:"boolean",playerSpeed:"number",playerPower:"number",playerControl:"number",aiSpeed:"number",aiPower:"number",aiAccuracy:"number",gameType:"string",overtime:"boolean",overtimePeriod:"number",shootoutTeam:"number",shootoutAttempts1:"number",shootoutAttempts2:"number"});
 
+class KartPlayer extends Schema {
+ constructor(){super();this.sessionId="";this.name="Racer";this.x=450;this.y=300;this.angle=0;this.vx=0;this.vy=0;this.score=0;this.color="#42eaff";this.boosts=1;this.boostTime=0;this.shieldTime=0;this.stunTime=0;this.inputThrottle=0;this.inputSteer=0;this.drifting=false;}
+}
+defineTypes(KartPlayer,{sessionId:"string",name:"string",x:"number",y:"number",angle:"number",vx:"number",vy:"number",score:"number",color:"string",boosts:"number",boostTime:"number",shieldTime:"number",stunTime:"number",inputThrottle:"number",inputSteer:"number",drifting:"boolean"});
+class KartPickup extends Schema {
+ constructor(){super();this.id="";this.x=0;this.y=0;this.type="boost";this.active=true;}
+}
+defineTypes(KartPickup,{id:"string",x:"number",y:"number",type:"string",active:"boolean"});
+class KartState extends Schema {
+ constructor(){super();this.players=new MapSchema();this.pickups=new MapSchema();this.status="countdown";this.countdown=4;this.timeLeft=120;this.phase=0;this.hazardX=450;this.round=1;this.winner="";}
+}
+defineTypes(KartState,{players:{map:KartPlayer},pickups:{map:KartPickup},status:"string",countdown:"number",timeLeft:"number",phase:"number",hazardX:"number",round:"number",winner:"string"});
+
+
 const app=express();
 app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type,Authorization");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
 app.use(express.json({limit:"4kb"}));
@@ -867,8 +881,142 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
 
  onDispose(){for(const sessionId of Array.from(this.accountBySessionId.keys()))this.checkpointAccountPlaytime(Date.now(),sessionId);void persistAccountStore().catch(error=>console.error("Account dispose save error:",error.message));clearTimeout(this.aiFillTimer);clearInterval(this.aiCountdown);clearTimeout(this.finishTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
 }
+
+class KartRoom extends (await import("@colyseus/core")).Room {
+ onCreate(){
+  this.maxClients=8;this.autoDispose=true;this.setState(new KartState());this.setPatchRate(1000/30);
+  this.simulationStep=1/60;this.simulationAccumulator=0;this.hitCooldown=new Map();this.hazardCooldown=new Map();this.pickupRespawn=new Map();this.kartColors=["#42eaff","#ff4fc3","#ffd34e","#75ff9a","#9b83ff","#ff8b54","#5db1ff","#fb78a7"];
+  const pickupSpots=[[175,135,"boost"],[450,95,"shield"],[725,135,"shockwave"],[770,300,"boost"],[725,465,"shield"],[450,505,"shockwave"],[175,465,"boost"],[130,300,"shockwave"]];
+  pickupSpots.forEach((spot,i)=>{const p=new KartPickup();p.id=String(i+1);p.x=spot[0];p.y=spot[1];p.type=spot[2];this.state.pickups.set(p.id,p);});
+  this.onMessage("drive",(client,msg)=>{
+   const p=this.state.players.get(client.sessionId);if(!p)return;
+   p.inputThrottle=Math.max(-1,Math.min(1,Number(msg?.throttle)||0));
+   p.inputSteer=Math.max(-1,Math.min(1,Number(msg?.steer)||0));p.drifting=!!msg?.drift;
+  });
+  this.onMessage("boost",(client)=>{
+   const p=this.state.players.get(client.sessionId);if(!p||this.state.status!=="playing"||p.boosts<1||p.stunTime>0)return;
+   p.boosts--;p.boostTime=1.25;
+  });
+  this.setSimulationInterval(deltaMs=>{
+   const elapsed=Math.max(0,Math.min(.1,(Number(deltaMs)||0)/1000));
+   this.simulationAccumulator=Math.min(this.simulationAccumulator+elapsed,this.simulationStep*5);
+   let steps=0;while(this.simulationAccumulator+1e-9>=this.simulationStep&&steps<5){this.tick(this.simulationStep);this.simulationAccumulator-=this.simulationStep;steps++;}
+  },1000/60);
+ }
+ onJoin(client,options){
+  const count=this.state.players.size,angle=count*Math.PI*2/8,x=450+Math.cos(angle)*300,y=300+Math.sin(angle)*190;
+  const p=new KartPlayer();p.sessionId=client.sessionId;
+  p.name=String(options?.name||"Racer").replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,18)||"Racer";
+  p.color=this.kartColors[count%this.kartColors.length];p.x=x;p.y=y;p.angle=Math.atan2(190*Math.cos(angle),-300*Math.sin(angle));p.boosts=1;
+  this.state.players.set(client.sessionId,p);
+  this.broadcast("kartNotice",{message:p.name+" entered the arena."});
+ }
+ onLeave(client){
+  const p=this.state.players.get(client.sessionId);if(p)this.broadcast("kartNotice",{message:p.name+" left the arena."});
+  this.state.players.delete(client.sessionId);this.hazardCooldown.delete(client.sessionId);
+  for(const key of this.hitCooldown.keys())if(key.startsWith(client.sessionId+"|")||key.endsWith("|"+client.sessionId))this.hitCooldown.delete(key);
+ }
+ tick(dt){
+  const state=this.state;state.phase+=dt;state.hazardX=450+Math.sin(state.phase*1.35)*145;
+  if(state.players.size===0)return;
+  if(state.status==="countdown"){
+   state.countdown=Math.max(0,state.countdown-dt);if(state.countdown<=0){state.status="playing";state.timeLeft=120;this.broadcast("kartNotice",{message:"GO! The arena is live."});}
+   return;
+  }
+  if(state.status==="finished"){
+   this.roundResetTimer-=dt;if(this.roundResetTimer<=0)this.resetRound();return;
+  }
+  state.timeLeft=Math.max(0,state.timeLeft-dt);
+  for(const p of state.players.values())this.stepKart(p,dt);
+  this.collideKarts();
+  for(const p of state.players.values())this.collectPickups(p);
+  if(state.timeLeft<=0)this.finishRound();
+ }
+ stepKart(p,dt){
+  if(p.stunTime>0){p.stunTime=Math.max(0,p.stunTime-dt);p.vx*=Math.exp(-2.4*dt);p.vy*=Math.exp(-2.4*dt);}
+  else{
+   const throttle=p.inputThrottle,steer=p.inputSteer,drifting=p.drifting,forward=p.vx*Math.cos(p.angle)+p.vy*Math.sin(p.angle);
+   p.angle+=steer*(.38+Math.min(1.4,Math.abs(forward)/210))*dt*(forward< -5?-1:1);
+   p.vx+=Math.cos(p.angle)*throttle*430*dt;p.vy+=Math.sin(p.angle)*throttle*430*dt;
+   const c=Math.cos(p.angle),s=Math.sin(p.angle),f=p.vx*c+p.vy*s,l=-p.vx*s+p.vy*c;
+   const lateral=l*Math.exp(-(drifting?1.25:7.2)*dt),forwardV=f*Math.exp(-(drifting?.7:1.35)*dt);
+   p.vx=c*forwardV-s*lateral;p.vy=s*forwardV+c*lateral;
+   const max=p.boostTime>0?510:330,v=Math.hypot(p.vx,p.vy);if(v>max){p.vx=p.vx/v*max;p.vy=p.vy/v*max;}
+  }
+  p.boostTime=Math.max(0,p.boostTime-dt);p.shieldTime=Math.max(0,p.shieldTime-dt);
+  p.x+=p.vx*dt;p.y+=p.vy*dt;
+  if(p.x<42){p.x=42;p.vx=Math.abs(p.vx)*.68;}if(p.x>858){p.x=858;p.vx=-Math.abs(p.vx)*.68;}
+  if(p.y<42){p.y=42;p.vy=Math.abs(p.vy)*.68;}if(p.y>558){p.y=558;p.vy=-Math.abs(p.vy)*.68;}
+  for(const o of [{x:450,y:300,r:28},{x:374,y:300,r:19},{x:526,y:300,r:19},{x:450,y:245,r:15},{x:450,y:355,r:15}]){
+   const dx=p.x-o.x,dy=p.y-o.y,d=Math.hypot(dx,dy),min=o.r+14;
+   if(d<min){const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0;p.x=o.x+nx*min;p.y=o.y+ny*min;const dot=p.vx*nx+p.vy*ny;if(dot<0){p.vx-=1.5*dot*nx;p.vy-=1.5*dot*ny;}}
+  }
+  if(Math.abs(p.x-this.state.hazardX)<15&&p.y>215&&p.y<385&&this.state.phase-(this.hazardCooldown.get(p.sessionId)||-10)>1.3){
+   p.vx+=(p.x<this.state.hazardX?-1:1)*110;p.stunTime=.12;this.hazardCooldown.set(p.sessionId,this.state.phase);this.broadcast("kartHazard",{sessionId:p.sessionId});
+  }
+ }
+ collideKarts(){
+  const ps=Array.from(this.state.players.values()),now=this.state.phase;
+  for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+   const a=ps[i],b=ps[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>=31)continue;
+   const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0,over=(31-d)/2;
+   a.x-=nx*over;b.x+=nx*over;a.y-=ny*over;b.y+=ny*over;
+   const relative=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+   if(relative>1){
+    const impulse=relative*.78;a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;
+    if(relative>95){
+     const key=a.sessionId+"|"+b.sessionId,last=this.hitCooldown.get(key)||-10;
+     if(now-last>1.05){
+      const forwardA=a.vx*nx+a.vy*ny,forwardB=b.vx*nx+b.vy*ny,hitter=forwardA>forwardB?a:b,victim=hitter===a?b:a;
+      this.hitCooldown.set(key,now);this.hitCooldown.set(b.sessionId+"|"+a.sessionId,now);
+      if(victim.shieldTime<=0){hitter.score++;victim.stunTime=Math.max(victim.stunTime,.18);this.broadcast("kartHit",{attacker:hitter.name,victim:victim.name,attackerId:hitter.sessionId,victimId:victim.sessionId,score:hitter.score});}
+      else this.broadcast("kartHit",{attacker:hitter.name,victim:victim.name,blocked:true,attackerId:hitter.sessionId,victimId:victim.sessionId});
+     }
+    }
+   }
+  }
+ }
+ collectPickups(p){
+  for(const pk of this.state.pickups.values()){
+   if(!pk.active||Math.hypot(p.x-pk.x,p.y-pk.y)>23)continue;
+   pk.active=false;this.pickupRespawn.set(pk.id,this.state.phase+4.5);
+   if(pk.type==="boost")p.boosts=Math.min(3,p.boosts+1);
+   else if(pk.type==="shield")p.shieldTime=4;
+   else{
+    for(const rival of this.state.players.values()){
+     if(rival.sessionId===p.sessionId||rival.shieldTime>0)continue;
+     const dx=rival.x-p.x,dy=rival.y-p.y,d=Math.hypot(dx,dy);if(d>155)continue;
+     const nx=d>.001?dx/d:1,ny=d>.001?dy/d:0;rival.vx+=nx*260;rival.vy+=ny*260;
+     if(d<120)p.score++;
+    }
+   }
+   this.broadcast("kartPickup",{player:p.name,sessionId:p.sessionId,type:pk.type});
+  }
+  for(const pk of this.state.pickups.values()){
+   const at=this.pickupRespawn.get(pk.id);
+   if(!pk.active&&at!==undefined&&this.state.phase>=at){
+    pk.x=70+randomInt(0,761);pk.y=70+randomInt(0,461);pk.type=["boost","shield","shockwave"][randomInt(0,3)];pk.active=true;this.pickupRespawn.delete(pk.id);
+   }
+  }
+ }
+ finishRound(){
+  const state=this.state,best=Array.from(state.players.values()).sort((a,b)=>b.score-a.score)[0];
+  state.status="finished";state.winner=best?.name||"Nobody";this.roundResetTimer=7;
+  this.broadcast("kartRoundEnd",{winner:state.winner,score:best?.score||0,round:state.round});
+ }
+ resetRound(){
+  const s=this.state;s.round++;s.status="countdown";s.countdown=4;s.timeLeft=120;s.winner="";s.phase=0;this.roundResetTimer=0;this.hitCooldown.clear();this.hazardCooldown.clear();this.pickupRespawn.clear();
+  for(const p of s.players.values()){
+   p.score=0;p.vx=0;p.vy=0;p.boosts=1;p.boostTime=0;p.shieldTime=0;p.stunTime=0;p.inputThrottle=0;p.inputSteer=0;p.drifting=false;
+  }
+  for(const pk of s.pickups.values())pk.active=true;
+  this.broadcast("kartNotice",{message:"Next round starting soon."});
+ }
+}
+
 gameServer.define("hockey",HockeyRoom);
 gameServer.define("hockey_public",HockeyRoom).filterBy(["mode","gameType","map","difficulty","training","competition"]);
+gameServer.define("kart_arena",KartRoom);
 const port=Number(process.env.PORT||2567);
 await initialiseAccountStore();
 await gameServer.listen(port,"0.0.0.0");
