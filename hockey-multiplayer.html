@@ -903,6 +903,7 @@ async function connect(kind,roomId=null,extra={}){
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);if(state.gameType!==undefined){$("gameType").value=state.gameType;updateGameTypeHelp();}
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready,spectator:p.spectator,role:p.role||"skater",bot:String(id).startsWith("ai-"),goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id]};});
+   const myTrailState=targetPlayers[room.sessionId];if(myTrailState)$("trail").value=String(myTrailState.trail??0);
    targetPlayersReceivedAt=performance.now();
    const local=targetPlayers[room.sessionId];
    if(!local||local.spectator){
