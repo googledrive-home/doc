@@ -50,6 +50,15 @@ body:not(.in-lobby) #rink{visibility:hidden}
 .intro-art::before{content:"";position:absolute;inset:-10%;background:radial-gradient(ellipse at 48% 74%,#4ceaff28,transparent 34%),linear-gradient(118deg,transparent 35%,#45dfff0a 36%,transparent 60%);animation:introLightSweep 7s ease-in-out infinite}
 .intro-art::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 60%,#071522 100%),linear-gradient(0deg,#071522bd,transparent 40%,#02081130);pointer-events:none}
 .intro-art.swapping{opacity:.15;transform:scale(1.025)}
+.intro-art::before,.intro-art::after{z-index:2}
+.loadout-preview-canvas{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;min-height:0;touch-action:none}
+.loadout-preview-tag{position:absolute;top:12px;left:12px;right:12px;z-index:3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid #9cefff46;border-radius:10px;background:rgba(3,13,24,.75);backdrop-filter:blur(8px);color:#c1eefa;font-size:9px;font-weight:950;letter-spacing:.13em}
+.loadout-preview-tag strong{margin-left:auto;color:#fff;font-size:10px;letter-spacing:.06em}
+.preview-live-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#54f0bb;box-shadow:0 0 10px #54f0bb}
+.loadout-preview-kit{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.loadout-preview-kit span{display:flex;flex-direction:column;gap:3px;min-width:92px;padding:8px 11px;border:1px solid #ffffff22;border-radius:10px;background:rgba(3,13,24,.78);backdrop-filter:blur(8px)}
+.loadout-preview-kit small{color:#84abc2;font-size:8px;letter-spacing:.15em;font-weight:900}
+.loadout-preview-kit strong{color:#f1fcff;font-size:11px;letter-spacing:.02em}
 .intro-halo{position:absolute;left:15%;right:8%;top:11%;height:44%;background:radial-gradient(ellipse,#53e8ff28,transparent 67%);filter:blur(8px)}
 .intro-rink{position:absolute;left:7%;right:4%;top:28%;bottom:-18%;border:3px solid #6feaffa3;border-radius:48% 48% 9% 9% / 20% 20% 8% 8%;transform:perspective(480px) rotateX(54deg);box-shadow:0 0 25px #45e8ff19,inset 0 0 20px #45d8ff20;background:linear-gradient(90deg,transparent 49.7%,#b6f6ff6e 49.9%,#b6f6ff6e 50.2%,transparent 50.4%),linear-gradient(0deg,#91f4ff12,transparent)}
 .intro-rink::before{content:"";position:absolute;left:30%;right:30%;top:27%;bottom:27%;border:2px solid #8ceeff75;border-radius:50%}
@@ -256,8 +265,7 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 <div class="field"><label for="gameType">Game type</label><select id="gameType"><option value="classic">Classic match</option><option value="shootout">Shootout</option><option value="goalie">Goalie challenge</option><option value="time-attack">Time attack</option></select><p id="gameTypeHelp" class="browser-help">Classic match · standard timed team hockey with goals, assists and rematches.</p></div>
 <div class="field"><label for="map">Rink / pitch</label><select id="map"><option>Classic</option><option>Arctic</option><option>Midnight</option><option>Neon</option><option>Sunset</option><option>Storm</option><option>Aurora</option><option>Stadium</option><option>Championship</option><option>Harbor</option><option>Metro</option><option>Galaxy</option></select><p id="rinkThemeHelp" class="browser-help">Classic · clear ice, crisp markings and balanced lighting.</p></div>
 <div class="field"><label for="skin">Player skin</label><select id="skin"><option value="0">Blue Burst</option><option value="1">Gold Stripes</option><option value="2">Ice Crystal</option><option value="3">Lime Grid</option><option value="4">Purple Wave</option><option value="5">Fire Rush</option><option value="6">Chrome Check</option><option value="7">Carbon</option><option value="8">Rainbow Pulse</option><option value="9">Circuit</option><option value="10">Sunset Split</option><option value="11">Polar Camo</option><option value="12">Galaxy</option><option value="13">Mint Dots</option></select></div>
-
-
+<div class="field"><label for="trail">Skater trail</label><select id="trail"><option value="0">Off</option><option value="1">Ice Glow</option><option value="2">Neon</option><option value="3">Fire</option><option value="4">Aurora</option><option value="5">Gold Rush</option></select></div>
 
 <div class="field"><label for="duration">Match length</label><select id="duration"><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option></select></div>
 <div class="field"><label for="difficulty">AI difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="extrahard">Extra hard</option></select></div>
@@ -385,8 +393,13 @@ input:focus-visible,select:focus-visible{outline:2px solid #49e3ff;outline-offse
 </div>
 <div id="replayBadge" class="replay-badge hidden">GOAL REPLAY · SLOW MOTION</div>
 <div id="arenaIntro" class="arena-intro" aria-live="polite">
- <div id="introArtwork" class="intro-art" data-scene="arena" role="img" aria-label="Illustrated hockey arena with a skater and puck">
-  <div class="intro-halo"></div><div class="intro-beam one"></div><div class="intro-beam two"></div><div class="intro-stands"></div><div class="intro-rink"></div><div class="intro-net"></div><div class="intro-flash"></div><div class="intro-skater"></div><div class="intro-skater second"></div><div class="intro-puck"></div><div class="intro-equipment"></div>
+ <div id="introArtwork" class="intro-art" data-scene="arena" role="img" aria-label="Live preview of the selected hockey rink, player skin, and trail">
+  <canvas id="loadoutPreviewCanvas" class="loadout-preview-canvas" width="900" height="600" aria-label="Preview of selected map, skater skin, and trail"></canvas>
+  <div class="loadout-preview-tag"><span class="preview-live-dot"></span> PRE-GAME PREVIEW <strong id="previewMapName">CLASSIC RINK</strong></div>
+  <div class="loadout-preview-kit">
+   <span><small>SKIN</small><strong id="previewSkinName">Blue Burst</strong></span>
+   <span><small>TRAIL</small><strong id="previewTrailName">Off</strong></span>
+  </div>
  </div>
  <div class="intro-copy"><p class="intro-eyebrow">HOCKEY ARENA · MULTIPLAYER</p><h2 id="introTitle">Under the lights.</h2><p id="introDescription" class="intro-description">Fresh ice, full stands and the next play is yours. Create or join a lobby when you are ready.</p><div class="intro-bottom"><span id="introCounter" class="intro-counter">01 / 04</span><div class="intro-progress"><span id="introProgressFill"></span></div></div><div class="intro-tip">PICK YOUR KIT · CHOOSE A RINK · HIT THE ICE</div></div>
 </div>
@@ -399,6 +412,10 @@ import { Client } from "https://esm.sh/colyseus.js@0.16.22";
 const $=id=>document.getElementById(id);
 const SKINS=[
  {name:"Blue Burst",base:"#2979ff",accent:"#9ceaff",style:"burst"},{name:"Gold Stripes",base:"#ffd35b",accent:"#fff2a6",style:"stripes"},{name:"Ice Crystal",base:"#bcecff",accent:"#ffffff",style:"crystal"},{name:"Lime Grid",base:"#63f36d",accent:"#0e7f53",style:"grid"},{name:"Purple Wave",base:"#a56cff",accent:"#f0d7ff",style:"wave"},{name:"Fire Rush",base:"#ff5d4d",accent:"#ffd35b",style:"flame"},{name:"Chrome Check",base:"#dfe9f2",accent:"#7f9ab2",style:"check"},{name:"Carbon",base:"#27313b",accent:"#91a7b8",style:"carbon"},{name:"Rainbow Pulse",base:"#ff65c3",accent:"#5ee7ff",style:"rainbow"},{name:"Circuit",base:"#142f48",accent:"#43eaff",style:"circuit"},{name:"Sunset Split",base:"#ff7b45",accent:"#8457ff",style:"split"},{name:"Polar Camo",base:"#d8fbff",accent:"#6aa6c7",style:"camo"},{name:"Galaxy",base:"#32235f",accent:"#8df8ff",style:"stars"},{name:"Mint Dots",base:"#48e6bd",accent:"#eafff9",style:"dots"}
+];
+const TRAILS=[
+ {name:"Off",color:null},{name:"Ice Glow",color:"#65edff"},{name:"Neon",color:"#c17cff"},
+ {name:"Fire",color:"#ff7446"},{name:"Aurora",color:"#5affc4"},{name:"Gold Rush",color:"#ffd35b"}
 ];
 const PALETTES={
  Classic:{bg:"#dff9ff",line:"#76bfd0",goal1:"#ff5570",goal2:"#49e3ff",crease:"#a7d8ea",crowd:false,environment:"classic"},
@@ -477,7 +494,7 @@ function drawRinkEnvironment(ctx,map,theme,now){
  }
  ctx.restore();
 }
-let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),renderSnapshots=[],lastSnapshotStatus=null,puckHistory=[],particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
+let client=null,room=null,viewPlayers={},targetPlayers={},puck={x:450,y:300,vx:0,vy:0,score1:0,score2:0},targetPuck={...puck},keys={},dir={x:1,y:0},localInput={x:0,y:0},localPrediction=null,targetPlayersReceivedAt=performance.now(),targetPuckReceivedAt=performance.now(),renderSnapshots=[],lastSnapshotStatus=null,puckHistory=[],playerTrailHistory={},lastPlayerTrailSample=0,lastPreviewDraw=0,particles=[],lastDraw=0,overlay="",overlayKind="",overlayUntil=0,localStatus="ready",latestState=null,renderId=0,connected=false,noticeMessage="",pendingLobbyAction=null,selectedPrivateRoom=null,activeBrowserKind="public",pendingCreatedLobby=null,introIndex=0,userRequestedLeave=false,reconnectAttempts=0,pendingLobbySpectator=false,renderedStatsSignature="",pendingInviteCode="",statsView="live",lastMatchRecord=null,roomMatchHistory=[],lastGoalReplay=[],replayMode=false,replayStartedAt=0,competitionsCache=[],selectedCompetitionId="",currentCompetitionKey="",spectatorOptionSignature="",cameraX=450,cameraY=300;
 
 let accountInfo=null,accountData=null,accountMode="login";
 function readAccountToken(){try{return localStorage.getItem("hockeyAccountToken")||"";}catch{return "";}}
@@ -600,18 +617,21 @@ async function saveSetupAccountProfile(){
  try{
   const data=await accountRequest("/account/profile",{method:"POST",body:{name:$("player").value.trim()||"Player",skin:Number($("skin").value)}});
   applyAccountData(data,null,"Player name and skin saved to your account.");
-  if(room)room.send("accountLink",{accountToken:readAccountToken()});
+  if(room){
+   room.send("accountLink",{accountToken:readAccountToken()});
+   room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:Number($("trail").value)});
+  }
  }catch(error){setAccountNotice("Profile not saved: "+error.message);}
 }
 $("player").addEventListener("change",()=>{
  $("accountProfileName").value=$("player").value.trim()||"Player";
  if(readAccountToken())saveSetupAccountProfile();
- else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:Number($("trail").value)});
 });
 $("skin").addEventListener("change",()=>{
  $("accountProfileSkin").value=$("skin").value;
  if(readAccountToken())saveSetupAccountProfile();
- else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:0});
+ else if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:Number($("trail").value)});
 });
 setAccountMode("login");updateAccountButtons();
 if(readAccountToken())refreshAccount(true);
@@ -857,7 +877,7 @@ function playSound(kind,detail={}){
 document.addEventListener("pointerdown",event=>{const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(soundOn){initAudio();if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");}},{capture:true,passive:true});
 document.addEventListener("click",event=>{if(event.detail!==0)return;const el=event.target instanceof Element?event.target:null,button=el?.closest("button");if(button&&button.id!=="soundToggle"&&!button.disabled)playSound("ui");},true);
 $("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;if(soundOn){initAudio();playSound("ui");}else if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(0,audioCtx.currentTime,.035);setSoundButton();});
-function options(){return {name:$("player").value.trim()||"Player",accountToken:readAccountToken(),mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:0,matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
+function options(){return {name:$("player").value.trim()||"Player",accountToken:readAccountToken(),mode:$("mode").value,map:$("map").value,skin:Number($("skin").value),trail:Number($("trail").value),matchTime:Number($("duration").value),difficulty:$("difficulty").value,training:$("training").value,competition:$("competition").value==="true",gameType:$("gameType").value,playerSpeed:Number($("playerSpeed").value),playerPower:Number($("playerPower").value),playerControl:Number($("playerControl").value),aiSpeed:Number($("aiSpeed").value),aiPower:Number($("aiPower").value),aiAccuracy:Number($("aiAccuracy").value)}}
 function getClient(){const raw=$("server").value.trim().replace(/\/$/,"");if(!raw)throw Error("Enter a multiplayer server URL.");return new Client(raw.replace(/^https:/,"wss:").replace(/^http:/,"ws:"))}
 async function connect(kind,roomId=null,extra={}){
  let justCreated=null;
@@ -877,12 +897,13 @@ async function connect(kind,roomId=null,extra={}){
   else if(kind==="reconnect"){const token=String(extra.token||sessionStorage.getItem("hockeyReconnectToken")||"");if(!token)throw Error("Reconnect token expired.");room=await c.reconnect(token);say("Connection restored.");}
   else{room=await c.joinOrCreate("hockey_public",o);say("Joined a public practice rink.");}
   userRequestedLeave=false;reconnectAttempts=0;try{sessionStorage.setItem("hockeyReconnectToken",room.reconnectionToken);}catch{}
-  if(kind!=="reconnect")room.send("customize",{name:o.name,skin:o.skin,trail:0});
+  if(kind!=="reconnect")room.send("customize",{name:o.name,skin:o.skin,trail:o.trail});
   room.onStateChange(state=>{
    latestState=state;targetPlayers={};if(state.code){$("code").value=state.code;if(pendingCreatedLobby){pendingCreatedLobby.code=state.code;if(!$("lobbyCreated").classList.contains("hidden")){$("createdRoomCode").textContent=state.code;$("copyCreatedCode").disabled=false;}}}
    $("map").value=state.map;$("difficulty").value=state.difficulty;$("training").value=state.training;$("competition").value=String(state.competition);$("duration").value=String(state.matchLength||state.matchTime);if(state.gameType!==undefined){$("gameType").value=state.gameType;updateGameTypeHelp();}
    for(const [id,key] of [["playerSpeed","playerSpeed"],["playerPower","playerPower"],["playerControl","playerControl"],["aiSpeed","aiSpeed"],["aiPower","aiPower"],["aiAccuracy","aiAccuracy"]]){if(state[key]!==undefined){$(id).value=state[key];$(id+"Out").textContent=Math.round(Number(state[key])*100)+"%";}}
    state.players.forEach((p,id)=>{targetPlayers[id]={id,name:p.name,team:p.team,x:p.x,y:p.y,vx:p.vx,vy:p.vy,skin:p.skin,trail:p.trail,ready:p.ready,spectator:p.spectator,role:p.role||"skater",bot:String(id).startsWith("ai-"),goals:p.goals,assists:p.assists,shots:p.shots,shotsOnGoal:p.shotsOnGoal,hits:p.hits,saves:p.saves};if(!viewPlayers[id])viewPlayers[id]={...targetPlayers[id]};});
+   const myTrailState=targetPlayers[room.sessionId];if(myTrailState)$("trail").value=String(myTrailState.trail??0);
    targetPlayersReceivedAt=performance.now();
    const local=targetPlayers[room.sessionId];
    if(!local||local.spectator){
@@ -1398,6 +1419,37 @@ $("createPublic").onclick=()=>openLobbyPrompt("create-public");
 $("joinPublic").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms("public");};
 $("joinPrivate").onclick=()=>{$("lobbyBrowser").classList.remove("hidden");loadRooms("private");};
 function normalizedSkin(i){return SKINS[Math.max(0,Math.min(SKINS.length-1,Number(i)||0))]}
+function drawSkinPattern(ctx,sk,rr){
+ ctx.save();ctx.beginPath();ctx.arc(0,0,rr-2,0,Math.PI*2);ctx.clip();
+ ctx.strokeStyle=sk.accent;ctx.fillStyle=sk.accent;ctx.lineWidth=Math.max(1.1,rr*.085);ctx.globalAlpha=.62;
+ const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();};
+ if(sk.style==="stripes"||sk.style==="carbon"){
+  for(let x=-rr*1.5;x<rr*1.5;x+=rr*.55)line(x,-rr,x+rr*1.4,rr);
+ }else if(sk.style==="grid"||sk.style==="circuit"){
+  for(let x=-rr;x<=rr;x+=rr*.52)line(x,-rr,x,rr);
+  for(let y=-rr;y<=rr;y+=rr*.52)line(-rr,y,rr,y);
+  if(sk.style==="circuit"){ctx.lineWidth=2;line(-rr*.55,-rr*.45,rr*.1,-rr*.45);line(rr*.1,-rr*.45,rr*.1,rr*.1);line(rr*.1,rr*.1,rr*.58,rr*.1);}
+ }else if(sk.style==="dots"){
+  for(let x=-rr*.65;x<=rr*.65;x+=rr*.48)for(let y=-rr*.65;y<=rr*.65;y+=rr*.48){ctx.beginPath();ctx.arc(x,y,rr*.09,0,Math.PI*2);ctx.fill();}
+ }else if(sk.style==="split"){
+  ctx.globalAlpha=.4;ctx.fillRect(0,-rr,rr,rr*2);ctx.globalAlpha=.7;line(0,-rr,0,rr);
+ }else if(sk.style==="stars"){
+  for(const [x,y] of [[-rr*.35,-rr*.35],[rr*.38,-rr*.22],[rr*.15,rr*.42]]){ctx.beginPath();ctx.arc(x,y,rr*.1,0,Math.PI*2);ctx.fill();}
+  line(-rr*.75,rr*.05,-rr*.25,rr*.05);
+ }else if(sk.style==="flame"||sk.style==="wave"){
+  for(let row=-1;row<=1;row++){ctx.beginPath();ctx.moveTo(-rr,row*rr*.36);for(let x=-rr;x<=rr;x+=rr/4)ctx.lineTo(x,row*rr*.36+Math.sin(x/rr*3+row)*rr*.16);ctx.stroke();}
+ }else if(sk.style==="camo"){
+  for(const [x,y,r] of [[-.4,-.45,.3],[.25,-.22,.32],[-.08,.35,.35],[.5,.45,.2]]){ctx.beginPath();ctx.arc(x*rr,y*rr,r*rr,0,Math.PI*2);ctx.fill();}
+ }else if(sk.style==="rainbow"){
+  for(const [i,c] of ["#ff5577","#ffb94a","#f8fc70","#51f2b5","#56baff","#b989ff"].entries()){ctx.strokeStyle=c;ctx.globalAlpha=.85;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,rr*(.35+i*.11),-.9,1.25);ctx.stroke();}
+ }else if(sk.style==="crystal"){
+  ctx.beginPath();ctx.moveTo(0,-rr*.78);ctx.lineTo(rr*.62,-rr*.08);ctx.lineTo(rr*.32,rr*.68);ctx.lineTo(-rr*.42,rr*.55);ctx.lineTo(-rr*.66,-rr*.13);ctx.closePath();ctx.stroke();
+  line(0,-rr*.78,0,rr*.38);line(-rr*.66,-rr*.13,rr*.32,rr*.68);
+ }else{
+  for(let a=0;a<Math.PI*2;a+=Math.PI/4)line(Math.cos(a)*rr*.3,Math.sin(a)*rr*.3,Math.cos(a)*rr*.9,Math.sin(a)*rr*.9);
+ }
+ ctx.restore();
+}
 function showIntroSlide(index){
  introIndex=(index+introSlides.length)%introSlides.length;const slide=introSlides[introIndex],art=$("introArtwork");
  art.dataset.scene=slide.scene;$("introTitle").textContent=slide.title;$("introDescription").textContent=slide.description;
@@ -1473,6 +1525,7 @@ function draw(){
  ctx.strokeStyle=theme.crease;ctx.lineWidth=2;ctx.beginPath();ctx.arc(42,300,46,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.beginPath();ctx.arc(858,300,46,Math.PI/2,Math.PI*1.5);ctx.stroke();
  // Puck trail and skater trails are retained between server snapshots for smooth animation.
  for(let i=1;i<puckHistory.length;i++){ctx.globalAlpha=(i/puckHistory.length)*.28;ctx.strokeStyle=theme.line;ctx.lineWidth=2+(i/puckHistory.length)*3;ctx.beginPath();ctx.moveTo(puckHistory[i-1].x,puckHistory[i-1].y);ctx.lineTo(puckHistory[i].x,puckHistory[i].y);ctx.stroke();}ctx.globalAlpha=1;
+ drawPlayerTrails(ctx);
  for(const p of Object.values(viewPlayers)){
   if(p.spectator)continue;
   const sk=normalizedSkin(p.skin),rr=19;
@@ -1489,7 +1542,8 @@ function draw(){
   }else{
    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();
    ctx.strokeStyle=sk.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();
-  }ctx.restore();
+  }
+  drawSkinPattern(ctx,sk,rr);ctx.restore();
   ctx.fillStyle="#f5fbff";ctx.font="900 11px system-ui";ctx.textAlign="center";ctx.shadowColor="#071321";ctx.shadowBlur=4;ctx.fillText(p.name.slice(0,18),p.x,p.y-27);ctx.shadowBlur=0;
  }
  ctx.save();ctx.translate(puck.x,puck.y);
@@ -1605,6 +1659,38 @@ function sampleRenderSnapshot(now){
  for(const p of b.players)if(!a.players.some(q=>q.id===p.id))players.push({...p});
  return {...b,at:renderAt,players,puck:{...b.puck,x:lerp(a.puck.x,b.puck.x),y:lerp(a.puck.y,b.puck.y),vx:lerp(a.puck.vx||0,b.puck.vx||0),vy:lerp(a.puck.vy||0,b.puck.vy||0)}};
 }
+function updatePlayerTrailHistory(now){
+ if(now-lastPlayerTrailSample<32)return;
+ lastPlayerTrailSample=now;
+ const active=new Set();
+ for(const p of Object.values(viewPlayers)){
+  if(p.spectator||!Number(p.trail)){delete playerTrailHistory[p.id];continue;}
+  active.add(p.id);let history=playerTrailHistory[p.id];
+  if(!history)history=playerTrailHistory[p.id]=[];
+  const last=history[history.length-1];
+  if(last&&Math.hypot(p.x-last.x,p.y-last.y)>95)history.length=0;
+  const current=history[history.length-1];
+  if(!current||Math.hypot(p.x-current.x,p.y-current.y)>1.8)history.push({x:p.x,y:p.y,at:now});
+  while(history.length&&now-history[0].at>460)history.shift();
+  if(history.length>16)history.splice(0,history.length-16);
+ }
+ for(const id of Object.keys(playerTrailHistory))if(!active.has(id))delete playerTrailHistory[id];
+}
+function drawPlayerTrails(ctx){
+ for(const p of Object.values(viewPlayers)){
+  const style=TRAILS[Math.max(0,Math.min(TRAILS.length-1,Number(p.trail)||0))],points=playerTrailHistory[p.id];
+  if(!style?.color||!points||points.length<2||p.spectator)continue;
+  ctx.save();ctx.lineCap="round";ctx.lineJoin="round";ctx.globalCompositeOperation="lighter";
+  for(let i=1;i<points.length;i++){
+   const a=points[i-1],b=points[i],progress=i/(points.length-1);
+   ctx.strokeStyle=style.color;ctx.globalAlpha=.08+.22*progress;ctx.lineWidth=11*progress;
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+   ctx.globalAlpha=.15+.5*progress;ctx.lineWidth=3.2*progress;
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  ctx.restore();ctx.globalAlpha=1;
+ }
+}
 function updateRender(){
  const now=performance.now(),dt=lastDraw?Math.min(.05,(now-lastDraw)/1000):.016;lastDraw=now;
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=180*dt;p.vx*=Math.pow(.16,dt);p.spin+=dt*4;if(p.life<=0)particles.splice(i,1);}
@@ -1626,7 +1712,7 @@ function updateRender(){
    let p=viewPlayers[id];if(!p){p=viewPlayers[id]={...t};}
    // Snapshot interpolation already gives a continuous position. Do not chase each
    // packet with a second exponential filter or move every avatar apart every frame.
-   p.x=t.x;p.y=t.y;p.angle=t.angle;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
+   p.x=t.x;p.y=t.y;p.angle=t.angle;p.vx=t.vx;p.vy=t.vy;p.name=t.name;p.team=t.team;p.skin=t.skin;p.trail=t.trail;p.spectator=t.spectator;p.role=t.role||"skater";p.bot=t.bot;
   }
   // Interpolated paths can cross between valid server snapshots, so separate only
   // the rendered copies after sampling. Authoritative player physics stays server-side.
@@ -1659,6 +1745,8 @@ function updateRender(){
   }
   puckHistory.push({x:puck.x,y:puck.y});if(puckHistory.length>16)puckHistory.shift();
  }
+ if(!replayMode)updatePlayerTrailHistory(now);
+ if(!document.body.classList.contains("in-lobby")&&now-lastPreviewDraw>75){drawLoadoutPreview();lastPreviewDraw=now;}
  draw();renderId=requestAnimationFrame(updateRender);
 }
 function getSpectatorFocusPoint(){
@@ -1705,8 +1793,45 @@ window.addEventListener("blur",()=>{keys={};sendMove();});
 const moveKeys={up:"arrowup",down:"arrowdown",left:"arrowleft",right:"arrowright"};
 document.querySelectorAll("[data-move]").forEach(btn=>{const press=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=true;sendMove()},release=e=>{e.preventDefault();keys[moveKeys[btn.dataset.move]]=false;sendMove()};btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
 const rinkDescriptions={Classic:"Classic · clear ice, crisp markings and balanced lighting.",Arctic:"Arctic · frost cracks, drifting snow and cold blue ice.",Midnight:"Midnight · deep navy ice, moonlit streaks and blue-pink glows.",Neon:"Neon · electric circuit borders and glowing rink lines.",Sunset:"Sunset · warm horizon glow and amber reflection rings.",Storm:"Storm · wind-driven rain streaks and storm clouds around the rink.",Aurora:"Aurora · flowing green, cyan and violet light ribbons.",Stadium:"Stadium · floodlights, animated stands and a big-game atmosphere.",Championship:"Championship · gold laurel details and a trophy-style centre mark.",Harbor:"Harbor · shifting water lines and dockside crane silhouettes.",Metro:"Metro · city skyline edges, windows and urban grid lighting.",Galaxy:"Galaxy · nebula glow, twinkling stars and orbital rink accents."};
+function drawLoadoutPreview(){
+ const canvas=$("loadoutPreviewCanvas");if(!canvas)return;
+ const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+ if(!rect.width||!rect.height)return;
+ const w=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));
+ if(canvas.width!==w||canvas.height!==height){canvas.width=w;canvas.height=height;}
+ const ctx=canvas.getContext("2d");if(!ctx)return;
+ const map=$("map").value||"Classic",theme=PALETTES[map]||PALETTES.Classic,sk=normalizedSkin($("skin").value),trail=TRAILS[Math.max(0,Math.min(TRAILS.length-1,Number($("trail").value)||0))],now=performance.now();
+ const sx=w/900,sy=height/600;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,w,height);ctx.setTransform(sx,0,0,sy,0,0);
+ ctx.fillStyle=theme.bg;ctx.fillRect(0,0,900,600);drawRinkEnvironment(ctx,map,theme,now);
+ ctx.strokeStyle=theme.line;ctx.lineWidth=4;ctx.strokeRect(12,24,876,552);ctx.beginPath();ctx.moveTo(450,24);ctx.lineTo(450,576);ctx.stroke();
+ ctx.beginPath();ctx.arc(450,300,72,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(260,160,42,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(640,440,42,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle=theme.crease+"66";ctx.fillRect(12,254,27,92);ctx.fillRect(861,254,27,92);
+ const gx=485+Math.sin(now/760)*82,gy=300+Math.sin(now/530)*25;
+ if(trail.color){
+  ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";ctx.lineJoin="round";ctx.shadowColor=trail.color;ctx.shadowBlur=28;
+  ctx.globalAlpha=.22;ctx.strokeStyle=trail.color;ctx.lineWidth=23;ctx.beginPath();ctx.moveTo(gx-180,gy+14);ctx.bezierCurveTo(gx-130,gy-25,gx-92,gy+28,gx-30,gy);ctx.stroke();
+  ctx.globalAlpha=.42;ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(gx-180,gy+14);ctx.bezierCurveTo(gx-130,gy-25,gx-92,gy+28,gx-30,gy);ctx.stroke();
+  ctx.globalAlpha=.82;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(gx-180,gy+14);ctx.bezierCurveTo(gx-130,gy-25,gx-92,gy+28,gx-30,gy);ctx.stroke();
+  for(let i=0;i<8;i++){const x=gx-145+i*16,y=gy+Math.sin(i*.85+now/230)*12;ctx.globalAlpha=.16+.48*(i/8);ctx.fillStyle=trail.color;ctx.beginPath();ctx.arc(x,y,2.5+(i%3),0,Math.PI*2);ctx.fill();}
+  ctx.restore();ctx.globalAlpha=1;
+ }
+ ctx.save();ctx.translate(gx,gy);const rr=27,g=ctx.createRadialGradient(-rr*.35,-rr*.4,1,0,0,rr*1.15);g.addColorStop(0,sk.accent);g.addColorStop(.52,sk.base);g.addColorStop(1,"#07101c");
+ ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rr,0,Math.PI*2);ctx.fill();drawSkinPattern(ctx,sk,rr);ctx.strokeStyle=sk.accent;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,rr-1,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle="#e8faff";ctx.beginPath();ctx.arc(0,-rr-10,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();
+ ctx.strokeStyle="#f3fcff";ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(14,13);ctx.lineTo(44,35);ctx.stroke();ctx.restore();
+ ctx.fillStyle="#111923";ctx.beginPath();ctx.ellipse(gx-31,gy+35,13,6,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#effaff";ctx.font="900 16px system-ui";ctx.textAlign="center";ctx.shadowColor="#00111c";ctx.shadowBlur=6;ctx.fillText(sk.name.toUpperCase(),gx,gy+71);ctx.shadowBlur=0;
+ $("previewMapName").textContent=map.toUpperCase()+" RINK";$("previewSkinName").textContent=sk.name;$("previewTrailName").textContent=trail.name;
+ canvas.setAttribute("aria-label","Preview of "+map+" rink, "+sk.name+" skin, and "+trail.name+" trail");
+}
 function updateRinkThemeHelp(){$("rinkThemeHelp").textContent=rinkDescriptions[$("map").value]||rinkDescriptions.Classic;}
-$("map").addEventListener("change",()=>{updateRinkThemeHelp();draw();});$("skin").addEventListener("change",draw);window.addEventListener("resize",resizeCanvas);
+$("map").addEventListener("change",()=>{updateRinkThemeHelp();draw();drawLoadoutPreview();});
+$("skin").addEventListener("change",()=>{draw();drawLoadoutPreview();});
+$("trail").addEventListener("change",()=>{
+ drawLoadoutPreview();
+ if(room)room.send("customize",{name:$("player").value.trim()||"Player",skin:Number($("skin").value),trail:Number($("trail").value)});
+});
+window.addEventListener("resize",()=>{resizeCanvas();drawLoadoutPreview();});
 for(const id of ["playerSpeed","playerPower","playerControl","aiSpeed","aiPower","aiAccuracy"]){const el=$(id),out=$(id+"Out");const update=()=>out.textContent=Math.round(Number(el.value)*100)+"%";el.addEventListener("input",update);update();}
 function updateGameTypeHelp(){
  const descriptions={
