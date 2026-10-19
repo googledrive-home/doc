@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#07111e">
+<title>FPV Drone Simulator | Flight Lab</title>
+<style>
+:root{color-scheme:dark;--cyan:#68f0ff;--lime:#c9ff70;--ink:#08121f;--glass:rgba(8,18,31,.78);--line:rgba(168,224,255,.2);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08121f;color:#f3f8ff}button,select{font:inherit}button{cursor:pointer}#world{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;background:linear-gradient(#8eb7ca,#d2ded4)}#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,8,18,.38) 100%);z-index:1}
+.panel{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:0 12px 38px #0002;border-radius:16px}
+#hud{position:fixed;inset:0;z-index:3;pointer-events:none;display:none}#hud button,#hud select,#hud input,#hud label{pointer-events:auto}
+.topline{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.brand{display:flex;align-items:center;gap:11px;padding:11px 14px}.brandmark{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(140deg,#7ef5ff,#70a7ff);color:#082033;font-size:20px;box-shadow:0 0 24px #68f0ff20}.brand b{font-size:12px;letter-spacing:.17em}.brand small{display:block;color:#8eaec4;font-size:10px;letter-spacing:.15em;margin-top:3px}.telemetry{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.metric{padding:10px 14px;min-width:87px}.metric label{display:block;font-size:9px;color:#8da7ba;letter-spacing:.13em}.metric strong{display:block;font:700 20px ui-monospace,SFMono-Regular,Consolas,monospace;margin-top:4px}.metric em{font-style:normal;font-size:10px;color:#91acbd}
+.sidepanel{position:absolute;top:91px;left:16px;width:195px;padding:14px}.sectionlabel{font-size:9px;letter-spacing:.16em;color:#83a7be;font-weight:800;text-transform:uppercase}.statrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:13px 0 4px;font-size:11px;color:#c8d7e4}.statrow b{color:#f5fbff;font:700 12px ui-monospace,monospace}.meter{height:5px;background:#ffffff16;border-radius:99px;overflow:hidden}.meter span{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--cyan),var(--lime));border-radius:inherit;transition:width .15s}
+.rightpanel{position:absolute;top:91px;right:16px;width:206px;padding:13px}.maphead{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.maphead span{font-size:9px;letter-spacing:.15em;color:#a5bfd0;font-weight:800}.maphead b{font-size:9px;color:var(--lime)}#mini{display:block;width:100%;aspect-ratio:1;background:#102435;border-radius:10px;border:1px solid #ffffff1d}.mission{margin-top:12px;padding-top:11px;border-top:1px solid #ffffff17}.mission strong{display:block;font-size:12px}.mission small{display:block;color:#8fabbf;font-size:10px;line-height:1.45;margin-top:5px}.mission .checkpoint{color:var(--lime);margin-top:8px;font:700 11px ui-monospace,monospace}
+.centerhud{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;opacity:.72}.centerhud:before,.centerhud:after{content:"";position:absolute;background:var(--cyan);box-shadow:0 0 9px #68f0ff}.centerhud:before{width:1px;height:38px;left:18px;top:0}.centerhud:after{height:1px;width:38px;left:0;top:18px}.reticle{position:absolute;inset:12px;border:1px solid #9bf8ff;border-radius:50%}
+.horizon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:50px;border-top:1px solid #a2efff65;pointer-events:none;opacity:.35}.horizon:before{content:"";position:absolute;left:50%;top:-4px;height:8px;border-left:1px solid #a2efff}.bottomleft{position:absolute;left:16px;bottom:16px;padding:11px 13px;max-width:290px}.bottomleft b{display:block;font-size:10px;letter-spacing:.12em}.bottomleft small{display:block;color:#a1b9c9;margin-top:5px;font-size:10px;line-height:1.5}.actions{position:absolute;bottom:16px;right:16px;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid #8cc9df3c;color:#eaf8ff;background:#0a1c2ddd;padding:10px 13px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.035em;box-shadow:0 7px 18px #0002;transition:transform .16s,border-color .16s,background .16s}.btn:hover{transform:translateY(-1px);border-color:#68f0ff9c;background:#16364a}.btn.primary{background:linear-gradient(110deg,#84f4ff,#b8ff8a);color:#062032;border:0}.btn.warning{color:#ffdba1}.tag{color:#9ab2c5;font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.overlay{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 42%,rgba(12,44,68,.42),rgba(3,10,19,.76))}.menu{width:min(790px,96vw);display:grid;grid-template-columns:1.12fr .88fr;border:1px solid #9ad8ee2e;border-radius:25px;overflow:hidden;background:rgba(5,15,27,.91);box-shadow:0 30px 110px #0008;backdrop-filter:blur(20px)}.menuleft{padding:clamp(22px,4vw,42px)}.eyebrow{color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.menu h1{margin:15px 0 11px;font-size:clamp(36px,5.5vw,65px);letter-spacing:-.065em;line-height:.96}.menu h1 span{color:var(--cyan)}.menu p{color:#a8bdcc;line-height:1.65;font-size:13px;max-width:460px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin:20px 0}.chip{border:1px solid #ffffff22;color:#d8e8f3;background:#ffffff09;border-radius:8px;padding:7px 9px;font-size:10px}.chip b{color:var(--lime)}.menuright{padding:28px;background:linear-gradient(150deg,#112a3b,#081421);border-left:1px solid #ffffff12;display:flex;flex-direction:column;justify-content:center;gap:12px}.menuright h2{font-size:13px;letter-spacing:.1em;margin:0 0 4px}.formlabel{display:block;font-size:10px;color:#9db5c7;margin:7px 0}.menuright select{width:100%;border:1px solid #47718588;border-radius:9px;padding:11px;background:#0b1b2a;color:#f2f9ff;outline:none}.menuright .primary{width:100%;padding:14px;margin-top:6px}.menuright .subbtn{width:100%;background:transparent}.smallnote{font-size:10px;color:#7594a8;line-height:1.6}.controlsgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}.controlitem{border:1px solid #ffffff16;border-radius:9px;padding:8px 9px;font-size:10px;color:#aac2d2}.key{display:inline-grid;min-width:22px;height:21px;place-items:center;background:#ffffff13;border:1px solid #ffffff25;border-radius:5px;color:#fff;font-weight:900;margin-right:4px;font-family:ui-monospace,monospace}
+#pauseOverlay{display:none;z-index:5}#pauseOverlay .menu{display:block;width:min(430px,95vw);padding:30px;text-align:center}#pauseOverlay h2{font-size:28px;margin:0 0 8px}#pauseOverlay p{font-size:12px;color:#9fb4c6}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
+.mobilecontrols{display:none;position:absolute;left:50%;bottom:86px;transform:translateX(-50%);gap:7px;align-items:center;pointer-events:auto}.touchpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,40px);gap:4px}.touchbtn{border:1px solid #9fdfff55;border-radius:10px;background:#071c2cc9;color:#f3ffff;font-weight:900;font-size:13px;touch-action:none}.touchbtn:active,.touchbtn.down{background:#57cde875}.touchlabel{font-size:9px;color:#b2cad9;text-align:center;margin-bottom:5px;letter-spacing:.08em}
+.fatal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#08121f;padding:24px}.fatal div{max-width:560px}.fatal h2{color:#ffca79}.fatal p{color:#b9c9d5;line-height:1.6}
+@media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(3){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
+@media(max-width:440px){.sidepanel{top:76px;width:128px}.rightpanel{top:76px;width:126px}.metric:nth-child(3){display:none}.brand{gap:7px}.brandmark{width:27px;height:27px}.brand b{letter-spacing:.08em}.brand small{letter-spacing:.08em}.menuleft p{font-size:12px}.controlsgrid{grid-template-columns:1fr}.bottomleft{display:none}.actions .btn{padding:8px}.mobilecontrols{bottom:60px}}
+</style>
+</head>
+<body>
+<canvas id="world" aria-label="First person 3D drone simulator"></canvas>
+<div id="vignette"></div>
+<div id="hud">
+  <div class="topline">
+    <div class="brand panel"><div class="brandmark">✣</div><div><b>FLIGHT LAB <span style="color:var(--cyan)">/ FPV</span></b><small>URBAN FLIGHT SYSTEM</small></div></div>
+    <div class="telemetry">
+      <div class="metric panel"><label>AIR SPEED</label><strong id="speed">000</strong><em>KM/H</em></div>
+      <div class="metric panel"><label>ALTITUDE</label><strong id="alt">00.0</strong><em>METRES</em></div>
+      <div class="metric panel"><label>HEADING</label><strong id="heading">000°</strong><em>COMPASS</em></div>
+      <div class="metric panel"><label>BATTERY</label><strong id="battery">100%</strong><div class="meter"><span id="batterybar"></span></div></div>
+    </div>
+  </div>
+  <div class="sidepanel panel">
+    <div class="sectionlabel">Flight telemetry</div>
+    <div class="statrow"><span>Vertical speed</span><b id="vspeed">+0.0</b></div>
+    <div class="statrow"><span>Flight mode</span><b id="modeRead">STAB</b></div>
+    <div class="statrow"><span>Signal</span><b style="color:var(--lime)">100%</b></div>
+    <div class="statrow"><span>Flight time</span><b id="flightTime">00:00</b></div>
+    <div class="statrow"><span>Throttle</span><b id="throttleRead">HOVER</b></div>
+    <div class="meter"><span id="throttlebar" style="width:50%"></span></div>
+    <div class="statrow"><span>Impact protection</span><b id="collisionRead">ON</b></div>
+  </div>
+  <div class="rightpanel panel">
+    <div class="maphead"><span>FLIGHT MAP</span><b>3D CITY</b></div>
+    <canvas id="mini" width="180" height="180"></canvas>
+    <div class="mission">
+      <div class="tag">CURRENT SESSION</div><strong id="missionTitle">Free flight</strong>
+      <small id="missionHelp">Explore downtown, skim the rooftops and find the glowing gates.</small>
+      <div class="checkpoint" id="checkpoint">PRACTICE MODE</div>
+    </div>
+  </div>
+  <div class="centerhud"><div class="reticle"></div></div><div class="horizon"></div>
+  <div class="message" id="message"></div>
+  <div class="bottomleft panel"><b>FLIGHT SYSTEM ONLINE</b><small id="statusText">Stabilised control · Collision assist enabled</small></div>
+  <div class="actions">
+    <button class="btn" id="modeBtn">MODE: STAB</button>
+    <button class="btn warning" id="pauseBtn">Ⅱ PAUSE</button>
+    <button class="btn" id="resetBtn">↻ RESET</button>
+    <button class="btn" id="fullBtn">⛶ FULLSCREEN</button>
+  </div>
+  <div class="mobilecontrols">
+    <div><div class="touchlabel">PITCH / ROLL</div><div class="touchpad">
+      <button class="touchbtn" data-key="w" style="grid-column:2;grid-row:1">▲</button>
+      <button class="touchbtn" data-key="a" style="grid-column:1;grid-row:2">◀</button>
+      <button class="touchbtn" data-key="s" style="grid-column:2;grid-row:2">▼</button>
+      <button class="touchbtn" data-key="d" style="grid-column:3;grid-row:2">▶</button>
+    </div></div>
+    <div><div class="touchlabel">ALTITUDE / YAW</div><div class="touchpad">
+      <button class="touchbtn" data-key="space" style="grid-column:2;grid-row:1">UP</button>
+      <button class="touchbtn" data-key="q" style="grid-column:1;grid-row:2">↶</button>
+      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2">DN</button>
+      <button class="touchbtn" data-key="e" style="grid-column:3;grid-row:2">↷</button>
+    </div></div>
+  </div>
+</div>
+<div class="overlay" id="startOverlay">
+  <div class="menu">
+    <div class="menuleft">
+      <div class="eyebrow">● Simulation ready / no downloads</div>
+      <h1>FLY THE<br><span>GRID.</span></h1>
+      <p>Take the sticks of a first-person racing quad and explore a handcrafted 3D city. Thread neon gates between towers, carve around rooftops, or just cruise above the streets.</p>
+      <div class="chips"><div class="chip"><b>01</b> &nbsp;City blocks + high-rises</div><div class="chip"><b>02</b> &nbsp;Rooftop detail + park</div><div class="chip"><b>03</b> &nbsp;Checkpoint course</div></div>
+      <div class="sectionlabel">Flight controls</div>
+      <div class="controlsgrid">
+        <div class="controlitem"><span class="key">W</span><span class="key">S</span> Pitch forward / back</div>
+        <div class="controlitem"><span class="key">A</span><span class="key">D</span> Bank left / right</div>
+        <div class="controlitem"><span class="key">Q</span><span class="key">E</span> Yaw left / right</div>
+        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Climb / descend</div>
+      </div>
+      <p class="smallnote">R resets your drone · Esc pauses · Fullscreen recommended. Touch controls are available on phones and tablets.</p>
+    </div>
+    <div class="menuright">
+      <div class="tag">FLIGHT CONFIGURATION</div><h2>PRE-FLIGHT CHECK</h2>
+      <label class="formlabel" for="startMode">Mission</label>
+      <select id="startMode"><option value="free">Free flight · Explore the city</option><option value="race">Gate run · Time trial</option></select>
+      <label class="formlabel" for="startHandling">Flight handling</label>
+      <select id="startHandling"><option value="stabilized">Stabilised · Auto-level</option><option value="acro">Acro · Manual attitude</option></select>
+      <label class="formlabel" for="startAssist">Collision protection</label>
+      <select id="startAssist"><option value="on">Enabled · Gentle rebound</option><option value="off">Off · Expert flying</option></select>
+      <button class="btn primary" id="startBtn">INITIALISE & FLY ↗</button>
+      <button class="btn subbtn" id="backBtn">← BACK TO GAME LIBRARY</button>
+      <div class="smallnote">A lightweight Three.js 3D scene. Performance depends on your browser and graphics hardware.</div>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="pauseOverlay">
+  <div class="menu"><div class="menuleft"><div class="eyebrow">Flight paused</div><h1>HOLD<br><span>POSITION.</span></h1><p>Your quad is frozen in place. Resume when you're ready to fly again, or reset to the launch point.</p></div><div class="menuright"><h2>SESSION MENU</h2><button class="btn primary" id="resumeBtn">▶ RESUME FLIGHT</button><button class="btn" id="pauseResetBtn">↻ RESET DRONE</button><button class="btn subbtn" id="menuBtn">BACK TO FLIGHT SETUP</button></div></div>
+</div>
+<div class="fatal" id="fatal"><div><div class="eyebrow">Flight Lab / Setup error</div><h2>3D rendering couldn't start</h2><p>Your browser may have WebGL turned off, or the Three.js module could not load. Try an up-to-date browser with hardware acceleration enabled.</p><p><a href="index.html" style="color:#68f0ff">Return to game library</a></p><pre id="fatalDetail" style="white-space:pre-wrap;color:#7f9bad;font-size:11px"></pre></div></div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
+
+const $ = (id) => document.getElementById(id);
+const canvas = $("world");
+const mini = $("mini");
+const miniCtx = mini.getContext("2d");
+const keys = new Set();
+const cityBoxes = [];
+const gateItems = [];
+const clock = new THREE.Clock();
+let renderer, scene, camera, active = false, paused = false, startedAt = 0, sessionElapsed = 0;
+let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
+let collisionAssist = true, handling = "stabilized", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
+let gatePassed = 0;
+const mapLimit = 176;
+const flight = {
+  position: new THREE.Vector3(0, 12, 12),
+  velocity: new THREE.Vector3(),
+  yaw: 0, pitch: 0, roll: 0,
+  maxSpeed: 39, battery: 100,
+  viewFov: 96
+};
+const course = [
+  { x: 0, y: 18, z: -48 },
+  { x: 48, y: 22, z: -48 },
+  { x: 96, y: 24, z: 0 },
+  { x: 48, y: 20, z: 48 },
+  { x: 0, y: 17, z: 48 },
+  { x: -48, y: 22, z: 0 },
+  { x: -96, y: 23, z: -48 },
+  { x: 0, y: 18, z: -48 }
+];
+const buildingPalette = [
+  { wall: "#566b7c", window: "#7bd8e7" },
+  { wall: "#796e69", window: "#f0c88b" },
+  { wall: "#56636e", window: "#b0d8ff" },
+  { wall: "#7b8790", window: "#d6edfa" },
+  { wall: "#3f5969", window: "#7bf0e5" }
+];
+const rand = (a, b) => a + Math.random() * (b - a);
+const choose = (a) => a[Math.floor(Math.random() * a.length)];
+const mat = (color, roughness = .82, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+const sphereGeo = new THREE.SphereGeometry(1, 9, 7);
+const unitCone = new THREE.ConeGeometry(1, 1, 8);
+const cylGeo = new THREE.CylinderGeometry(.16, .22, 1, 7);
+const worldMaterials = {
+  grass: mat("#5e8179"),
+  road: mat("#313f4d"),
+  roadEdge: mat("#8b9b9f"),
+  lane: mat("#c5c7ad", .9, { emissive: "#262a22", emissiveIntensity: .1 }),
+  sidewalk: mat("#a9b5b7"),
+  roof: mat("#394855"),
+  vent: mat("#657982"),
+  bark: mat("#695448"),
+  leaf: mat("#477967"),
+  leafLight: mat("#759c77"),
+  path: mat("#b6b9ad"),
+  lamp: mat("#e1e7c5", .45, { emissive: "#a9c6b2", emissiveIntensity: .5 }),
+  carDark: mat("#162a3a", .35),
+  carBlue: mat("#317b98", .32, { metalness: .25 }),
+  carRed: mat("#b84e4e", .35, { metalness: .2 }),
+  carGold: mat("#c5a45b", .38, { metalness: .18 }),
+  white: mat("#e9eeee", .55),
+  mountain: mat("#7f99a3"),
+  towerGlass: mat("#427080", .25, { metalness: .25, emissive: "#092632", emissiveIntensity: .2 })
+};
+const buildingMaterials = makeBuildingMaterials();
+
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance", alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color("#9ebfca");
+  scene.fog = new THREE.Fog("#9ebfca", 155, 385);
+  camera = new THREE.PerspectiveCamera(flight.viewFov, window.innerWidth / window.innerHeight, .1, 460);
+  camera.rotation.order = "YXZ";
+  scene.add(new THREE.HemisphereLight("#e1f5ff", "#52685d", 2.05));
+  const sun = new THREE.DirectionalLight("#fff3db", 2.3);
+  sun.position.set(-90, 160, 75);
+  scene.add(sun);
+  createWorld();
+  createGates();
+  addMountains();
+  setupEvents();
+  resize();
+  animate();
+} catch (error) {
+  $("fatal").style.display = "grid";
+  $("fatalDetail").textContent = String(error && error.message || error);
+  console.error(error);
+}
+
+function makeBuildingMaterials() {
+  return buildingPalette.map((p, index) => {
+    const c = document.createElement("canvas");
+    c.width = 128; c.height = 256;
+    const x = c.getContext("2d");
+    x.fillStyle = p.wall; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = "rgba(18,30,42,.68)";
+    for (let row = 0; row < 13; row++) {
+      for (let col = 0; col < 5; col++) {
+        const wx = 8 + col * 24, wy = 7 + row * 19;
+        x.fillRect(wx - 2, wy - 2, 18, 14);
+        x.fillStyle = p.window;
+        x.globalAlpha = .62 + ((row + col + index) % 3) * .12;
+        x.fillRect(wx, wy, 14, 10);
+        x.globalAlpha = 1;
+        x.fillStyle = "rgba(18,30,42,.68)";
+      }
+    }
+    x.fillStyle = "rgba(240,247,250,.32)";
+    x.fillRect(0, 0, 5, 256); x.fillRect(123, 0, 5, 256);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 2;
+    const wall = new THREE.MeshStandardMaterial({ map: tex, roughness: .82, metalness: .05 });
+    const roof = mat(index === 4 ? "#31434d" : "#46515a", .9);
+    return [wall, wall, roof, roof, wall, wall];
+  });
+}
+function addBox(parent, x, y, z, w, h, d, material, cast = false) {
+  const mesh = new THREE.Mesh(boxGeo, material);
+  mesh.position.set(x, y, z); mesh.scale.set(w, h, d);
+  mesh.castShadow = false; mesh.receiveShadow = false;
+  parent.add(mesh);
+  return mesh;
+}
+function addPlane(parent, x, y, z, w, d, material) {
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), material);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+function addRoads() {
+  addPlane(scene, 0, -.12, 0, 410, 410, worldMaterials.grass);
+  const size = 360;
+  for (let g = -144; g <= 144; g += 48) {
+    addPlane(scene, g, .005, 0, 12, size, worldMaterials.road);
+    addPlane(scene, 0, .006, g, size, 12, worldMaterials.road);
+    addPlane(scene, g - 7.2, .012, 0, .55, size, worldMaterials.sidewalk);
+    addPlane(scene, g + 7.2, .012, 0, .55, size, worldMaterials.sidewalk);
+    addPlane(scene, 0, .012, g - 7.2, size, .55, worldMaterials.sidewalk);
+    addPlane(scene, 0, .012, g + 7.2, size, .55, worldMaterials.sidewalk);
+    for (let t = -174; t <= 174; t += 13) {
+      addPlane(scene, g, .025, t, .22, 5.6, worldMaterials.lane);
+      addPlane(scene, t, .026, g, 5.6, .22, worldMaterials.lane);
+    }
+  }
+  const crosswalkMat = mat("#e4e3cf", .9);
+  for (let gx = -144; gx <= 144; gx += 48) {
+    for (let gz = -144; gz <= 144; gz += 48) {
+      if (Math.abs(gx) > 150 || Math.abs(gz) > 150) continue;
+      for (let stripe = -3; stripe <= 3; stripe++) {
+        addPlane(scene, gx + stripe * 1.15, .035, gz + 8.3, .58, 3.4, crosswalkMat);
+        addPlane(scene, gx + 8.3, .035, gz + stripe * 1.15, 3.4, .58, crosswalkMat);
+      }
+    }
+  }
+}
+function addBuilding(x, z, w, d, h, paletteIndex, special = "") {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), special === "tower" ? [
+    worldMaterials.towerGlass, worldMaterials.towerGlass, worldMaterials.roof, worldMaterials.roof, worldMaterials.towerGlass, worldMaterials.towerGlass
+  ] : buildingMaterials[paletteIndex]);
+  mesh.position.set(x, h / 2, z);
+  mesh.castShadow = false; mesh.receiveShadow = false;
+  scene.add(mesh);
+  cityBoxes.push({ x, z, w, d, h });
+  addBox(scene, x, h + .18, z, w + .45, .35, d + .45, worldMaterials.roof);
+  if (h > 18) {
+    const vents = h > 45 ? 4 : (Math.random() < .6 ? 2 : 1);
+    for (let i = 0; i < vents; i++) {
+      const vw = rand(1.1, 2.6), vd = rand(1.1, 2.2);
+      const vx = x + rand(-w * .32, w * .32), vz = z + rand(-d * .32, d * .32);
+      addBox(scene, vx, h + .55, vz, vw, .75, vd, worldMaterials.vent);
+      if (i === 0 && h > 32) addBox(scene, vx, h + 1.02, vz, vw * .7, .12, vd * .7, worldMaterials.lamp);
+    }
+  }
+  if (h > 30) {
+    const signMat = mat("#56dbe8", .45, { emissive: "#146a7b", emissiveIntensity: .7 });
+    addBox(scene, x, h * .65, z + d / 2 + .08, Math.min(6.2, w * .5), 1.3, .16, signMat);
+  }
+}
+function addTree(x, z, scale = 1) {
+  const trunk = new THREE.Mesh(cylGeo, worldMaterials.bark);
+  trunk.position.set(x, 1.3 * scale, z); trunk.scale.set(.24 * scale, 2.6 * scale, .24 * scale); scene.add(trunk);
+  const crown = new THREE.Mesh(unitCone, choose([worldMaterials.leaf, worldMaterials.leafLight]));
+  crown.position.set(x, 3.3 * scale, z); crown.scale.set(1.55 * scale, 3.3 * scale, 1.55 * scale); scene.add(crown);
+}
+function addPark() {
+  addPlane(scene, 120, .022, 120, 40, 40, mat("#648c76"));
+  addPlane(scene, 120, .035, 120, 3.2, 39, worldMaterials.path);
+  addPlane(scene, 120, .036, 120, 39, 3.2, worldMaterials.path);
+  for (let z = 105; z <= 135; z += 10) for (let x = 105; x <= 135; x += 10) {
+    if (Math.abs(x - 120) < 5 || Math.abs(z - 120) < 5) continue;
+    addTree(x + rand(-1.4, 1.4), z + rand(-1.4, 1.4), rand(.7, 1.08));
+  }
+  const bench = mat("#c3a77b", .8);
+  for (const [x, z, rot] of [[111,111,0],[129,129,Math.PI / 2],[110,130,0],[130,110,Math.PI / 2]]) {
+    const b = addBox(scene, x, .7, z, 2.2, .16, .55, bench);
+    b.rotation.y = rot;
+    addBox(scene, x, .95, z, 2.2, .22, .12, worldMaterials.roof);
+  }
+}
+function addCars() {
+  const colors = [worldMaterials.carDark, worldMaterials.carBlue, worldMaterials.carRed, worldMaterials.carGold];
+  const spots = [
+    [-10, -24, 0], [11, -73, Math.PI], [-12, 72, 0], [61, 7, Math.PI / 2],
+    [-57, -11, Math.PI / 2], [106, 51, Math.PI], [-106, 52, Math.PI / 2],
+    [12, -105, 0], [-10, 105, Math.PI], [58, 105, Math.PI / 2]
+  ];
+  for (let i = 0; i < spots.length; i++) {
+    const [x, z, rot] = spots[i];
+    const group = new THREE.Group(); group.position.set(x, .65, z); group.rotation.y = rot; scene.add(group);
+    addBox(group, 0, 0, 0, 2.1, .85, 4.1, colors[i % colors.length]);
+    addBox(group, 0, .52, -.15, 1.62, .55, 1.8, worldMaterials.carDark);
+    for (const wx of [-.92, .92]) for (const wz of [-1.25, 1.25]) {
+      const wheel = new THREE.Mesh(new THREE.BoxGeometry(.3, .46, .72), worldMaterials.carDark);
+      wheel.position.set(wx, -.12, wz); group.add(wheel);
+    }
+  }
+}
+function addStreetDetails() {
+  // Consistent low-poly streetlights and signs add scale without expensive shadows.
+  for (let road = -144; road <= 144; road += 48) {
+    for (let seg = -120; seg <= 120; seg += 48) {
+      for (const side of [-1, 1]) {
+        if (Math.abs(road) < 1 && Math.abs(seg) < 1) continue;
+        const x = road + side * 8.5, z = seg + 8;
+        const pole = new THREE.Mesh(cylGeo, worldMaterials.roof);
+        pole.position.set(x, 2.3, z); pole.scale.set(.12, 4.6, .12); scene.add(pole);
+        addBox(scene, x + .55, 4.5, z, 1.15, .12, .16, worldMaterials.roof);
+        const bulb = new THREE.Mesh(sphereGeo, worldMaterials.lamp);
+        bulb.position.set(x + .98, 4.4, z); bulb.scale.set(.22, .12, .16); scene.add(bulb);
+      }
+    }
+  }
+}
+function addWorldEdges() {
+  const pool = new THREE.Mesh(new THREE.CylinderGeometry(30, 40, 2, 9), mat("#6e878e"));
+  pool.position.set(-195, 3, 0); scene.add(pool);
+  const ridgePositions = [
+    [-215, -180, 40], [-200, -80, 26], [-225, 40, 50], [-195, 160, 36],
+    [215, -170, 34], [206, -65, 48], [220, 65, 30], [205, 170, 48]
+  ];
+  for (const [x,z,h] of ridgePositions) {
+    const m = new THREE.Mesh(new THREE.ConeGeometry(h * .8, h, 7), worldMaterials.mountain);
+    m.position.set(x, h / 2 - 2, z); scene.add(m);
+  }
+}
+function createWorld() {
+  addRoads();
+  // Six streets in each direction; buildings occupy the blocks between avenues.
+  const centers = [-120, -72, -24, 24, 72, 120];
+  for (let ix = 0; ix < centers.length; ix++) {
+    for (let iz = 0; iz < centers.length; iz++) {
+      const cx = centers[ix], cz = centers[iz];
+      if (cx === 120 && cz === 120) continue; // preserve the urban park
+      if (cx === 24 && cz === 24) continue; // give the launch avenue breathing room
+      if (cx === 72 && cz === -72) {
+        addBuilding(cx, cz, 19, 19, 62, 4, "tower");
+        addBuilding(cx - 12, cz + 11, 10, 9, 19, 0);
+        continue;
+      }
+      const count = Math.random() < .53 ? 1 : 2;
+      for (let n = 0; n < count; n++) {
+        const w = rand(10, n === 0 ? 22 : 17), d = rand(10, 20);
+        const x = cx + (count === 1 ? rand(-5, 5) : (n === 0 ? -10 : 10)) + rand(-2, 2);
+        const z = cz + rand(-9, 9);
+        const h = choose([rand(8, 16), rand(14, 25), rand(20, 37), rand(28, 46)]);
+        addBuilding(x, z, w, d, h, Math.floor(rand(0, buildingPalette.length)));
+      }
+    }
+  }
+  addPark();
+  addCars();
+  addStreetDetails();
+  addWorldEdges();
+}
+function createGates() {
+  for (let i = 0; i < course.length; i++) {
+    const p = course[i], prev = i === 0 ? { x: 0, z: 12 } : course[i - 1];
+    const next = i === course.length - 1 ? course[1] : course[i + 1];
+    const angle = Math.atan2(next.x - prev.x, next.z - prev.z);
+    const material = new THREE.MeshStandardMaterial({
+      color: i === 0 ? "#c8ff74" : "#5ce9ff",
+      emissive: i === 0 ? "#466b1a" : "#145c82",
+      emissiveIntensity: 1.8, metalness: .2, roughness: .25
+    });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(5.7, .28, 9, 32), material);
+    ring.position.set(p.x, p.y, p.z); ring.rotation.y = angle; scene.add(ring);
+    const footMat = mat("#2d6475", .5, { emissive: "#0d3445", emissiveIntensity: .5 });
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(.22, 2.3, .22), footMat);
+      post.position.set(p.x + side * 5.45, p.y - 5.2, p.z); scene.add(post);
+    }
+    gateItems.push({ mesh: ring, position: p, material });
+  }
+}
+function addMountains() {
+  // Keep the skyline grounded while the fog softens the edge of the flyable area.
+  const ridgeMat = worldMaterials.mountain;
+  for (let i = 0; i < 16; i++) {
+    const angle = i * Math.PI * 2 / 16;
+    const radius = 224 + (i % 3) * 8;
+    const h = 24 + (i % 4) * 8;
+    const hill = new THREE.Mesh(new THREE.ConeGeometry(h * .8, h, 8), ridgeMat);
+    hill.position.set(Math.cos(angle) * radius, h * .35, Math.sin(angle) * radius);
+    scene.add(hill);
+  }
+}
+function setupEvents() {
+  window.addEventListener("resize", resize);
+  window.addEventListener("keydown", (e) => {
+    const key = normalKey(e);
+    if (["space", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
+    if (key === "escape" && active) { togglePause(); return; }
+    if (key === "r" && active) { resetFlight(true); return; }
+    if (key === "p" && active) { togglePause(); return; }
+    if (key === "v" && active) { handling = handling === "stabilized" ? "acro" : "stabilized"; updateModeUI(); showMessage(handling === "stabilized" ? "STAB MODE / AUTO-LEVEL" : "ACRO MODE / MANUAL ATTITUDE"); return; }
+    keys.add(key);
+    const touch = document.querySelector('.touchbtn[data-key="' + key + '"]');
+    if (touch) touch.classList.add("down");
+  }, { passive: false });
+  window.addEventListener("keyup", (e) => {
+    const key = normalKey(e); keys.delete(key);
+    const touch = document.querySelector('.touchbtn[data-key="' + key + '"]');
+    if (touch) touch.classList.remove("down");
+  });
+  window.addEventListener("blur", () => { keys.clear(); document.querySelectorAll(".touchbtn.down").forEach(b => b.classList.remove("down")); });
+  document.querySelectorAll(".touchbtn").forEach((button) => {
+    const key = button.dataset.key;
+    const release = (e) => { if (e) e.preventDefault(); keys.delete(key); button.classList.remove("down"); };
+    button.addEventListener("pointerdown", (e) => { e.preventDefault(); keys.add(key); button.classList.add("down"); button.setPointerCapture(e.pointerId); });
+    button.addEventListener("pointerup", release);
+    button.addEventListener("pointercancel", release);
+    button.addEventListener("lostpointercapture", release);
+    button.addEventListener("contextmenu", (e) => e.preventDefault());
+  });
+  $("startBtn").addEventListener("click", startFlight);
+  $("backBtn").addEventListener("click", () => { window.location.href = "index.html"; });
+  $("pauseBtn").addEventListener("click", togglePause);
+  $("resumeBtn").addEventListener("click", togglePause);
+  $("resetBtn").addEventListener("click", () => resetFlight(true));
+  $("pauseResetBtn").addEventListener("click", () => { resetFlight(true); paused = false; $("pauseOverlay").style.display = "none"; });
+  $("menuBtn").addEventListener("click", () => {
+    active = false; paused = false; keys.clear(); $("pauseOverlay").style.display = "none";
+    $("startOverlay").style.display = "grid"; $("hud").style.display = "none";
+  });
+  $("modeBtn").addEventListener("click", () => { handling = handling === "stabilized" ? "acro" : "stabilized"; updateModeUI(); showMessage(handling === "stabilized" ? "STAB MODE / AUTO-LEVEL" : "ACRO MODE / MANUAL ATTITUDE"); });
+  $("fullBtn").addEventListener("click", async () => {
+    try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); else await document.exitFullscreen(); } catch (e) { showMessage("FULLSCREEN IS NOT AVAILABLE IN THIS BROWSER"); }
+  });
+  $("startHandling").addEventListener("change", (e) => { handling = e.target.value; });
+  $("startAssist").addEventListener("change", (e) => { collisionAssist = e.target.value === "on"; });
+}
+function normalKey(e) {
+  if (e.code === "Space") return "space";
+  if (e.key === "Shift") return "shift";
+  return e.key.toLowerCase();
+}
+function resize() {
+  if (!renderer || !camera) return;
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+function startFlight() {
+  currentMission = $("startMode").value;
+  handling = $("startHandling").value;
+  collisionAssist = $("startAssist").value === "on";
+  active = true; paused = false; keys.clear();
+  startedAt = performance.now(); sessionElapsed = 0; missionElapsed = 0; missionStartedAt = startedAt;
+  missionFinished = false; nextGate = 0; gatePassed = 0;
+  $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("hud").style.display = "block";
+  $("missionTitle").textContent = currentMission === "race" ? "Gate run / time trial" : "Free flight";
+  $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : "Explore downtown, skim the rooftops and find the glowing gates.";
+  $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
+  resetFlight(false); updateModeUI();
+  showMessage(currentMission === "race" ? "TIME TRIAL START / GATE 01" : "ARMED / HAVE A SMOOTH FLIGHT");
+}
+function togglePause() {
+  if (!active) return;
+  paused = !paused;
+  keys.clear();
+  $("pauseOverlay").style.display = paused ? "grid" : "none";
+  $("pauseBtn").textContent = paused ? "▶ RESUME" : "Ⅱ PAUSE";
+  if (!paused) lastHud = 0;
+}
+function resetFlight(showToast) {
+  flight.position.set(0, 12, 12);
+  flight.velocity.set(0, 0, 0);
+  flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.battery = 100;
+  keys.clear();
+  if (currentMission === "race" && active) {
+    nextGate = 0; gatePassed = 0; missionElapsed = 0; missionStartedAt = performance.now(); missionFinished = false;
+    $("checkpoint").textContent = "CHECKPOINT 01 / " + String(course.length).padStart(2, "0");
+    $("missionTitle").textContent = "Gate run / time trial";
+  }
+  if (showToast) showMessage("DRONE RESET / LAUNCH POSITION");
+}
+function showMessage(text) {
+  const m = $("message"); m.textContent = text; m.classList.add("show");
+  clearTimeout(lastMessageTimer);
+  lastMessageTimer = setTimeout(() => m.classList.remove("show"), 2000);
+}
+function updateModeUI() {
+  $("modeBtn").textContent = "MODE: " + (handling === "stabilized" ? "STAB" : "ACRO");
+  $("modeRead").textContent = handling === "stabilized" ? "STAB" : "ACRO";
+  $("collisionRead").textContent = collisionAssist ? "ON" : "OFF";
+  $("collisionRead").style.color = collisionAssist ? "var(--lime)" : "#ffbf84";
+}
+function updatePhysics(dt, now) {
+  const pitchInput = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
+  const rollInput = (keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0);
+  const yawInput = (keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0);
+  if (handling === "stabilized") {
+    flight.pitch += (pitchInput * .5 - flight.pitch) * Math.min(1, dt * 3.8);
+    flight.roll += (rollInput * .5 - flight.roll) * Math.min(1, dt * 3.8);
+  } else {
+    flight.pitch = THREE.MathUtils.clamp(flight.pitch + pitchInput * dt * .9, -.85, .85);
+    flight.roll = THREE.MathUtils.clamp(flight.roll + rollInput * dt * .9, -.85, .85);
+  }
+  flight.yaw += yawInput * 1.35 * dt;
+  const forward = new THREE.Vector3(Math.sin(flight.yaw), 0, -Math.cos(flight.yaw));
+  const right = new THREE.Vector3(Math.cos(flight.yaw), 0, Math.sin(flight.yaw));
+  flight.velocity.addScaledVector(forward, flight.pitch * 17 * dt);
+  flight.velocity.addScaledVector(right, -flight.roll * 15 * dt);
+  if (keys.has("space")) flight.velocity.y += 9.2 * dt;
+  else if (keys.has("shift")) flight.velocity.y -= 9.2 * dt;
+  else flight.velocity.y += -flight.velocity.y * Math.min(1, dt * 2.5);
+  const drag = Math.exp(-.48 * dt);
+  flight.velocity.x *= drag; flight.velocity.z *= drag;
+  const horizontal = Math.hypot(flight.velocity.x, flight.velocity.z);
+  if (horizontal > flight.maxSpeed) {
+    flight.velocity.x *= flight.maxSpeed / horizontal; flight.velocity.z *= flight.maxSpeed / horizontal;
+  }
+  flight.velocity.y = THREE.MathUtils.clamp(flight.velocity.y, -10, 10);
+  const previous = flight.position.clone();
+  flight.position.addScaledVector(flight.velocity, dt);
+  flight.position.y = THREE.MathUtils.clamp(flight.position.y, 2.4, 93);
+  if (flight.position.y <= 2.41 && flight.velocity.y < 0) flight.velocity.y = Math.abs(flight.velocity.y) * .35;
+  flight.position.x = THREE.MathUtils.clamp(flight.position.x, -mapLimit, mapLimit);
+  flight.position.z = THREE.MathUtils.clamp(flight.position.z, -mapLimit, mapLimit);
+  if (collisionAssist) {
+    for (let i = 0; i < cityBoxes.length; i++) {
+      const b = cityBoxes[i];
+      if (flight.position.y < b.h + 1.9 &&
+          flight.position.x > b.x - b.w / 2 - .8 && flight.position.x < b.x + b.w / 2 + .8 &&
+          flight.position.z > b.z - b.d / 2 - .8 && flight.position.z < b.z + b.d / 2 + .8) {
+        flight.position.x = previous.x; flight.position.z = previous.z;
+        flight.velocity.x *= -.22; flight.velocity.z *= -.22;
+        if (now - gatePassed > 1200) { showMessage("BUILDING CONTACT / REBOUND"); gatePassed = now; }
+        break;
+      }
+    }
+  }
+  if (currentMission === "race" && !missionFinished) {
+    missionElapsed = (now - missionStartedAt) / 1000;
+    const gate = course[nextGate];
+    if (gate) {
+      const distance = Math.hypot(flight.position.x - gate.x, flight.position.z - gate.z);
+      if (distance < 6 && Math.abs(flight.position.y - gate.y) < 6) {
+        nextGate++;
+        if (nextGate >= course.length) {
+          missionFinished = true;
+          showMessage("COURSE COMPLETE / " + formatTime(missionElapsed));
+          $("missionTitle").textContent = "Course complete";
+          $("checkpoint").textContent = "FINAL TIME / " + formatTime(missionElapsed);
+        } else {
+          showMessage("CHECKPOINT " + String(nextGate).padStart(2, "0") + " CLEARED");
+          $("checkpoint").textContent = "CHECKPOINT " + String(nextGate + 1).padStart(2, "0") + " / " + String(course.length).padStart(2, "0");
+        }
+        updateGates();
+      }
+    }
+  }
+  if (active && startedAt) {
+    sessionElapsed = (now - startedAt) / 1000;
+    flight.battery = Math.max(1, 100 - sessionElapsed * .025);
+  }
+}
+function updateGates() {
+  gateItems.forEach((g, i) => {
+    const isNext = currentMission === "race" && !missionFinished && i === nextGate;
+    g.material.color.set(isNext ? "#c8ff74" : "#58d8ef");
+    g.material.emissive.set(isNext ? "#7ba52e" : "#145c82");
+    g.material.emissiveIntensity = isNext ? 2.6 : 1.5;
+  });
+}
+function formatTime(seconds) {
+  const mm = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const ss = Math.floor(seconds % 60).toString().padStart(2, "0");
+  const cs = Math.floor((seconds % 1) * 100).toString().padStart(2, "0");
+  return mm + ":" + ss + "." + cs;
+}
+function updateHud(now) {
+  if (now - lastHud < 100) return;
+  lastHud = now;
+  const speed = Math.hypot(flight.velocity.x, flight.velocity.y, flight.velocity.z);
+  $("speed").textContent = Math.round(speed * 3.6).toString().padStart(3, "0");
+  $("alt").textContent = flight.position.y.toFixed(1);
+  $("heading").textContent = Math.round(((THREE.MathUtils.radToDeg(flight.yaw) % 360) + 360) % 360).toString().padStart(3, "0") + "°";
+  $("vspeed").textContent = (flight.velocity.y >= 0 ? "+" : "") + flight.velocity.y.toFixed(1);
+  $("flightTime").textContent = formatTime(sessionElapsed).slice(0, 5);
+  $("battery").textContent = Math.round(flight.battery) + "%";
+  $("batterybar").style.width = flight.battery + "%";
+  $("batterybar").style.background = flight.battery < 20 ? "#ff8179" : "linear-gradient(90deg,var(--cyan),var(--lime))";
+  $("throttleRead").textContent = keys.has("space") ? "CLIMB" : (keys.has("shift") ? "DESCEND" : "HOVER");
+  $("throttlebar").style.width = (keys.has("space") ? 92 : (keys.has("shift") ? 12 : 50)) + "%";
+  if (currentMission === "race" && !missionFinished) $("checkpoint").textContent = "CHECKPOINT " + String(nextGate + 1).padStart(2, "0") + " / " + String(course.length).padStart(2, "0") + "  ·  " + formatTime(missionElapsed);
+  drawMinimap();
+}
+function drawMinimap() {
+  const w = mini.width, h = mini.height, c = miniCtx;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = "#233d47"; c.fillRect(0, 0, w, h);
+  const scale = w / (mapLimit * 2 + 12);
+  c.save(); c.translate(w / 2, h / 2); c.scale(scale, scale);
+  c.fillStyle = "#5e8179"; c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
+  c.fillStyle = "#34414a";
+  for (let g = -144; g <= 144; g += 48) {
+    c.fillRect(g - 6, -mapLimit - 6, 12, mapLimit * 2 + 12);
+    c.fillRect(-mapLimit - 6, g - 6, mapLimit * 2 + 12, 12);
+  }
+  for (const b of cityBoxes) {
+    c.fillStyle = b.h > 40 ? "#4a6e7b" : "#8a9696";
+    c.fillRect(b.x - b.w / 2, b.z - b.d / 2, b.w, b.d);
+  }
+  c.fillStyle = "#78a98a"; c.fillRect(100, 100, 40, 40);
+  if (currentMission === "race" && !missionFinished) {
+    gateItems.forEach((g, i) => {
+      if (i < nextGate) return;
+      c.fillStyle = i === nextGate ? "#d2ff79" : "#5ce9ff";
+      c.beginPath(); c.arc(g.position.x, g.position.z, i === nextGate ? 3.2 : 1.7, 0, Math.PI * 2); c.fill();
+    });
+  }
+  c.translate(flight.position.x, flight.position.z);
+  c.rotate(-flight.yaw);
+  c.fillStyle = "#f7ffad"; c.strokeStyle = "#112d39"; c.lineWidth = 1.1;
+  c.beginPath(); c.moveTo(0, -5); c.lineTo(3.4, 4); c.lineTo(0, 2.4); c.lineTo(-3.4, 4); c.closePath(); c.fill(); c.stroke();
+  c.restore();
+}
+function animate(now) {
+  requestAnimationFrame(animate);
+  if (!renderer || !scene || !camera) return;
+  if (!fpsAt) fpsAt = now;
+  frameCount++;
+  if (now - fpsAt > 1000) { fps = frameCount; frameCount = 0; fpsAt = now; }
+  const dt = Math.min(.035, clock.getDelta() || .016);
+  if (active && !paused) updatePhysics(dt, now);
+  camera.position.copy(flight.position);
+  camera.rotation.set(flight.pitch, flight.yaw, flight.roll, "YXZ");
+  camera.fov = flight.viewFov;
+  camera.updateProjectionMatrix();
+  for (const g of gateItems) {
+    g.mesh.rotation.x = Math.sin(now * .0008 + g.position.x) * .035;
+  }
+  if (active) updateHud(now);
+  renderer.render(scene, camera);
+}
+function startTimeTrialReset() {
+  currentMission = $("startMode").value;
+  resetFlight(false);
+}
+$("startMode").addEventListener("change", (e) => {
+  const race = e.target.value === "race";
+  $("startBtn").textContent = race ? "INITIALISE TIME TRIAL ↗" : "INITIALISE & FLY ↗";
+});
+</script>
+</body>
+</html>
