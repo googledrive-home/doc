@@ -127,7 +127,7 @@ const clock = new THREE.Clock();
 let renderer, scene, camera, active = false, paused = false, startedAt = 0, sessionElapsed = 0;
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
 let collisionAssist = true, handling = "stabilized", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
-let gatePassed = 0;
+let lastCollisionMessageAt = 0;
 const mapLimit = 176;
 const flight = {
   position: new THREE.Vector3(0, 12, 12),
@@ -493,12 +493,12 @@ function startFlight() {
   collisionAssist = $("startAssist").value === "on";
   active = true; paused = false; keys.clear();
   startedAt = performance.now(); sessionElapsed = 0; missionElapsed = 0; missionStartedAt = startedAt;
-  missionFinished = false; nextGate = 0; gatePassed = 0;
+  missionFinished = false; nextGate = 0; lastCollisionMessageAt = 0;
   $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("hud").style.display = "block";
   $("missionTitle").textContent = currentMission === "race" ? "Gate run / time trial" : "Free flight";
   $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : "Explore downtown, skim the rooftops and find the glowing gates.";
   $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
-  resetFlight(false); updateModeUI();
+  resetFlight(false); updateModeUI(); updateGates();
   showMessage(currentMission === "race" ? "TIME TRIAL START / GATE 01" : "ARMED / HAVE A SMOOTH FLIGHT");
 }
 function togglePause() {
@@ -515,7 +515,7 @@ function resetFlight(showToast) {
   flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.battery = 100;
   keys.clear();
   if (currentMission === "race" && active) {
-    nextGate = 0; gatePassed = 0; missionElapsed = 0; missionStartedAt = performance.now(); missionFinished = false;
+    nextGate = 0; missionElapsed = 0; missionStartedAt = performance.now(); missionFinished = false; updateGates();
     $("checkpoint").textContent = "CHECKPOINT 01 / " + String(course.length).padStart(2, "0");
     $("missionTitle").textContent = "Gate run / time trial";
   }
@@ -572,7 +572,7 @@ function updatePhysics(dt, now) {
           flight.position.z > b.z - b.d / 2 - .8 && flight.position.z < b.z + b.d / 2 + .8) {
         flight.position.x = previous.x; flight.position.z = previous.z;
         flight.velocity.x *= -.22; flight.velocity.z *= -.22;
-        if (now - gatePassed > 1200) { showMessage("BUILDING CONTACT / REBOUND"); gatePassed = now; }
+        if (now - lastCollisionMessageAt > 1200) { showMessage("BUILDING CONTACT / REBOUND"); lastCollisionMessageAt = now; }
         break;
       }
     }
