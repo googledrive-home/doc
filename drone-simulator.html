@@ -658,7 +658,7 @@ function drawMinimap() {
     });
   }
   c.translate(flight.position.x, flight.position.z);
-  c.rotate(-flight.yaw);
+  c.rotate(flight.yaw);
   c.fillStyle = "#f7ffad"; c.strokeStyle = "#112d39"; c.lineWidth = 1.1;
   c.beginPath(); c.moveTo(0, -5); c.lineTo(3.4, 4); c.lineTo(0, 2.4); c.lineTo(-3.4, 4); c.closePath(); c.fill(); c.stroke();
   c.restore();
@@ -672,7 +672,7 @@ function animate(now) {
   const dt = Math.min(.035, clock.getDelta() || .016);
   if (active && !paused) updatePhysics(dt, now);
   camera.position.copy(flight.position);
-  camera.rotation.set(flight.pitch, flight.yaw, flight.roll, "YXZ");
+  camera.rotation.set(flight.pitch, -flight.yaw, flight.roll, "YXZ");
   camera.fov = flight.viewFov;
   camera.updateProjectionMatrix();
   for (const g of gateItems) {
