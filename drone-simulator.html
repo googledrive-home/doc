@@ -18,10 +18,11 @@
 .overlay{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 42%,rgba(12,44,68,.42),rgba(3,10,19,.76))}.menu{width:min(790px,96vw);display:grid;grid-template-columns:1.12fr .88fr;border:1px solid #9ad8ee2e;border-radius:25px;overflow:hidden;background:rgba(5,15,27,.91);box-shadow:0 30px 110px #0008;backdrop-filter:blur(20px)}.menuleft{padding:clamp(22px,4vw,42px)}.eyebrow{color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.menu h1{margin:15px 0 11px;font-size:clamp(36px,5.5vw,65px);letter-spacing:-.065em;line-height:.96}.menu h1 span{color:var(--cyan)}.menu p{color:#a8bdcc;line-height:1.65;font-size:13px;max-width:460px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin:20px 0}.chip{border:1px solid #ffffff22;color:#d8e8f3;background:#ffffff09;border-radius:8px;padding:7px 9px;font-size:10px}.chip b{color:var(--lime)}.menuright{padding:28px;background:linear-gradient(150deg,#112a3b,#081421);border-left:1px solid #ffffff12;display:flex;flex-direction:column;justify-content:center;gap:12px}.menuright h2{font-size:13px;letter-spacing:.1em;margin:0 0 4px}.formlabel{display:block;font-size:10px;color:#9db5c7;margin:7px 0}.menuright select{width:100%;border:1px solid #47718588;border-radius:9px;padding:11px;background:#0b1b2a;color:#f2f9ff;outline:none}.menuright .primary{width:100%;padding:14px;margin-top:6px}.menuright .subbtn{width:100%;background:transparent}.smallnote{font-size:10px;color:#7594a8;line-height:1.6}.controlsgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}.controlitem{border:1px solid #ffffff16;border-radius:9px;padding:8px 9px;font-size:10px;color:#aac2d2}.key{display:inline-grid;min-width:22px;height:21px;place-items:center;background:#ffffff13;border:1px solid #ffffff25;border-radius:5px;color:#fff;font-weight:900;margin-right:4px;font-family:ui-monospace,monospace}
 #pauseOverlay{display:none;z-index:5}#pauseOverlay .menu{display:block;width:min(430px,95vw);padding:30px;text-align:center}#pauseOverlay h2{font-size:28px;margin:0 0 8px}#pauseOverlay p{font-size:12px;color:#9fb4c6}
 .tuning-menu .menuleft{align-self:center}.menuright input[type="range"]{display:block;width:100%;margin:-4px 0 8px;accent-color:#68f0ff;cursor:pointer}.formlabel output{float:right;color:#d7ff9a;font:700 11px ui-monospace,monospace}.tuning-menu .controlsgrid .btn{padding:10px 7px}
-@media(max-width:780px){.tuning-menu{max-height:94dvh;overflow:auto}}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
+.invert-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.invert-control{display:flex;gap:8px;align-items:center;padding:8px;border:1px solid #ffffff1c;border-radius:8px;color:#bcd1df;font-size:10px;cursor:pointer}.invert-control input{accent-color:#68f0ff;width:15px;height:15px;flex:none}
+@media(max-width:780px){.tuning-menu{max-height:94dvh;overflow:auto}.invert-grid{grid-template-columns:1fr 1fr}}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
 .mobilecontrols{display:none;position:absolute;left:50%;bottom:86px;transform:translateX(-50%);gap:7px;align-items:center;pointer-events:auto}.touchpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,40px);gap:4px}.touchbtn{border:1px solid #9fdfff55;border-radius:10px;background:#071c2cc9;color:#f3ffff;font-weight:900;font-size:13px;touch-action:none}.touchbtn:active,.touchbtn.down{background:#57cde875}.touchlabel{font-size:9px;color:#b2cad9;text-align:center;margin-bottom:5px;letter-spacing:.08em}
 .fatal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#08121f;padding:24px}.fatal div{max-width:560px}.fatal h2{color:#ffca79}.fatal p{color:#b9c9d5;line-height:1.6}
-@media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(4){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
+@media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(6){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
 @media(max-width:440px){.sidepanel{top:76px;width:128px}.rightpanel{top:76px;width:126px}.metric:nth-child(3){display:none}.brand{gap:7px}.brandmark{width:27px;height:27px}.brand b{letter-spacing:.08em}.brand small{letter-spacing:.08em}.menuleft p{font-size:12px}.controlsgrid{grid-template-columns:1fr}.bottomleft{display:none}.actions .btn{padding:8px}.mobilecontrols{bottom:60px}}
 </style>
 </head>
@@ -63,6 +64,7 @@
   <div class="actions">
     <button class="btn" id="modeBtn">MODE: ACRO</button>
     <button class="btn" id="settingsBtn">⚙ TUNING</button>
+    <button class="btn" id="mouseBtn">MOUSE: CAPTURE</button>
     <button class="btn warning" id="pauseBtn">Ⅱ PAUSE</button>
     <button class="btn" id="resetBtn">↻ RESET</button>
     <button class="btn" id="fullBtn">⛶ FULLSCREEN</button>
@@ -122,8 +124,8 @@
       <div class="eyebrow">Flight Lab / Pilot tuning</div>
       <h1>MAKE IT<br><span>YOUR FPV.</span></h1>
       <p>Acro is now true manual attitude control. Pitch and roll stay where you leave them until you counter-steer. The drone accelerates in the direction its thrust is tilted, while throttle controls total lift.</p>
-      <div class="chips"><div class="chip"><b>W / S</b> &nbsp;Pitch rates</div><div class="chip"><b>A / D</b> &nbsp;Roll rates</div><div class="chip"><b>SPACE / SHIFT</b> &nbsp;Throttle up / down</div></div>
-      <div class="smallnote">Changes apply immediately and are saved on this device. Higher rates and tilt limits make the quad much more aggressive. In acro, level the drone yourself and manage throttle to hold altitude.</div>
+      <div class="chips"><div class="chip"><b>W / S</b> &nbsp;Pitch</div><div class="chip"><b>A / D</b> &nbsp;Roll</div><div class="chip"><b>SPACE / SHIFT</b> &nbsp;Throttle</div></div>
+      <div class="smallnote">Mouse movement controls yaw and pitch when captured. Hold right mouse and move horizontally to roll. Click the flight view or the mouse button to capture the cursor; press Esc to release it. Changes are saved on this device.</div>
     </div>
     <div class="menuright">
       <div class="tag">LIVE FLIGHT SETTINGS</div><h2>RATE & POWER</h2>
@@ -139,6 +141,17 @@
       <input id="throttleResponse" type="range" min="0.2" max="1.8" step="0.1" value="0.8">
       <label class="formlabel" for="motorPower">Motor power <output id="motorPowerValue">32 m/s²</output></label>
       <input id="motorPower" type="range" min="18" max="48" step="1" value="32">
+      <label class="formlabel" for="mouseSensitivity">Mouse sensitivity <output id="mouseSensitivityValue">1.0×</output></label>
+      <input id="mouseSensitivity" type="range" min="0.2" max="3" step="0.1" value="1">
+      <div class="sectionlabel" style="margin:10px 0 1px">Invert individual controls</div>
+      <div class="invert-grid">
+        <label class="invert-control"><input id="invertPitch" type="checkbox"><span>Invert pitch (W/S)</span></label>
+        <label class="invert-control"><input id="invertRoll" type="checkbox"><span>Invert roll (A/D + mouse roll)</span></label>
+        <label class="invert-control"><input id="invertYaw" type="checkbox"><span>Invert yaw (Q/E)</span></label>
+        <label class="invert-control"><input id="invertThrottle" type="checkbox"><span>Invert throttle (Space/Shift)</span></label>
+        <label class="invert-control"><input id="invertMousePitch" type="checkbox"><span>Invert mouse pitch (vertical)</span></label>
+        <label class="invert-control"><input id="invertMouseYaw" type="checkbox"><span>Invert mouse yaw (horizontal)</span></label>
+      </div>
       <div class="controlsgrid">
         <button class="btn subbtn" id="resetTuningBtn">↻ DEFAULT SETTINGS</button>
         <button class="btn primary" id="closeTuningBtn">SAVE & RETURN</button>
@@ -162,20 +175,36 @@ let renderer, scene, camera, active = false, paused = false, startedAt = 0, sess
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
 let collisionAssist = true, handling = "acro", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
-const flightTuning = { pitchRollRate: 520, yawRate: 300, tiltLimit: 72, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32 };
+const flightTuning = { pitchRollRate: 520, yawRate: 300, tiltLimit: 72, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32, mouseSensitivity: 1.0 };
 const DEFAULT_TUNING = { ...flightTuning };
+const invertControls = { pitch: false, roll: false, yaw: false, throttle: false, mousePitch: false, mouseYaw: false };
+const DEFAULT_INVERTS = { ...invertControls };
+const invertControlInputs = [
+  { id: "invertPitch", key: "pitch" },
+  { id: "invertRoll", key: "roll" },
+  { id: "invertYaw", key: "yaw" },
+  { id: "invertThrottle", key: "throttle" },
+  { id: "invertMousePitch", key: "mousePitch" },
+  { id: "invertMouseYaw", key: "mouseYaw" }
+];
+let pointerLocked = false, pendingMouseYaw = 0, pendingMousePitch = 0, pendingMouseRoll = 0;
 const tuningControls = [
   { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
   { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
   { id: "tiltLimit", key: "tiltLimit", out: "tiltLimitValue", format: v => Math.round(v) + "°" },
   { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
   { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
-  { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" }
+  { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" },
+  { id: "mouseSensitivity", key: "mouseSensitivity", out: "mouseSensitivityValue", format: v => Number(v).toFixed(1) + "×" }
 ];
 try {
   const storedTuning = JSON.parse(localStorage.getItem("fpvDroneTuning") || "null");
   if (storedTuning && typeof storedTuning === "object") {
     for (const key of Object.keys(DEFAULT_TUNING)) if (Number.isFinite(storedTuning[key])) flightTuning[key] = storedTuning[key];
+  }
+  const savedInverts = JSON.parse(localStorage.getItem("fpvDroneInverts") || "null");
+  if (savedInverts && typeof savedInverts === "object") {
+    for (const key of Object.keys(DEFAULT_INVERTS)) if (typeof savedInverts[key] === "boolean") invertControls[key] = savedInverts[key];
   }
 } catch (_) {}
 const mapLimit = 176;
@@ -484,6 +513,16 @@ function addMountains() {
 }
 function setupEvents() {
   window.addEventListener("resize", resize);
+  canvas.addEventListener("click", requestMouseCapture);
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+  document.addEventListener("pointerlockchange", () => {
+    pointerLocked = document.pointerLockElement === canvas;
+    updateMouseButton();
+    if (pointerLocked) showMessage("MOUSE FLIGHT ACTIVE / ESC TO RELEASE");
+    else clearMouseDeltas();
+  });
+  document.addEventListener("pointerlockerror", () => showMessage("MOUSE CAPTURE WAS BLOCKED BY THE BROWSER"));
+  document.addEventListener("mousemove", onMouseMove);
   window.addEventListener("keydown", (e) => {
     const key = normalKey(e);
     if (["space", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
@@ -504,7 +543,7 @@ function setupEvents() {
     const touch = document.querySelector('.touchbtn[data-key="' + key + '"]');
     if (touch) touch.classList.remove("down");
   });
-  window.addEventListener("blur", () => { keys.clear(); document.querySelectorAll(".touchbtn.down").forEach(b => b.classList.remove("down")); });
+  window.addEventListener("blur", () => { keys.clear(); clearMouseDeltas(); document.querySelectorAll(".touchbtn.down").forEach(b => b.classList.remove("down")); });
   document.querySelectorAll(".touchbtn").forEach((button) => {
     const key = button.dataset.key;
     const release = (e) => { if (e) e.preventDefault(); keys.delete(key); button.classList.remove("down"); };
@@ -517,11 +556,13 @@ function setupEvents() {
   $("startBtn").addEventListener("click", startFlight);
   $("openTuningSetup").addEventListener("click", openTuning);
   $("settingsBtn").addEventListener("click", openTuning);
+  $("mouseBtn").addEventListener("click", toggleMouseCapture);
   $("closeTuningBtn").addEventListener("click", closeTuning);
   $("resetTuningBtn").addEventListener("click", () => {
     Object.assign(flightTuning, DEFAULT_TUNING);
+    Object.assign(invertControls, DEFAULT_INVERTS);
     flight.throttle = 9.81 / flightTuning.motorPower;
-    syncTuningUI(); saveTuning();
+    syncTuningUI(); syncInvertUI(); saveTuning(); saveInverts();
     showMessage("FLIGHT SETTINGS RESTORED");
   });
   $("backBtn").addEventListener("click", () => { window.location.href = "index.html"; });
@@ -545,6 +586,22 @@ function normalKey(e) {
   if (e.key === "Shift") return "shift";
   return e.key.toLowerCase();
 }
+function syncInvertUI() {
+  for (const control of invertControlInputs) $(control.id).checked = invertControls[control.key];
+}
+function saveInverts() {
+  try { localStorage.setItem("fpvDroneInverts", JSON.stringify(invertControls)); } catch (_) {}
+}
+function setupInvertUI() {
+  syncInvertUI();
+  for (const control of invertControlInputs) {
+    $(control.id).addEventListener("change", e => {
+      invertControls[control.key] = e.target.checked;
+      saveInverts();
+      showMessage(control.key.toUpperCase() + (e.target.checked ? " INVERTED" : " NORMAL"));
+    });
+  }
+}
 function syncTuningUI() {
   for (const control of tuningControls) {
     $(control.id).value = flightTuning[control.key];
@@ -556,6 +613,7 @@ function saveTuning() {
 }
 function setupTuningUI() {
   syncTuningUI();
+  setupInvertUI();
   for (const control of tuningControls) {
     $(control.id).addEventListener("input", e => {
       flightTuning[control.key] = Number(e.target.value);
@@ -566,14 +624,43 @@ function setupTuningUI() {
   }
 }
 function openTuning() {
-  keys.clear();
+  keys.clear(); clearMouseDeltas();
+  if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
   document.querySelectorAll(".touchbtn.down").forEach(b => b.classList.remove("down"));
-  syncTuningUI();
+  syncTuningUI(); syncInvertUI();
   $("settingsOverlay").style.display = "grid";
 }
 function closeTuning() {
   $("settingsOverlay").style.display = "none";
-  keys.clear();
+  keys.clear(); clearMouseDeltas();
+}
+function clearMouseDeltas() {
+  pendingMouseYaw = 0; pendingMousePitch = 0; pendingMouseRoll = 0;
+}
+function updateMouseButton() {
+  const button = $("mouseBtn");
+  if (!button) return;
+  button.textContent = pointerLocked ? "MOUSE: ON · ESC" : "MOUSE: CAPTURE";
+  button.classList.toggle("selected", pointerLocked);
+}
+function requestMouseCapture() {
+  if (!active || paused || $("settingsOverlay").style.display === "grid" || pointerLocked) return;
+  try {
+    const result = canvas.requestPointerLock();
+    if (result && typeof result.catch === "function") result.catch(() => showMessage("MOUSE CAPTURE WAS BLOCKED BY THE BROWSER"));
+  } catch (_) { showMessage("MOUSE CAPTURE IS NOT AVAILABLE"); }
+}
+function toggleMouseCapture() {
+  if (pointerLocked) {
+    if (document.exitPointerLock) document.exitPointerLock();
+  } else requestMouseCapture();
+}
+function onMouseMove(e) {
+  if (!pointerLocked || !active || paused || $("settingsOverlay").style.display === "grid") return;
+  const scale = .0022 * flightTuning.mouseSensitivity;
+  pendingMousePitch += (e.movementY || 0) * scale;
+  if ((e.buttons & 2) || keys.has("alt")) pendingMouseRoll += (e.movementX || 0) * scale;
+  else pendingMouseYaw += (e.movementX || 0) * scale;
 }
 function resize() {
   if (!renderer || !camera) return;
@@ -598,7 +685,8 @@ function startFlight() {
 function togglePause() {
   if (!active) return;
   paused = !paused;
-  keys.clear();
+  keys.clear(); clearMouseDeltas();
+  if (paused && pointerLocked && document.exitPointerLock) document.exitPointerLock();
   $("pauseOverlay").style.display = paused ? "grid" : "none";
   $("pauseBtn").textContent = paused ? "▶ RESUME" : "Ⅱ PAUSE";
   if (!paused) lastHud = 0;
@@ -627,9 +715,11 @@ function updateModeUI() {
   $("collisionRead").style.color = collisionAssist ? "var(--lime)" : "#ffbf84";
 }
 function updatePhysics(dt, now) {
-  const pitchInput = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
-  const rollInput = (keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0);
-  const yawInput = (keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0);
+  const pitchInput = ((keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)) * (invertControls.pitch ? -1 : 1);
+  const rollInput = ((keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0)) * (invertControls.roll ? -1 : 1);
+  const yawInput = ((keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0)) * (invertControls.yaw ? -1 : 1);
+  const mouseYaw = pendingMouseYaw, mousePitch = pendingMousePitch, mouseRoll = pendingMouseRoll;
+  clearMouseDeltas();
   const maxTilt = THREE.MathUtils.degToRad(flightTuning.tiltLimit);
   if (handling === "stabilized") {
     // Stabilised mode asks for a bank angle and gently auto-levels when released.
@@ -644,9 +734,11 @@ function updatePhysics(dt, now) {
     flight.pitch = THREE.MathUtils.clamp(flight.pitch + pitchInput * rate, -maxTilt, maxTilt);
     flight.roll = THREE.MathUtils.clamp(flight.roll + rollInput * rate, -maxTilt, maxTilt);
   }
-  flight.yaw += yawInput * THREE.MathUtils.degToRad(flightTuning.yawRate) * dt;
-  // Space/Shift command a persistent throttle level rather than directly moving vertically.
-  const throttleInput = (keys.has("space") ? 1 : 0) - (keys.has("shift") ? 1 : 0);
+  flight.pitch = THREE.MathUtils.clamp(flight.pitch + mousePitch * (invertControls.mousePitch ? -1 : 1), -maxTilt, maxTilt);
+  flight.roll = THREE.MathUtils.clamp(flight.roll + mouseRoll * (invertControls.roll ? -1 : 1), -maxTilt, maxTilt);
+  flight.yaw += yawInput * THREE.MathUtils.degToRad(flightTuning.yawRate) * dt + mouseYaw * (invertControls.mouseYaw ? -1 : 1);
+  // Space/Shift adjust the stored throttle; the thrust vector and gravity determine actual motion.
+  const throttleInput = ((keys.has("space") ? 1 : 0) - (keys.has("shift") ? 1 : 0)) * (invertControls.throttle ? -1 : 1);
   flight.throttle = THREE.MathUtils.clamp(flight.throttle + throttleInput * flightTuning.throttleResponse * dt, 0, 1);
   const thrust = flight.throttle * flightTuning.motorPower;
   const forward = new THREE.Vector3(Math.sin(flight.yaw), 0, -Math.cos(flight.yaw));
