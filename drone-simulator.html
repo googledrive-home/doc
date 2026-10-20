@@ -133,8 +133,6 @@
       <input id="pitchRate" type="range" min="120" max="900" step="20" value="520">
       <label class="formlabel" for="yawRate">Yaw rate <output id="yawRateValue">300°/s</output></label>
       <input id="yawRate" type="range" min="90" max="720" step="15" value="300">
-      <label class="formlabel" for="tiltLimit">Maximum tilt <output id="tiltLimitValue">72°</output></label>
-      <input id="tiltLimit" type="range" min="30" max="85" step="1" value="72">
       <label class="formlabel" for="topSpeed">Maximum speed <output id="topSpeedValue">150 km/h</output></label>
       <input id="topSpeed" type="range" min="60" max="220" step="5" value="150">
       <label class="formlabel" for="throttleResponse">Throttle stick response <output id="throttleResponseValue">0.8×</output></label>
@@ -143,6 +141,12 @@
       <input id="motorPower" type="range" min="18" max="48" step="1" value="32">
       <label class="formlabel" for="mouseSensitivity">Mouse sensitivity <output id="mouseSensitivityValue">1.0×</output></label>
       <input id="mouseSensitivity" type="range" min="0.2" max="3" step="0.1" value="1">
+      <label class="formlabel" for="cameraAngle">Camera angle <output id="cameraAngleValue">20°</output></label>
+      <input id="cameraAngle" type="range" min="0" max="60" step="1" value="20">
+      <label class="formlabel" for="cameraFov">Field of view (FOV) <output id="cameraFovValue">105°</output></label>
+      <input id="cameraFov" type="range" min="70" max="130" step="1" value="105">
+      <label class="formlabel" for="cameraSmoothness">Camera response <output id="cameraSmoothnessValue">16 /s</output></label>
+      <input id="cameraSmoothness" type="range" min="4" max="36" step="1" value="16">
       <div class="sectionlabel" style="margin:10px 0 1px">Invert individual controls</div>
       <div class="invert-grid">
         <label class="invert-control"><input id="invertPitch" type="checkbox"><span>Invert pitch (W/S)</span></label>
@@ -171,11 +175,15 @@ const keys = new Set();
 const cityBoxes = [];
 const gateItems = [];
 const clock = new THREE.Clock();
+const cameraTargetPosition = new THREE.Vector3();
+const cameraTargetQuaternion = new THREE.Quaternion();
+const cameraTargetEuler = new THREE.Euler(0, 0, 0, "YXZ");
+let cameraIsReady = false, physicsAccumulator = 0;
 let renderer, scene, camera, active = false, paused = false, startedAt = 0, sessionElapsed = 0;
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
 let collisionAssist = true, handling = "acro", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
-const flightTuning = { pitchRollRate: 520, yawRate: 300, tiltLimit: 72, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32, mouseSensitivity: 1.0 };
+const flightTuning = { pitchRollRate: 520, yawRate: 300, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32, mouseSensitivity: 1.0, cameraAngle: 20, cameraFov: 105, cameraSmoothness: 16 };
 const DEFAULT_TUNING = { ...flightTuning };
 const invertControls = { pitch: false, roll: false, yaw: false, throttle: false, mousePitch: false, mouseYaw: false };
 const DEFAULT_INVERTS = { ...invertControls };
@@ -191,11 +199,13 @@ let pointerLocked = false, pendingMouseYaw = 0, pendingMousePitch = 0, pendingMo
 const tuningControls = [
   { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
   { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
-  { id: "tiltLimit", key: "tiltLimit", out: "tiltLimitValue", format: v => Math.round(v) + "°" },
   { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
   { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
   { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" },
-  { id: "mouseSensitivity", key: "mouseSensitivity", out: "mouseSensitivityValue", format: v => Number(v).toFixed(1) + "×" }
+  { id: "mouseSensitivity", key: "mouseSensitivity", out: "mouseSensitivityValue", format: v => Number(v).toFixed(1) + "×" },
+  { id: "cameraAngle", key: "cameraAngle", out: "cameraAngleValue", format: v => Math.round(v) + "°" },
+  { id: "cameraFov", key: "cameraFov", out: "cameraFovValue", format: v => Math.round(v) + "°" },
+  { id: "cameraSmoothness", key: "cameraSmoothness", out: "cameraSmoothnessValue", format: v => Number(v).toFixed(0) + " /s" }
 ];
 try {
   const storedTuning = JSON.parse(localStorage.getItem("fpvDroneTuning") || "null");
@@ -207,13 +217,12 @@ try {
     for (const key of Object.keys(DEFAULT_INVERTS)) if (typeof savedInverts[key] === "boolean") invertControls[key] = savedInverts[key];
   }
 } catch (_) {}
-const mapLimit = 176;
+const mapLimit = 280;
 const flight = {
   position: new THREE.Vector3(0, 12, 12),
   velocity: new THREE.Vector3(),
   yaw: 0, pitch: 0, roll: 0,
-  throttle: 9.81 / 32, battery: 100,
-  viewFov: 96
+  throttle: 9.81 / 32, battery: 100
 };
 const course = [
   { x: 0, y: 18, z: -48 },
@@ -271,8 +280,8 @@ try {
   renderer.toneMappingExposure = 1.15;
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#9ebfca");
-  scene.fog = new THREE.Fog("#9ebfca", 155, 385);
-  camera = new THREE.PerspectiveCamera(flight.viewFov, window.innerWidth / window.innerHeight, .1, 460);
+  scene.fog = new THREE.Fog("#9ebfca", 225, 625);
+  camera = new THREE.PerspectiveCamera(flightTuning.cameraFov, window.innerWidth / window.innerHeight, .1, 780);
   camera.rotation.order = "YXZ";
   scene.add(new THREE.HemisphereLight("#e1f5ff", "#52685d", 2.05));
   const sun = new THREE.DirectionalLight("#fff3db", 2.3);
@@ -335,24 +344,24 @@ function addPlane(parent, x, y, z, w, d, material) {
   return mesh;
 }
 function addRoads() {
-  addPlane(scene, 0, -.12, 0, 410, 410, worldMaterials.grass);
-  const size = 360;
-  for (let g = -144; g <= 144; g += 48) {
+  addPlane(scene, 0, -.12, 0, 630, 630, worldMaterials.grass);
+  const size = 560;
+  for (let g = -240; g <= 240; g += 48) {
     addPlane(scene, g, .005, 0, 12, size, worldMaterials.road);
     addPlane(scene, 0, .006, g, size, 12, worldMaterials.road);
     addPlane(scene, g - 7.2, .012, 0, .55, size, worldMaterials.sidewalk);
     addPlane(scene, g + 7.2, .012, 0, .55, size, worldMaterials.sidewalk);
     addPlane(scene, 0, .012, g - 7.2, size, .55, worldMaterials.sidewalk);
     addPlane(scene, 0, .012, g + 7.2, size, .55, worldMaterials.sidewalk);
-    for (let t = -174; t <= 174; t += 13) {
+    for (let t = -276; t <= 276; t += 24) {
       addPlane(scene, g, .025, t, .22, 5.6, worldMaterials.lane);
       addPlane(scene, t, .026, g, 5.6, .22, worldMaterials.lane);
     }
   }
   const crosswalkMat = mat("#e4e3cf", .9);
-  for (let gx = -144; gx <= 144; gx += 48) {
-    for (let gz = -144; gz <= 144; gz += 48) {
-      if (Math.abs(gx) > 150 || Math.abs(gz) > 150) continue;
+  for (let gx = -240; gx <= 240; gx += 96) {
+    for (let gz = -240; gz <= 240; gz += 96) {
+      if (Math.abs(gx) > 246 || Math.abs(gz) > 246) continue;
       for (let stripe = -3; stripe <= 3; stripe++) {
         addPlane(scene, gx + stripe * 1.15, .035, gz + 8.3, .58, 3.4, crosswalkMat);
         addPlane(scene, gx + 8.3, .035, gz + stripe * 1.15, 3.4, .58, crosswalkMat);
@@ -424,8 +433,8 @@ function addCars() {
 }
 function addStreetDetails() {
   // Consistent low-poly streetlights and signs add scale without expensive shadows.
-  for (let road = -144; road <= 144; road += 48) {
-    for (let seg = -120; seg <= 120; seg += 48) {
+  for (let road = -240; road <= 240; road += 48) {
+    for (let seg = -216; seg <= 216; seg += 96) {
       for (const side of [-1, 1]) {
         if (Math.abs(road) < 1 && Math.abs(seg) < 1) continue;
         const x = road + side * 8.5, z = seg + 8;
@@ -440,10 +449,10 @@ function addStreetDetails() {
 }
 function addWorldEdges() {
   const pool = new THREE.Mesh(new THREE.CylinderGeometry(30, 40, 2, 9), mat("#6e878e"));
-  pool.position.set(-195, 3, 0); scene.add(pool);
+  pool.position.set(-300, 3, 0); scene.add(pool);
   const ridgePositions = [
-    [-215, -180, 40], [-200, -80, 26], [-225, 40, 50], [-195, 160, 36],
-    [215, -170, 34], [206, -65, 48], [220, 65, 30], [205, 170, 48]
+    [-315, -260, 40], [-300, -120, 26], [-325, 40, 50], [-295, 235, 36],
+    [315, -260, 34], [306, -105, 48], [320, 115, 30], [305, 260, 48]
   ];
   for (const [x,z,h] of ridgePositions) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(h * .8, h, 7), worldMaterials.mountain);
@@ -453,7 +462,7 @@ function addWorldEdges() {
 function createWorld() {
   addRoads();
   // Six streets in each direction; buildings occupy the blocks between avenues.
-  const centers = [-120, -72, -24, 24, 72, 120];
+  const centers = [-216, -168, -120, -72, -24, 24, 72, 120, 168, 216];
   for (let ix = 0; ix < centers.length; ix++) {
     for (let iz = 0; iz < centers.length; iz++) {
       const cx = centers[ix], cz = centers[iz];
@@ -504,7 +513,7 @@ function addMountains() {
   const ridgeMat = worldMaterials.mountain;
   for (let i = 0; i < 16; i++) {
     const angle = i * Math.PI * 2 / 16;
-    const radius = 224 + (i % 3) * 8;
+    const radius = 320 + (i % 3) * 8;
     const h = 24 + (i % 4) * 8;
     const hill = new THREE.Mesh(new THREE.ConeGeometry(h * .8, h, 8), ridgeMat);
     hill.position.set(Math.cos(angle) * radius, h * .35, Math.sin(angle) * radius);
@@ -720,22 +729,21 @@ function updatePhysics(dt, now) {
   const yawInput = ((keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0)) * (invertControls.yaw ? -1 : 1);
   const mouseYaw = pendingMouseYaw, mousePitch = pendingMousePitch, mouseRoll = pendingMouseRoll;
   clearMouseDeltas();
-  const maxTilt = THREE.MathUtils.degToRad(flightTuning.tiltLimit);
   if (handling === "stabilized") {
-    // Stabilised mode asks for a bank angle and gently auto-levels when released.
-    const targetPitch = pitchInput * maxTilt * .72;
-    const targetRoll = rollInput * maxTilt * .72;
+    // Stabilised mode auto-levels toward a comfortable attitude. Acro below has no angle cap.
+    const targetPitch = pitchInput * (Math.PI * .34);
+    const targetRoll = rollInput * (Math.PI * .34);
     const response = Math.min(1, dt * 14);
     flight.pitch += (targetPitch - flight.pitch) * response;
     flight.roll += (targetRoll - flight.roll) * response;
   } else {
     // Acro mode: stick input is angular rate; releasing a stick holds the current attitude.
     const rate = THREE.MathUtils.degToRad(flightTuning.pitchRollRate) * dt;
-    flight.pitch = THREE.MathUtils.clamp(flight.pitch + pitchInput * rate, -maxTilt, maxTilt);
-    flight.roll = THREE.MathUtils.clamp(flight.roll + rollInput * rate, -maxTilt, maxTilt);
+    flight.pitch += pitchInput * rate;
+    flight.roll += rollInput * rate;
   }
-  flight.pitch = THREE.MathUtils.clamp(flight.pitch + mousePitch * (invertControls.mousePitch ? -1 : 1), -maxTilt, maxTilt);
-  flight.roll = THREE.MathUtils.clamp(flight.roll + mouseRoll * (invertControls.roll ? -1 : 1), -maxTilt, maxTilt);
+  flight.pitch += mousePitch * (invertControls.mousePitch ? -1 : 1);
+  flight.roll += mouseRoll * (invertControls.roll ? -1 : 1);
   flight.yaw += yawInput * THREE.MathUtils.degToRad(flightTuning.yawRate) * dt + mouseYaw * (invertControls.mouseYaw ? -1 : 1);
   // Space/Shift adjust the stored throttle; the thrust vector and gravity determine actual motion.
   const throttleInput = ((keys.has("space") ? 1 : 0) - (keys.has("shift") ? 1 : 0)) * (invertControls.throttle ? -1 : 1);
@@ -839,7 +847,7 @@ function drawMinimap() {
   c.save(); c.translate(w / 2, h / 2); c.scale(scale, scale);
   c.fillStyle = "#5e8179"; c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
   c.fillStyle = "#34414a";
-  for (let g = -144; g <= 144; g += 48) {
+  for (let g = -240; g <= 240; g += 48) {
     c.fillRect(g - 6, -mapLimit - 6, 12, mapLimit * 2 + 12);
     c.fillRect(-mapLimit - 6, g - 6, mapLimit * 2 + 12, 12);
   }
@@ -867,12 +875,42 @@ function animate(now) {
   if (!fpsAt) fpsAt = now;
   frameCount++;
   if (now - fpsAt > 1000) { fps = frameCount; frameCount = 0; fpsAt = now; }
-  const dt = Math.min(.035, clock.getDelta() || .016);
-  if (active && !paused && $("settingsOverlay").style.display !== "grid") updatePhysics(dt, now);
-  camera.position.copy(flight.position);
-  camera.rotation.set(-flight.pitch, -flight.yaw, -flight.roll, "YXZ");
-  camera.fov = flight.viewFov;
-  camera.updateProjectionMatrix();
+  const frameDt = Math.min(.1, clock.getDelta() || .016);
+  if (active && !paused && $("settingsOverlay").style.display !== "grid") {
+    physicsAccumulator = Math.min(physicsAccumulator + frameDt, .1);
+    let physicsSteps = 0;
+    const fixedDt = 1 / 120;
+    while (physicsAccumulator >= fixedDt && physicsSteps < 12) {
+      updatePhysics(fixedDt, now);
+      physicsAccumulator -= fixedDt;
+      physicsSteps++;
+    }
+  } else {
+    physicsAccumulator = 0;
+    clearMouseDeltas();
+  }
+  // Interpolate camera translation and orientation to soften motion between physics ticks.
+  cameraTargetPosition.copy(flight.position);
+  cameraTargetEuler.set(
+    -flight.pitch + THREE.MathUtils.degToRad(flightTuning.cameraAngle),
+    -flight.yaw,
+    -flight.roll,
+    "YXZ"
+  );
+  cameraTargetQuaternion.setFromEuler(cameraTargetEuler);
+  const cameraAlpha = 1 - Math.exp(-flightTuning.cameraSmoothness * frameDt);
+  if (!cameraIsReady) {
+    camera.position.copy(cameraTargetPosition);
+    camera.quaternion.copy(cameraTargetQuaternion);
+    cameraIsReady = true;
+  } else {
+    camera.position.lerp(cameraTargetPosition, cameraAlpha);
+    camera.quaternion.slerp(cameraTargetQuaternion, cameraAlpha);
+  }
+  if (camera.fov !== flightTuning.cameraFov) {
+    camera.fov = flightTuning.cameraFov;
+    camera.updateProjectionMatrix();
+  }
   for (const g of gateItems) {
     g.mesh.rotation.x = Math.sin(now * .0008 + g.position.x) * .035;
   }
