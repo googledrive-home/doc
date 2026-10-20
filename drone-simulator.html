@@ -16,7 +16,9 @@
 .centerhud{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;opacity:.72}.centerhud:before,.centerhud:after{content:"";position:absolute;background:var(--cyan);box-shadow:0 0 9px #68f0ff}.centerhud:before{width:1px;height:38px;left:18px;top:0}.centerhud:after{height:1px;width:38px;left:0;top:18px}.reticle{position:absolute;inset:12px;border:1px solid #9bf8ff;border-radius:50%}
 .horizon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:50px;border-top:1px solid #a2efff65;pointer-events:none;opacity:.35}.horizon:before{content:"";position:absolute;left:50%;top:-4px;height:8px;border-left:1px solid #a2efff}.bottomleft{position:absolute;left:16px;bottom:16px;padding:11px 13px;max-width:290px}.bottomleft b{display:block;font-size:10px;letter-spacing:.12em}.bottomleft small{display:block;color:#a1b9c9;margin-top:5px;font-size:10px;line-height:1.5}.actions{position:absolute;bottom:16px;right:16px;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid #8cc9df3c;color:#eaf8ff;background:#0a1c2ddd;padding:10px 13px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.035em;box-shadow:0 7px 18px #0002;transition:transform .16s,border-color .16s,background .16s}.btn:hover{transform:translateY(-1px);border-color:#68f0ff9c;background:#16364a}.btn.primary{background:linear-gradient(110deg,#84f4ff,#b8ff8a);color:#062032;border:0}.btn.warning{color:#ffdba1}.tag{color:#9ab2c5;font-size:9px;letter-spacing:.14em;text-transform:uppercase}
 .overlay{position:fixed;inset:0;z-index:6;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 42%,rgba(12,44,68,.42),rgba(3,10,19,.76))}.menu{width:min(790px,96vw);display:grid;grid-template-columns:1.12fr .88fr;border:1px solid #9ad8ee2e;border-radius:25px;overflow:hidden;background:rgba(5,15,27,.91);box-shadow:0 30px 110px #0008;backdrop-filter:blur(20px)}.menuleft{padding:clamp(22px,4vw,42px)}.eyebrow{color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.menu h1{margin:15px 0 11px;font-size:clamp(36px,5.5vw,65px);letter-spacing:-.065em;line-height:.96}.menu h1 span{color:var(--cyan)}.menu p{color:#a8bdcc;line-height:1.65;font-size:13px;max-width:460px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin:20px 0}.chip{border:1px solid #ffffff22;color:#d8e8f3;background:#ffffff09;border-radius:8px;padding:7px 9px;font-size:10px}.chip b{color:var(--lime)}.menuright{padding:28px;background:linear-gradient(150deg,#112a3b,#081421);border-left:1px solid #ffffff12;display:flex;flex-direction:column;justify-content:center;gap:12px}.menuright h2{font-size:13px;letter-spacing:.1em;margin:0 0 4px}.formlabel{display:block;font-size:10px;color:#9db5c7;margin:7px 0}.menuright select{width:100%;border:1px solid #47718588;border-radius:9px;padding:11px;background:#0b1b2a;color:#f2f9ff;outline:none}.menuright .primary{width:100%;padding:14px;margin-top:6px}.menuright .subbtn{width:100%;background:transparent}.smallnote{font-size:10px;color:#7594a8;line-height:1.6}.controlsgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}.controlitem{border:1px solid #ffffff16;border-radius:9px;padding:8px 9px;font-size:10px;color:#aac2d2}.key{display:inline-grid;min-width:22px;height:21px;place-items:center;background:#ffffff13;border:1px solid #ffffff25;border-radius:5px;color:#fff;font-weight:900;margin-right:4px;font-family:ui-monospace,monospace}
-#pauseOverlay{display:none;z-index:5}#pauseOverlay .menu{display:block;width:min(430px,95vw);padding:30px;text-align:center}#pauseOverlay h2{font-size:28px;margin:0 0 8px}#pauseOverlay p{font-size:12px;color:#9fb4c6}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
+#pauseOverlay{display:none;z-index:5}#pauseOverlay .menu{display:block;width:min(430px,95vw);padding:30px;text-align:center}#pauseOverlay h2{font-size:28px;margin:0 0 8px}#pauseOverlay p{font-size:12px;color:#9fb4c6}
+.tuning-menu .menuleft{align-self:center}.menuright input[type="range"]{display:block;width:100%;margin:-4px 0 8px;accent-color:#68f0ff;cursor:pointer}.formlabel output{float:right;color:#d7ff9a;font:700 11px ui-monospace,monospace}.tuning-menu .controlsgrid .btn{padding:10px 7px}
+@media(max-width:780px){.tuning-menu{max-height:94dvh;overflow:auto}}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
 .mobilecontrols{display:none;position:absolute;left:50%;bottom:86px;transform:translateX(-50%);gap:7px;align-items:center;pointer-events:auto}.touchpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,40px);gap:4px}.touchbtn{border:1px solid #9fdfff55;border-radius:10px;background:#071c2cc9;color:#f3ffff;font-weight:900;font-size:13px;touch-action:none}.touchbtn:active,.touchbtn.down{background:#57cde875}.touchlabel{font-size:9px;color:#b2cad9;text-align:center;margin-bottom:5px;letter-spacing:.08em}
 .fatal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#08121f;padding:24px}.fatal div{max-width:560px}.fatal h2{color:#ffca79}.fatal p{color:#b9c9d5;line-height:1.6}
 @media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(3){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
@@ -59,7 +61,8 @@
   <div class="message" id="message"></div>
   <div class="bottomleft panel"><b>FLIGHT SYSTEM ONLINE</b><small id="statusText">Stabilised control · Collision assist enabled</small></div>
   <div class="actions">
-    <button class="btn" id="modeBtn">MODE: STAB</button>
+    <button class="btn" id="modeBtn">MODE: ACRO</button>
+    <button class="btn" id="settingsBtn">⚙ TUNING</button>
     <button class="btn warning" id="pauseBtn">Ⅱ PAUSE</button>
     <button class="btn" id="resetBtn">↻ RESET</button>
     <button class="btn" id="fullBtn">⛶ FULLSCREEN</button>
@@ -71,10 +74,10 @@
       <button class="touchbtn" data-key="s" style="grid-column:2;grid-row:2">▼</button>
       <button class="touchbtn" data-key="d" style="grid-column:3;grid-row:2">▶</button>
     </div></div>
-    <div><div class="touchlabel">ALTITUDE / YAW</div><div class="touchpad">
-      <button class="touchbtn" data-key="space" style="grid-column:2;grid-row:1">UP</button>
+    <div><div class="touchlabel">THROTTLE / YAW</div><div class="touchpad">
+      <button class="touchbtn" data-key="space" style="grid-column:2;grid-row:1">THR+</button>
       <button class="touchbtn" data-key="q" style="grid-column:1;grid-row:2">↶</button>
-      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2">DN</button>
+      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2">THR−</button>
       <button class="touchbtn" data-key="e" style="grid-column:3;grid-row:2">↷</button>
     </div></div>
   </div>
@@ -88,10 +91,10 @@
       <div class="chips"><div class="chip"><b>01</b> &nbsp;City blocks + high-rises</div><div class="chip"><b>02</b> &nbsp;Rooftop detail + park</div><div class="chip"><b>03</b> &nbsp;Checkpoint course</div></div>
       <div class="sectionlabel">Flight controls</div>
       <div class="controlsgrid">
-        <div class="controlitem"><span class="key">W</span><span class="key">S</span> Pitch forward / back</div>
+        <div class="controlitem"><span class="key">W</span><span class="key">S</span> Nose down / up</div>
         <div class="controlitem"><span class="key">A</span><span class="key">D</span> Bank left / right</div>
         <div class="controlitem"><span class="key">Q</span><span class="key">E</span> Yaw left / right</div>
-        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Climb / descend</div>
+        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Increase / lower throttle</div>
       </div>
       <p class="smallnote">R resets your drone · Esc pauses · Fullscreen recommended. Touch controls are available on phones and tablets.</p>
     </div>
@@ -100,9 +103,10 @@
       <label class="formlabel" for="startMode">Mission</label>
       <select id="startMode"><option value="free">Free flight · Explore the city</option><option value="race">Gate run · Time trial</option></select>
       <label class="formlabel" for="startHandling">Flight handling</label>
-      <select id="startHandling"><option value="stabilized">Stabilised · Auto-level</option><option value="acro">Acro · Manual attitude</option></select>
+      <select id="startHandling"><option value="acro" selected>Acro · Full manual rates</option><option value="stabilized">Stabilised · Auto-level</option></select>
       <label class="formlabel" for="startAssist">Collision protection</label>
       <select id="startAssist"><option value="on">Enabled · Gentle rebound</option><option value="off">Off · Expert flying</option></select>
+      <button class="btn subbtn" id="openTuningSetup">⚙ ADVANCED FLIGHT SETTINGS</button>
       <button class="btn primary" id="startBtn">INITIALISE & FLY ↗</button>
       <button class="btn subbtn" id="backBtn">← BACK TO GAME LIBRARY</button>
       <div class="smallnote">A lightweight Three.js 3D scene. Performance depends on your browser and graphics hardware.</div>
@@ -111,6 +115,36 @@
 </div>
 <div class="overlay" id="pauseOverlay">
   <div class="menu"><div class="menuleft"><div class="eyebrow">Flight paused</div><h1>HOLD<br><span>POSITION.</span></h1><p>Your quad is frozen in place. Resume when you're ready to fly again, or reset to the launch point.</p></div><div class="menuright"><h2>SESSION MENU</h2><button class="btn primary" id="resumeBtn">▶ RESUME FLIGHT</button><button class="btn" id="pauseResetBtn">↻ RESET DRONE</button><button class="btn subbtn" id="menuBtn">BACK TO FLIGHT SETUP</button></div></div>
+</div>
+<div class="overlay" id="settingsOverlay" style="display:none;z-index:8">
+  <div class="menu tuning-menu">
+    <div class="menuleft">
+      <div class="eyebrow">Flight Lab / Pilot tuning</div>
+      <h1>MAKE IT<br><span>YOUR FPV.</span></h1>
+      <p>Acro is now true manual attitude control. Pitch and roll stay where you leave them until you counter-steer. The drone accelerates in the direction its thrust is tilted, while throttle controls total lift.</p>
+      <div class="chips"><div class="chip"><b>W / S</b> &nbsp;Pitch rates</div><div class="chip"><b>A / D</b> &nbsp;Roll rates</div><div class="chip"><b>SPACE / SHIFT</b> &nbsp;Throttle up / down</div></div>
+      <div class="smallnote">Changes apply immediately and are saved on this device. Higher rates and tilt limits make the quad much more aggressive. In acro, level the drone yourself and manage throttle to hold altitude.</div>
+    </div>
+    <div class="menuright">
+      <div class="tag">LIVE FLIGHT SETTINGS</div><h2>RATE & POWER</h2>
+      <label class="formlabel" for="pitchRate">Pitch / roll rate <output id="pitchRateValue">520°/s</output></label>
+      <input id="pitchRate" type="range" min="120" max="900" step="20" value="520">
+      <label class="formlabel" for="yawRate">Yaw rate <output id="yawRateValue">300°/s</output></label>
+      <input id="yawRate" type="range" min="90" max="720" step="15" value="300">
+      <label class="formlabel" for="tiltLimit">Maximum tilt <output id="tiltLimitValue">72°</output></label>
+      <input id="tiltLimit" type="range" min="30" max="85" step="1" value="72">
+      <label class="formlabel" for="topSpeed">Maximum speed <output id="topSpeedValue">150 km/h</output></label>
+      <input id="topSpeed" type="range" min="60" max="220" step="5" value="150">
+      <label class="formlabel" for="throttleResponse">Throttle stick response <output id="throttleResponseValue">0.8×</output></label>
+      <input id="throttleResponse" type="range" min="0.2" max="1.8" step="0.1" value="0.8">
+      <label class="formlabel" for="motorPower">Motor power <output id="motorPowerValue">32 m/s²</output></label>
+      <input id="motorPower" type="range" min="18" max="48" step="1" value="32">
+      <div class="controlsgrid">
+        <button class="btn subbtn" id="resetTuningBtn">↻ DEFAULT SETTINGS</button>
+        <button class="btn primary" id="closeTuningBtn">SAVE & RETURN</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="fatal" id="fatal"><div><div class="eyebrow">Flight Lab / Setup error</div><h2>3D rendering couldn't start</h2><p>Your browser may have WebGL turned off, or the Three.js module could not load. Try an up-to-date browser with hardware acceleration enabled.</p><p><a href="index.html" style="color:#68f0ff">Return to game library</a></p><pre id="fatalDetail" style="white-space:pre-wrap;color:#7f9bad;font-size:11px"></pre></div></div>
 <script type="module">
@@ -126,14 +160,22 @@ const gateItems = [];
 const clock = new THREE.Clock();
 let renderer, scene, camera, active = false, paused = false, startedAt = 0, sessionElapsed = 0;
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
-let collisionAssist = true, handling = "stabilized", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
+let collisionAssist = true, handling = "acro", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
+const flightTuning = { pitchRollRate: 520, yawRate: 300, tiltLimit: 72, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32 };
+const DEFAULT_TUNING = { ...flightTuning };
+try {
+  const storedTuning = JSON.parse(localStorage.getItem("fpvDroneTuning") || "null");
+  if (storedTuning && typeof storedTuning === "object") {
+    for (const key of Object.keys(DEFAULT_TUNING)) if (Number.isFinite(storedTuning[key])) flightTuning[key] = storedTuning[key];
+  }
+} catch (_) {}
 const mapLimit = 176;
 const flight = {
   position: new THREE.Vector3(0, 12, 12),
   velocity: new THREE.Vector3(),
   yaw: 0, pitch: 0, roll: 0,
-  maxSpeed: 39, battery: 100,
+  throttle: 9.81 / 32, battery: 100,
   viewFov: 96
 };
 const course = [
@@ -203,6 +245,7 @@ try {
   createGates();
   addMountains();
   setupEvents();
+  setupTuningUI();
   resize();
   animate();
 } catch (error) {
@@ -436,6 +479,10 @@ function setupEvents() {
   window.addEventListener("keydown", (e) => {
     const key = normalKey(e);
     if (["space", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
+    if ($("settingsOverlay").style.display === "grid") {
+      if (key === "escape") { e.preventDefault(); closeTuning(); }
+      return;
+    }
     if (key === "escape" && active) { togglePause(); return; }
     if (key === "r" && active) { resetFlight(true); return; }
     if (key === "p" && active) { togglePause(); return; }
@@ -460,6 +507,15 @@ function setupEvents() {
     button.addEventListener("contextmenu", (e) => e.preventDefault());
   });
   $("startBtn").addEventListener("click", startFlight);
+  $("openTuningSetup").addEventListener("click", openTuning);
+  $("settingsBtn").addEventListener("click", openTuning);
+  $("closeTuningBtn").addEventListener("click", closeTuning);
+  $("resetTuningBtn").addEventListener("click", () => {
+    Object.assign(flightTuning, DEFAULT_TUNING);
+    flight.throttle = 9.81 / flightTuning.motorPower;
+    syncTuningUI(); saveTuning();
+    showMessage("FLIGHT SETTINGS RESTORED");
+  });
   $("backBtn").addEventListener("click", () => { window.location.href = "index.html"; });
   $("pauseBtn").addEventListener("click", togglePause);
   $("resumeBtn").addEventListener("click", togglePause);
@@ -480,6 +536,44 @@ function normalKey(e) {
   if (e.code === "Space") return "space";
   if (e.key === "Shift") return "shift";
   return e.key.toLowerCase();
+}
+const tuningControls = [
+  { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
+  { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
+  { id: "tiltLimit", key: "tiltLimit", out: "tiltLimitValue", format: v => Math.round(v) + "°" },
+  { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
+  { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
+  { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" }
+];
+function syncTuningUI() {
+  for (const control of tuningControls) {
+    $(control.id).value = flightTuning[control.key];
+    $(control.out).textContent = control.format(flightTuning[control.key]);
+  }
+}
+function saveTuning() {
+  try { localStorage.setItem("fpvDroneTuning", JSON.stringify(flightTuning)); } catch (_) {}
+}
+function setupTuningUI() {
+  syncTuningUI();
+  for (const control of tuningControls) {
+    $(control.id).addEventListener("input", e => {
+      flightTuning[control.key] = Number(e.target.value);
+      $(control.out).textContent = control.format(flightTuning[control.key]);
+      if (control.key === "motorPower" && flight.throttle < .1) flight.throttle = 9.81 / flightTuning.motorPower;
+      saveTuning();
+    });
+  }
+}
+function openTuning() {
+  keys.clear();
+  document.querySelectorAll(".touchbtn.down").forEach(b => b.classList.remove("down"));
+  syncTuningUI();
+  $("settingsOverlay").style.display = "grid";
+}
+function closeTuning() {
+  $("settingsOverlay").style.display = "none";
+  keys.clear();
 }
 function resize() {
   if (!renderer || !camera) return;
@@ -512,7 +606,7 @@ function togglePause() {
 function resetFlight(showToast) {
   flight.position.set(0, 12, 12);
   flight.velocity.set(0, 0, 0);
-  flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.battery = 100;
+  flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.throttle = THREE.MathUtils.clamp(9.81 / flightTuning.motorPower, .05, .9); flight.battery = 100;
   keys.clear();
   if (currentMission === "race" && active) {
     nextGate = 0; missionElapsed = 0; missionStartedAt = performance.now(); missionFinished = false; updateGates();
@@ -536,28 +630,40 @@ function updatePhysics(dt, now) {
   const pitchInput = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
   const rollInput = (keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0);
   const yawInput = (keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0);
+  const maxTilt = THREE.MathUtils.degToRad(flightTuning.tiltLimit);
   if (handling === "stabilized") {
-    flight.pitch += (pitchInput * .5 - flight.pitch) * Math.min(1, dt * 3.8);
-    flight.roll += (rollInput * .5 - flight.roll) * Math.min(1, dt * 3.8);
+    // Stabilised mode asks for a bank angle and gently auto-levels when released.
+    const targetPitch = pitchInput * maxTilt * .72;
+    const targetRoll = rollInput * maxTilt * .72;
+    const response = Math.min(1, dt * 14);
+    flight.pitch += (targetPitch - flight.pitch) * response;
+    flight.roll += (targetRoll - flight.roll) * response;
   } else {
-    flight.pitch = THREE.MathUtils.clamp(flight.pitch + pitchInput * dt * .9, -.85, .85);
-    flight.roll = THREE.MathUtils.clamp(flight.roll + rollInput * dt * .9, -.85, .85);
+    // Acro mode: stick input is angular rate; releasing a stick holds the current attitude.
+    const rate = THREE.MathUtils.degToRad(flightTuning.pitchRollRate) * dt;
+    flight.pitch = THREE.MathUtils.clamp(flight.pitch + pitchInput * rate, -maxTilt, maxTilt);
+    flight.roll = THREE.MathUtils.clamp(flight.roll + rollInput * rate, -maxTilt, maxTilt);
   }
-  flight.yaw += yawInput * 1.35 * dt;
+  flight.yaw += yawInput * THREE.MathUtils.degToRad(flightTuning.yawRate) * dt;
+  // Space/Shift command a persistent throttle level rather than directly moving vertically.
+  const throttleInput = (keys.has("space") ? 1 : 0) - (keys.has("shift") ? 1 : 0);
+  flight.throttle = THREE.MathUtils.clamp(flight.throttle + throttleInput * flightTuning.throttleResponse * dt, 0, 1);
+  const thrust = flight.throttle * flightTuning.motorPower;
   const forward = new THREE.Vector3(Math.sin(flight.yaw), 0, -Math.cos(flight.yaw));
   const right = new THREE.Vector3(Math.cos(flight.yaw), 0, Math.sin(flight.yaw));
-  flight.velocity.addScaledVector(forward, flight.pitch * 17 * dt);
-  flight.velocity.addScaledVector(right, -flight.roll * 15 * dt);
-  if (keys.has("space")) flight.velocity.y += 9.2 * dt;
-  else if (keys.has("shift")) flight.velocity.y -= 9.2 * dt;
-  else flight.velocity.y += -flight.velocity.y * Math.min(1, dt * 2.5);
-  const drag = Math.exp(-.48 * dt);
-  flight.velocity.x *= drag; flight.velocity.z *= drag;
+  // Tilting the thrust axis creates horizontal acceleration in the direction the quad leans.
+  flight.velocity.addScaledVector(forward, Math.sin(flight.pitch) * thrust * dt);
+  flight.velocity.addScaledVector(right, -Math.sin(flight.roll) * Math.cos(flight.pitch) * thrust * dt);
+  flight.velocity.y += (thrust * Math.cos(flight.pitch) * Math.cos(flight.roll) - 9.81) * dt;
+  const horizontalDrag = Math.exp(-.12 * dt);
+  flight.velocity.x *= horizontalDrag; flight.velocity.z *= horizontalDrag;
+  flight.velocity.y *= Math.exp(-.035 * dt);
   const horizontal = Math.hypot(flight.velocity.x, flight.velocity.z);
-  if (horizontal > flight.maxSpeed) {
-    flight.velocity.x *= flight.maxSpeed / horizontal; flight.velocity.z *= flight.maxSpeed / horizontal;
+  const maxSpeed = flightTuning.maxSpeedKmh / 3.6;
+  if (horizontal > maxSpeed) {
+    flight.velocity.x *= maxSpeed / horizontal; flight.velocity.z *= maxSpeed / horizontal;
   }
-  flight.velocity.y = THREE.MathUtils.clamp(flight.velocity.y, -10, 10);
+  flight.velocity.y = THREE.MathUtils.clamp(flight.velocity.y, -28, 28);
   const previous = flight.position.clone();
   flight.position.addScaledVector(flight.velocity, dt);
   flight.position.y = THREE.MathUtils.clamp(flight.position.y, 2.4, 93);
@@ -628,8 +734,8 @@ function updateHud(now) {
   $("battery").textContent = Math.round(flight.battery) + "%";
   $("batterybar").style.width = flight.battery + "%";
   $("batterybar").style.background = flight.battery < 20 ? "#ff8179" : "linear-gradient(90deg,var(--cyan),var(--lime))";
-  $("throttleRead").textContent = keys.has("space") ? "CLIMB" : (keys.has("shift") ? "DESCEND" : "HOVER");
-  $("throttlebar").style.width = (keys.has("space") ? 92 : (keys.has("shift") ? 12 : 50)) + "%";
+  $("throttleRead").textContent = Math.round(flight.throttle * 100) + "%";
+  $("throttlebar").style.width = (flight.throttle * 100) + "%";
   if (currentMission === "race" && !missionFinished) $("checkpoint").textContent = "CHECKPOINT " + String(nextGate + 1).padStart(2, "0") + " / " + String(course.length).padStart(2, "0") + "  ·  " + formatTime(missionElapsed);
   drawMinimap();
 }
@@ -670,9 +776,9 @@ function animate(now) {
   frameCount++;
   if (now - fpsAt > 1000) { fps = frameCount; frameCount = 0; fpsAt = now; }
   const dt = Math.min(.035, clock.getDelta() || .016);
-  if (active && !paused) updatePhysics(dt, now);
+  if (active && !paused && $("settingsOverlay").style.display !== "grid") updatePhysics(dt, now);
   camera.position.copy(flight.position);
-  camera.rotation.set(flight.pitch, -flight.yaw, flight.roll, "YXZ");
+  camera.rotation.set(-flight.pitch, -flight.yaw, -flight.roll, "YXZ");
   camera.fov = flight.viewFov;
   camera.updateProjectionMatrix();
   for (const g of gateItems) {
