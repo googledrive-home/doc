@@ -106,8 +106,8 @@
       <select id="startMode"><option value="free">Free flight · Explore the city</option><option value="race">Gate run · Time trial</option></select>
       <label class="formlabel" for="startHandling">Flight handling</label>
       <select id="startHandling"><option value="acro" selected>Acro · Full manual rates</option><option value="stabilized">Stabilised · Auto-level</option></select>
-      <label class="formlabel" for="startAssist">Collision protection</label>
-      <select id="startAssist"><option value="on">Enabled · Gentle rebound</option><option value="off">Off · Expert flying</option></select>
+      <label class="formlabel" for="startAssist">Impact assistance</label>
+      <select id="startAssist"><option value="on">On · More impact forgiveness</option><option value="off">Off · Harder crash threshold</option></select>
       <button class="btn subbtn" id="openTuningSetup">⚙ ADVANCED FLIGHT SETTINGS</button>
       <button class="btn primary" id="startBtn">INITIALISE & FLY ↗</button>
       <button class="btn subbtn" id="backBtn">← BACK TO GAME LIBRARY</button>
@@ -752,7 +752,7 @@ function resolveBuildingCollisions(previous, now) {
   for (const b of cityBoxes) {
     const minX = b.x - b.w / 2 - radius, maxX = b.x + b.w / 2 + radius;
     const minZ = b.z - b.d / 2 - radius, maxZ = b.z + b.d / 2 + radius;
-    const roofY = b.h + .62;
+    const roofY = b.h + .78;
     const insideFootprint = flight.position.x > minX && flight.position.x < maxX &&
       flight.position.z > minZ && flight.position.z < maxZ;
     // The roof is solid too: catch a descending drone crossing the roof plane.
