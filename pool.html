@@ -14,7 +14,7 @@
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
 const $=id=>document.getElementById(id),canvas=$("scene"),plan=$("plan"),pc=plan.getContext("2d");
-const TL=2.24,TW=1.12,BR=.0286,TY=.78,HL=TL/2,HW=TW/2,STEP=1/240;
+const TL=2.24,TW=1.12,BR=.0286,TY=.78,HL=TL/2,HW=TW/2,STEP=1/240,CUSHION_X=HL-.034-.055/2-BR,CUSHION_Z=HW-.032-.055/2-BR;
 const clock=new THREE.Clock(),balls=[],pockets=[],tuning={fov:48,cameraHeight:1.7,cameraSmooth:8,aimSensitivity:.45};
 const cloth={green:"#176c4b",blue:"#176c8e",red:"#742c37"},colors={1:"#f4cf35",2:"#2456d8",3:"#d62835",4:"#7b3ec8",5:"#ef8127",6:"#23864b",7:"#711d26",8:"#181a1b",9:"#f4cf35",10:"#2456d8",11:"#d62835",12:"#7b3ec8",13:"#ef8127",14:"#23864b",15:"#711d26"};
 let scene,camera,renderer,felt,cue,aimLine,targetLine,ballShadowGeometry,ballShadowMaterial,active=false,paused=false,moving=false,dragging=false,aim=0,power=55,spinInput=0,orbit=0,view="player",acc=0,player=0,skill="club",groups=[null,null],firstHit=null,potted=[],scratch=false,hitCue=false,railHit=false,won=false,shots=[0,0],pots=[0,0],toastTimer=0,cpuTimer=null,mouseX=0,cameraReady=false;
@@ -34,7 +34,7 @@ function box(p,x,y,z,w,h,d,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d
 function cyl(p,x,y,z,r,h,m,s=24){const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,s),m);o.position.set(x,y,z);p.add(o);return o}
 function createBall(n,x,z){
  const mesh=new THREE.Mesh(new THREE.SphereGeometry(BR,36,28),bm(n));mesh.position.set(x,TY+BR,z);scene.add(mesh);
- const shadow=new THREE.Mesh(ballShadowGeometry,ballShadowMaterial);shadow.position.set(x,TY+.0015,z);shadow.renderOrder=1;scene.add(shadow);
+ const shadow=new THREE.Mesh(ballShadowGeometry,ballShadowMaterial);shadow.position.set(x,TY-.0015,z);shadow.renderOrder=1;scene.add(shadow);
  const b={n,x,z,vx:0,vz:0,spin:0,sideSpin:0,mesh,shadow,pocketed:false,group:n===0||n===8?null:n<=7?"solids":"stripes"};balls.push(b);return b
 }
 function woodTex(){const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");x.fillStyle="#684126";x.fillRect(0,0,512,128);for(let i=0;i<110;i++){x.strokeStyle=i%2?"#9b7042":"#3e2417";x.globalAlpha=.10+Math.random()*.13;x.lineWidth=.7+Math.random()*2.8;x.beginPath();const y=Math.random()*128;x.moveTo(0,y);x.bezierCurveTo(100,y-10,250,y+12,512,y+Math.random()*9);x.stroke()}x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;return t}
@@ -64,7 +64,7 @@ function updateCue(){
    const hit=along-Math.sqrt(Math.max(0,diameter*diameter-perp*perp));
    if(hit>.025&&hit<travel){travel=hit;first={ball:q,distance:hit}}
  }
- const edgeX=HL-BR*.65,edgeZ=HW-BR*.65;
+ const edgeX=CUSHION_X,edgeZ=CUSHION_Z;
  if(d.x>.0001)travel=Math.min(travel,Math.max(.08,(edgeX-b.x)/d.x));
  else if(d.x<-.0001)travel=Math.min(travel,Math.max(.08,(-edgeX-b.x)/d.x));
  if(d.z>.0001)travel=Math.min(travel,Math.max(.08,(edgeZ-b.z)/d.z));
@@ -90,11 +90,11 @@ function reflectCushion(b,axis,sign){
  const normalVelocity=axis==="x"?b.vx:b.vz;
  const impact=Math.abs(normalVelocity);
  if(axis==="x"){
-   b.x=sign*(HL-BR*.45);
+   b.x=sign*CUSHION_X;
    if(normalVelocity*sign>0)b.vx=-normalVelocity*.84;
    b.vz+=b.sideSpin*impact*.16*sign;
  }else{
-   b.z=sign*(HW-BR*.45);
+   b.z=sign*CUSHION_Z;
    if(normalVelocity*sign>0)b.vz=-normalVelocity*.84;
    b.vx-=b.sideSpin*impact*.16*sign;
  }
@@ -116,7 +116,7 @@ function physics(dt){
    }
    b.x+=b.vx*dt;b.z+=b.vz*dt;
    if(findPocket(b)&&speed>.11){pocket(b);continue}
-   const edgeX=HL-BR*.55,edgeZ=HW-BR*.55;
+   const edgeX=CUSHION_X,edgeZ=CUSHION_Z;
    const cornerLane=Math.abs(b.x)>HL-.125&&Math.abs(b.z)>HW-.125;
    const sideLane=Math.abs(b.z)>HW-.12&&Math.abs(b.x)<.12;
    if(Math.abs(b.x)>edgeX&&!cornerLane)reflectCushion(b,"x",Math.sign(b.x));
@@ -157,13 +157,13 @@ function physics(dt){
    if(b.pocketed)continue;
    if(Math.hypot(b.vx,b.vz)<.012){b.vx=0;b.vz=0}
    b.mesh.position.set(b.x,TY+BR,b.z);
-   b.shadow.position.set(b.x,TY+.0015,b.z);
+   b.shadow.position.set(b.x,TY-.0015,b.z);
    const speed=Math.hypot(b.vx,b.vz),shadowScale=1+Math.min(.5,speed*.07);
    b.shadow.scale.set(shadowScale,1,shadowScale);
  }
 }
 function hasGroup(g){return balls.some(b=>!b.pocketed&&b.group===g)}
-function finishShot(){moving=false;$("shootBtn").disabled=false;$("aimHint").textContent="DRAG TO AIM · SPACE TO SHOOT";const eight=potted.includes(8);if(scratch){const q=balls.find(b=>b.n===0);q.pocketed=false;q.mesh.visible=true;q.shadow.visible=true;q.x=-.66;q.z=0;q.vx=q.vz=0;q.mesh.position.set(q.x,TY+BR,q.z);q.shadow.position.set(q.x,TY+.0015,q.z);q.sideSpin=0;if(eight){endGame(player!==0,"Cue ball scratched with the 8-ball.");return}player=1-player;$("statusText").textContent="Foul: cue ball pocketed. Opponent gets the turn."}else if(eight){const own=groups[player];endGame(own!==null&&!hasGroup(own),"8-ball pocketed.");return}else{if(groups[0]===null){const n=potted.find(n=>n!==0&&n!==8);if(n){const g=n<=7?"solids":"stripes";groups[player]=g;groups[1-player]=g==="solids"?"stripes":"solids";say("GROUP CLAIMED · "+g.toUpperCase())}}const own=groups[player],ownPot=potted.some(n=>n!==0&&n!==8&&(!own||(own==="solids"?n<=7:n>=9)));const legal=hitCue&&firstHit!==null&&(groups[player]===null||(firstHit===8?!hasGroup(own):(own==="solids"?firstHit<=7:firstHit>=9)))&&(ownPot||railHit);if(!legal){player=1-player;$("statusText").textContent="Turn passed. Hit your group first and reach a cushion or pocket."}else if(!ownPot){player=1-player;$("statusText").textContent="Good contact. Opponent's turn."}else $("statusText").textContent="Nice pot. You keep the table."}updateHud();if(player===1&&!won){say("OPPONENT'S TURN");cpuTimer=setTimeout(cpuShot,700)}else{say("YOUR TURN · LINE IT UP");$("turnName").textContent="Your turn"}}
+function finishShot(){moving=false;$("shootBtn").disabled=false;$("aimHint").textContent="DRAG TO AIM · SPACE TO SHOOT";const eight=potted.includes(8);if(scratch){const q=balls.find(b=>b.n===0);q.pocketed=false;q.mesh.visible=true;q.shadow.visible=true;q.x=-.66;q.z=0;q.vx=q.vz=0;q.mesh.position.set(q.x,TY+BR,q.z);q.shadow.position.set(q.x,TY-.0015,q.z);q.sideSpin=0;if(eight){endGame(player!==0,"Cue ball scratched with the 8-ball.");return}player=1-player;$("statusText").textContent="Foul: cue ball pocketed. Opponent gets the turn."}else if(eight){const own=groups[player];endGame(own!==null&&!hasGroup(own),"8-ball pocketed.");return}else{if(groups[0]===null){const n=potted.find(n=>n!==0&&n!==8);if(n){const g=n<=7?"solids":"stripes";groups[player]=g;groups[1-player]=g==="solids"?"stripes":"solids";say("GROUP CLAIMED · "+g.toUpperCase())}}const own=groups[player],ownPot=potted.some(n=>n!==0&&n!==8&&(!own||(own==="solids"?n<=7:n>=9)));const legal=hitCue&&firstHit!==null&&(groups[player]===null||(firstHit===8?!hasGroup(own):(own==="solids"?firstHit<=7:firstHit>=9)))&&(ownPot||railHit);if(!legal){player=1-player;$("statusText").textContent="Turn passed. Hit your group first and reach a cushion or pocket."}else if(!ownPot){player=1-player;$("statusText").textContent="Good contact. Opponent's turn."}else $("statusText").textContent="Nice pot. You keep the table."}updateHud();if(player===1&&!won){say("OPPONENT'S TURN");cpuTimer=setTimeout(cpuShot,700)}else{say("YOUR TURN · LINE IT UP");$("turnName").textContent="Your turn"}}
 function endGame(win,why){won=true;active=false;moving=false;clearTimeout(cpuTimer);$("resultTitle").textContent=win?"YOU WIN":"MATCH OVER";$("resultText").textContent=(win?"Great finish. ":"Opponent takes the frame. ")+why+" Shots: you "+shots[0]+", CPU "+shots[1]+".";$("resultOverlay").style.display="grid"}
 function cpuShot(){if(!active||player!==1||won)return;const q=balls.find(b=>b.n===0&&!b.pocketed);if(!q){player=0;return}const g=groups[1];let targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8&&(!g||(g==="solids"?b.n<=7:b.n>=9)));if(g&&!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n===8);if(!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8);let best=null;for(const t of targets)for(const p of pockets){const dx=p.x-t.x,dz=p.z-t.z,d=Math.hypot(dx,dz)||1,ux=dx/d,uz=dz/d,hx=t.x-ux*BR*2.15,hz=t.z-uz*BR*2.15,cost=Math.hypot(hx-q.x,hz-q.z)+d*.8+Math.abs(hz)*.08+Math.random()*(skill==="pro"?.08:skill==="club"?.25:.5);if(!best||cost<best.cost)best={hx,hz,cost}}let dx,dz;if(best){dx=best.hx-q.x;dz=best.hz-q.z}else{dx=targets[0].x-q.x;dz=targets[0].z-q.z}aim=Math.atan2(dz,dx)+(Math.random()-.5)*(skill==="pro"?.025:skill==="club"?.09:.2);shootCpu(skill==="pro"?65:skill==="club"?54:42)}
 function shootCpu(p){const q=balls.find(b=>b.n===0&&!b.pocketed);if(!q)return;moving=true;firstHit=null;potted=[];scratch=false;hitCue=false;railHit=false;q.sideSpin=0;shots[player]++;const speed=.4+p/100*3.55;q.vx=Math.cos(aim)*speed;q.vz=Math.sin(aim)*speed;updateHud();$("shootBtn").disabled=true;$("aimHint").textContent="OPPONENT SHOT IN PLAY"}
