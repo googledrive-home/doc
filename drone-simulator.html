@@ -164,6 +164,14 @@ let collisionAssist = true, handling = "acro", lastHud = 0, lastMessageTimer = 0
 let lastCollisionMessageAt = 0;
 const flightTuning = { pitchRollRate: 520, yawRate: 300, tiltLimit: 72, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32 };
 const DEFAULT_TUNING = { ...flightTuning };
+const tuningControls = [
+  { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
+  { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
+  { id: "tiltLimit", key: "tiltLimit", out: "tiltLimitValue", format: v => Math.round(v) + "°" },
+  { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
+  { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
+  { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" }
+];
 try {
   const storedTuning = JSON.parse(localStorage.getItem("fpvDroneTuning") || "null");
   if (storedTuning && typeof storedTuning === "object") {
@@ -537,14 +545,6 @@ function normalKey(e) {
   if (e.key === "Shift") return "shift";
   return e.key.toLowerCase();
 }
-const tuningControls = [
-  { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
-  { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
-  { id: "tiltLimit", key: "tiltLimit", out: "tiltLimitValue", format: v => Math.round(v) + "°" },
-  { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
-  { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
-  { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" }
-];
 function syncTuningUI() {
   for (const control of tuningControls) {
     $(control.id).value = flightTuning[control.key];
