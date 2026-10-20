@@ -163,6 +163,7 @@
     </div>
   </div>
 </div>
+<div class="overlay" id="crashOverlay" style="display:none;z-index:11"><div class="panel" style="width:min(480px,95vw);padding:30px;text-align:center"><div class="eyebrow">FLIGHT LAB / IMPACT DETECTED</div><h2 style="font-size:38px;letter-spacing:-.05em;margin:12px 0">DRONE CRASHED</h2><p id="crashReasonText" style="font-size:12px;color:#abc0cf;line-height:1.6">High-speed impact. Reset to fly again.</p><button class="btn primary" id="respawnBtn" style="margin:6px">RESET DRONE · R</button><button class="btn" id="crashMenuBtn" style="margin:6px">BACK TO SETUP</button></div></div>
 <div class="fatal" id="fatal"><div><div class="eyebrow">Flight Lab / Setup error</div><h2>3D rendering couldn't start</h2><p>Your browser may have WebGL turned off, or the Three.js module could not load. Try an up-to-date browser with hardware acceleration enabled.</p><p><a href="index.html" style="color:#68f0ff">Return to game library</a></p><pre id="fatalDetail" style="white-space:pre-wrap;color:#7f9bad;font-size:11px"></pre></div></div>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
@@ -181,7 +182,7 @@ const cameraTargetEuler = new THREE.Euler(0, 0, 0, "YXZ");
 let cameraIsReady = false, physicsAccumulator = 0;
 let renderer, scene, camera, active = false, paused = false, startedAt = 0, sessionElapsed = 0;
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
-let collisionAssist = true, handling = "acro", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
+let collisionAssist = true, handling = "acro", crashed = false, crashReason = "", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
 const flightTuning = { pitchRollRate: 520, yawRate: 300, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32, mouseSensitivity: 1.0, cameraAngle: 20, cameraFov: 105, cameraSmoothness: 16 };
 const DEFAULT_TUNING = { ...flightTuning };
@@ -542,7 +543,8 @@ function setupEvents() {
     if (key === "escape" && active) { togglePause(); return; }
     if (key === "r" && active) { resetFlight(true); return; }
     if (key === "p" && active) { togglePause(); return; }
-    if (key === "v" && active) { handling = handling === "stabilized" ? "acro" : "stabilized"; updateModeUI(); showMessage(handling === "stabilized" ? "STAB MODE / AUTO-LEVEL" : "ACRO MODE / MANUAL ATTITUDE"); return; }
+    if (key === "v" && active && !crashed) { handling = handling === "stabilized" ? "acro" : "stabilized"; updateModeUI(); showMessage(handling === "stabilized" ? "STAB MODE / AUTO-LEVEL" : "ACRO MODE / MANUAL ATTITUDE"); return; }
+    if (crashed) return;
     keys.add(key);
     const touch = document.querySelector('.touchbtn[data-key="' + key + '"]');
     if (touch) touch.classList.add("down");
@@ -578,6 +580,12 @@ function setupEvents() {
   $("pauseBtn").addEventListener("click", togglePause);
   $("resumeBtn").addEventListener("click", togglePause);
   $("resetBtn").addEventListener("click", () => resetFlight(true));
+  $("respawnBtn").addEventListener("click", () => resetFlight(true));
+  $("crashMenuBtn").addEventListener("click", () => {
+    crashed = false; active = false; paused = false; keys.clear(); clearMouseDeltas();
+    $("crashOverlay").style.display = "none"; $("hud").style.display = "none"; $("startOverlay").style.display = "grid";
+    if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
+  });
   $("pauseResetBtn").addEventListener("click", () => { resetFlight(true); paused = false; $("pauseOverlay").style.display = "none"; });
   $("menuBtn").addEventListener("click", () => {
     active = false; paused = false; keys.clear(); $("pauseOverlay").style.display = "none";
@@ -684,7 +692,7 @@ function startFlight() {
   active = true; paused = false; keys.clear();
   startedAt = performance.now(); sessionElapsed = 0; missionElapsed = 0; missionStartedAt = startedAt;
   missionFinished = false; nextGate = 0; lastCollisionMessageAt = 0;
-  $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("hud").style.display = "block";
+  $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("crashOverlay").style.display = "none"; $("hud").style.display = "block"; crashed = false; crashReason = "";
   $("missionTitle").textContent = currentMission === "race" ? "Gate run / time trial" : "Free flight";
   $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : "Explore downtown, skim the rooftops and find the glowing gates.";
   $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
@@ -701,6 +709,10 @@ function togglePause() {
   if (!paused) lastHud = 0;
 }
 function resetFlight(showToast) {
+  crashed = false; crashReason = "";
+  $("crashOverlay").style.display = "none";
+  if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
+  clearMouseDeltas(); physicsAccumulator = 0; cameraIsReady = false;
   flight.position.set(0, 12, 12);
   flight.velocity.set(0, 0, 0);
   flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.throttle = THREE.MathUtils.clamp(9.81 / flightTuning.motorPower, .05, .9); flight.battery = 100;
@@ -723,7 +735,80 @@ function updateModeUI() {
   $("collisionRead").textContent = collisionAssist ? "ON" : "OFF";
   $("collisionRead").style.color = collisionAssist ? "var(--lime)" : "#ffbf84";
 }
+function crashDrone(reason, impactSpeed, now = performance.now()) {
+  if (crashed) return;
+  crashed = true;
+  crashReason = reason;
+  flight.velocity.set(0, 0, 0);
+  keys.clear(); clearMouseDeltas();
+  if (pointerLocked && document.exitPointerLock) document.exitPointerLock();
+  $("crashReasonText").textContent = reason + " at approximately " + Math.round(impactSpeed * 3.6) + " km/h. The motors have cut out; reset the drone to fly again.";
+  $("crashOverlay").style.display = "grid";
+  $("pauseOverlay").style.display = "none";
+  showMessage("CRASH DETECTED / MOTORS DISARMED");
+}
+function resolveBuildingCollisions(previous, now) {
+  const radius = .62, halfHeight = .42;
+  for (const b of cityBoxes) {
+    const minX = b.x - b.w / 2 - radius, maxX = b.x + b.w / 2 + radius;
+    const minZ = b.z - b.d / 2 - radius, maxZ = b.z + b.d / 2 + radius;
+    const roofY = b.h + .62;
+    const insideFootprint = flight.position.x > minX && flight.position.x < maxX &&
+      flight.position.z > minZ && flight.position.z < maxZ;
+    // The roof is solid too: catch a descending drone crossing the roof plane.
+    if (insideFootprint && previous.y >= roofY && flight.position.y < roofY && previous.y >= flight.position.y) {
+      const impact = Math.max(0, -flight.velocity.y);
+      flight.position.y = roofY;
+      if (impact > (collisionAssist ? 12.5 : 8.5)) {
+        crashDrone("ROOFTOP IMPACT", impact, now);
+        return true;
+      }
+      flight.velocity.y = impact > 1.8 ? impact * .14 : 0;
+      flight.velocity.x *= .84; flight.velocity.z *= .84;
+      if (now - lastCollisionMessageAt > 700) { showMessage("ROOFTOP CONTACT / IMPACT"); lastCollisionMessageAt = now; }
+      return false;
+    }
+    // Side walls have vertical extent. Expand their X/Z bounds by the drone body radius.
+    if (flight.position.y - halfHeight >= b.h + .36 || flight.position.y + halfHeight <= .05) continue;
+    if (!insideFootprint) continue;
+
+    let nx = 0, nz = 0, targetX, targetZ;
+    // Prefer the face we crossed this step, which prevents high-speed tunnelling and sticky rebounds.
+    if (previous.x <= minX) { nx = -1; targetX = minX; }
+    else if (previous.x >= maxX) { nx = 1; targetX = maxX; }
+    else if (previous.z <= minZ) { nz = -1; targetZ = minZ; }
+    else if (previous.z >= maxZ) { nz = 1; targetZ = maxZ; }
+    else {
+      const faces = [
+        { d: Math.abs(flight.position.x - minX), nx: -1, nz: 0, axis: "x", value: minX },
+        { d: Math.abs(maxX - flight.position.x), nx: 1, nz: 0, axis: "x", value: maxX },
+        { d: Math.abs(flight.position.z - minZ), nx: 0, nz: -1, axis: "z", value: minZ },
+        { d: Math.abs(maxZ - flight.position.z), nx: 0, nz: 1, axis: "z", value: maxZ }
+      ].sort((a, b) => a.d - b.d);
+      const face = faces[0]; nx = face.nx; nz = face.nz;
+      if (face.axis === "x") targetX = face.value; else targetZ = face.value;
+    }
+    if (targetX !== undefined) flight.position.x = targetX;
+    if (targetZ !== undefined) flight.position.z = targetZ;
+    const normalSpeed = flight.velocity.x * nx + flight.velocity.z * nz;
+    const impact = Math.max(0, -normalSpeed);
+    if (impact > (collisionAssist ? 12.5 : 8.5) || Math.hypot(flight.velocity.x, flight.velocity.z) > (collisionAssist ? 32 : 21)) {
+      crashDrone("BUILDING COLLISION", Math.max(impact, Math.hypot(flight.velocity.x, flight.velocity.z) * .65), now);
+      return true;
+    }
+    if (normalSpeed < 0) {
+      const restitution = collisionAssist ? .32 : .12;
+      flight.velocity.x -= (1 + restitution) * normalSpeed * nx;
+      flight.velocity.z -= (1 + restitution) * normalSpeed * nz;
+    }
+    // Tangential friction and light wobble absorb low-speed contact without letting the drone clip.
+    flight.velocity.x *= .91; flight.velocity.z *= .91; flight.velocity.y *= .88;
+    if (now - lastCollisionMessageAt > 700) { showMessage("BUILDING CONTACT / REBOUND"); lastCollisionMessageAt = now; }
+  }
+  return false;
+}
 function updatePhysics(dt, now) {
+  if (crashed) return;
   const pitchInput = ((keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0)) * (invertControls.pitch ? -1 : 1);
   const rollInput = ((keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0)) * (invertControls.roll ? -1 : 1);
   const yawInput = ((keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0)) * (invertControls.yaw ? -1 : 1);
@@ -765,23 +850,36 @@ function updatePhysics(dt, now) {
   }
   flight.velocity.y = THREE.MathUtils.clamp(flight.velocity.y, -28, 28);
   const previous = flight.position.clone();
-  flight.position.addScaledVector(flight.velocity, dt);
-  flight.position.y = THREE.MathUtils.clamp(flight.position.y, 2.4, 93);
-  if (flight.position.y <= 2.41 && flight.velocity.y < 0) flight.velocity.y = Math.abs(flight.velocity.y) * .35;
-  flight.position.x = THREE.MathUtils.clamp(flight.position.x, -mapLimit, mapLimit);
-  flight.position.z = THREE.MathUtils.clamp(flight.position.z, -mapLimit, mapLimit);
-  if (collisionAssist) {
-    for (let i = 0; i < cityBoxes.length; i++) {
-      const b = cityBoxes[i];
-      if (flight.position.y < b.h + 1.9 &&
-          flight.position.x > b.x - b.w / 2 - .8 && flight.position.x < b.x + b.w / 2 + .8 &&
-          flight.position.z > b.z - b.d / 2 - .8 && flight.position.z < b.z + b.d / 2 + .8) {
-        flight.position.x = previous.x; flight.position.z = previous.z;
-        flight.velocity.x *= -.22; flight.velocity.z *= -.22;
-        if (now - lastCollisionMessageAt > 1200) { showMessage("BUILDING CONTACT / REBOUND"); lastCollisionMessageAt = now; }
-        break;
-      }
+  const proposed = previous.clone().addScaledVector(flight.velocity, dt);
+  proposed.x = THREE.MathUtils.clamp(proposed.x, -mapLimit, mapLimit);
+  proposed.z = THREE.MathUtils.clamp(proposed.z, -mapLimit, mapLimit);
+  // Ground impact is handled as a collision, not an invisible altitude clamp.
+  const groundY = 1.15;
+  if (proposed.y < groundY) {
+    const impact = Math.max(0, -flight.velocity.y);
+    proposed.y = groundY;
+    flight.position.copy(proposed);
+    if (impact > (collisionAssist ? 12.5 : 8.5) || Math.hypot(flight.velocity.x, flight.velocity.z) > (collisionAssist ? 29 : 19)) {
+      crashDrone("GROUND IMPACT", Math.max(impact, Math.hypot(flight.velocity.x, flight.velocity.z)), now);
+      return;
     }
+    flight.velocity.y = impact > 1.8 ? impact * .16 : 0;
+    flight.velocity.x *= .78; flight.velocity.z *= .78;
+  } else {
+    flight.position.copy(proposed);
+  }
+  flight.position.y = Math.min(flight.position.y, 93);
+  // Building collision is always active. Collision Assist changes the impact tolerance,
+  // not whether buildings have a solid physical volume.
+  if (resolveBuildingCollisions(previous, now)) return;
+  if (Math.abs(flight.position.x) >= mapLimit - .01 || Math.abs(flight.position.z) >= mapLimit - .01) {
+    const edgeSpeed = Math.max(Math.abs(flight.velocity.x), Math.abs(flight.velocity.z));
+    if (edgeSpeed > (collisionAssist ? 18 : 10)) {
+      crashDrone("CITY BOUNDARY IMPACT", edgeSpeed, now);
+      return;
+    }
+    if (Math.abs(flight.position.x) >= mapLimit - .01) flight.velocity.x *= -.4;
+    if (Math.abs(flight.position.z) >= mapLimit - .01) flight.velocity.z *= -.4;
   }
   if (currentMission === "race" && !missionFinished) {
     missionElapsed = (now - missionStartedAt) / 1000;
@@ -876,7 +974,7 @@ function animate(now) {
   frameCount++;
   if (now - fpsAt > 1000) { fps = frameCount; frameCount = 0; fpsAt = now; }
   const frameDt = Math.min(.1, clock.getDelta() || .016);
-  if (active && !paused && $("settingsOverlay").style.display !== "grid") {
+  if (active && !paused && !crashed && $("settingsOverlay").style.display !== "grid") {
     physicsAccumulator = Math.min(physicsAccumulator + frameDt, .1);
     let physicsSteps = 0;
     const fixedDt = 1 / 120;
