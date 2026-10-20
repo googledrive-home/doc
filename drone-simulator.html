@@ -60,7 +60,7 @@
   </div>
   <div class="centerhud"><div class="reticle"></div></div><div class="horizon"></div>
   <div class="message" id="message"></div>
-  <div class="bottomleft panel"><b>FLIGHT SYSTEM ONLINE</b><small id="statusText">Stabilised control · Collision assist enabled</small></div>
+  <div class="bottomleft panel"><b>FLIGHT SYSTEM ONLINE</b><small id="statusText">Acro mode · Click view to capture mouse · Collision assist enabled</small></div>
   <div class="actions">
     <button class="btn" id="modeBtn">MODE: ACRO</button>
     <button class="btn" id="settingsBtn">⚙ TUNING</button>
@@ -98,7 +98,7 @@
         <div class="controlitem"><span class="key">Q</span><span class="key">E</span> Yaw left / right</div>
         <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Increase / lower throttle</div>
       </div>
-      <p class="smallnote">R resets your drone · Esc pauses · Fullscreen recommended. Touch controls are available on phones and tablets.</p>
+      <p class="smallnote">Click the flight view to capture the mouse · Mouse moves yaw/pitch · Hold right mouse and move sideways to roll · R resets · Esc pauses. Touch controls are available on phones and tablets.</p>
     </div>
     <div class="menuright">
       <div class="tag">FLIGHT CONFIGURATION</div><h2>PRE-FLIGHT CHECK</h2>
@@ -659,7 +659,7 @@ function onMouseMove(e) {
   if (!pointerLocked || !active || paused || $("settingsOverlay").style.display === "grid") return;
   const scale = .0022 * flightTuning.mouseSensitivity;
   pendingMousePitch += (e.movementY || 0) * scale;
-  if ((e.buttons & 2) || keys.has("alt")) pendingMouseRoll += (e.movementX || 0) * scale;
+  if ((e.buttons & 2) || keys.has("alt")) pendingMouseRoll -= (e.movementX || 0) * scale;
   else pendingMouseYaw += (e.movementX || 0) * scale;
 }
 function resize() {
