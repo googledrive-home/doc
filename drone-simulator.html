@@ -24,6 +24,33 @@
 .fatal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#08121f;padding:24px}.fatal div{max-width:560px}.fatal h2{color:#ffca79}.fatal p{color:#b9c9d5;line-height:1.6}
 @media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(6){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
 @media(max-width:440px){.sidepanel{top:76px;width:128px}.rightpanel{top:76px;width:126px}.metric:nth-child(3){display:none}.brand{gap:7px}.brandmark{width:27px;height:27px}.brand b{letter-spacing:.08em}.brand small{letter-spacing:.08em}.menuleft p{font-size:12px}.controlsgrid{grid-template-columns:1fr}.bottomleft{display:none}.actions .btn{padding:8px}.mobilecontrols{bottom:60px}}
+/* Flight settings are split into a scrollable control pane and a fixed action rail. */
+#settingsOverlay{padding:16px 16px 88px;overflow:hidden}
+.tuning-menu{width:min(1120px,calc(100vw - 32px));height:min(780px,calc(100dvh - 108px));max-height:calc(100dvh - 108px);min-height:0;grid-template-columns:minmax(240px,.68fr) minmax(0,1fr);overflow:hidden}
+.tuning-menu .menuleft,.tuning-menu .settings-controls{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#386174 transparent}
+.tuning-menu .menuleft{align-self:stretch;padding:clamp(20px,3vw,38px)}
+.tuning-menu .settings-controls{justify-content:flex-start;padding:clamp(18px,2.2vw,30px);padding-bottom:24px}
+.settings-section{padding:8px 0 14px;border-top:1px solid #ffffff14}
+.settings-section h2{margin:3px 0 12px;color:#b8efff;font-size:11px;letter-spacing:.14em}
+.settings-controls input[type="range"]{height:22px}
+.settings-controls .formlabel{margin-top:8px}
+.settings-actionbar{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;width:min(1120px,calc(100vw - 32px));display:flex;justify-content:flex-end;gap:10px;padding:10px 12px;border:1px solid #8edcf044;border-radius:16px;background:rgba(5,15,27,.97);box-shadow:0 14px 45px #0008;backdrop-filter:blur(16px)}
+.settings-actionbar .btn{min-height:42px}
+.settings-actionbar .primary{min-width:170px}
+@media(max-width:780px){
+  #settingsOverlay{padding:12px 12px 86px}
+  .tuning-menu{width:calc(100vw - 24px);height:auto;max-height:calc(100dvh - 100px);grid-template-columns:minmax(0,1fr);overflow:auto;display:block}
+  .tuning-menu .menuleft{display:none}
+  .tuning-menu .settings-controls{overflow:visible;padding:18px 16px 26px;border:0}
+  .settings-actionbar{width:calc(100vw - 24px);gap:8px;padding:8px}
+  .settings-actionbar .btn{flex:1;padding:10px 6px;font-size:10px;min-width:0}
+  .settings-actionbar .primary{min-width:0}
+  .invert-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .settings-actionbar .btn{letter-spacing:0}
+  .invert-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -45,8 +72,8 @@
     <div class="statrow"><span>Flight mode</span><b id="modeRead">STAB</b></div>
     <div class="statrow"><span>Signal</span><b style="color:var(--lime)">100%</b></div>
     <div class="statrow"><span>Flight time</span><b id="flightTime">00:00</b></div>
-    <div class="statrow"><span>Throttle</span><b id="throttleRead">HOVER</b></div>
-    <div class="meter"><span id="throttlebar" style="width:50%"></span></div>
+    <div class="statrow"><span>Throttle</span><b id="throttleRead">IDLE 0%</b></div>
+    <div class="meter"><span id="throttlebar" style="width:0%"></span></div>
     <div class="statrow"><span>Impact protection</span><b id="collisionRead">ON</b></div>
   </div>
   <div class="rightpanel panel">
@@ -79,7 +106,7 @@
     <div><div class="touchlabel">THROTTLE / YAW</div><div class="touchpad">
       <button class="touchbtn" data-key="space" style="grid-column:2;grid-row:1">THR+</button>
       <button class="touchbtn" data-key="q" style="grid-column:1;grid-row:2">↶</button>
-      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2">THR−</button>
+      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2" aria-label="Reverse thrust">REV</button>
       <button class="touchbtn" data-key="e" style="grid-column:3;grid-row:2">↷</button>
     </div></div>
   </div>
@@ -96,7 +123,7 @@
         <div class="controlitem"><span class="key">W</span><span class="key">S</span> Nose down / up</div>
         <div class="controlitem"><span class="key">A</span><span class="key">D</span> Bank left / right</div>
         <div class="controlitem"><span class="key">Q</span><span class="key">E</span> Yaw left / right</div>
-        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Increase / lower throttle</div>
+        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Hold thrust / reverse thrust</div>
       </div>
       <p class="smallnote">Click the flight view to capture the mouse · Mouse moves yaw/pitch · Hold right mouse and move sideways to roll · R resets · Esc pauses. Touch controls are available on phones and tablets.</p>
     </div>
@@ -122,45 +149,51 @@
   <div class="menu tuning-menu">
     <div class="menuleft">
       <div class="eyebrow">Flight Lab / Pilot tuning</div>
-      <h1>MAKE IT<br><span>YOUR FPV.</span></h1>
-      <p>Acro is now true manual attitude control. Pitch and roll stay where you leave them until you counter-steer. The drone accelerates in the direction its thrust is tilted, while throttle controls total lift.</p>
-      <div class="chips"><div class="chip"><b>W / S</b> &nbsp;Pitch</div><div class="chip"><b>A / D</b> &nbsp;Roll</div><div class="chip"><b>SPACE / SHIFT</b> &nbsp;Throttle</div></div>
-      <div class="smallnote">Mouse movement controls yaw and pitch when captured. Hold right mouse and move horizontally to roll. Click the flight view or the mouse button to capture the cursor; press Esc to release it. Changes are saved on this device.</div>
+      <h1>BUILD YOUR<br><span>FPV FEEL.</span></h1>
+      <p>Higher rates make the quad snap into turns. More motor power gives it stronger acceleration through a bank. Space applies full positive thrust only while held; releasing it cuts the motors to zero. Hold Shift for reverse thrust.</p>
+      <div class="chips"><div class="chip"><b>W / S</b> Pitch</div><div class="chip"><b>A / D</b> Roll</div><div class="chip"><b>Q / E</b> Yaw</div><div class="chip"><b>SPACE</b> Boost / hold</div><div class="chip"><b>SHIFT</b> Reverse thrust</div></div>
+      <div class="smallnote">Settings update live and are saved on this device. Use Save & Return to confirm and close this panel. Press Esc to close it too.</div>
     </div>
-    <div class="menuright">
-      <div class="tag">LIVE FLIGHT SETTINGS</div><h2>RATE & POWER</h2>
-      <label class="formlabel" for="pitchRate">Pitch / roll rate <output id="pitchRateValue">520°/s</output></label>
-      <input id="pitchRate" type="range" min="120" max="900" step="20" value="520">
-      <label class="formlabel" for="yawRate">Yaw rate <output id="yawRateValue">300°/s</output></label>
-      <input id="yawRate" type="range" min="90" max="720" step="15" value="300">
-      <label class="formlabel" for="topSpeed">Maximum speed <output id="topSpeedValue">150 km/h</output></label>
-      <input id="topSpeed" type="range" min="60" max="220" step="5" value="150">
-      <label class="formlabel" for="throttleResponse">Throttle stick response <output id="throttleResponseValue">0.8×</output></label>
-      <input id="throttleResponse" type="range" min="0.2" max="1.8" step="0.1" value="0.8">
-      <label class="formlabel" for="motorPower">Motor power <output id="motorPowerValue">32 m/s²</output></label>
-      <input id="motorPower" type="range" min="18" max="48" step="1" value="32">
-      <label class="formlabel" for="mouseSensitivity">Mouse sensitivity <output id="mouseSensitivityValue">1.0×</output></label>
-      <input id="mouseSensitivity" type="range" min="0.2" max="3" step="0.1" value="1">
-      <label class="formlabel" for="cameraAngle">Camera angle <output id="cameraAngleValue">20°</output></label>
-      <input id="cameraAngle" type="range" min="0" max="60" step="1" value="20">
-      <label class="formlabel" for="cameraFov">Field of view (FOV) <output id="cameraFovValue">105°</output></label>
-      <input id="cameraFov" type="range" min="70" max="130" step="1" value="105">
-      <label class="formlabel" for="cameraSmoothness">Camera response <output id="cameraSmoothnessValue">16 /s</output></label>
-      <input id="cameraSmoothness" type="range" min="4" max="36" step="1" value="16">
-      <div class="sectionlabel" style="margin:10px 0 1px">Invert individual controls</div>
-      <div class="invert-grid">
-        <label class="invert-control"><input id="invertPitch" type="checkbox"><span>Invert pitch (W/S)</span></label>
-        <label class="invert-control"><input id="invertRoll" type="checkbox"><span>Invert roll (A/D + mouse roll)</span></label>
-        <label class="invert-control"><input id="invertYaw" type="checkbox"><span>Invert yaw (Q/E)</span></label>
-        <label class="invert-control"><input id="invertThrottle" type="checkbox"><span>Invert throttle (Space/Shift)</span></label>
-        <label class="invert-control"><input id="invertMousePitch" type="checkbox"><span>Invert mouse pitch (vertical)</span></label>
-        <label class="invert-control"><input id="invertMouseYaw" type="checkbox"><span>Invert mouse yaw (horizontal)</span></label>
-      </div>
-      <div class="controlsgrid">
-        <button class="btn subbtn" id="resetTuningBtn">↻ DEFAULT SETTINGS</button>
-        <button class="btn primary" id="closeTuningBtn">SAVE & RETURN</button>
-      </div>
+    <div class="menuright settings-controls">
+      <div class="tag">FLIGHT TUNING / LIVE</div>
+      <section class="settings-section">
+        <h2>01 / AIRFRAME & POWER</h2>
+        <label class="formlabel" for="pitchRate">Pitch / roll rate <output id="pitchRateValue">760°/s</output></label>
+        <input id="pitchRate" type="range" min="180" max="1080" step="20" value="760">
+        <label class="formlabel" for="yawRate">Yaw rate <output id="yawRateValue">420°/s</output></label>
+        <input id="yawRate" type="range" min="120" max="900" step="15" value="420">
+        <label class="formlabel" for="topSpeed">Maximum speed <output id="topSpeedValue">220 km/h</output></label>
+        <input id="topSpeed" type="range" min="80" max="280" step="5" value="220">
+        <label class="formlabel" for="motorPower">Motor power <output id="motorPowerValue">56 m/s²</output></label>
+        <input id="motorPower" type="range" min="24" max="76" step="2" value="56">
+      </section>
+      <section class="settings-section">
+        <h2>02 / CAMERA & INPUT</h2>
+        <label class="formlabel" for="mouseSensitivity">Mouse sensitivity <output id="mouseSensitivityValue">1.2×</output></label>
+        <input id="mouseSensitivity" type="range" min="0.2" max="3" step="0.1" value="1.2">
+        <label class="formlabel" for="cameraAngle">Camera angle <output id="cameraAngleValue">24°</output></label>
+        <input id="cameraAngle" type="range" min="0" max="60" step="1" value="24">
+        <label class="formlabel" for="cameraFov">Field of view (FOV) <output id="cameraFovValue">110°</output></label>
+        <input id="cameraFov" type="range" min="70" max="130" step="1" value="110">
+        <label class="formlabel" for="cameraSmoothness">Camera response <output id="cameraSmoothnessValue">18 /s</output></label>
+        <input id="cameraSmoothness" type="range" min="4" max="36" step="1" value="18">
+      </section>
+      <section class="settings-section">
+        <h2>03 / CONTROL INVERSION</h2>
+        <div class="invert-grid">
+          <label class="invert-control"><input id="invertPitch" type="checkbox"><span>Invert pitch (W/S)</span></label>
+          <label class="invert-control"><input id="invertRoll" type="checkbox"><span>Invert roll (A/D + mouse roll)</span></label>
+          <label class="invert-control"><input id="invertYaw" type="checkbox"><span>Invert yaw (Q/E)</span></label>
+          <label class="invert-control"><input id="invertThrottle" type="checkbox"><span>Invert thrust (Space/Shift)</span></label>
+          <label class="invert-control"><input id="invertMousePitch" type="checkbox"><span>Invert mouse pitch</span></label>
+          <label class="invert-control"><input id="invertMouseYaw" type="checkbox"><span>Invert mouse yaw</span></label>
+        </div>
+      </section>
     </div>
+  </div>
+  <div class="settings-actionbar">
+    <button class="btn subbtn" id="resetTuningBtn">↻ RESTORE DEFAULTS</button>
+    <button class="btn primary" id="closeTuningBtn">SAVE & RETURN ✓</button>
   </div>
 </div>
 <div class="overlay" id="crashOverlay" style="display:none;z-index:11"><div class="panel" style="width:min(480px,95vw);padding:30px;text-align:center"><div class="eyebrow">FLIGHT LAB / IMPACT DETECTED</div><h2 style="font-size:38px;letter-spacing:-.05em;margin:12px 0">DRONE CRASHED</h2><p id="crashReasonText" style="font-size:12px;color:#abc0cf;line-height:1.6">High-speed impact. Reset to fly again.</p><button class="btn primary" id="respawnBtn" style="margin:6px">RESET DRONE · R</button><button class="btn" id="crashMenuBtn" style="margin:6px">BACK TO SETUP</button></div></div>
@@ -184,8 +217,10 @@ let renderer, scene, camera, active = false, paused = false, startedAt = 0, sess
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
 let collisionAssist = true, handling = "acro", crashed = false, crashReason = "", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
-const flightTuning = { pitchRollRate: 520, yawRate: 300, maxSpeedKmh: 150, throttleResponse: .8, motorPower: 32, mouseSensitivity: 1.0, cameraAngle: 20, cameraFov: 105, cameraSmoothness: 16 };
+const flightTuning = { pitchRollRate: 760, yawRate: 420, maxSpeedKmh: 220, motorPower: 56, mouseSensitivity: 1.2, cameraAngle: 24, cameraFov: 110, cameraSmoothness: 18 };
 const DEFAULT_TUNING = { ...flightTuning };
+// Migrate untouched values from the previous default profile to the stronger preset.
+const LEGACY_DEFAULTS = { pitchRollRate: 520, yawRate: 300, maxSpeedKmh: 150, motorPower: 32, mouseSensitivity: 1, cameraAngle: 20, cameraFov: 105, cameraSmoothness: 16 };
 const invertControls = { pitch: false, roll: false, yaw: false, throttle: false, mousePitch: false, mouseYaw: false };
 const DEFAULT_INVERTS = { ...invertControls };
 const invertControlInputs = [
@@ -201,7 +236,6 @@ const tuningControls = [
   { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
   { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
   { id: "topSpeed", key: "maxSpeedKmh", out: "topSpeedValue", format: v => Math.round(v) + " km/h" },
-  { id: "throttleResponse", key: "throttleResponse", out: "throttleResponseValue", format: v => Number(v).toFixed(1) + "×" },
   { id: "motorPower", key: "motorPower", out: "motorPowerValue", format: v => Math.round(v) + " m/s²" },
   { id: "mouseSensitivity", key: "mouseSensitivity", out: "mouseSensitivityValue", format: v => Number(v).toFixed(1) + "×" },
   { id: "cameraAngle", key: "cameraAngle", out: "cameraAngleValue", format: v => Math.round(v) + "°" },
@@ -212,6 +246,9 @@ try {
   const storedTuning = JSON.parse(localStorage.getItem("fpvDroneTuning") || "null");
   if (storedTuning && typeof storedTuning === "object") {
     for (const key of Object.keys(DEFAULT_TUNING)) if (Number.isFinite(storedTuning[key])) flightTuning[key] = storedTuning[key];
+    for (const [key, previousDefault] of Object.entries(LEGACY_DEFAULTS)) {
+      if (storedTuning[key] === previousDefault) flightTuning[key] = DEFAULT_TUNING[key];
+    }
   }
   const savedInverts = JSON.parse(localStorage.getItem("fpvDroneInverts") || "null");
   if (savedInverts && typeof savedInverts === "object") {
@@ -223,7 +260,7 @@ const flight = {
   position: new THREE.Vector3(0, 12, 12),
   velocity: new THREE.Vector3(),
   yaw: 0, pitch: 0, roll: 0,
-  throttle: 9.81 / 32, battery: 100
+  throttle: 0, battery: 100
 };
 const course = [
   { x: 0, y: 18, z: -48 },
@@ -568,11 +605,11 @@ function setupEvents() {
   $("openTuningSetup").addEventListener("click", openTuning);
   $("settingsBtn").addEventListener("click", openTuning);
   $("mouseBtn").addEventListener("click", toggleMouseCapture);
-  $("closeTuningBtn").addEventListener("click", closeTuning);
+  $("closeTuningBtn").addEventListener("click", saveAndCloseTuning);
   $("resetTuningBtn").addEventListener("click", () => {
     Object.assign(flightTuning, DEFAULT_TUNING);
     Object.assign(invertControls, DEFAULT_INVERTS);
-    flight.throttle = 9.81 / flightTuning.motorPower;
+    flight.throttle = 0;
     syncTuningUI(); syncInvertUI(); saveTuning(); saveInverts();
     showMessage("FLIGHT SETTINGS RESTORED");
   });
@@ -635,7 +672,6 @@ function setupTuningUI() {
     $(control.id).addEventListener("input", e => {
       flightTuning[control.key] = Number(e.target.value);
       $(control.out).textContent = control.format(flightTuning[control.key]);
-      if (control.key === "motorPower" && flight.throttle < .1) flight.throttle = 9.81 / flightTuning.motorPower;
       saveTuning();
     });
   }
@@ -650,6 +686,11 @@ function openTuning() {
 function closeTuning() {
   $("settingsOverlay").style.display = "none";
   keys.clear(); clearMouseDeltas();
+}
+function saveAndCloseTuning() {
+  saveTuning(); saveInverts();
+  closeTuning();
+  showMessage("FLIGHT SETTINGS SAVED");
 }
 function clearMouseDeltas() {
   pendingMouseYaw = 0; pendingMousePitch = 0; pendingMouseRoll = 0;
@@ -715,7 +756,7 @@ function resetFlight(showToast) {
   clearMouseDeltas(); physicsAccumulator = 0; cameraIsReady = false;
   flight.position.set(0, 12, 12);
   flight.velocity.set(0, 0, 0);
-  flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.throttle = THREE.MathUtils.clamp(9.81 / flightTuning.motorPower, .05, .9); flight.battery = 100;
+  flight.yaw = 0; flight.pitch = 0; flight.roll = 0; flight.throttle = 0; flight.battery = 100;
   keys.clear();
   if (currentMission === "race" && active) {
     nextGate = 0; missionElapsed = 0; missionStartedAt = performance.now(); missionFinished = false; updateGates();
@@ -830,9 +871,10 @@ function updatePhysics(dt, now) {
   flight.pitch += mousePitch * (invertControls.mousePitch ? -1 : 1);
   flight.roll += mouseRoll * (invertControls.roll ? -1 : 1);
   flight.yaw += yawInput * THREE.MathUtils.degToRad(flightTuning.yawRate) * dt + mouseYaw * (invertControls.mouseYaw ? -1 : 1);
-  // Space/Shift adjust the stored throttle; the thrust vector and gravity determine actual motion.
-  const throttleInput = ((keys.has("space") ? 1 : 0) - (keys.has("shift") ? 1 : 0)) * (invertControls.throttle ? -1 : 1);
-  flight.throttle = THREE.MathUtils.clamp(flight.throttle + throttleInput * flightTuning.throttleResponse * dt, 0, 1);
+  // Direct motor command: Space is full thrust only while held; Shift applies reverse thrust.
+  // Releasing both keys immediately returns the motor command to zero (no throttle ramp).
+  const thrustInput = keys.has("space") ? 1 : (keys.has("shift") ? -1 : 0);
+  flight.throttle = thrustInput * (invertControls.throttle ? -1 : 1);
   const thrust = flight.throttle * flightTuning.motorPower;
   const forward = new THREE.Vector3(Math.sin(flight.yaw), 0, -Math.cos(flight.yaw));
   const right = new THREE.Vector3(Math.cos(flight.yaw), 0, Math.sin(flight.yaw));
@@ -932,8 +974,9 @@ function updateHud(now) {
   $("battery").textContent = Math.round(flight.battery) + "%";
   $("batterybar").style.width = flight.battery + "%";
   $("batterybar").style.background = flight.battery < 20 ? "#ff8179" : "linear-gradient(90deg,var(--cyan),var(--lime))";
-  $("throttleRead").textContent = Math.round(flight.throttle * 100) + "%";
-  $("throttlebar").style.width = (flight.throttle * 100) + "%";
+  $("throttleRead").textContent = flight.throttle > 0 ? "THR " + Math.round(flight.throttle * 100) + "%" : flight.throttle < 0 ? "REV " + Math.round(Math.abs(flight.throttle) * 100) + "%" : "IDLE 0%";
+  $("throttlebar").style.width = (Math.abs(flight.throttle) * 100) + "%";
+  $("throttlebar").style.background = flight.throttle < 0 ? "#ff9e77" : "linear-gradient(90deg,var(--cyan),var(--lime))";
   if (currentMission === "race" && !missionFinished) $("checkpoint").textContent = "CHECKPOINT " + String(nextGate + 1).padStart(2, "0") + " / " + String(course.length).padStart(2, "0") + "  ·  " + formatTime(missionElapsed);
   drawMinimap();
 }
