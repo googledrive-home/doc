@@ -22,7 +22,7 @@
 @media(max-width:780px){.tuning-menu{max-height:94dvh;overflow:auto}.invert-grid{grid-template-columns:1fr 1fr}}.message{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#081522db;border:1px solid #68f0ff55;color:#eaffff;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .15s;white-space:nowrap}.message.show{opacity:1}
 .mobilecontrols{display:none;position:absolute;left:50%;bottom:86px;transform:translateX(-50%);gap:7px;align-items:center;pointer-events:auto}.touchpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,40px);gap:4px}.touchbtn{border:1px solid #9fdfff55;border-radius:10px;background:#071c2cc9;color:#f3ffff;font-weight:900;font-size:13px;touch-action:none}.touchbtn:active,.touchbtn.down{background:#57cde875}.touchlabel{font-size:9px;color:#b2cad9;text-align:center;margin-bottom:5px;letter-spacing:.08em}
 .fatal{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#08121f;padding:24px}.fatal div{max-width:560px}.fatal h2{color:#ffca79}.fatal p{color:#b9c9d5;line-height:1.6}
-@media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions .btn:nth-child(6){display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
+@media(max-width:780px){.menu{grid-template-columns:1fr;max-height:94dvh;overflow:auto}.menuright{border-left:0;border-top:1px solid #ffffff12;padding:20px}.menuleft{padding:25px}.menu h1{font-size:clamp(39px,11vw,60px)}.topline{top:8px;left:8px;right:8px}.brand{padding:8px}.brandmark{width:30px;height:30px}.brand b{font-size:10px}.brand small{font-size:8px}.metric{padding:8px;min-width:62px}.metric strong{font-size:15px}.metric label{font-size:8px}.sidepanel{top:83px;left:8px;width:145px;padding:10px}.rightpanel{top:83px;right:8px;width:145px;padding:9px}.statrow{font-size:10px}.statrow b{font-size:10px}.bottomleft{left:8px;bottom:8px;max-width:180px;padding:9px}.bottomleft small{font-size:9px}.actions{right:8px;bottom:8px;max-width:50%;gap:4px}.btn{padding:9px 10px;font-size:10px}.actions #fullBtn{display:none}.mobilecontrols{display:flex;bottom:71px}.touchpad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(2,34px)}.touchbtn{font-size:11px}.centerhud{transform:translate(-50%,-50%) scale(.8)}}
 @media(max-width:440px){.sidepanel{top:76px;width:128px}.rightpanel{top:76px;width:126px}.metric:nth-child(3){display:none}.brand{gap:7px}.brandmark{width:27px;height:27px}.brand b{letter-spacing:.08em}.brand small{letter-spacing:.08em}.menuleft p{font-size:12px}.controlsgrid{grid-template-columns:1fr}.bottomleft{display:none}.actions .btn{padding:8px}.mobilecontrols{bottom:60px}}
 /* Flight settings are split into a scrollable control pane and a fixed action rail. */
 #settingsOverlay{padding:16px 16px 88px;overflow:hidden}
@@ -103,6 +103,7 @@
     <button class="btn warning" id="pauseBtn">Ⅱ PAUSE</button>
     <button class="btn" id="resetBtn">↻ RESET</button>
     <button class="btn" id="fullBtn">⛶ FULLSCREEN</button>
+    <button class="btn" id="soundBtn" aria-pressed="true">♪ SOUND: ON</button>
   </div>
   <div class="mobilecontrols">
     <div><div class="touchlabel">PITCH / ROLL</div><div class="touchpad">
@@ -154,6 +155,7 @@
       <label class="formlabel" for="startAssist">Impact assistance</label>
       <select id="startAssist"><option value="on">On · More impact forgiveness</option><option value="off">Off · Harder crash threshold</option></select>
       <button class="btn subbtn" id="openTuningSetup">⚙ ADVANCED FLIGHT SETTINGS</button>
+      <button class="btn subbtn" id="soundSetupBtn" aria-pressed="true">♪ SOUND: ON</button>
       <button class="btn primary" id="startBtn">INITIALISE & FLY ↗</button>
       <button class="btn subbtn" id="backBtn">← BACK TO GAME LIBRARY</button>
       <div class="smallnote">A lightweight Three.js 3D scene. Performance depends on your browser and graphics hardware.</div>
@@ -250,6 +252,8 @@ const invertControlInputs = [
   { id: "invertMouseYaw", key: "mouseYaw" }
 ];
 let pointerLocked = false, pendingMouseYaw = 0, pendingMousePitch = 0, pendingMouseRoll = 0;
+let soundEnabled = true;
+let audioContext = null, motorOscillator = null, motorOvertone = null, motorFilter = null, motorGain = null;
 const tuningControls = [
   { id: "pitchRate", key: "pitchRollRate", out: "pitchRateValue", format: v => Math.round(v) + "°/s" },
   { id: "yawRate", key: "yawRate", out: "yawRateValue", format: v => Math.round(v) + "°/s" },
@@ -268,6 +272,7 @@ try {
       if (storedTuning[key] === previousDefault) flightTuning[key] = DEFAULT_TUNING[key];
     }
   }
+  if (localStorage.getItem("fpvDroneSoundMuted") === "1") soundEnabled = false;
   const savedInverts = JSON.parse(localStorage.getItem("fpvDroneInverts") || "null");
   if (savedInverts && typeof savedInverts === "object") {
     for (const key of Object.keys(DEFAULT_INVERTS)) if (typeof savedInverts[key] === "boolean") invertControls[key] = savedInverts[key];
@@ -368,6 +373,7 @@ try {
   loadMap($("startMap").value, false);
   setupEvents();
   setupTuningUI();
+  syncSoundUI();
   resize();
   animate();
 } catch (error) {
@@ -851,6 +857,7 @@ function addCanyonWorld() {
 function addCityDetailPass() {
   // A limited set of street trees, planters and traffic signals enrich the city without overloading mobile GPUs.
   const planterMat=mat("#4d5e61",.92), curbMat=mat("#9facb1",.85), signalMat=mat("#22313a",.7);
+  const signalLights=[mat("#e85b54",.35,{emissive:"#7e1511",emissiveIntensity:.45}),mat("#e8bb55",.35,{emissive:"#735015",emissiveIntensity:.4}),mat("#6edb8e",.35,{emissive:"#175e2b",emissiveIntensity:.45})];
   for (const road of [-216,-120,-24,72,168]) {
     for (const z of [-192,-96,0,96,192]) {
       for (const side of [-1,1]) {
@@ -873,7 +880,6 @@ function addCityDetailPass() {
   }
   // Fresh street-level cues: road arrows, bike racks and a transit shelter.
   const paint=mat("#dfe7d8",.9),metal=mat("#536c78",.55,{metalness:.3}),glass=mat("#77b7c7",.3,{metalness:.14,transparent:true,opacity:.42});
-  const signalLights=[mat("#e85b54",.35,{emissive:"#7e1511",emissiveIntensity:.45}),mat("#e8bb55",.35,{emissive:"#735015",emissiveIntensity:.4}),mat("#6edb8e",.35,{emissive:"#175e2b",emissiveIntensity:.45})];
   for (const [x,z,rotation] of [[-30,-7,0],[66,88,Math.PI/2],[-126,104,0],[162,-82,Math.PI/2]]) {
     addPlane(scene,x,.036,z,2.1,5.5,paint).rotation.y=rotation;
     const rack=new THREE.Mesh(new THREE.TorusGeometry(.5,.07,5,12),metal);
