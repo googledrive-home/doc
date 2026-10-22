@@ -861,9 +861,8 @@ function addCityDetailPass() {
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,4.6,6),signalMat);
         pole.position.set(x,2.3,zz);scene.add(pole);
         addBox(scene,x,4.35,zz,.75,.85,.55,signalMat);
-        const lightsMat=[mat("#e85b54",.35,{emissive:"#7e1511",emissiveIntensity:.45}),mat("#e8bb55",.35,{emissive:"#735015",emissiveIntensity:.4}),mat("#6edb8e",.35,{emissive:"#175e2b",emissiveIntensity:.45})];
         for (let lamp=0;lamp<3;lamp++) {
-          const bulb=new THREE.Mesh(new THREE.SphereGeometry(.12,7,6),lightsMat[lamp]);
+          const bulb=new THREE.Mesh(sphereGeo,signalLights[lamp]); bulb.scale.setScalar(.12);
           bulb.position.set(x,4.55-lamp*.24,zz+.29);scene.add(bulb);
         }
       }
@@ -871,6 +870,7 @@ function addCityDetailPass() {
   }
   // Fresh street-level cues: road arrows, bike racks and a transit shelter.
   const paint=mat("#dfe7d8",.9),metal=mat("#536c78",.55,{metalness:.3}),glass=mat("#77b7c7",.3,{metalness:.14,transparent:true,opacity:.42});
+  const signalLights=[mat("#e85b54",.35,{emissive:"#7e1511",emissiveIntensity:.45}),mat("#e8bb55",.35,{emissive:"#735015",emissiveIntensity:.4}),mat("#6edb8e",.35,{emissive:"#175e2b",emissiveIntensity:.45})];
   for (const [x,z,rotation] of [[-30,-7,0],[66,88,Math.PI/2],[-126,104,0],[162,-82,Math.PI/2]]) {
     addPlane(scene,x,.036,z,2.1,5.5,paint).rotation.y=rotation;
     const rack=new THREE.Mesh(new THREE.TorusGeometry(.5,.07,5,12),metal);
