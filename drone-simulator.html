@@ -1101,7 +1101,7 @@ function startFlight() {
   missionFinished = false; nextGate = 0; lastCollisionMessageAt = 0;
   $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("crashOverlay").style.display = "none"; $("hud").style.display = "block"; crashed = false; crashReason = "";
   $("missionTitle").textContent = currentMission === "race" ? "Gate run / time trial" : "Free flight";
-  $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : "Explore downtown, skim the rooftops and find the glowing gates.";
+  $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : mapConfig[currentMap].desc;
   $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
   resetFlight(false); updateModeUI(); updateGates();
   showMessage(currentMission === "race" ? "TIME TRIAL START / GATE 01" : "ARMED / HAVE A SMOOTH FLIGHT");
