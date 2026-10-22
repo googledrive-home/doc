@@ -305,6 +305,7 @@ const mapCourses = {
 let currentMap = "city";
 let course = mapCourses.city;
 let persistentSceneChildren = new Set();
+let worldLoaded = false;
 const mapConfig = {
   city: { title: "NEON DISTRICT", desc: "Detailed streets, glass towers, parks and rooftop lines.", sky: "#9ebfca", fog: "#9ebfca", near: 225, far: 625, icon: "▦" },
   coast: { title: "COASTAL RUN", desc: "Bright shoreline, palms, a working pier, beach huts and a lighthouse.", sky: "#78c5d4", fog: "#8fcbd0", near: 235, far: 650, icon: "≋" },
@@ -605,6 +606,7 @@ function updateMapPreview() {
 }
 function loadMap(mapName, notify = false) {
   const selected = Object.prototype.hasOwnProperty.call(mapCourses, mapName) ? mapName : "city";
+  if (worldLoaded && selected === currentMap) { updateMapPreview(); return; }
   for (const child of [...scene.children]) {
     if (!persistentSceneChildren.has(child)) scene.remove(child);
   }
@@ -624,6 +626,7 @@ function loadMap(mapName, notify = false) {
     addCanyonWorld();
   }
   createGates();
+  worldLoaded = true;
   updateMapPreview();
   if (notify) showMessage(cfg.title + " / MAP LOADED");
 }
