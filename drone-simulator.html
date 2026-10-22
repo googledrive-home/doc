@@ -971,6 +971,15 @@ function beepSound(kind) {
     osc.start(at);osc.stop(at+.15);
   });
 }
+function syncEngineSound() {
+  if (!soundEnabled || !audioContext || !motorGain || !motorOscillator) return;
+  const now = audioContext.currentTime;
+  const flying = active && !paused && !crashed && $("settingsOverlay").style.display !== "grid";
+  const speed = Math.min(1, Math.hypot(flight.velocity.x,flight.velocity.y,flight.velocity.z) / Math.max(1,flightTuning.maxSpeedKmh/3.6));
+  const thrust = Math.abs(flight.throttle);
+  motorOscillator.frequency.setTargetAtTime(65 + thrust * 100 + speed * 45, now, .09);
+  motorGain.gain.setTargetAtTime(flying ? .008 + thrust * .012 + speed * .004 : .0001, now, .12);
+}
 function toggleSound() {
   soundEnabled = !soundEnabled;
   try { localStorage.setItem("fpvDroneSoundMuted", soundEnabled ? "0" : "1"); } catch (_) {}
@@ -1024,6 +1033,8 @@ function setupEvents() {
     button.addEventListener("contextmenu", (e) => e.preventDefault());
   });
   $("startMap").addEventListener("change", e => loadMap(e.target.value, true));
+  $("soundBtn").addEventListener("click", toggleSound);
+  $("soundSetupBtn").addEventListener("click", toggleSound);
   $("startBtn").addEventListener("click", startFlight);
   $("openTuningSetup").addEventListener("click", openTuning);
   $("settingsBtn").addEventListener("click", openTuning);
@@ -1162,6 +1173,7 @@ function startFlight() {
   $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : mapConfig[currentMap].desc;
   $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
   resetFlight(false); updateModeUI(); updateGates();
+  startMotorSound(); syncEngineSound(); beepSound("arm");
   showMessage(currentMission === "race" ? "TIME TRIAL START / GATE 01" : "ARMED / HAVE A SMOOTH FLIGHT");
 }
 function togglePause() {
@@ -1171,6 +1183,7 @@ function togglePause() {
   if (paused && pointerLocked && document.exitPointerLock) document.exitPointerLock();
   $("pauseOverlay").style.display = paused ? "grid" : "none";
   $("pauseBtn").textContent = paused ? "▶ RESUME" : "Ⅱ PAUSE";
+  syncEngineSound();
   if (!paused) lastHud = 0;
 }
 function resetFlight(showToast) {
@@ -1210,6 +1223,7 @@ function crashDrone(reason, impactSpeed, now = performance.now()) {
   $("crashReasonText").textContent = reason + " at approximately " + Math.round(impactSpeed * 3.6) + " km/h. The motors have cut out; reset the drone to fly again.";
   $("crashOverlay").style.display = "grid";
   $("pauseOverlay").style.display = "none";
+  beepSound("crash"); syncEngineSound();
   showMessage("CRASH DETECTED / MOTORS DISARMED");
 }
 function resolveBuildingCollisions(previous, now) {
@@ -1356,10 +1370,12 @@ function updatePhysics(dt, now) {
         nextGate++;
         if (nextGate >= course.length) {
           missionFinished = true;
+          beepSound("finish");
           showMessage("COURSE COMPLETE / " + formatTime(missionElapsed));
           $("missionTitle").textContent = "Course complete";
           $("checkpoint").textContent = "FINAL TIME / " + formatTime(missionElapsed);
         } else {
+          beepSound("gate");
           showMessage("CHECKPOINT " + String(nextGate).padStart(2, "0") + " CLEARED");
           $("checkpoint").textContent = "CHECKPOINT " + String(nextGate + 1).padStart(2, "0") + " / " + String(course.length).padStart(2, "0");
         }
@@ -1495,6 +1511,7 @@ function animate(now) {
     g.mesh.rotation.x = Math.sin(now * .0008 + g.position.x) * .035;
   }
   if (active) updateHud(now);
+  syncEngineSound();
   renderer.render(scene, camera);
 }
 function startTimeTrialReset() {
