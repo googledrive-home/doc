@@ -144,7 +144,7 @@
         <option value="canyon">Redrock Canyon · Desert</option>
       </select>
       <div class="map-preview city" id="mapPreview">
-        <div class="map-preview-icon">▦</div>
+        <div class="map-preview-icon" id="mapPreviewIcon">▦</div>
         <div><strong id="mapPreviewTitle">NEON DISTRICT</strong><span id="mapPreviewText">Detailed streets, glass towers, parks and rooftop lines.</span></div>
       </div>
       <label class="formlabel" for="startMode">Mission</label>
@@ -1363,11 +1363,11 @@ function drawMinimap() {
     c.fillStyle = "#dcc796";
     c.beginPath();
     const coastOutline=[[-270,-215],[-240,-269],[-105,-272],[8,-244],[124,-271],[245,-251],[275,-156],[257,-30],[278,94],[240,235],[112,269],[-20,248],[-155,273],[-264,218],[-276,73],[-253,-76]];
-    coastOutline.forEach(([x,z],i)=>{const px=x*scale,py=z*scale;if(i===0)c.moveTo(px,py);else c.lineTo(px,py)});
+    coastOutline.forEach(([x,z],i)=>{if(i===0)c.moveTo(x,z);else c.lineTo(x,z)});
     c.closePath();c.fill();
   } else {
     c.strokeStyle="#e0bc83";c.lineWidth=3;
-    c.beginPath();c.moveTo(-52*scale, -mapLimit*scale);c.lineTo(-15*scale,-230*scale);c.lineTo(-28*scale,-180*scale);c.lineTo(18*scale,-125*scale);c.lineTo(35*scale,-70*scale);c.lineTo(8*scale,-18*scale);c.lineTo(38*scale,34*scale);c.lineTo(19*scale,92*scale);c.lineTo(58*scale,150*scale);c.lineTo(36*scale,210*scale);c.lineTo(68*scale,mapLimit*scale);c.stroke();
+    c.beginPath();c.moveTo(-52,-mapLimit);c.lineTo(-15,-230);c.lineTo(-28,-180);c.lineTo(18,-125);c.lineTo(35,-70);c.lineTo(8,-18);c.lineTo(38,34);c.lineTo(19,92);c.lineTo(58,150);c.lineTo(36,210);c.lineTo(68,mapLimit);c.stroke();
   }
   for (const b of cityBoxes) {
     c.fillStyle = currentMap === "coast" ? "#61746a" : currentMap === "canyon" ? (b.h > 26 ? "#694832" : "#8e6345") : (b.h > 40 ? "#4a6e7b" : "#8a9696");
