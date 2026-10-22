@@ -73,7 +73,7 @@
     <div class="statrow"><span>Signal</span><b style="color:var(--lime)">100%</b></div>
     <div class="statrow"><span>Flight time</span><b id="flightTime">00:00</b></div>
     <div class="statrow"><span>Throttle</span><b id="throttleRead">IDLE 0%</b></div>
-    <div class="meter"><span id="throttlebar" style="width:50%"></span></div>
+    <div class="meter"><span id="throttlebar" style="width:0%"></span></div>
     <div class="statrow"><span>Impact protection</span><b id="collisionRead">ON</b></div>
   </div>
   <div class="rightpanel panel">
@@ -217,7 +217,7 @@ let renderer, scene, camera, active = false, paused = false, startedAt = 0, sess
 let currentMission = "free", missionStartedAt = 0, missionElapsed = 0, nextGate = 0, missionFinished = false;
 let collisionAssist = true, handling = "acro", crashed = false, crashReason = "", lastHud = 0, lastMessageTimer = 0, frameCount = 0, fps = 60, fpsAt = 0;
 let lastCollisionMessageAt = 0;
-const flightTuning = { pitchRollRate: 760, yawRate: 420, maxSpeedKmh: 220, motorPower: 56, mouseSensitivity: 1.15, cameraAngle: 24, cameraFov: 110, cameraSmoothness: 18 };
+const flightTuning = { pitchRollRate: 760, yawRate: 420, maxSpeedKmh: 220, motorPower: 56, mouseSensitivity: 1.2, cameraAngle: 24, cameraFov: 110, cameraSmoothness: 18 };
 const DEFAULT_TUNING = { ...flightTuning };
 // Migrate untouched values from the previous default profile to the stronger preset.
 const LEGACY_DEFAULTS = { pitchRollRate: 520, yawRate: 300, maxSpeedKmh: 150, motorPower: 32, mouseSensitivity: 1, cameraAngle: 20, cameraFov: 105, cameraSmoothness: 16 };
