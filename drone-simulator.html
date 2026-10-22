@@ -51,6 +51,14 @@
   .settings-actionbar .btn{letter-spacing:0}
   .invert-grid{grid-template-columns:1fr}
 }
+/* World selection card */
+.map-preview{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid #8edcf044;border-radius:12px;background:linear-gradient(120deg,#0c2532,#102331);min-height:68px}
+.map-preview-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,#2f7b88,#18344b);color:#eaffff;font-size:28px;font-weight:900}
+.map-preview strong{display:block;font-size:10px;letter-spacing:.13em;color:#e9fbff}
+.map-preview span{display:block;font-size:10px;line-height:1.4;color:#93b6c7;margin-top:4px}
+.map-preview.coast{background:linear-gradient(120deg,#0b3543,#174b53)}.map-preview.coast .map-preview-icon{background:linear-gradient(145deg,#66c7d0,#28606a)}
+.map-preview.canyon{background:linear-gradient(120deg,#38251e,#513522)}.map-preview.canyon .map-preview-icon{background:linear-gradient(145deg,#d58c54,#78472f)}
+@media(max-width:780px){.map-preview{min-height:58px;padding:9px}.map-preview-icon{width:40px;height:40px}}
 </style>
 </head>
 <body>
@@ -129,8 +137,18 @@
     </div>
     <div class="menuright">
       <div class="tag">FLIGHT CONFIGURATION</div><h2>PRE-FLIGHT CHECK</h2>
+      <label class="formlabel" for="startMap">World map</label>
+      <select id="startMap">
+        <option value="city">Neon District · City</option>
+        <option value="coast">Coastal Run · Islands</option>
+        <option value="canyon">Redrock Canyon · Desert</option>
+      </select>
+      <div class="map-preview city" id="mapPreview">
+        <div class="map-preview-icon" id="mapPreviewIcon">▦</div>
+        <div><strong id="mapPreviewTitle">NEON DISTRICT</strong><span id="mapPreviewText">Detailed streets, glass towers, parks and rooftop lines.</span></div>
+      </div>
       <label class="formlabel" for="startMode">Mission</label>
-      <select id="startMode"><option value="free">Free flight · Explore the city</option><option value="race">Gate run · Time trial</option></select>
+      <select id="startMode"><option value="free">Free flight · Explore this map</option><option value="race">Gate run · Time trial</option></select>
       <label class="formlabel" for="startHandling">Flight handling</label>
       <select id="startHandling"><option value="acro" selected>Acro · Full manual rates</option><option value="stabilized">Stabilised · Auto-level</option></select>
       <label class="formlabel" for="startAssist">Impact assistance</label>
@@ -262,16 +280,37 @@ const flight = {
   yaw: 0, pitch: 0, roll: 0,
   throttle: 0, battery: 100
 };
-const course = [
-  { x: 0, y: 18, z: -48 },
-  { x: 48, y: 22, z: -48 },
-  { x: 96, y: 24, z: 0 },
-  { x: 48, y: 20, z: 48 },
-  { x: 0, y: 17, z: 48 },
-  { x: -48, y: 22, z: 0 },
-  { x: -96, y: 23, z: -48 },
-  { x: 0, y: 18, z: -48 }
-];
+const mapCourses = {
+  city: [
+    { x: 0, y: 18, z: -48 }, { x: 48, y: 22, z: -48 },
+    { x: 96, y: 24, z: 0 }, { x: 48, y: 20, z: 48 },
+    { x: 0, y: 17, z: 48 }, { x: -48, y: 22, z: 0 },
+    { x: -96, y: 23, z: -48 }, { x: 0, y: 18, z: -48 }
+  ],
+  coast: [
+    { x: 0, y: 18, z: -55 }, { x: 46, y: 22, z: -82 },
+    { x: 104, y: 24, z: -48 }, { x: 124, y: 21, z: 16 },
+    { x: 72, y: 19, z: 78 }, { x: 4, y: 22, z: 94 },
+    { x: -72, y: 20, z: 53 }, { x: -88, y: 22, z: -15 },
+    { x: 0, y: 18, z: -55 }
+  ],
+  canyon: [
+    { x: 0, y: 18, z: -45 }, { x: 42, y: 21, z: -74 },
+    { x: 82, y: 25, z: -38 }, { x: 72, y: 21, z: 25 },
+    { x: 18, y: 20, z: 74 }, { x: -42, y: 24, z: 82 },
+    { x: -84, y: 22, z: 31 }, { x: -68, y: 20, z: -27 },
+    { x: 0, y: 18, z: -45 }
+  ]
+};
+let currentMap = "city";
+let course = mapCourses.city;
+let persistentSceneChildren = new Set();
+let worldLoaded = false;
+const mapConfig = {
+  city: { title: "NEON DISTRICT", desc: "Detailed streets, glass towers, parks and rooftop lines.", sky: "#9ebfca", fog: "#9ebfca", near: 225, far: 625, icon: "▦" },
+  coast: { title: "COASTAL RUN", desc: "Bright shoreline, palms, a working pier, beach huts and a lighthouse.", sky: "#78c5d4", fog: "#8fcbd0", near: 235, far: 650, icon: "≋" },
+  canyon: { title: "REDROCK CANYON", desc: "Layered mesas, dry washes, stone spires, cacti and dusty trails.", sky: "#d3a978", fog: "#c9a177", near: 205, far: 590, icon: "⌁" }
+};
 const buildingPalette = [
   { wall: "#566b7c", window: "#7bd8e7" },
   { wall: "#796e69", window: "#f0c88b" },
@@ -325,9 +364,8 @@ try {
   const sun = new THREE.DirectionalLight("#fff3db", 2.3);
   sun.position.set(-90, 160, 75);
   scene.add(sun);
-  createWorld();
-  createGates();
-  addMountains();
+  persistentSceneChildren = new Set(scene.children);
+  loadMap($("startMap").value, false);
   setupEvents();
   setupTuningUI();
   resize();
@@ -344,20 +382,33 @@ function makeBuildingMaterials() {
     c.width = 128; c.height = 256;
     const x = c.getContext("2d");
     x.fillStyle = p.wall; x.fillRect(0, 0, c.width, c.height);
-    x.fillStyle = "rgba(18,30,42,.68)";
+    x.fillStyle = "rgba(15,27,39,.78)";
     for (let row = 0; row < 13; row++) {
+      const floorY = row * 19 + 16;
+      x.fillRect(0, floorY, 128, 2);
       for (let col = 0; col < 5; col++) {
-        const wx = 8 + col * 24, wy = 7 + row * 19;
-        x.fillRect(wx - 2, wy - 2, 18, 14);
+        const wx = 7 + col * 24, wy = 5 + row * 19;
+        x.fillStyle = "rgba(12,24,35,.88)";
+        x.fillRect(wx - 2, wy - 2, 19, 15);
         x.fillStyle = p.window;
-        x.globalAlpha = .62 + ((row + col + index) % 3) * .12;
-        x.fillRect(wx, wy, 14, 10);
+        const glow = (row * 7 + col * 3 + index * 5) % 7;
+        x.globalAlpha = glow < 2 ? .98 : .58 + (glow % 3) * .1;
+        x.fillRect(wx, wy, 15, 11);
         x.globalAlpha = 1;
-        x.fillStyle = "rgba(18,30,42,.68)";
+        x.fillStyle = "rgba(238,248,250,.3)";
+        x.fillRect(wx + 1, wy + 1, 1, 9);
+        x.fillStyle = "rgba(15,27,39,.78)";
       }
     }
     x.fillStyle = "rgba(240,247,250,.32)";
     x.fillRect(0, 0, 5, 256); x.fillRect(123, 0, 5, 256);
+    x.fillStyle = "rgba(14,25,35,.78)";
+    x.fillRect(0, 0, 128, 5); x.fillRect(0, 251, 128, 5);
+    if (index % 2 === 0) {
+      x.fillStyle = p.window; x.globalAlpha = .9;
+      x.fillRect(0, 40, 128, 6); x.globalAlpha = 1;
+      x.fillStyle = "rgba(240,247,250,.45)"; x.fillRect(0, 47, 128, 2);
+    }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
@@ -429,6 +480,26 @@ function addBuilding(x, z, w, d, h, paletteIndex, special = "") {
     const signMat = mat("#56dbe8", .45, { emissive: "#146a7b", emissiveIntensity: .7 });
     addBox(scene, x, h * .65, z + d / 2 + .08, Math.min(6.2, w * .5), 1.3, .16, signMat);
   }
+  // A few mid-rise buildings get projecting balconies and metal guard rails.
+  if (h >= 13 && h <= 37 && w >= 14 && Math.round(Math.abs(x * 3 + z)) % 4 === 0) {
+    const deckMat = mat("#657984", .72, { metalness: .18 });
+    const railMat = mat("#b6c8ce", .48, { metalness: .42 });
+    for (const floorY of [h * .38, h * .66]) {
+      const bw = Math.min(w * .56, 8.5), bz = z + d / 2 + .55;
+      addBox(scene, x, floorY, bz, bw, .14, 1.05, deckMat);
+      addBox(scene, x, floorY + .48, bz + .48, bw, .09, .09, railMat);
+      addBox(scene, x - bw / 2, floorY + .25, bz, .09, .5, 1.02, railMat);
+      addBox(scene, x + bw / 2, floorY + .25, bz, .09, .5, 1.02, railMat);
+    }
+  }
+  // Roof access hut and antenna details break up the flat silhouettes.
+  if (h > 24 && Math.round(Math.abs(x + z * 2)) % 5 === 0) {
+    addBox(scene, x - w * .22, h + .58, z - d * .18, Math.min(3.2, w * .22), 1.15, Math.min(3, d * .22), worldMaterials.vent);
+    const mast = new THREE.Mesh(cylGeo, worldMaterials.roof);
+    mast.position.set(x + w * .25, h + 1.65, z - d * .2);
+    mast.scale.set(.07, 2.4, .07); scene.add(mast);
+    addBox(scene, x + w * .25, h + 2.8, z - d * .2, .8, .08, .8, worldMaterials.lamp);
+  }
 }
 function addTree(x, z, scale = 1) {
   const trunk = new THREE.Mesh(cylGeo, worldMaterials.bark);
@@ -499,13 +570,12 @@ function addWorldEdges() {
 }
 function createWorld() {
   addRoads();
-  // Six streets in each direction; buildings occupy the blocks between avenues.
   const centers = [-216, -168, -120, -72, -24, 24, 72, 120, 168, 216];
   for (let ix = 0; ix < centers.length; ix++) {
     for (let iz = 0; iz < centers.length; iz++) {
       const cx = centers[ix], cz = centers[iz];
-      if (cx === 120 && cz === 120) continue; // preserve the urban park
-      if (cx === 24 && cz === 24) continue; // give the launch avenue breathing room
+      if (cx === 120 && cz === 120) continue;
+      if (cx === 24 && cz === 24) continue;
       if (cx === 72 && cz === -72) {
         addBuilding(cx, cz, 19, 19, 62, 4, "tower");
         addBuilding(cx - 12, cz + 11, 10, 9, 19, 0);
@@ -524,8 +594,302 @@ function createWorld() {
   addPark();
   addCars();
   addStreetDetails();
+  addCityDetailPass();
   addWorldEdges();
 }
+function updateMapPreview() {
+  const cfg = mapConfig[currentMap] || mapConfig.city;
+  $("mapPreview").className = "map-preview " + currentMap;
+  $("mapPreviewIcon").textContent = cfg.icon;
+  $("mapPreviewTitle").textContent = cfg.title;
+  $("mapPreviewText").textContent = cfg.desc;
+}
+function loadMap(mapName, notify = false) {
+  const selected = Object.prototype.hasOwnProperty.call(mapCourses, mapName) ? mapName : "city";
+  if (worldLoaded && selected === currentMap) { updateMapPreview(); return; }
+  for (const child of [...scene.children]) {
+    if (!persistentSceneChildren.has(child)) scene.remove(child);
+  }
+  cityBoxes.length = 0;
+  gateItems.length = 0;
+  currentMap = selected;
+  course = mapCourses[selected];
+  const cfg = mapConfig[selected];
+  scene.background = new THREE.Color(cfg.sky);
+  scene.fog = new THREE.Fog(cfg.fog, cfg.near, cfg.far);
+  if (selected === "city") {
+    createWorld();
+    addMountains();
+  } else if (selected === "coast") {
+    addCoastalWorld();
+  } else {
+    addCanyonWorld();
+  }
+  createGates();
+  worldLoaded = true;
+  updateMapPreview();
+  if (notify) showMessage(cfg.title + " / MAP LOADED");
+}
+
+function addShapeGround(points, y, material) {
+  const shape = new THREE.Shape();
+  shape.moveTo(points[0][0], -points[0][1]);
+  for (let i = 1; i < points.length; i++) shape.lineTo(points[i][0], -points[i][1]);
+  shape.closePath();
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), material);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = y;
+  mesh.receiveShadow = false;
+  scene.add(mesh);
+  return mesh;
+}
+function addCollisionVolume(x, z, w, d, h) {
+  cityBoxes.push({ x, z, w, d, h });
+}
+function addPalmTree(x, z, scale = 1) {
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.36 * scale, .55 * scale, 5 * scale, 7), worldMaterials.bark);
+  trunk.position.set(x, 2.5 * scale, z);
+  trunk.rotation.z = -.09;
+  scene.add(trunk);
+  addCollisionVolume(x, z, .9 * scale, .9 * scale, 5 * scale);
+  const leafMat = mat("#347d68", .74);
+  const leafLightMat = mat("#62a37d", .78);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(.36 * scale, 4.4 * scale, 5), i % 2 ? leafMat : leafLightMat);
+    leaf.position.set(x + Math.sin(a) * 1.5 * scale, 5.05 * scale, z + Math.cos(a) * 1.5 * scale);
+    leaf.rotation.z = Math.cos(a) * .95;
+    leaf.rotation.x = Math.sin(a) * .95;
+    scene.add(leaf);
+  }
+}
+function addCoastCabin(x, z, rotation = 0, color = "#d6b68b") {
+  const group = new THREE.Group();
+  group.position.set(x, .15, z); group.rotation.y = rotation;
+  const wall = mat(color, .92), roof = mat("#674d3b", .92), trim = mat("#f0e1c2", .8);
+  addBox(group, 0, 2.1, 0, 9, 4, 7, wall);
+  addBox(group, 0, 4.35, 0, 10, .45, 8, roof);
+  addBox(group, 0, 1.7, 3.57, 1.25, 2.4, .12, trim);
+  for (const xOff of [-2.8, 2.8]) {
+    const windowMat = mat("#75c8d8", .3, { emissive: "#185d6b", emissiveIntensity: .24 });
+    addBox(group, xOff, 2.6, 3.58, 1.5, 1.1, .12, windowMat);
+    addBox(group, xOff, 2.6, 3.67, 1.62, .08, .1, trim);
+  }
+  scene.add(group);
+  addCollisionVolume(x, z, 10, 8, 4.5);
+  // Porch, steps and a chimney create a more lived-in silhouette.
+  addBox(scene, x, .35, z + 5 * Math.cos(rotation), 3.4, .35, 2.6, trim);
+  const chimney = new THREE.Mesh(new THREE.BoxGeometry(.85, 2.2, .85), mat("#8a7665", .92));
+  chimney.position.set(x - 2.8, 5.0, z); scene.add(chimney);
+}
+function addCoastalWorld() {
+  const ocean = mat("#287b92", .24, { metalness: .14, emissive: "#0c394e", emissiveIntensity: .12 });
+  const sand = mat("#d9c18c", .95);
+  const grass = mat("#6b9978", .98);
+  const grassDark = mat("#477b67", .98);
+  const rockMat = mat("#77817d", .94);
+  addPlane(scene, 0, -.22, 0, 650, 650, ocean);
+  const coast = [
+    [-270,-215],[-240,-269],[-105,-272],[8,-244],[124,-271],[245,-251],
+    [275,-156],[257,-30],[278,94],[240,235],[112,269],[-20,248],
+    [-155,273],[-264,218],[-276,73],[-253,-76]
+  ];
+  const inner = coast.map(([x,z]) => [x * .875, z * .875]);
+  addShapeGround(coast, .0, sand);
+  addShapeGround(inner, .055, grass);
+  // Dune swells, scrub patches and pebble clusters along the beach.
+  for (const [x,z,sx,sz] of [[-220,-80,23,12],[-180,195,26,16],[220,175,24,18],[210,-180,20,15],[-35,205,32,16],[235,35,20,13]]) {
+    const dune = new THREE.Mesh(new THREE.SphereGeometry(1, 9, 7), mat("#bca778", .98));
+    dune.position.set(x, 1.4, z); dune.scale.set(sx, 2.2, sz); scene.add(dune);
+  }
+  // Palms cluster by beaches and the seaside trail, with their trunks kept solid.
+  for (const [x,z,scale] of [
+    [-175,-125,1.15],[-155,-145,.95],[-205,-105,.9],[-205,95,1.05],[-180,122,.9],
+    [-125,152,1.0],[-55,195,.85],[42,210,1.0],[175,190,1.1],[205,156,.95],
+    [210,78,1.0],[196,-90,1.08],[165,-130,.9],[95,-190,.95],[-95,-190,.85]
+  ]) addPalmTree(x,z,scale);
+  // Lighthouse on a low rocky point.
+  const lighthouse = new THREE.Group(); lighthouse.position.set(-210, .1, -175);
+  const towerMat = mat("#eee8d6", .8), stripeMat = mat("#be6253", .82);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3.4, 17, 10), towerMat);
+  shaft.position.y = 8.5; lighthouse.add(shaft);
+  for (const y of [4.4, 10.7, 14.1]) {
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(2.75-y*.035,3.0-y*.035,.7,10), stripeMat);
+    band.position.y = y; lighthouse.add(band);
+  }
+  const lantern = new THREE.Mesh(new THREE.CylinderGeometry(2.5,2.5,2.1,8), mat("#f4ce73", .35, {emissive:"#c28b2b",emissiveIntensity:.45}));
+  lantern.position.y = 17.8; lighthouse.add(lantern);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.9,2.4,8), stripeMat); roof.position.y = 20; lighthouse.add(roof);
+  scene.add(lighthouse); addCollisionVolume(-210,-175,7,7,20);
+  const islandRock = new THREE.Mesh(new THREE.DodecahedronGeometry(1,0), rockMat);
+  islandRock.position.set(-210, 1.3, -175); islandRock.scale.set(8, 2.1, 8); scene.add(islandRock);
+  // Wooden pier with individual planks, rail posts and small moored boats.
+  const pierMat = mat("#8d6f50", .88), pierDark = mat("#5d5143", .94), boatMat = mat("#f0e8d6", .48);
+  for (let i = 0; i < 22; i++) {
+    const z = -125 - i * 5.2;
+    addBox(scene, 126, 1.0, z, 12, .24, 4.8, pierMat);
+    for (const side of [-1,1]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,2.6,6), pierDark);
+      post.position.set(126 + side*5.2, .25, z); scene.add(post);
+    }
+  }
+  for (const [x,z,rotation] of [[111,-165,.08],[141,-211,-.12]]) {
+    const boat = new THREE.Group(); boat.position.set(x,-.08,z); boat.rotation.y = rotation;
+    const hull = new THREE.Mesh(new THREE.ConeGeometry(2.1,8,5), boatMat);
+    hull.rotation.x = Math.PI/2; hull.position.y=.08; boat.add(hull);
+    addBox(boat,0,.5,0,2.0,.75,3.3,mat("#d1d6d3",.4));
+    scene.add(boat);
+  }
+  // Seaside cabins and deck details.
+  addCoastCabin(190, 78, Math.PI, "#e8d7b3");
+  addCoastCabin(174, 94, Math.PI, "#c9ded5");
+  addCoastCabin(-165, 93, 0, "#c8d1d5");
+  // Rock stacks and low cliff faces mark the island edges.
+  for (const [x,z,h,wide] of [
+    [-245,-170,15,13],[-253,-115,12,16],[-252,10,18,18],[-245,155,13,15],
+    [-180,238,17,20],[0,242,12,19],[150,235,15,20],[238,185,19,17],
+    [248,80,12,18],[244,-80,14,18],[215,-220,15,17],[-120,-235,13,16]
+  ]) {
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1,1), rockMat);
+    rock.position.set(x,h*.36,z); rock.scale.set(wide,h*.72,wide*.9); rock.rotation.y=rand(0,Math.PI); scene.add(rock);
+    addCollisionVolume(x,z,wide*1.1,wide,h);
+  }
+  // Sandy footpath winding around the sheltered bay.
+  for (let i=0;i<16;i++) {
+    const z= -110 + i*12;
+    const x= -92 + Math.sin(i*.42)*18;
+    const segment=addPlane(scene,x,.09,z,3.3,11, sand);
+    segment.rotation.y=Math.sin(i*.42)*.13;
+  }
+  // Low wooden fences near the cabins, plus a small coastal lookout.
+  for (let i=0;i<7;i++) {
+    addBox(scene, 204+i*2.8, .68, 66, .14, 1.3, .14, pierDark);
+    if (i<6) addBox(scene, 205+i*2.8, .95, 66, 2.6, .12, .12, pierMat);
+  }
+  addBox(scene, -122, 2.0, 165, 7, .2, 7, pierMat);
+  addBox(scene, -122, 3.2, 162, .2, 2.7, .2, pierDark);
+  addBox(scene, -122, 3.2, 168, .2, 2.7, .2, pierDark);
+  addBox(scene, -122, 4.5, 165, 5.8, .16, .16, pierMat);
+}
+function addCactus(x,z,scale=1) {
+  const cactusMat=mat("#557b56",.98);
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.45*scale,.62*scale,4.8*scale,7),cactusMat);
+  trunk.position.set(x,2.4*scale,z);scene.add(trunk);addCollisionVolume(x,z,1.2*scale,1.2*scale,4.8*scale);
+  for (const side of [-1,1]) {
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(.19*scale,.22*scale,1.65*scale,6),cactusMat);
+    arm.position.set(x+side*.72*scale,2.9*scale,z);arm.rotation.z=side*Math.PI/2;scene.add(arm);
+    const tip=new THREE.Mesh(new THREE.CylinderGeometry(.18*scale,.2*scale,1.3*scale,6),cactusMat);
+    tip.position.set(x+side*1.25*scale,3.35*scale,z);scene.add(tip);
+  }
+}
+function addMesa(x,z,radius,height) {
+  const rock=mat("#a06b49",.97), highlight=mat("#c18a60",.98), shadow=mat("#7d523c",.98);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(radius*.62,radius,height,7),rock);
+  base.position.set(x,height/2,z);base.rotation.y=rand(0,Math.PI);scene.add(base);
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.62,height*.12,7),highlight);
+  cap.position.set(x,height+height*.06,z);cap.rotation.y=rand(0,Math.PI);scene.add(cap);
+  const shelf=new THREE.Mesh(new THREE.CylinderGeometry(radius*.78,radius*.82,height*.25,7),shadow);
+  shelf.position.set(x,height*.74,z);shelf.rotation.y=rand(0,Math.PI);scene.add(shelf);
+  addCollisionVolume(x,z,radius*1.65,radius*1.65,height+height*.12);
+  // Eroded ledges and narrow sediment stripes around the exposed rock face.
+  for (let y=height*.25;y<height*.82;y+=Math.max(4,height*.2)) {
+    const band=new THREE.Mesh(new THREE.CylinderGeometry(radius*.68,radius*.73,.22,7),highlight);
+    band.position.set(x,y,z);band.rotation.y=rand(0,Math.PI);scene.add(band);
+  }
+}
+function addCanyonWorld() {
+  const sand=mat("#bf955e",.99), paleSand=mat("#d7b681",.99), clay=mat("#a8764e",.99);
+  const scrub=mat("#8b985f",.99), track=mat("#6e523f",.99);
+  addPlane(scene,0,-.16,0,650,650,sand);
+  // Low dune mounds make the valley floor less like a flat board.
+  for (const [x,z,sx,sz,sy] of [
+    [-230,-210,35,26,7],[-210,20,26,40,4],[225,-10,34,40,6],
+    [220,205,42,25,7],[-220,210,28,45,5],[-70,-220,28,16,3],[80,220,32,18,3]
+  ]) {
+    const dune=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),paleSand);
+    dune.position.set(x,sy*.45,z);dune.scale.set(sx,sy,sz);scene.add(dune);
+  }
+  // A winding, pale dry wash through the valley, bordered with gravel bars.
+  addShapeGround([[-52,-275],[-15,-230],[-28,-180],[18,-125],[35,-70],[8,-18],[38,34],[19,92],[58,150],[36,210],[68,275],[92,275],[66,208],[83,146],[47,80],[67,25],[36,-22],[62,-76],[52,-130],[7,-186],[18,-226],[-4,-275]],.015,paleSand);
+  addShapeGround([[-62,-275],[-54,-210],[-12,-170],[-3,-120],[14,-70],[-9,-18],[17,35],[-5,92],[35,150],[15,210],[48,275],[62,275],[39,209],[57,149],[31,82],[50,24],[20,-18],[43,-76],[33,-130],[-8,-185],[4,-226],[-22,-275]],.03,track);
+  // Large mesas sit outside the main race line.
+  addMesa(-190,-185,41,47); addMesa(190,-175,47,58);
+  addMesa(-194,168,46,49); addMesa(190,178,43,54);
+  addMesa(-162,-18,22,22); addMesa(160,26,25,28);
+  // Hoodoos and rock spires: vertical landmarks visible while banking around the course.
+  for (const [x,z,h,r] of [
+    [-125,-128,32,8],[-150,60,27,7],[131,-125,34,8],[140,126,28,7],
+    [-110,210,21,6],[108,215,25,7],[-235,65,22,8],[232,-65,25,8]
+  ]) {
+    const spire=new THREE.Mesh(new THREE.CylinderGeometry(r*.52,r*1.35,h,6),mat("#986344",.99));
+    spire.position.set(x,h/2,z);spire.rotation.z=rand(-.12,.12);scene.add(spire);
+    const cap=new THREE.Mesh(new THREE.DodecahedronGeometry(r*.95,0),mat("#c18a61",.99));cap.position.set(x,h+.2,z);scene.add(cap);
+    addCollisionVolume(x,z,r*2.1,r*2.1,h+2);
+  }
+  // Cactus clumps and dry shrubs use varied scales, with solid trunks.
+  for (const [x,z,scale] of [
+    [-85,-150,.85],[-95,-90,.75],[-96,10,1],[-92,128,.8],[-55,176,.7],
+    [92,-158,.8],[98,-90,.9],[96,110,.75],[80,164,.7],[205,82,.75],[-210,90,.8],
+    [220,125,.7],[220,-125,.85],[-215,-100,.72]
+  ]) addCactus(x,z,scale);
+  // Worn trail markings and route posts help sell the desert airstrip.
+  for (let i=0;i<18;i++) {
+    const z=-180+i*21, x=105+Math.sin(i*.4)*8;
+    addPlane(scene,x,.04,z,.28,5.5,mat("#eed8a5",.98));
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,1.8,6),mat("#654b39",.98));
+    post.position.set(x+2,1,z);scene.add(post);
+    addBox(scene,x+2,2,.1+z,.65,.16,.65,mat("#d3a16d",.98));
+  }
+  // A weather station / relay mast on the far side of the valley.
+  const mastX=220,mastZ=-25;
+  for (let i=0;i<6;i++) {
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,7,5),mat("#6d7777",.7));
+    m.position.set(mastX+(i%2)*.55,3.5+i*.4,mastZ);scene.add(m);
+  }
+  addBox(scene,mastX,13,mastZ,4,.25,4,mat("#b8b5a4",.65));
+}
+function addCityDetailPass() {
+  // A limited set of street trees, planters and traffic signals enrich the city without overloading mobile GPUs.
+  const planterMat=mat("#4d5e61",.92), curbMat=mat("#9facb1",.85), signalMat=mat("#22313a",.7);
+  for (const road of [-216,-120,-24,72,168]) {
+    for (const z of [-192,-96,0,96,192]) {
+      for (const side of [-1,1]) {
+        const x=road+side*9.6;
+        addBox(scene,x,.26,z,2.4,.45,2.4,planterMat);
+        addTree(x,z,rand(.7,.92));
+      }
+      // Small traffic signal heads at the avenue corners.
+      for (const side of [-1,1]) {
+        const x=road+side*8.8, zz=z+7.5;
+        const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.14,4.6,6),signalMat);
+        pole.position.set(x,2.3,zz);scene.add(pole);
+        addBox(scene,x,4.35,zz,.75,.85,.55,signalMat);
+        for (let lamp=0;lamp<3;lamp++) {
+          const bulb=new THREE.Mesh(sphereGeo,signalLights[lamp]); bulb.scale.setScalar(.12);
+          bulb.position.set(x,4.55-lamp*.24,zz+.29);scene.add(bulb);
+        }
+      }
+    }
+  }
+  // Fresh street-level cues: road arrows, bike racks and a transit shelter.
+  const paint=mat("#dfe7d8",.9),metal=mat("#536c78",.55,{metalness:.3}),glass=mat("#77b7c7",.3,{metalness:.14,transparent:true,opacity:.42});
+  const signalLights=[mat("#e85b54",.35,{emissive:"#7e1511",emissiveIntensity:.45}),mat("#e8bb55",.35,{emissive:"#735015",emissiveIntensity:.4}),mat("#6edb8e",.35,{emissive:"#175e2b",emissiveIntensity:.45})];
+  for (const [x,z,rotation] of [[-30,-7,0],[66,88,Math.PI/2],[-126,104,0],[162,-82,Math.PI/2]]) {
+    addPlane(scene,x,.036,z,2.1,5.5,paint).rotation.y=rotation;
+    const rack=new THREE.Mesh(new THREE.TorusGeometry(.5,.07,5,12),metal);
+    rack.position.set(x+3,.55,z);rack.rotation.x=Math.PI/2;scene.add(rack);
+  }
+  const shelterX=34,shelterZ=-102;
+  addBox(scene,shelterX,.14,shelterZ,7,.18,2.7,curbMat);
+  for(const side of [-1,1]) {
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,2.8,6),metal);
+    post.position.set(shelterX+side*3.1,1.5,shelterZ);scene.add(post);
+  }
+  addBox(scene,shelterX,2.65,shelterZ,7.2,.12,3,metal);
+  addBox(scene,shelterX,1.5,shelterZ-1.35,6.5,2.2,.08,glass);
+  addBox(scene,shelterX,.8,shelterZ+.6,5.8,.5,1.1,metal);
+}
+
 function createGates() {
   for (let i = 0; i < course.length; i++) {
     const p = course[i], prev = i === 0 ? { x: 0, z: 12 } : course[i - 1];
@@ -601,6 +965,7 @@ function setupEvents() {
     button.addEventListener("lostpointercapture", release);
     button.addEventListener("contextmenu", (e) => e.preventDefault());
   });
+  $("startMap").addEventListener("change", e => loadMap(e.target.value, true));
   $("startBtn").addEventListener("click", startFlight);
   $("openTuningSetup").addEventListener("click", openTuning);
   $("settingsBtn").addEventListener("click", openTuning);
@@ -727,6 +1092,7 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 function startFlight() {
+  loadMap($("startMap").value, false);
   currentMission = $("startMode").value;
   handling = $("startHandling").value;
   collisionAssist = $("startAssist").value === "on";
@@ -735,7 +1101,7 @@ function startFlight() {
   missionFinished = false; nextGate = 0; lastCollisionMessageAt = 0;
   $("startOverlay").style.display = "none"; $("pauseOverlay").style.display = "none"; $("crashOverlay").style.display = "none"; $("hud").style.display = "block"; crashed = false; crashReason = "";
   $("missionTitle").textContent = currentMission === "race" ? "Gate run / time trial" : "Free flight";
-  $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : "Explore downtown, skim the rooftops and find the glowing gates.";
+  $("missionHelp").textContent = currentMission === "race" ? "Fly through every neon ring in sequence. Keep the line tight." : mapConfig[currentMap].desc;
   $("checkpoint").textContent = currentMission === "race" ? "CHECKPOINT 01 / " + String(course.length).padStart(2, "0") : "PRACTICE MODE";
   resetFlight(false); updateModeUI(); updateGates();
   showMessage(currentMission === "race" ? "TIME TRIAL START / GATE 01" : "ARMED / HAVE A SMOOTH FLIGHT");
@@ -983,20 +1349,35 @@ function updateHud(now) {
 function drawMinimap() {
   const w = mini.width, h = mini.height, c = miniCtx;
   c.clearRect(0, 0, w, h);
-  c.fillStyle = "#233d47"; c.fillRect(0, 0, w, h);
+  const mapBack = currentMap === "coast" ? "#246b80" : currentMap === "canyon" ? "#a5794e" : "#233d47";
+  c.fillStyle = mapBack; c.fillRect(0, 0, w, h);
   const scale = w / (mapLimit * 2 + 12);
   c.save(); c.translate(w / 2, h / 2); c.scale(scale, scale);
-  c.fillStyle = "#5e8179"; c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
-  c.fillStyle = "#34414a";
-  for (let g = -240; g <= 240; g += 48) {
-    c.fillRect(g - 6, -mapLimit - 6, 12, mapLimit * 2 + 12);
-    c.fillRect(-mapLimit - 6, g - 6, mapLimit * 2 + 12, 12);
+  c.fillStyle = currentMap === "coast" ? "#dcc796" : currentMap === "canyon" ? "#c59b68" : "#5e8179";
+  c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
+  if (currentMap === "city") {
+    c.fillStyle = "#34414a";
+    for (let g = -240; g <= 240; g += 48) {
+      c.fillRect(g - 6, -mapLimit - 6, 12, mapLimit * 2 + 12);
+      c.fillRect(-mapLimit - 6, g - 6, mapLimit * 2 + 12, 12);
+    }
+  } else if (currentMap === "coast") {
+    c.fillStyle = "#246b80"; c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
+    c.fillStyle = "#dcc796";
+    c.beginPath();
+    const coastOutline=[[-270,-215],[-240,-269],[-105,-272],[8,-244],[124,-271],[245,-251],[275,-156],[257,-30],[278,94],[240,235],[112,269],[-20,248],[-155,273],[-264,218],[-276,73],[-253,-76]];
+    coastOutline.forEach(([x,z],i)=>{if(i===0)c.moveTo(x,z);else c.lineTo(x,z)});
+    c.closePath();c.fill();
+  } else {
+    c.strokeStyle="#e0bc83";c.lineWidth=3;
+    c.beginPath();c.moveTo(-52,-mapLimit);c.lineTo(-15,-230);c.lineTo(-28,-180);c.lineTo(18,-125);c.lineTo(35,-70);c.lineTo(8,-18);c.lineTo(38,34);c.lineTo(19,92);c.lineTo(58,150);c.lineTo(36,210);c.lineTo(68,mapLimit);c.stroke();
   }
   for (const b of cityBoxes) {
-    c.fillStyle = b.h > 40 ? "#4a6e7b" : "#8a9696";
+    c.fillStyle = currentMap === "coast" ? "#61746a" : currentMap === "canyon" ? (b.h > 26 ? "#694832" : "#8e6345") : (b.h > 40 ? "#4a6e7b" : "#8a9696");
     c.fillRect(b.x - b.w / 2, b.z - b.d / 2, b.w, b.d);
   }
-  c.fillStyle = "#78a98a"; c.fillRect(100, 100, 40, 40);
+  if (currentMap === "city") { c.fillStyle = "#78a98a"; c.fillRect(100, 100, 40, 40); }
+  if (currentMap === "coast") { c.fillStyle="#f5e6bd"; c.fillRect(120-4,-180-9,8,18); c.fillStyle="#eff6f7"; c.fillRect(-210-3,-175-3,6,6); }
   if (currentMission === "race" && !missionFinished) {
     gateItems.forEach((g, i) => {
       if (i < nextGate) return;
