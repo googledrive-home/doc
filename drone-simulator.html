@@ -928,6 +928,58 @@ function addMountains() {
     scene.add(hill);
   }
 }
+
+function syncSoundUI() {
+  const label = soundEnabled ? "♪ SOUND: ON" : "♪ SOUND: OFF";
+  for (const id of ["soundBtn","soundSetupBtn"]) {
+    const button = $(id);
+    if (button) { button.textContent = label; button.setAttribute("aria-pressed", String(soundEnabled)); }
+  }
+}
+function startMotorSound() {
+  if (!soundEnabled) return;
+  try {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    if (!audioContext) {
+      audioContext = new AudioCtor();
+      motorOscillator = audioContext.createOscillator();
+      motorGain = audioContext.createGain();
+      motorOscillator.type = "sawtooth";
+      motorOscillator.frequency.value = 75;
+      motorGain.gain.value = .0001;
+      motorOscillator.connect(motorGain);
+      motorGain.connect(audioContext.destination);
+      motorOscillator.start();
+    }
+    if (audioContext.state === "suspended") audioContext.resume();
+  } catch (_) {}
+}
+function beepSound(kind) {
+  if (!soundEnabled) return;
+  startMotorSound();
+  if (!audioContext) return;
+  const tones = kind === "gate" ? [880,1180] : kind === "crash" ? [240,120] : [600,820];
+  tones.forEach((hz,i) => {
+    const osc=audioContext.createOscillator(), gain=audioContext.createGain();
+    const at=audioContext.currentTime+i*.09;
+    osc.frequency.setValueAtTime(hz,at);
+    gain.gain.setValueAtTime(.0001,at);
+    gain.gain.exponentialRampToValueAtTime(.03,at+.012);
+    gain.gain.exponentialRampToValueAtTime(.0001,at+.13);
+    osc.connect(gain);gain.connect(audioContext.destination);
+    osc.start(at);osc.stop(at+.15);
+  });
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  try { localStorage.setItem("fpvDroneSoundMuted", soundEnabled ? "0" : "1"); } catch (_) {}
+  syncSoundUI();
+  if (soundEnabled) beepSound("ui");
+  else if (motorGain && audioContext) motorGain.gain.setTargetAtTime(.0001,audioContext.currentTime,.08);
+  showMessage(soundEnabled ? "SOUND ENABLED" : "SOUND MUTED");
+}
+
 function setupEvents() {
   window.addEventListener("resize", resize);
   canvas.addEventListener("click", requestMouseCapture);
