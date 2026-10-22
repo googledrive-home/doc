@@ -26,7 +26,7 @@
 @media(max-width:440px){.sidepanel{top:76px;width:128px}.rightpanel{top:76px;width:126px}.metric:nth-child(3){display:none}.brand{gap:7px}.brandmark{width:27px;height:27px}.brand b{letter-spacing:.08em}.brand small{letter-spacing:.08em}.menuleft p{font-size:12px}.controlsgrid{grid-template-columns:1fr}.bottomleft{display:none}.actions .btn{padding:8px}.mobilecontrols{bottom:60px}}
 /* Flight settings are split into a scrollable control pane and a fixed action rail. */
 #settingsOverlay{padding:16px 16px 88px;overflow:hidden}
-.tuning-menu{width:min(1120px,calc(100vw - 32px));max-height:calc(100dvh - 108px);min-height:0;grid-template-columns:minmax(240px,.68fr) minmax(0,1fr);overflow:hidden}
+.tuning-menu{width:min(1120px,calc(100vw - 32px));height:min(780px,calc(100dvh - 108px));max-height:calc(100dvh - 108px);min-height:0;grid-template-columns:minmax(240px,.68fr) minmax(0,1fr);overflow:hidden}
 .tuning-menu .menuleft,.tuning-menu .settings-controls{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#386174 transparent}
 .tuning-menu .menuleft{align-self:stretch;padding:clamp(20px,3vw,38px)}
 .tuning-menu .settings-controls{justify-content:flex-start;padding:clamp(18px,2.2vw,30px);padding-bottom:24px}
@@ -39,7 +39,7 @@
 .settings-actionbar .primary{min-width:170px}
 @media(max-width:780px){
   #settingsOverlay{padding:12px 12px 86px}
-  .tuning-menu{width:calc(100vw - 24px);max-height:calc(100dvh - 100px);grid-template-columns:minmax(0,1fr);overflow:auto;display:block}
+  .tuning-menu{width:calc(100vw - 24px);height:auto;max-height:calc(100dvh - 100px);grid-template-columns:minmax(0,1fr);overflow:auto;display:block}
   .tuning-menu .menuleft{display:none}
   .tuning-menu .settings-controls{overflow:visible;padding:18px 16px 26px;border:0}
   .settings-actionbar{width:calc(100vw - 24px);gap:8px;padding:8px}
@@ -72,7 +72,7 @@
     <div class="statrow"><span>Flight mode</span><b id="modeRead">STAB</b></div>
     <div class="statrow"><span>Signal</span><b style="color:var(--lime)">100%</b></div>
     <div class="statrow"><span>Flight time</span><b id="flightTime">00:00</b></div>
-    <div class="statrow"><span>Throttle</span><b id="throttleRead">HOVER</b></div>
+    <div class="statrow"><span>Throttle</span><b id="throttleRead">IDLE 0%</b></div>
     <div class="meter"><span id="throttlebar" style="width:50%"></span></div>
     <div class="statrow"><span>Impact protection</span><b id="collisionRead">ON</b></div>
   </div>
@@ -106,7 +106,7 @@
     <div><div class="touchlabel">THROTTLE / YAW</div><div class="touchpad">
       <button class="touchbtn" data-key="space" style="grid-column:2;grid-row:1">THR+</button>
       <button class="touchbtn" data-key="q" style="grid-column:1;grid-row:2">↶</button>
-      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2">THR−</button>
+      <button class="touchbtn" data-key="shift" style="grid-column:2;grid-row:2" aria-label="Reverse thrust">REV</button>
       <button class="touchbtn" data-key="e" style="grid-column:3;grid-row:2">↷</button>
     </div></div>
   </div>
@@ -123,7 +123,7 @@
         <div class="controlitem"><span class="key">W</span><span class="key">S</span> Nose down / up</div>
         <div class="controlitem"><span class="key">A</span><span class="key">D</span> Bank left / right</div>
         <div class="controlitem"><span class="key">Q</span><span class="key">E</span> Yaw left / right</div>
-        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Increase / lower throttle</div>
+        <div class="controlitem"><span class="key">Space</span><span class="key">⇧</span> Hold thrust / reverse thrust</div>
       </div>
       <p class="smallnote">Click the flight view to capture the mouse · Mouse moves yaw/pitch · Hold right mouse and move sideways to roll · R resets · Esc pauses. Touch controls are available on phones and tablets.</p>
     </div>
@@ -260,7 +260,7 @@ const flight = {
   position: new THREE.Vector3(0, 12, 12),
   velocity: new THREE.Vector3(),
   yaw: 0, pitch: 0, roll: 0,
-  throttle: 9.81 / 32, battery: 100
+  throttle: 0, battery: 100
 };
 const course = [
   { x: 0, y: 18, z: -48 },
