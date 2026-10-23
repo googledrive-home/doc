@@ -138,7 +138,7 @@ function findPocket(b){
  // The capture ellipse overlaps the rail opening so the cushion cannot bounce a ball back first.
  for(const p of pockets){
   const dx=b.x-p.x,dz=Math.abs(b.z-p.z);
-  const ax=p.side?.126:.132,az=p.side?.102:.128;
+  const ax=p.side?.126:.132,az=p.side?.086:.128;
   if((dx*dx)/(ax*ax)+(dz*dz)/(az*az)<1)return p;
  }
  return null;
@@ -172,7 +172,7 @@ function physics(dt){
      b.sideSpin*=Math.exp(-1.35*dt);
    }
    b.x+=b.vx*dt;b.z+=b.vz*dt;
-   if(findPocket(b)&&speed>.11){pocket(b);continue}
+   if(findPocket(b)){pocket(b);continue}
    const edgeX=CUSHION_X,edgeZ=CUSHION_Z;
    const cornerLane=Math.abs(b.x)>HL-.145&&Math.abs(b.z)>HW-.145;
    const sideLane=Math.abs(b.z)>HW-.145&&Math.abs(b.x)<.132;
