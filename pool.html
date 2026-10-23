@@ -14,7 +14,7 @@
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
 const $=id=>document.getElementById(id),canvas=$("scene"),plan=$("plan"),pc=plan.getContext("2d");
-const TL=2.24,TW=1.12,BR=.0286,TY=.78,HL=TL/2,HW=TW/2,STEP=1/240,CUSHION_X=HL-.034-.055/2-BR,CUSHION_Z=HW-.032-.055/2-BR;
+const TL=2.24,TW=1.12,BR=.0286,TY=.78,HL=TL/2,HW=TW/2,STEP=1/240,FELT_HL=(TL-.11)/2,FELT_HW=(TW-.11)/2,CORNER_CUT=.16,SIDE_MOUTH_HALF=.115,SIDE_MOUTH_DEPTH=.14,CUSHION_X=HL-.034-.055/2-BR,CUSHION_Z=HW-.032-.055/2-BR;
 const clock=new THREE.Clock(),balls=[],pockets=[],tuning={fov:48,cameraHeight:1.7,cameraSmooth:8,aimSensitivity:.45};
 const cloth={green:"#176c4b",blue:"#176c8e",red:"#742c37"},colors={1:"#f4cf35",2:"#2456d8",3:"#d62835",4:"#7b3ec8",5:"#ef8127",6:"#23864b",7:"#711d26",8:"#181a1b",9:"#f4cf35",10:"#2456d8",11:"#d62835",12:"#7b3ec8",13:"#ef8127",14:"#23864b",15:"#711d26"};
 let scene,camera,renderer,felt,cue,aimLine,targetLine,ballShadowGeometry,ballShadowMaterial,active=false,paused=false,moving=false,dragging=false,aim=0,power=55,spinInput=0,orbit=0,view="player",acc=0,player=0,skill="club",groups=[null,null],firstHit=null,potted=[],scratch=false,hitCue=false,railHit=false,won=false,shots=[0,0],pots=[0,0],toastTimer=0,cpuTimer=null,mouseX=0,cameraReady=false;
@@ -56,31 +56,60 @@ function addSmoothRail(path,width,baseY,height,material,bevel=.003){
  const mesh=new THREE.Mesh(geometry,material);mesh.position.y=baseY;mesh.castShadow=false;mesh.receiveShadow=true;scene.add(mesh);return mesh
 }
 function offsetRailPath(path,dx,dz){return path.map(([x,z])=>[x+dx,z+dz])}
+
+function makePocketedFelt(material){
+ const hx=FELT_HL,hz=FELT_HW,cc=CORNER_CUT,sh=SIDE_MOUTH_HALF,md=SIDE_MOUTH_DEPTH;
+ const shape=new THREE.Shape();
+ const M=(x,z)=>shape.moveTo(x,-z),L=(x,z)=>shape.lineTo(x,-z);
+ const B=(c1x,c1z,c2x,c2z,x,z)=>shape.bezierCurveTo(c1x,-c1z,c2x,-c2z,x,-z);
+ M(-hx+cc,hz);
+ L(-sh,hz);B(-sh*.65,hz-md,sh*.65,hz-md,sh,hz);
+ L(hx-cc,hz);
+ B(hx-cc*.72,hz-cc*.08,hx-cc*.08,hz-cc*.72,hx,hz-cc);
+ L(hx,-hz+cc);
+ B(hx-cc*.08,-hz+cc*.72,hx-cc*.72,-hz+cc*.08,hx-cc,-hz);
+ L(sh,-hz);B(sh*.65,-hz+md,-sh*.65,-hz+md,-sh,-hz);
+ L(-hx+cc,-hz);
+ B(-hx+cc*.72,-hz+cc*.08,-hx+cc*.08,-hz+cc*.72,-hx,-hz+cc);
+ L(-hx,hz-cc);
+ B(-hx+cc*.08,hz-cc*.72,-hx+cc*.72,hz-cc*.08,-hx+cc,hz);
+ shape.closePath();
+ const geometry=new THREE.ShapeGeometry(shape,20);
+ geometry.rotateX(-Math.PI/2);
+ const mesh=new THREE.Mesh(geometry,material);
+ mesh.position.y=TY-.0025;mesh.receiveShadow=true;scene.add(mesh);
+ return mesh;
+}
+function makeCornerArc(cx,cz,sx,sz,r){
+ const path=[],start=Math.PI*.82,end=-Math.PI*.31,steps=12;
+ for(let i=0;i<=steps;i++){const a=start+(end-start)*i/steps;path.push([cx+sx*r*Math.cos(a),cz+sz*r*Math.sin(a)])}
+ return path;
+}
+function addRailLayers(path,side,wood,rubber,gold){
+ addSmoothRail(path,.055,TY-.008,.064,rubber,.0035);
+ addSmoothRail(offsetRailPath(path,0,side*.036),.092,TY+.046,.040,wood,.006);
+ addSmoothRail(offsetRailPath(path,0,side*.018),.012,TY+.0825,.009,gold,.0012);
+}
 function buildCushions(ex,sz,wood,rubber,gold){
- const longPaths=[];
+ // Cushion runs finish before each pocket; curved timber follows the outside corner of each mouth.
  for(const side of [-1,1]){
-  longPaths.push([
-   [-HL+.25,side*(HW-.13)],[-HL+.22,side*(HW-.075)],[-HL+.20,side*sz],[-.22,side*sz],[-.15,side*sz],[-.14,side*(HW-.020)]
-  ]);
-  longPaths.push([
-   [.14,side*(HW-.020)],[.15,side*sz],[.22,side*sz],[HL-.20,side*sz],[HL-.22,side*(HW-.075)],[HL-.25,side*(HW-.13)]
-  ]);
- }
- for(const path of longPaths){
-  const side=Math.sign(path[2][1]);
-  addSmoothRail(path,.055,TY-.008,.064,rubber,.0035);
-  addSmoothRail(offsetRailPath(path,0,side*.036),.092,TY+.046,.040,wood,.006);
-  addSmoothRail(offsetRailPath(path,0,side*.018),.012,TY+.0825,.009,gold,.0012);
+  const paths=[
+   [[-HL+.25,side*(HW-.07)],[-HL+.20,side*sz],[-.20,side*sz],[-.14,side*(HW-.045)]],
+   [[.14,side*(HW-.045)],[.20,side*sz],[HL-.20,side*sz],[HL-.25,side*(HW-.07)]]
+  ];
+  for(const path of paths)addRailLayers(path,side,wood,rubber,gold);
  }
  for(const end of [-1,1]){
-  const path=[
-   [end*(ex-.13),-.30],[end*(ex-.07),-.26],
-   [end*ex,-.20],[end*ex,.20],
-   [end*(ex-.07),.26],[end*(ex-.13),.30]
-  ];
+  const path=[[end*ex,-(HW-.26)],[end*ex,-.20],[end*ex,0],[end*ex,.20],[end*ex,HW-.26]];
   addSmoothRail(path,.055,TY-.008,.064,rubber,.0035);
   addSmoothRail(offsetRailPath(path,end*.038,0),.092,TY+.046,.040,wood,.006);
-  addSmoothRail(offsetRailPath(path,end*.038,0),.012,TY+.0825,.009,gold,.0012);
+  addSmoothRail(offsetRailPath(path,end*.018,0),.012,TY+.0825,.009,gold,.0012);
+ }
+ for(const sx of [-1,1])for(const sz of [-1,1]){
+  const cx=sx*(FELT_HL-CORNER_CUT*.38),cz=sz*(FELT_HW-CORNER_CUT*.38);
+  addSmoothRail(makeCornerArc(cx,cz,sx,sz,.12),.055,TY-.008,.064,rubber,.0035);
+  addSmoothRail(makeCornerArc(cx,cz,sx,sz,.17),.092,TY+.046,.040,wood,.006);
+  addSmoothRail(makeCornerArc(cx,cz,sx,sz,.145),.012,TY+.0825,.009,gold,.0012);
  }
 }
 function createBall(n,x,z){
@@ -90,7 +119,7 @@ function createBall(n,x,z){
 }
 function woodTex(){const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");x.fillStyle="#684126";x.fillRect(0,0,512,128);for(let i=0;i<110;i++){x.strokeStyle=i%2?"#9b7042":"#3e2417";x.globalAlpha=.10+Math.random()*.13;x.lineWidth=.7+Math.random()*2.8;x.beginPath();const y=Math.random()*128;x.moveTo(0,y);x.bezierCurveTo(100,y-10,250,y+12,512,y+Math.random()*9);x.stroke()}x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;return t}
 function feltTex(){const c=document.createElement("canvas");c.width=512;c.height=512;const x=c.getContext("2d");x.fillStyle="#e8ece6";x.fillRect(0,0,512,512);for(let y=0;y<512;y+=3){x.strokeStyle=y%6?"rgba(80,95,83,.06)":"rgba(255,255,255,.12)";x.lineWidth=1;x.beginPath();x.moveTo(0,y);x.lineTo(512,y+2);x.stroke()}for(let i=0;i<3000;i++){x.fillStyle=Math.random()>.5?"rgba(52,75,58,.075)":"rgba(255,255,255,.12)";x.fillRect(Math.random()*512,Math.random()*512,1,1.5)}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;t.repeat.set(5,2.5);t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);return t}
-function makeScene(){renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight,false);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;scene=new THREE.Scene();scene.background=new THREE.Color("#0a1711");scene.fog=new THREE.Fog("#0a1711",6.5,15);camera=new THREE.PerspectiveCamera(tuning.fov,innerWidth/innerHeight,.01,40);scene.add(new THREE.HemisphereLight("#fff3d8","#14291c",2.0));const sun=new THREE.DirectionalLight("#ffedc4",3.1);sun.position.set(-2.8,4.8,2.2);scene.add(sun);const fill=new THREE.DirectionalLight("#91d2b4",.95);fill.position.set(2.6,2.8,-2.2);scene.add(fill);const ceiling=new THREE.PointLight("#ffce81",5.5,5.4,2);ceiling.position.set(0,2.5,0);scene.add(ceiling);box(scene,0,-.2,0,20,.25,20,mat("#101b14",.93));box(scene,0,-.050,0,3.55,.04,2.05,mat("#152a20",.97));ballShadowGeometry=new THREE.CircleGeometry(BR*1.72,28);ballShadowGeometry.rotateX(-Math.PI/2);ballShadowMaterial=new THREE.MeshBasicMaterial({color:"#020603",transparent:true,opacity:.27,depthWrite:false,side:THREE.DoubleSide});const wood=new THREE.MeshStandardMaterial({map:woodTex(),roughness:.38}),rubber=mat("#121c17",.44),brass=mat("#c29a53",.27,.72),edge=mat("#392419",.33);box(scene,0,TY-.12,0,TL+.22,.16,TW+.22,wood);box(scene,0,TY-.235,0,TL-.08,.12,TW-.08,edge);for(const x of [-.91,.91])for(const z of [-.37,.37]){box(scene,x,TY-.475,z,.115,.55,.115,wood);box(scene,x,TY-.755,z,.19,.07,.19,edge);box(scene,x,TY-.714,z,.15,.018,.15,mat("#caa15c",.24,.62))}felt=new THREE.MeshStandardMaterial({color:cloth.green,map:feltTex(),roughness:.98,metalness:0});box(scene,0,TY-.015,0,TL-.11,.025,TW-.11,felt);const tableMark= new THREE.MeshStandardMaterial({color:"#d9e2d6",roughness:.92,transparent:true,opacity:.30,depthWrite:false});box(scene,-.30,TY-.0012,0,.0015,.001,TW-.15,tableMark);cyl(scene,-.30,TY+.0005,0,.008,.001,tableMark,18);cyl(scene,.28,TY+.0005,0,.008,.001,tableMark,18);cyl(scene,0,TY+.0005,0,.006,.001,tableMark,18);const black=mat("#020604",.18),rim=mat("#0b1410",.34,.04);for(const x of [-HL,0,HL])for(const z of [-HW,HW]){const isSide=x===0,px=x===0?0:x-Math.sign(x)*.035,pz=z-Math.sign(z)*.035,r=isSide?.062:.067;cyl(scene,px,TY+.0005,pz,r+.006,.006,rim,48);cyl(scene,px,TY-.018,pz,r,.026,black,48);pockets.push({x:px,z:pz,r,side:isSide})}const ex=HL-.034,sz=HW-.032,gold=mat("#caa15c",.24,.62);buildCushions(ex,sz,wood,rubber,gold);const diamondGeo=new THREE.OctahedronGeometry(.010,0),sightMat=mat("#e1bd71",.26,.68);for(let i=1;i<8;i++){const x=-HL+i*TL/8;for(const z of [-HW-.032,HW+.032]){const d=new THREE.Mesh(diamondGeo,sightMat);d.position.set(x,TY+.04,z);d.scale.set(.8,.55,.7);scene.add(d)}}for(const x of [-HL-.035,HL+.035])for(let i=1;i<4;i++){const z=-HW+i*TW/4,d=new THREE.Mesh(diamondGeo,sightMat);d.position.set(x,TY+.04,z);d.scale.set(.7,.55,.8);scene.add(d)}const lamp=mat("#f0d9a5",.24,.12);for(const x of [-.68,.68]){cyl(scene,x,2.5,0,.018,.36,brass,12);box(scene,x,2.29,0,.28,.025,.11,lamp)}}
+function makeScene(){renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.setSize(innerWidth,innerHeight,false);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;scene=new THREE.Scene();scene.background=new THREE.Color("#0a1711");scene.fog=new THREE.Fog("#0a1711",6.5,15);camera=new THREE.PerspectiveCamera(tuning.fov,innerWidth/innerHeight,.01,40);scene.add(new THREE.HemisphereLight("#fff3d8","#14291c",2.0));const sun=new THREE.DirectionalLight("#ffedc4",3.1);sun.position.set(-2.8,4.8,2.2);scene.add(sun);const fill=new THREE.DirectionalLight("#91d2b4",.95);fill.position.set(2.6,2.8,-2.2);scene.add(fill);const ceiling=new THREE.PointLight("#ffce81",5.5,5.4,2);ceiling.position.set(0,2.5,0);scene.add(ceiling);box(scene,0,-.2,0,20,.25,20,mat("#101b14",.93));box(scene,0,-.050,0,3.55,.04,2.05,mat("#152a20",.97));ballShadowGeometry=new THREE.CircleGeometry(BR*1.72,28);ballShadowGeometry.rotateX(-Math.PI/2);ballShadowMaterial=new THREE.MeshBasicMaterial({color:"#020603",transparent:true,opacity:.27,depthWrite:false,side:THREE.DoubleSide});const wood=new THREE.MeshStandardMaterial({map:woodTex(),roughness:.38}),rubber=mat("#121c17",.44),brass=mat("#c29a53",.27,.72),edge=mat("#392419",.33);box(scene,0,TY-.12,0,TL+.22,.16,TW+.22,wood);box(scene,0,TY-.235,0,TL-.08,.12,TW-.08,edge);for(const x of [-.91,.91])for(const z of [-.37,.37]){box(scene,x,TY-.475,z,.115,.55,.115,wood);box(scene,x,TY-.755,z,.19,.07,.19,edge);box(scene,x,TY-.714,z,.15,.018,.15,mat("#caa15c",.24,.62))}felt=new THREE.MeshStandardMaterial({color:cloth.green,map:feltTex(),roughness:.98,metalness:0});makePocketedFelt(felt);const tableMark= new THREE.MeshStandardMaterial({color:"#d9e2d6",roughness:.92,transparent:true,opacity:.30,depthWrite:false});box(scene,-.30,TY-.0012,0,.0015,.001,TW-.15,tableMark);cyl(scene,-.30,TY+.0005,0,.008,.001,tableMark,18);cyl(scene,.28,TY+.0005,0,.008,.001,tableMark,18);cyl(scene,0,TY+.0005,0,.006,.001,tableMark,18);const black=mat("#020604",.18),rim=mat("#211a10",.48,.05);for(const x of [-HL,0,HL])for(const z of [-HW,HW]){const isSide=x===0,px=isSide?0:Math.sign(x)*(FELT_HL-CORNER_CUT*.38),pz=isSide?Math.sign(z)*(FELT_HW-.005):Math.sign(z)*(FELT_HW-CORNER_CUT*.38),r=isSide?.069:.082;pockets.push({x:px,z:pz,r,side:isSide});const ring=new THREE.Mesh(new THREE.TorusGeometry(r*.91,.0035,8,48),rim);ring.rotation.x=Math.PI/2;ring.position.set(px,TY-.0005,pz);scene.add(ring);const cup=new THREE.Mesh(new THREE.CylinderGeometry(r*.88,r*.88,.022,48),black);cup.position.set(px,TY-.019,pz);scene.add(cup)}const ex=HL-.034,sz=HW-.032,gold=mat("#caa15c",.24,.62);buildCushions(ex,sz,wood,rubber,gold);const diamondGeo=new THREE.OctahedronGeometry(.010,0),sightMat=mat("#e1bd71",.26,.68);for(let i=1;i<8;i++){const x=-HL+i*TL/8;for(const z of [-HW-.032,HW+.032]){const d=new THREE.Mesh(diamondGeo,sightMat);d.position.set(x,TY+.04,z);d.scale.set(.8,.55,.7);scene.add(d)}}for(const x of [-HL-.035,HL+.035])for(let i=1;i<4;i++){const z=-HW+i*TW/4,d=new THREE.Mesh(diamondGeo,sightMat);d.position.set(x,TY+.04,z);d.scale.set(.7,.55,.8);scene.add(d)}const lamp=mat("#f0d9a5",.24,.12);for(const x of [-.68,.68]){cyl(scene,x,2.5,0,.018,.36,brass,12);box(scene,x,2.29,0,.28,.025,.11,lamp)}}
 function rack(){for(const b of balls){scene.remove(b.mesh);scene.remove(b.shadow);b.mesh.geometry.dispose()}balls.length=0;createBall(0,-.66,0);const order=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15],gap=BR*2.005;let k=0;for(let row=0;row<5;row++)for(let col=0;col<=row;col++)createBall(order[k++],.28+row*gap*.866,(col-row/2)*gap)}
 function applyTheme(n){if(felt)felt.color.set(cloth[n]||cloth.green)}
 function resize(){if(!renderer||!camera)return;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
@@ -138,7 +167,7 @@ function findPocket(b){
  // The capture ellipse overlaps the rail opening so the cushion cannot bounce a ball back first.
  for(const p of pockets){
   const dx=b.x-p.x,dz=Math.abs(b.z-p.z);
-  const ax=p.side?.126:.132,az=p.side?.086:.128;
+  const ax=p.side?.126:.132,az=p.side?.112:.128;
   if((dx*dx)/(ax*ax)+(dz*dz)/(az*az)<1)return p;
  }
  return null;
