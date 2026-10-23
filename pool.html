@@ -251,19 +251,89 @@ function physics(dt){
  }
 }
 function hasGroup(g){return balls.some(b=>!b.pocketed&&b.group===g)}
-function finishShot(){moving=false;$("shootBtn").disabled=false;$("aimHint").textContent="DRAG TO AIM · SPACE TO SHOOT";const eight=potted.includes(8);if(scratch){const q=balls.find(b=>b.n===0);q.pocketed=false;q.mesh.visible=true;q.shadow.visible=true;q.x=-.66;q.z=0;q.vx=q.vz=0;q.mesh.position.set(q.x,TY+BR,q.z);q.shadow.position.set(q.x,TY-.0015,q.z);q.sideSpin=0;if(eight){endGame(player!==0,"Cue ball scratched with the 8-ball.");return}player=1-player;$("statusText").textContent="Foul: cue ball pocketed. Opponent gets the turn."}else if(eight){const own=groups[player];endGame(own!==null&&!hasGroup(own),"8-ball pocketed.");return}else{if(groups[0]===null){const n=potted.find(n=>n!==0&&n!==8);if(n){const g=n<=7?"solids":"stripes";groups[player]=g;groups[1-player]=g==="solids"?"stripes":"solids";say("GROUP CLAIMED · "+g.toUpperCase())}}const own=groups[player],ownPot=potted.some(n=>n!==0&&n!==8&&(!own||(own==="solids"?n<=7:n>=9)));const legal=hitCue&&firstHit!==null&&(groups[player]===null||(firstHit===8?!hasGroup(own):(own==="solids"?firstHit<=7:firstHit>=9)))&&(ownPot||railHit);if(!legal){player=1-player;$("statusText").textContent="Turn passed. Hit your group first and reach a cushion or pocket."}else if(!ownPot){player=1-player;$("statusText").textContent="Good contact. Opponent's turn."}else $("statusText").textContent="Nice pot. You keep the table."}updateHud();if(player===1&&!won){say("OPPONENT'S TURN");cpuTimer=setTimeout(cpuShot,700)}else{say("YOUR TURN · LINE IT UP");$("turnName").textContent="Your turn"}}
-function endGame(win,why){won=true;active=false;moving=false;clearTimeout(cpuTimer);$("resultTitle").textContent=win?"YOU WIN":"MATCH OVER";$("resultText").textContent=(win?"Great finish. ":"Opponent takes the frame. ")+why+" Shots: you "+shots[0]+", CPU "+shots[1]+".";$("resultOverlay").style.display="grid"}
-function cpuShot(){if(!active||player!==1||won)return;const q=balls.find(b=>b.n===0&&!b.pocketed);if(!q){player=0;return}const g=groups[1];let targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8&&(!g||(g==="solids"?b.n<=7:b.n>=9)));if(g&&!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n===8);if(!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8);let best=null;for(const t of targets)for(const p of pockets){const dx=p.x-t.x,dz=p.z-t.z,d=Math.hypot(dx,dz)||1,ux=dx/d,uz=dz/d,hx=t.x-ux*BR*2.15,hz=t.z-uz*BR*2.15,cost=Math.hypot(hx-q.x,hz-q.z)+d*.8+Math.abs(hz)*.08+Math.random()*(skill==="pro"?.08:skill==="club"?.25:.5);if(!best||cost<best.cost)best={hx,hz,cost}}let dx,dz;if(best){dx=best.hx-q.x;dz=best.hz-q.z}else{dx=targets[0].x-q.x;dz=targets[0].z-q.z}aim=Math.atan2(dz,dx)+(Math.random()-.5)*(skill==="pro"?.025:skill==="club"?.09:.2);shootCpu(skill==="pro"?65:skill==="club"?54:42)}
+function finishShot(){
+ moving=false;$("shootBtn").disabled=false;$("aimHint").textContent="DRAG TO AIM · SPACE TO SHOOT";
+ const eight=potted.includes(8),cueBall=balls.find(b=>b.n===0);
+ if(scratch){
+  cueBall.pocketed=false;cueBall.mesh.visible=true;cueBall.shadow.visible=true;
+  cueBall.x=-.66;cueBall.z=0;cueBall.vx=cueBall.vz=0;
+  cueBall.mesh.position.set(cueBall.x,TY+BR,cueBall.z);cueBall.shadow.position.set(cueBall.x,TY-.0015,cueBall.z);cueBall.sideSpin=0;
+  if(eight){endGame(false,"Cue ball scratched while the 8-ball was pocketed.");return}
+  player=1-player;
+  $("statusText").textContent=gameMode==="local"?"Foul: cue ball pocketed. Player "+(player+1)+" takes the turn.":"Foul: cue ball pocketed. Computer takes the turn.";
+ }else if(eight){
+  const own=groups[player];endGame(own!==null&&!hasGroup(own),"8-ball pocketed.");return;
+ }else{
+  const objectPotted=potted.find(n=>n!==0&&n!==8);
+  const openTable=groups[0]===null,own=groups[player];
+  const ownPot=potted.some(n=>n!==0&&n!==8&&(!own||(own==="solids"?n<=7:n>=9)));
+  const correctFirst=hitCue&&firstHit!==null&&(openTable?firstHit!==8:(firstHit===8?!hasGroup(own):(own==="solids"?firstHit<=7:firstHit>=9)));
+  const legal=correctFirst&&(ownPot||railHit);
+  if(!legal){
+   player=1-player;
+   $("statusText").textContent="Foul: hit your group first and reach a cushion or pocket. "+(gameMode==="local"?"Player "+(player+1)+" to play.":"Computer to play.");
+  }else if(!ownPot){
+   player=1-player;
+   $("statusText").textContent=gameMode==="local"?"No pot — Player "+(player+1)+" to play.":"No pot — computer takes the turn.";
+  }else{
+   if(openTable&&objectPotted!==undefined){
+    const g=objectPotted<=7?"solids":"stripes";groups[player]=g;groups[1-player]=g==="solids"?"stripes":"solids";say("GROUP CLAIMED · "+g.toUpperCase());
+   }
+   $("statusText").textContent=gameMode==="local"?"Nice pot. Player "+(player+1)+" shoots again.":"Nice pot. You shoot again.";
+  }
+ }
+ updateHud();
+ if(gameMode==="cpu"&&player===1&&!won){say("COMPUTER'S TURN");cpuTimer=setTimeout(cpuShot,700)}
+ else{say(gameMode==="local"?"PLAYER "+(player+1)+" TO SHOOT":player===0?"YOUR TURN · LINE IT UP":"COMPUTER TURN")}
+}
+
+function endGame(win,why){
+ won=true;active=false;moving=false;clearTimeout(cpuTimer);
+ const winner=win?player:1-player;
+ const winnerName=gameMode==="local"?"PLAYER "+(winner+1)+" WINS":winner===0?"YOU WIN":"CPU WINS";
+ $("resultTitle").textContent=winnerName;
+ $("resultText").textContent=why+" Shots: Player 1 "+shots[0]+", "+(gameMode==="local"?"Player 2 ":"CPU ")+shots[1]+".";
+ $("resultOverlay").style.display="grid";
+}
+
+function cpuShot(){if(!active||gameMode!=="cpu"||player!==1||won)return;const q=balls.find(b=>b.n===0&&!b.pocketed);if(!q){player=0;return}const g=groups[1];let targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8&&(!g||(g==="solids"?b.n<=7:b.n>=9)));if(g&&!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n===8);if(!targets.length)targets=balls.filter(b=>!b.pocketed&&b.n!==0&&b.n!==8);let best=null;for(const t of targets)for(const p of pockets){const dx=p.x-t.x,dz=p.z-t.z,d=Math.hypot(dx,dz)||1,ux=dx/d,uz=dz/d,hx=t.x-ux*BR*2.15,hz=t.z-uz*BR*2.15,cost=Math.hypot(hx-q.x,hz-q.z)+d*.8+Math.abs(hz)*.08+Math.random()*(skill==="pro"?.08:skill==="club"?.25:.5);if(!best||cost<best.cost)best={hx,hz,cost}}let dx,dz;if(best){dx=best.hx-q.x;dz=best.hz-q.z}else{dx=targets[0].x-q.x;dz=targets[0].z-q.z}aim=Math.atan2(dz,dx)+(Math.random()-.5)*(skill==="pro"?.025:skill==="club"?.09:.2);shootCpu(skill==="pro"?65:skill==="club"?54:42)}
 function shootCpu(p){const q=balls.find(b=>b.n===0&&!b.pocketed);if(!q)return;moving=true;firstHit=null;potted=[];scratch=false;hitCue=false;railHit=false;q.sideSpin=0;shots[player]++;const speed=.4+p/100*3.55;q.vx=Math.cos(aim)*speed;q.vz=Math.sin(aim)*speed;updateHud();$("shootBtn").disabled=true;$("aimHint").textContent="OPPONENT SHOT IN PLAY"}
-function updateHud(){const g0=groups[0],g1=groups[1];$("youGroup").textContent=g0?(g0==="solids"?"SOLIDS":"STRIPES"):"OPEN";$("cpuGroup").textContent=g1?(g1==="solids"?"SOLIDS":"STRIPES"):"OPEN";$("youScore").textContent=g0?String(7-balls.filter(b=>b.group===g0&&!b.pocketed).length).padStart(2,"0")+"/07":"OPEN";$("cpuScore").textContent=g1?String(7-balls.filter(b=>b.group===g1&&!b.pocketed).length).padStart(2,"0")+"/07":"CPU";const s=balls.filter(b=>b.n>=1&&b.n<=7&&!b.pocketed),t=balls.filter(b=>b.n>=9&&!b.pocketed);$("solidCount").textContent=s.length;$("stripeCount").textContent=t.length;$("solidDots").innerHTML=s.map(b=>'<span class="dot" style="background:'+colors[b.n]+'"></span>').join("");$("stripeDots").innerHTML=t.map(b=>'<span class="dot" style="background:linear-gradient(#eee 24%,'+colors[b.n]+' 24% 76%,#eee 76%)"></span>').join("");$("eightState").textContent=balls.some(b=>b.n===8&&!b.pocketed)?"ON TABLE":"POCKETED";$("turnLabel").textContent=player===0?"YOUR TURN":"CPU TURN";$("turnName").textContent=player===0?"Your turn":"Computer thinking";$("turnMeter").style.width=player===0?"100%":"35%";$("shootBtn").disabled=!active||player!==0||moving||won}
+function updateHud(){
+ const g0=groups[0],g1=groups[1];
+ $("youLabel").textContent="PLAYER 1";$("cpuLabel").textContent=gameMode==="local"?"PLAYER 2":"CPU";
+ $("youGroup").textContent=g0?(g0==="solids"?"SOLIDS":"STRIPES"):"OPEN";
+ $("cpuGroup").textContent=g1?(g1==="solids"?"SOLIDS":"STRIPES"):"OPEN";
+ $("youScore").textContent=g0?String(7-balls.filter(b=>b.group===g0&&!b.pocketed).length).padStart(2,"0")+"/07":"OPEN";
+ $("cpuScore").textContent=g1?String(7-balls.filter(b=>b.group===g1&&!b.pocketed).length).padStart(2,"0")+"/07":"OPEN";
+ const s=balls.filter(b=>b.n>=1&&b.n<=7&&!b.pocketed),t=balls.filter(b=>b.n>=9&&!b.pocketed);
+ $("solidCount").textContent=s.length;$("stripeCount").textContent=t.length;
+ $("solidDots").innerHTML=s.map(b=>'<span class="dot" style="background:'+colors[b.n]+'"></span>').join("");
+ $("stripeDots").innerHTML=t.map(b=>'<span class="dot" style="background:linear-gradient(#eee 24%,'+colors[b.n]+' 24% 76%,#eee 76%)"></span>').join("");
+ $("eightState").textContent=balls.some(b=>b.n===8&&!b.pocketed)?"ON TABLE":"POCKETED";
+ $("turnLabel").textContent=player===0?"PLAYER 1 TURN":gameMode==="local"?"PLAYER 2 TURN":"CPU TURN";
+ $("turnName").textContent=player===0?"Player 1's turn":gameMode==="local"?"Player 2's turn":"Computer thinking";
+ $("turnMeter").style.width=player===0?"100%":"35%";
+ $("shootBtn").disabled=!active||!isHumanTurn()||moving||won;
+}
+
 function drawPlan(){const c=pc,w=plan.width,h=plan.height;c.clearRect(0,0,w,h);c.fillStyle="#0d271b";c.fillRect(0,0,w,h);const x=18,y=15,tw=w-36,th=h-30;c.fillStyle="#714b2c";c.fillRect(x-7,y-7,tw+14,th+14);c.fillStyle=cloth[$("tableTheme").value]||cloth.green;c.fillRect(x,y,tw,th);c.fillStyle="#030804";for(const p of pockets){c.beginPath();c.arc(x+(p.x+HL)/TL*tw,y+(p.z+HW)/TW*th,5,0,Math.PI*2);c.fill()}for(const b of balls){if(b.pocketed)continue;c.beginPath();c.fillStyle=b.n===0?"#faf7ec":b.n===8?"#111":colors[b.n];c.arc(x+(b.x+HL)/TL*tw,y+(b.z+HW)/TW*th,3.6,0,Math.PI*2);c.fill();c.strokeStyle="#ffffff8a";c.stroke()}}
 function syncOptions(){const ids=["camFov","camHeight","camSmooth","aimSensitivity"],ks=["fov","cameraHeight","cameraSmooth","aimSensitivity"],out=["camFovValue","camHeightValue","camSmoothValue","aimSensitivityValue"];for(let i=0;i<ids.length;i++){$(ids[i]).value=tuning[ks[i]];$(out[i]).textContent=i===0?Math.round(tuning.fov)+"°":i===1?tuning.cameraHeight.toFixed(1)+" m":i===2?Math.round(tuning.cameraSmooth)+" /s":tuning.aimSensitivity.toFixed(2)+"°"}}
 function saveOptions(){try{localStorage.setItem("poolRoomOptions",JSON.stringify(tuning))}catch(_){}}
 function loadOptions(){try{const o=JSON.parse(localStorage.getItem("poolRoomOptions")||"null");if(o&&typeof o==="object")for(const k of Object.keys(tuning))if(Number.isFinite(o[k]))tuning[k]=o[k]}catch(_){}syncOptions()}
 function openOptions(){paused=true;$("optionsOverlay").style.display="grid";syncOptions()}
 function closeOptions(){paused=false;$("optionsOverlay").style.display="none";acc=0}
-function startMatch(){clearTimeout(cpuTimer);$("startOverlay").style.display="none";$("optionsOverlay").style.display="none";$("resultOverlay").style.display="none";$("hud").style.display="block";skill=$("difficulty").value;applyTheme($("tableTheme").value);rack();active=true;paused=false;moving=false;player=0;aim=0;power=55;spinInput=0;$("spin").value=0;$("spinValue").textContent="0";won=false;groups=[null,null];potted=[];scratch=false;hitCue=false;railHit=false;shots=[0,0];pots=[0,0];$("power").value=55;$("powerValue").textContent="55%";setView($("startView").value);$("statusText").textContent="Break the rack. Pocket a ball to claim solids or stripes.";updateHud();say("YOUR BREAK · GOOD LUCK")}
-function setupInputs(){window.addEventListener("resize",resize);canvas.addEventListener("pointerdown",e=>{if(!active||paused||moving||!isHumanTurn()||won||$("optionsOverlay").style.display==="grid")return;dragging=true;mouseX=e.clientX;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointermove",e=>{if(!dragging)return;aim+=(e.clientX-mouseX)*tuning.aimSensitivity*.008;mouseX=e.clientX});canvas.addEventListener("pointerup",e=>{dragging=false;try{canvas.releasePointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointercancel",()=>dragging=false);window.addEventListener("keydown",e=>{const tag=(e.target&&e.target.tagName||"").toLowerCase();if(tag==="input"||tag==="select")return;const k=e.key.toLowerCase();if([" ","arrowleft","arrowright","arrowup","arrowdown"].includes(k))e.preventDefault();if(k==="escape"&&$("optionsOverlay").style.display==="grid"){closeOptions();return}if(!active||paused||won||$("optionsOverlay").style.display==="grid")return;if(k==="arrowleft")aim+=.035;else if(k==="arrowright")aim-=.035;else if(k===" "||k==="enter")shoot();else if(k==="r")startMatch();else if(k==="1")setView("player");else if(k==="2")setView("overhead");else if(k==="3")setView("cue");else if(k==="4")setView("orbit")});$("power").addEventListener("input",e=>{power=+e.target.value;$("powerValue").textContent=power+"%"});$("spin").addEventListener("input",e=>{spinInput=Number(e.target.value)/100;$("spinValue").textContent=(spinInput>0?"+":"")+Math.round(spinInput*100)});$("shootBtn").addEventListener("click",()=>shoot());$("resetAimBtn").addEventListener("click",()=>{aim=0;say("AIM RESET")});$("settingsBtn").addEventListener("click",openOptions);$("closeOptionsBtn").addEventListener("click",closeOptions);$("resetOptionsBtn").addEventListener("click",()=>{Object.assign(tuning,{fov:48,cameraHeight:1.7,cameraSmooth:8,aimSensitivity:.45});syncOptions();saveOptions();say("CAMERA OPTIONS RESET")});const ids=["camFov","camHeight","camSmooth","aimSensitivity"],ks=["fov","cameraHeight","cameraSmooth","aimSensitivity"];ids.forEach((id,i)=>$(id).addEventListener("input",e=>{tuning[ks[i]]=+e.target.value;syncOptions();saveOptions()}));document.querySelectorAll(".cam").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));$("startBtn").addEventListener("click",startMatch);$("backBtn").addEventListener("click",()=>location.href="index.html");$("rematchBtn").addEventListener("click",startMatch);$("resultMenuBtn").addEventListener("click",()=>{$("resultOverlay").style.display="none";$("startOverlay").style.display="grid";active=false});$("difficulty").addEventListener("change",e=>skill=e.target.value);$("tableTheme").addEventListener("change",e=>applyTheme(e.target.value))}
+function startMatch(){
+ clearTimeout(cpuTimer);gameMode=$("gameMode").value;
+ $("difficultyLabel").style.display=gameMode==="cpu"?"block":"none";$("difficulty").style.display=gameMode==="cpu"?"block":"none";
+ $("startOverlay").style.display="none";$("optionsOverlay").style.display="none";$("resultOverlay").style.display="none";$("hud").style.display="block";
+ skill=$("difficulty").value;applyTheme($("tableTheme").value);rack();active=true;paused=false;moving=false;player=0;aim=0;power=55;spinInput=0;orbit=0;
+ $("spin").value=0;$("spinValue").textContent="0";won=false;groups=[null,null];potted=[];scratch=false;hitCue=false;railHit=false;shots=[0,0];pots=[0,0];
+ $("power").value=55;$("powerValue").textContent="55%";setView($("startView").value);
+ $("statusText").textContent=gameMode==="local"?"Player 1 breaks. Take turns on this device.":"Break the rack. Pocket a ball to claim solids or stripes.";
+ updateHud();say(gameMode==="local"?"PLAYER 1 BREAKS":"YOUR BREAK · GOOD LUCK");
+}
+
+function setupInputs(){window.addEventListener("resize",resize);canvas.addEventListener("pointerdown",e=>{if(!active||paused||moving||!isHumanTurn()||won||$("optionsOverlay").style.display==="grid")return;dragging=true;mouseX=e.clientX;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointermove",e=>{if(!dragging)return;aim+=(e.clientX-mouseX)*tuning.aimSensitivity*.008;mouseX=e.clientX});canvas.addEventListener("pointerup",e=>{dragging=false;try{canvas.releasePointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointercancel",()=>dragging=false);window.addEventListener("keydown",e=>{const tag=(e.target&&e.target.tagName||"").toLowerCase();if(tag==="input"||tag==="select")return;const k=e.key.toLowerCase();if([" ","arrowleft","arrowright","arrowup","arrowdown"].includes(k))e.preventDefault();if(k==="escape"&&$("optionsOverlay").style.display==="grid"){closeOptions();return}if(!active||paused||won||$("optionsOverlay").style.display==="grid")return;if(k==="arrowleft")aim+=.035;else if(k==="arrowright")aim-=.035;else if(k===" "||k==="enter")shoot();else if(k==="r")startMatch();else if(k==="1")setView("player");else if(k==="2")setView("overhead");else if(k==="3")setView("cue");else if(k==="4")setView("orbit")});$("power").addEventListener("input",e=>{power=+e.target.value;$("powerValue").textContent=power+"%"});$("spin").addEventListener("input",e=>{spinInput=Number(e.target.value)/100;$("spinValue").textContent=(spinInput>0?"+":"")+Math.round(spinInput*100)});$("shootBtn").addEventListener("click",()=>shoot());$("resetAimBtn").addEventListener("click",()=>{aim=0;say("AIM RESET")});$("settingsBtn").addEventListener("click",openOptions);$("closeOptionsBtn").addEventListener("click",closeOptions);$("resetOptionsBtn").addEventListener("click",()=>{Object.assign(tuning,{fov:48,cameraHeight:1.7,cameraSmooth:8,aimSensitivity:.45});syncOptions();saveOptions();say("CAMERA OPTIONS RESET")});const ids=["camFov","camHeight","camSmooth","aimSensitivity"],ks=["fov","cameraHeight","cameraSmooth","aimSensitivity"];ids.forEach((id,i)=>$(id).addEventListener("input",e=>{tuning[ks[i]]=+e.target.value;syncOptions();saveOptions()}));document.querySelectorAll(".cam").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));$("startBtn").addEventListener("click",startMatch);$("backBtn").addEventListener("click",()=>location.href="index.html");$("rematchBtn").addEventListener("click",startMatch);$("resultMenuBtn").addEventListener("click",()=>{$("resultOverlay").style.display="none";$("startOverlay").style.display="grid";active=false});$("gameMode").addEventListener("change",e=>{const cpu=e.target.value==="cpu";$("difficultyLabel").style.display=cpu?"block":"none";$("difficulty").style.display=cpu?"block":"none"});$("difficulty").addEventListener("change",e=>skill=e.target.value);$("tableTheme").addEventListener("change",e=>applyTheme(e.target.value))}
 function render(){requestAnimationFrame(render);if(!renderer||!scene||!camera)return;const now=performance.now(),dt=Math.min(.05,clock.getDelta()||.016);if(active&&!paused&&moving){acc=Math.min(acc+dt,.1);let steps=0;while(acc>=STEP&&steps<12){physics(STEP);acc-=STEP;steps++}if(!isMoving()){acc=0;finishShot()}}else acc=0;if(active&&!moving&&isHumanTurn()&&!paused&&!won)updateCue();else if(cue){cue.visible=false;aimLine.visible=false;targetLine.visible=false}cameraStep(dt);renderer.render(scene,camera);drawPlan()}
 function init(){loadOptions();makeScene();rack();cue=makeCue();aimLine=makeAimLine();targetLine=makeTargetLine();setupInputs();setView("player");updateHud();resize();render()}
 init();
