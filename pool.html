@@ -60,10 +60,10 @@ function buildCushions(ex,sz,wood,rubber,gold){
  const longPaths=[];
  for(const side of [-1,1]){
   longPaths.push([
-   [-HL+.075,side*(HW-.020)],[-HL+.105,side*sz],[-.78,side*sz],[-.22,side*sz],[-.12,side*sz],[-.075,side*(HW-.020)]
+   [-HL+.25,side*(HW-.13)],[-HL+.22,side*(HW-.075)],[-HL+.20,side*sz],[-.22,side*sz],[-.15,side*sz],[-.14,side*(HW-.020)]
   ]);
   longPaths.push([
-   [.075,side*(HW-.020)],[.12,side*sz],[.22,side*sz],[.78,side*sz],[HL-.105,side*sz],[HL-.075,side*(HW-.020)]
+   [.14,side*(HW-.020)],[.15,side*sz],[.22,side*sz],[HL-.20,side*sz],[HL-.22,side*(HW-.075)],[HL-.25,side*(HW-.13)]
   ]);
  }
  for(const path of longPaths){
@@ -74,9 +74,9 @@ function buildCushions(ex,sz,wood,rubber,gold){
  }
  for(const end of [-1,1]){
   const path=[
-   [end*(HL-.075),-(HW-.020)],[end*(ex-.026),-(HW-.045)],
-   [end*ex,-.44],[end*ex,-.22],[end*ex,.22],[end*ex,.44],
-   [end*(ex-.026),HW-.045],[end*(HL-.075),HW-.020]
+   [end*(ex-.13),-.30],[end*(ex-.07),-.26],
+   [end*ex,-.20],[end*ex,.20],
+   [end*(ex-.07),.26],[end*(ex-.13),.30]
   ];
   addSmoothRail(path,.055,TY-.008,.064,rubber,.0035);
   addSmoothRail(offsetRailPath(path,end*.038,0),.092,TY+.046,.040,wood,.006);
