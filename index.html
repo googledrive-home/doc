@@ -1392,6 +1392,13 @@ const STANDALONE_GAMES = new Map([
   ['drift-arena.html','Drift Arena'],
   ['open-world-drive.html','Open World Drive']
 ]);
+function standaloneGameBaseUrl(){
+  let path=window.location.pathname;
+  if(!path.endsWith('/')){
+    path=/\/[^/]+\.html$/i.test(path)?path.slice(0,path.lastIndexOf('/')+1):path+'/';
+  }
+  return new URL(path,window.location.origin);
+}
 function openStandaloneGame(file,title){
   if(!STANDALONE_GAMES.has(file)) return;
   const shell=$('standaloneGameShell'),frame=$('standaloneGameFrame');
@@ -1399,7 +1406,13 @@ function openStandaloneGame(file,title){
   shell.style.display='flex';
   document.body.style.overflow='hidden';
   frame.title=$('standaloneGameTitle').textContent;
-  frame.src=new URL('./'+file,window.location.href).href;
+  frame.onload=()=>{
+    try{
+      const gameWindow=frame.contentWindow;
+      gameWindow.dispatchEvent(new gameWindow.Event('resize'));
+    }catch(_){}
+  };
+  frame.src=new URL(file,standaloneGameBaseUrl()).href;
 }
 function closeStandaloneGame(){
   const shell=$('standaloneGameShell'),frame=$('standaloneGameFrame');
