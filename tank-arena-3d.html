@@ -99,27 +99,49 @@ const MAPS=[
 {name:"Grand Canyon Overlook",color:"#a67b57",accent:"#e0b77b",sky:"#8d9ca0",walls:[[.17,.19,.10,.18],[.73,.19,.10,.18],[.18,.68,.10,.18],[.72,.68,.10,.18],[.42,.40,.16,.09]],style:"canyon",defaultWeather:"dust",defaultClouds:"wispy",landmark:"canyonArch"},
 {name:"Ancient Acropolis",color:"#8c8772",accent:"#e3d1a6",sky:"#63777c",walls:[[.19,.19,.12,.14],[.68,.19,.12,.14],[.19,.68,.12,.14],[.68,.68,.12,.14],[.42,.40,.16,.09]],style:"ruins",defaultWeather:"clear",defaultClouds:"scattered",landmark:"citadel"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function cylinder(parent,x,y,z,r1,r2,h,mat,seg=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function pulseSound(kind){
  if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
- const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
+ const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"],snowTrack:[125,.13,"triangle"],engineHit:[64,.11,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
  }catch(_){}
 }
 function syncWeatherAudio(){
  if(ambienceSource){try{ambienceSource.stop()}catch(_){}try{ambienceSource.disconnect();ambienceFilter?.disconnect();ambienceGain?.disconnect()}catch(_){}ambienceSource=null;ambienceFilter=null;ambienceGain=null}
- if(!soundOn||!audioCtx||!["rain","storm","dust"].includes(weatherMode))return;
+ if(!soundOn||!audioCtx||!["rain","storm","dust","snow"].includes(weatherMode))return;
  try{
   const sampleRate=audioCtx.sampleRate,buffer=audioCtx.createBuffer(1,sampleRate*2,sampleRate),data=buffer.getChannelData(0);
   for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.45;
   ambienceSource=audioCtx.createBufferSource();ambienceSource.buffer=buffer;ambienceSource.loop=true;
-  ambienceFilter=audioCtx.createBiquadFilter();ambienceFilter.type="lowpass";ambienceFilter.frequency.value=weatherMode==="storm"?620:weatherMode==="rain"?1450:340;
-  ambienceGain=audioCtx.createGain();ambienceGain.gain.value=weatherMode==="storm"?.024:weatherMode==="rain"?.013:.009;
+  ambienceFilter=audioCtx.createBiquadFilter();ambienceFilter.type="lowpass";ambienceFilter.frequency.value=weatherMode==="storm"?620:weatherMode==="rain"?1450:weatherMode==="snow"?430:340;
+  ambienceGain=audioCtx.createGain();ambienceGain.gain.value=weatherMode==="storm"?.024:weatherMode==="rain"?.013:weatherMode==="snow"?.006:.009;
   ambienceSource.connect(ambienceFilter);ambienceFilter.connect(ambienceGain);ambienceGain.connect(audioCtx.destination);ambienceSource.start();
  }catch(_){ambienceSource=null;ambienceFilter=null;ambienceGain=null}
+}
+function syncEngineAudio(){
+ if(!soundOn||!audioCtx)return;
+ try{
+  while(engineOscillators.length<2){
+   const i=engineOscillators.length,osc=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
+   osc.type="sawtooth";osc.frequency.value=43+i*9;filter.type="lowpass";filter.frequency.value=130;
+   gain.gain.value=.0001;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();
+   engineOscillators.push(osc);engineFilters.push(filter);engineGains.push(gain);
+  }
+ }catch(_){}
+}
+function updateEngineAudio(){
+ if(!audioCtx||!engineGains.length)return;
+ const now=audioCtx.currentTime;
+ for(let i=0;i<engineGains.length;i++){
+  const t=tanks[i],speed=t?Math.hypot(t.vx,t.vz):0,running=soundOn&&active&&!paused&&!matchOver&&!!t;
+  const volume=running?.0001+clamp(speed/15,0,1)*.013:.0001;
+  engineGains[i].gain.setTargetAtTime(volume,now,.13);
+  engineOscillators[i].frequency.setTargetAtTime(42+(running?speed*3.6:0)+i*8,now,.12);
+  engineFilters[i].frequency.setTargetAtTime(105+(running?speed*24:0),now,.15);
+ }
 }
 function showBanner(text,seconds=1.1){const el=$("banner");el.textContent=text;el.classList.add("show");clearTimeout(tagTimer);tagTimer=setTimeout(()=>el.classList.remove("show"),seconds*1000)}
 function createMaterials(){return{
@@ -989,7 +1011,7 @@ function update(dt){
   const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")?1:0)-(held.has("arrowleft")?1:0);
   moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
- resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);
+ resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);updateEngineAudio();
  for(let i=particles.length-1;i>=0;i--){
   const p=particles[i];p.life-=dt;
   if(p.kind==="explosion"){
@@ -1065,7 +1087,7 @@ function startGame(resetScores=true){
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
  $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
- active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
+ active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();syncEngineAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
 function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear()}
 $("startBtn").addEventListener("click",()=>startGame(true));
@@ -1076,7 +1098,7 @@ $("resumeBtn").addEventListener("click",pauseGame);
 $("pauseResetBtn").addEventListener("click",()=>{paused=false;$("pauseOverlay").style.display="none";score=[0,0];roundNo=1;startGame(true)});
 $("againBtn").addEventListener("click",()=>startGame(true));
 $("setupAgainBtn").addEventListener("click",()=>{$("endOverlay").style.display="none";$("setupOverlay").style.display="grid";$("hud").style.display="none";active=false});
-$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn)pulseSound("pickup");syncWeatherAudio()});
+$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn){pulseSound("pickup");syncEngineAudio()}syncWeatherAudio();if(!soundOn)engineGains.forEach(g=>g.gain.setTargetAtTime(.0001,audioCtx?.currentTime||0,.06))});
 $("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}});
 function exitToLibrary(){if(window.parent!==window){try{window.parent.closeStandaloneGame();return}catch(_){}}location.href="index.html"} $("exitBtn").addEventListener("click",exitToLibrary);$("setupLibraryBtn").addEventListener("click",exitToLibrary);$("endLibraryBtn").addEventListener("click",exitToLibrary);
 window.addEventListener("keydown",e=>{
