@@ -1041,11 +1041,35 @@ function moveTank(t,dt,forward,steer,boosting){
 function cpuThink(t,target,dt){
  const diff=difficulty==="easy"?{speed:.64,aim:.5,fire:.55}:difficulty==="hard"?{speed:1,aim:.9,fire:1.05}:{speed:.82,aim:.7,fire:.76};
  const dx=target.x-t.x,dz=target.z-t.z,dist=Math.hypot(dx,dz);
- const desired=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(desired-t.angle),Math.cos(desired-t.angle));
- const turretDelta=Math.atan2(Math.sin(desired-(t.angle+t.turret.rotation.y)),Math.cos(desired-(t.angle+t.turret.rotation.y)));t.turret.rotation.y+=clamp(turretDelta,-2.1*dt,2.1*dt);
+ const targetHeading=Math.atan2(dx,dz);
+ let heading=targetHeading;
+ // Look ahead along several candidate steering lines and favour paths that remain clear.
+ // This keeps the CPU from repeatedly driving its nose into the same building or barrier.
+ if(dist>4){
+  let bestCost=Infinity,bestHeading=targetHeading;
+  for(const offset of [-1.15,-.78,-.42,0,.42,.78,1.15]){
+   const candidate=targetHeading+offset,fx=Math.sin(candidate),fz=Math.cos(candidate);
+   let cost=Math.abs(offset)*1.15;
+   for(const step of [2.2,4.2,6.2,8.2]){
+    const px=t.x+fx*step,pz=t.z+fz*step;
+    if(tankCollides(t,px,pz))cost+=(step<3?85:step<5?56:step<7?33:18);
+    if(Math.abs(px)>37||Math.abs(pz)>25)cost+=26;
+   }
+   const progress=Math.hypot(t.x+fx*7-target.x,t.z+fz*7-target.z);
+   cost+=progress*.14;
+   if(cost<bestCost){bestCost=cost;bestHeading=candidate;}
+  }
+  const angleError=Math.atan2(Math.sin(bestHeading-targetHeading),Math.cos(bestHeading-targetHeading));
+  heading=targetHeading+angleError;
+ }
+ const delta=Math.atan2(Math.sin(heading-t.angle),Math.cos(heading-t.angle));
+ const turretDelta=Math.atan2(Math.sin(targetHeading-(t.angle+t.turret.rotation.y)),Math.cos(targetHeading-(t.angle+t.turret.rotation.y)));
+ t.turret.rotation.y+=clamp(turretDelta,-2.1*dt,2.1*dt);
  const steer=Math.abs(delta)>.09?-Math.sign(delta):0;
  let forward=dist>7?1:dist<4?-.25:.18;
  if(Math.abs(delta)>1.7)forward*=.25;
+ const ahead=tankCollides(t,t.x+Math.sin(t.angle)*4.0,t.z+Math.cos(t.angle)*4.0);
+ if(ahead&&dist>5)forward=Math.max(.65,forward);
  moveTank(t,dt,forward,steer*diff.aim,false);
  if(Math.abs(turretDelta)<.24&&dist<31&&t.fireCd<=0&&Math.random()<dt*2.6*diff.fire)spawnTag(t);
 }
