@@ -963,7 +963,7 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
    if(map===2||map===12)traction*=.67;else if(map===1||map===13)traction*=.86;else if(map===3)traction*=.90;
    if(map===8&&Math.abs(Math.sin(p.x*.15)*Math.cos(p.z*.12))>.72)traction*=.78;
    if(map===6&&Math.sin(p.x*.22+p.z*.16)>.76)traction*=.82;
-   const spec=TANK_VEHICLE_STATS[Math.max(0,Math.min(9,p.vehicle||0))],turn=.25+Math.min(1,speed/Math.max(.1,spec[0]/2));p.angle-=steer*spec[2]*turn*dt;
+   const spec=TANK_VEHICLE_STATS[Math.max(0,Math.min(9,p.vehicle||0))],turn=.25+Math.min(1,speed/Math.max(.1,spec[0]));p.angle-=steer*spec[2]*turn*dt;
    const fx=Math.sin(p.angle),fz=Math.cos(p.angle);if(ix!==0){p.vx+=fx*spec[1]*ix*traction*dt;p.vz+=fz*spec[1]*ix*traction*dt;}
    const driveDrag=s.weather==="snow"?.91:s.weather==="rain"?.88:.84,drag=Math.pow(ix===0?(traction<.8?.43:.30):driveDrag,dt);p.vx*=drag;p.vz*=drag;
    const boosted=p.boost>0,max=spec[0]*traction*(boosted?spec[3]:1),v=Math.hypot(p.vx,p.vz);if(v>max){p.vx*=max/v;p.vz*=max/v;}
