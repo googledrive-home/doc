@@ -212,10 +212,22 @@ function buildTank(id,idx){
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
- // Remove previous arena meshes but preserve the scene lights for clean map changes.
+ // Dispose transient map resources without destroying shared tank materials or scene lights.
+ const sharedMaterials=new Set(Object.values(common)),disposedMaterials=new Set(),disposedTextures=new Set();
  for(const child of [...scene.children]){
   if(child.isLight)continue;
-  child.traverse(obj=>{if(obj.geometry)obj.geometry.dispose()});
+  child.traverse(obj=>{
+   if(obj.geometry)obj.geometry.dispose();
+   const list=Array.isArray(obj.material)?obj.material:obj.material?[obj.material]:[];
+   for(const mat of list){
+    if(!mat||sharedMaterials.has(mat)||disposedMaterials.has(mat))continue;
+    disposedMaterials.add(mat);
+    for(const tex of [mat.map,mat.alphaMap,mat.bumpMap,mat.normalMap,mat.emissiveMap,mat.roughnessMap,mat.metalnessMap,mat.aoMap]){
+     if(tex&&tex!==mistTexture&&!disposedTextures.has(tex)){disposedTextures.add(tex);tex.dispose()}
+    }
+    mat.dispose();
+   }
+  });
   scene.remove(child);
  }
  if(mistTexture){mistTexture.dispose();mistTexture=null}
@@ -223,8 +235,15 @@ function clearDynamic(){
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
- const palette={block:material("#4c564a",.85,.12),crate:material("#73664a",.83,.05),ice:material("#b7d6d8",.3,.22),rock:material("#676c65",.98),crystal:material("#8f7fe0",.28,.26,{emissive:"#6654ba",emissiveIntensity:.28}),container:material("#455a50",.66,.22),building:material("#505b57",.8,.16)};
- const m=palette[kind]||palette.block,g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ let m;
+ if(kind==="crate")m=material("#73664a",.83,.05);
+ else if(kind==="ice")m=material("#b7d6d8",.3,.22);
+ else if(kind==="rock")m=material("#676c65",.98);
+ else if(kind==="crystal")m=material("#8f7fe0",.28,.26,{emissive:"#6654ba",emissiveIntensity:.28});
+ else if(kind==="container")m=material("#455a50",.66,.22);
+ else if(kind==="building")m=material("#505b57",.8,.16);
+ else m=material("#4c564a",.85,.12);
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
  box(g,0,h/2,0,w,h,d,m);
  box(g,0,h+.025,0,w*.94,.05,d*.94,kind==="ice"?common.glass:accent);
  if(w>d*1.45){
