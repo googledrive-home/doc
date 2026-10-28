@@ -243,7 +243,7 @@ function clearDynamic(){
   scene.remove(child);
  }
  if(mistTexture){mistTexture.dispose();mistTexture=null}
- obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];clouds3d=[];weatherMeta=[];weatherPoints=null;snowPatches=[];snowTrackMarks=[];snowSurface=null;snowFarSurface=null;snowAccumulation=0;tanks=[];
+ obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];clouds3d=[];weatherMeta=[];weatherPoints=null;snowPatches=[];snowTrackMarks=[];snowSurface=null;snowFarSurface=null;snowAccumulation=0;terrainMesh=null;terrainMarks=[];craterRecords=[];tanks=[];
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
@@ -1042,6 +1042,7 @@ function moveTank(t,dt,forward,steer,boosting){
  t.x=clamp(t.x,-40+(t.hitHalfWidth||1.38)+.22,40-(t.hitHalfWidth||1.38)-.22);t.z=clamp(t.z,-28+(t.hitHalfLength||1.78)+.22,28-(t.hitHalfLength||1.78)-.22);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
  t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
+ if(Math.hypot(t.vx,t.vz)>1.6)addTerrainTrack(t);
  const treadShift=((t.trackTime%3.3)+3.3)%3.3;
  t.group.children.forEach(o=>{if(o.userData.tread){o.position.y=.47;o.position.z=((o.userData.baseZ+treadShift+1.65)%3.3)-1.65}});
  const roll=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt/.32;
@@ -1205,7 +1206,7 @@ function update(dt){
   const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")?1:0)-(held.has("arrowleft")?1:0);
   moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
- resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);updateEngineAudio();
+ resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);updateTerrainMarks(dt);updateEngineAudio();
  for(let i=particles.length-1;i>=0;i--){
   const p=particles[i];p.life-=dt;
   if(p.kind==="explosion"){
@@ -1505,7 +1506,7 @@ function captureReplayFrame(now){
 }
 function showTankReplay(){
  if(onlineRoom)try{onlineRoom.send("drive",{forward:0,steer:0,boost:false});}catch(_){}
- if(replayFrames.length<2){$("replayInfo").textContent="Play for a few seconds first. Replays store the most recent 90 seconds of driving.";return;}
+ if(replayFrames.length<2){showBanner("DRIVE A FEW SECONDS TO RECORD A REPLAY",1.5);return;}
  replayReturnActive=active;replayReturnPaused=paused;replayMode=true;replayPaused=false;replayPlaying=true;replayCursor=0;replayDuration=Math.max(.1,replayFrames[replayFrames.length-1].t-replayFrames[0].t);$("replaySeek").max=String(Math.round(replayDuration*1000));$("replaySeek").value="0";$("replayInfo").textContent="Recent "+Math.round(replayDuration)+" seconds · "+replayFrames.length+" sampled frames.";active=false;paused=true;$("replayOverlay").style.display="grid";$("replayPlayBtn").textContent="Ⅱ PAUSE";renderTankReplayAt(0);
 }
 function renderTankReplayAt(seconds){
