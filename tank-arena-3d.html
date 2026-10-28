@@ -425,7 +425,7 @@ function update(dt){
  moveTank(p1,dt,forward,steer,held.has("shift"));
  if(held.has("space"))spawnTag(p1);
  if(mode==="local"){
-  const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")||held.has("l")?1:0)-(held.has("arrowleft")||held.has("j")?1:0);
+  const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")?1:0)-(held.has("arrowleft")?1:0);
   moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
  resolveTankCollision();stepProjectiles(dt);stepPickups(dt);
