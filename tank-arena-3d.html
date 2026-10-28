@@ -108,7 +108,7 @@ function createMaterials(){return{
 const common=createMaterials();
 function buildTank(id,idx){
  const spec=VEHICLES[idx],team=id===0?"#78e6b6":"#ff8a76",group=new THREE.Group();group.userData.rollers=[];
- group.userData={id,idx};group.rotation.order="YXZ";
+ group.userData.id=id;group.userData.idx=idx;group.rotation.order="YXZ";
  const hullMat=material(spec.color,.61,.28),hullDark=material(spec.color,.8,.12),paintEdge=material(team,.42,.26,{emissive:team,emissiveIntensity:.22}),accent=material(MAPS[mapIndex].accent,.36,.32,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.20});
  const detail=material("#c7c9ac",.68,.26),tankName=["S","G","R","C","B","ST","SE","P","A","V"][idx];
  // Continuous tracks and individual tread shoes.
