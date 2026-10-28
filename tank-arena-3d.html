@@ -21,9 +21,9 @@
 .minimap{display:block;width:100%;height:auto;border-radius:8px;background:#1a2520;border:1px solid #ffffff1a}.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px;font-size:9px;color:var(--muted)}.keydot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
 .bottom{position:absolute;bottom:13px;left:14px;display:flex;align-items:flex-end;gap:8px}.info{padding:10px 12px;max-width:370px;font-size:10px;line-height:1.65;color:var(--muted)}.info strong{color:#e6f0dc}.info .green{color:var(--lime)}
 .banner{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 16px;border:1px solid #d9efad44;background:#101b17df;border-radius:11px;color:#edffd1;font-weight:950;font-size:12px;letter-spacing:.13em;text-align:center;max-width:90%;white-space:nowrap;opacity:0;transition:opacity .18s;pointer-events:none}.banner.show{opacity:1}
-.overlay{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at 50% 45%,#23392ca8,#040806e8);backdrop-filter:blur(10px)}.menu{width:min(920px,97vw);max-height:94dvh;overflow:auto;border-radius:20px;display:grid;grid-template-columns:1fr 1fr;background:#0b1411f5;border:1px solid #c8f27a28;box-shadow:0 28px 100px #000b}.menuleft{padding:clamp(21px,3.3vw,38px);background:linear-gradient(145deg,#17251d,#0b1411)}.tag{font-size:10px;font-weight:950;color:var(--lime);letter-spacing:.2em}.menu h1{font-size:clamp(44px,6vw,67px);line-height:.86;letter-spacing:-.07em;margin:17px 0}.menu h1 span{color:var(--lime)}.menu p{color:#aab9aa;font-size:12px;line-height:1.75}.preview-scene{height:102px;border:1px solid #ffffff20;border-radius:11px;overflow:hidden;position:relative;margin:14px 0 18px;background:#17231f}.preview-sky{position:absolute;inset:0 0 42% 0;background:linear-gradient(180deg,#283f40,#73827b);transition:background .25s}.preview-sky span{position:absolute;right:12px;top:7px;font-size:23px;letter-spacing:12px;color:#e1e8dfaa;white-space:nowrap}.preview-horizon{position:absolute;bottom:0;height:49%;width:100%;background:linear-gradient(180deg,#354a3a,#18271f)}.preview-fence{position:absolute;left:4%;right:4%;bottom:18%;height:44%;border:2px solid #aeb9a079;border-bottom:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#9da99e55 10px 11px),linear-gradient(0deg,transparent 0 85%,#b6c3b6aa 86% 91%,transparent 92%)}.preview-tank{position:absolute;left:47%;bottom:24%;font-size:26px;color:var(--lime);filter:drop-shadow(0 3px 4px #0008);transform:scaleX(1.4)}.preview-title{position:absolute;left:10px;bottom:8px;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 4px #000}.preview-title b{font-size:10px;letter-spacing:.13em}.preview-title small{font-size:8px;color:#d6e3d8;letter-spacing:.08em}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0}.chip{padding:8px 10px;border-radius:8px;border:1px solid #ffffff17;background:#ffffff06;color:#ccdacb;font-size:10px}.chip b{color:var(--lime)}
+.overlay{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at 50% 45%,#23392ca8,#040806e8);backdrop-filter:blur(10px)}.menu{width:min(920px,97vw);max-height:94dvh;overflow:auto;border-radius:20px;display:grid;grid-template-columns:1fr 1fr;background:#0b1411f5;border:1px solid #c8f27a28;box-shadow:0 28px 100px #000b}.menuleft{padding:clamp(21px,3.3vw,38px);background:linear-gradient(145deg,#17251d,#0b1411)}.tag{font-size:10px;font-weight:950;color:var(--lime);letter-spacing:.2em}.menu h1{font-size:clamp(44px,6vw,67px);line-height:.86;letter-spacing:-.07em;margin:17px 0}.menu h1 span{color:var(--lime)}.menu p{color:#aab9aa;font-size:12px;line-height:1.75}.preview-scene{height:148px;border:1px solid #ffffff28;border-radius:12px;overflow:hidden;position:relative;margin:14px 0 18px;background:#17231f;box-shadow:inset 0 0 22px #0005}.map-preview-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}.preview-sky,.preview-horizon,.preview-fence,.preview-tank{display:none!important}.preview-sky{position:absolute;inset:0 0 42% 0;background:linear-gradient(180deg,#283f40,#73827b);transition:background .25s}.preview-sky span{position:absolute;right:12px;top:7px;font-size:23px;letter-spacing:12px;color:#e1e8dfaa;white-space:nowrap}.preview-horizon{position:absolute;bottom:0;height:49%;width:100%;background:linear-gradient(180deg,#354a3a,#18271f)}.preview-fence{position:absolute;left:4%;right:4%;bottom:18%;height:44%;border:2px solid #aeb9a079;border-bottom:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#9da99e55 10px 11px),linear-gradient(0deg,transparent 0 85%,#b6c3b6aa 86% 91%,transparent 92%)}.preview-tank{position:absolute;left:47%;bottom:24%;font-size:26px;color:var(--lime);filter:drop-shadow(0 3px 4px #0008);transform:scaleX(1.4)}.preview-title{position:absolute;left:10px;bottom:9px;z-index:4;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 5px #000;background:linear-gradient(90deg,#07100de8,#07100d95,transparent);border-left:2px solid var(--lime);padding:7px 38px 6px 8px;pointer-events:none}.preview-title b{font-size:10px;letter-spacing:.13em}.preview-title small{font-size:8px;color:#d6e3d8;letter-spacing:.08em}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0}.chip{padding:8px 10px;border-radius:8px;border:1px solid #ffffff17;background:#ffffff06;color:#ccdacb;font-size:10px}.chip b{color:var(--lime)}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.control{padding:9px;border:1px solid #ffffff15;background:#ffffff05;border-radius:8px;color:#adbead;font-size:10px;line-height:1.55}.key{display:inline-block;border:1px solid #ffffff27;background:#ffffff0d;border-radius:5px;color:#eff7df;padding:3px 6px;font:900 10px ui-monospace,monospace;margin-right:3px}
-.menuright{padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:11px;min-width:0}.menuright h2{font-size:14px;letter-spacing:.13em;margin:0}.label{font-size:10px;color:#acbdad;font-weight:850;letter-spacing:.09em;text-transform:uppercase;display:block;margin:2px 0 7px}.menuright select.underlying-select{display:none!important}.selectrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.setting-field{min-width:0}.setting-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:3px 0 4px}.setting-tab{padding:10px 5px;border-radius:9px;border:1px solid #cce7be23;background:#ffffff06;color:#a7b9a9;font-size:9px;font-weight:950;letter-spacing:.06em}.setting-tab.active{background:#d1eca0;color:#17231a;border-color:#d1eca0;box-shadow:0 4px 18px #c8f27a22}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.choice-option{display:flex;align-items:center;gap:8px;min-width:0;min-height:39px;padding:8px 9px;border-radius:9px;border:1px solid #cce7be20;background:linear-gradient(145deg,#14211a,#101915);color:#c4d0c4;font-size:10px;line-height:1.3;text-align:left;font-weight:750;transition:background .15s,border-color .15s,transform .15s}.choice-option:hover{border-color:#d1eca075;transform:translateY(-1px)}.choice-option.active{border-color:#c8ee96;background:linear-gradient(145deg,#d4efa7,#9fbf76);color:#162018;box-shadow:0 4px 14px #0002}.choice-label{min-width:0;overflow-wrap:anywhere}.choice-icon{width:22px;height:22px;flex:0 0 22px;border-radius:7px;display:grid;place-items:center;background:#ffffff0c;font-size:12px}.choice-option.active .choice-icon{background:#17231a16}.choice-note{display:block;font-size:8px;opacity:.72;margin-top:2px;font-weight:600}.choices-weather .choice-icon,.choices-clouds .choice-icon{font-size:15px}.paint-swatch{width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:1px solid #fff6;box-shadow:inset 0 0 0 2px #0001}.full{width:100%;padding:13px}.note{font-size:10px;line-height:1.6;color:#7f9684;margin-top:2px}
+.menuright{padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:11px;min-width:0}.menuright h2{font-size:14px;letter-spacing:.13em;margin:0}.label{font-size:10px;color:#acbdad;font-weight:850;letter-spacing:.09em;text-transform:uppercase;display:block;margin:2px 0 7px}.menuright select.underlying-select{display:none!important}.selectrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.setting-field{min-width:0}.setting-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:3px 0 4px}.setting-tab{padding:10px 5px;border-radius:9px;border:1px solid #cce7be23;background:#ffffff06;color:#a7b9a9;font-size:9px;font-weight:950;letter-spacing:.06em}.setting-tab.active{background:#d1eca0;color:#17231a;border-color:#d1eca0;box-shadow:0 4px 18px #c8f27a22}.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.choice-option{display:flex;align-items:center;gap:8px;min-width:0;min-height:39px;padding:8px 9px;border-radius:9px;border:1px solid #cce7be20;background:linear-gradient(145deg,#14211a,#101915);color:#c4d0c4;font-size:10px;line-height:1.3;text-align:left;font-weight:750;transition:background .15s,border-color .15s,transform .15s}.choice-option:hover{border-color:#d1eca075;transform:translateY(-1px)}.choice-option.active{border-color:#c8ee96;background:linear-gradient(145deg,#d4efa7,#9fbf76);color:#162018;box-shadow:0 4px 14px #0002}.choice-label{min-width:0;overflow-wrap:anywhere}.choice-icon{width:22px;height:22px;flex:0 0 22px;border-radius:7px;display:grid;place-items:center;background:#ffffff0c;font-size:12px}.choice-option.active .choice-icon{background:#17231a16}.choice-note{display:block;font-size:8px;opacity:.72;margin-top:2px;font-weight:600}.choices-weather .choice-icon,.choices-clouds .choice-icon{font-size:15px}.choices-map .choice-option{display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:6px}.choices-map .choice-icon{display:none}.map-choice-preview{width:100%;height:58px;display:block;border-radius:6px;border:1px solid #ffffff18;background:#1e3027;object-fit:cover}.choices-map .choice-label{font-size:9px}.choices-map .choice-note{font-size:7px}.paint-swatch{width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:1px solid #fff6;box-shadow:inset 0 0 0 2px #0001}.full{width:100%;padding:13px}.note{font-size:10px;line-height:1.6;color:#7f9684;margin-top:2px}
 #pauseOverlay,#endOverlay,#errorOverlay{display:none;z-index:10}.result{width:min(480px,95vw);padding:30px;text-align:center}.result h2{font-size:34px;margin:11px 0}.result p{font-size:12px;line-height:1.7;color:#aabdac}
 .touch{position:fixed;z-index:4;bottom:14px;left:50%;transform:translateX(-50%);display:none;gap:8px;align-items:flex-end;pointer-events:none}.touchgroup{display:grid;grid-template-columns:repeat(3,47px);gap:5px;pointer-events:auto;padding:8px;border-radius:14px;background:#101a15b9;border:1px solid #d9efad26;backdrop-filter:blur(8px)}.touch button{height:40px;border-radius:8px;border:1px solid #d9efad45;background:#17241cdb;color:#edf7dc;font-size:12px;font-weight:950;touch-action:none}.touch button.down{background:#d1eca0;color:#142017}.touch .fire{border-color:#8cebe3a0;color:#8cebe3}
 @media(max-width:760px){.top{top:6px;left:6px;right:6px;gap:4px;align-items:flex-start}.brand{min-width:0;padding:6px}.crest{width:27px;height:27px;font-size:16px}.brand b{font-size:8px}.brand small{font-size:6px}.scoreboard{gap:3px}.score{min-width:72px;padding:6px}.score .label{font-size:7px}.score strong{font-size:15px}.score em{font-size:7px}.score .health{font-size:9px;letter-spacing:1px}.toolbar{gap:3px}.toolbar .btn{padding:7px 6px;font-size:8px}.leftcard{left:6px;top:66px;width:145px;padding:8px}.turn{font-size:15px}.sub{font-size:9px}.stat{font-size:9px}.rightcard{right:6px;top:66px;width:155px;padding:7px}.legend{font-size:7px}.bottom{left:6px;bottom:6px}.info{font-size:8px;max-width:230px;padding:7px}.banner{top:28%;font-size:10px}.touch{display:flex;bottom:8px;gap:6px}.touch#touch1{left:18%}.touch#touch2{left:82%}.touchgroup{grid-template-columns:repeat(3,38px);gap:4px;padding:5px}.touch button{height:34px;font-size:10px}.menu{grid-template-columns:1fr;max-height:96dvh}.menuleft,.menuright{padding:20px}.menu h1{font-size:47px}.menu p{font-size:11px}.chips{margin:11px 0}.controls{margin-top:8px}.menuright{border-top:1px solid #ffffff13}.setting-tabs{position:sticky;top:0;z-index:2;background:#0b1411f5;padding:3px 0}.setting-tab{font-size:8px;padding:10px 2px}.choice-grid{gap:5px}.choice-option{font-size:9px;padding:7px;min-height:36px}.selectrow{gap:7px}.note{font-size:9px}}
@@ -56,8 +56,8 @@
 </div>
 <div class="overlay" id="setupOverlay">
  <div class="menu">
-  <div class="menuleft"><div class="tag">3D VEHICLE COMBAT / TRAINING SYSTEM</div><h1>STEEL<br><span>ARENA.</span></h1><p>A fully 3D arcade tank arena with detailed armoured vehicles, tracked treads, rotating turrets, physical cover, arena hazards, glowing tag pulses and pickups. Choose a local two-player battle or take on the computer.</p><div class="chips"><div class="chip"><b>01</b> Detailed 3D tanks</div><div class="chip"><b>02</b> 10 arena layouts</div><div class="chip"><b>03</b> Weather + clouds</div><div class="chip"><b>04</b> Local P1 / P2</div></div><div class="preview-scene" id="worldPreview"><div class="preview-sky" id="previewSky"><span id="previewClouds">☁ ☁</span></div><div class="preview-horizon"></div><div class="preview-fence"></div><div class="preview-tank" id="previewTank">▰</div><div class="preview-title"><b id="previewMapTitle">NEON GRID</b><small id="previewWeatherTitle">MIST · SCATTERED CLOUDS</small></div></div><div class="tag">CONTROLS</div><div class="controls"><div class="control"><span class="key">W / S</span> Drive / reverse<br><span class="key">A / D</span> Steer · <span class="key">Q / E</span> Turret</div><div class="control"><span class="key">SPACE</span> Tag pulse<br><span class="key">SHIFT</span> Boost</div><div class="control"><span class="key">ARROWS</span> Player 2 drive<br><span class="key">J / L</span> Turret</div><div class="control"><span class="key">ENTER</span> Player 2 pulse</div></div><p class="note">This is a fictional arcade tag battle. Pulses score hits without graphic effects. Best on a current browser with WebGL enabled.</p></div>
-  <div class="menuright"><div class="tag">MATCH SETUP / 3D CONFIG</div><h2>CONFIGURE YOUR BATTLE</h2><label class="label" for="mode">MATCH TYPE</label><select id="mode"><option value="local" selected>2 Players · Same device</option><option value="cpu">1 Player vs Computer</option></select><div id="diffWrap" style="display:none"><label class="label" for="difficulty">CPU DIFFICULTY</label><select id="difficulty"><option value="easy">Easy · forgiving</option><option value="medium" selected>Medium · balanced</option><option value="hard">Hard · tactical</option></select></div><div class="selectrow"><div><label class="label" for="tank1">PLAYER 1 TANK</label><select id="tank1"><option value="0">Scout · Fast</option><option value="1">Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div><div><label class="label" for="tank2">PLAYER 2 / CPU TANK</label><select id="tank2"><option value="0">Scout · Fast</option><option value="1" selected>Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div></div><label class="label" for="map">ARENA MAP · 10 ENVIRONMENTS</label><select id="map"><option value="0">Neon Grid · Training Grounds</option><option value="1">Desert Docks · Woodland Track</option><option value="2">Frozen Circuit · River Crossing</option><option value="3">Forest Maze · Farm Outskirts</option><option value="4">Crystal Caves · Quarry Yard</option><option value="5">Sky Bridge · Coastal Base</option><option value="6">Factory Floor · Industrial Yard</option><option value="7">City Blocks · Rural Village</option><option value="8">Lava Loops · Dry Outpost</option><option value="9">Mega Arena · Open Field</option></select><div class="selectrow"><div><label class="label" for="weather">WEATHER</label><select id="weather"><option value="clear">Clear / golden hour</option><option value="overcast" selected>Overcast</option><option value="mist">Low mist</option><option value="rain">Rain</option><option value="storm">Thunderstorm</option><option value="snow">Snowfall</option><option value="dust">Dusty wind</option></select></div><div><label class="label" for="clouds">CLOUD COVER</label><select id="clouds"><option value="none">No clouds</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Heavy overcast</option><option value="storm">Storm banks</option></select></div></div><div class="selectrow"><div><label class="label" for="paint1">PLAYER 1 PAINT</label><select id="paint1"><option value="mint">Arctic mint</option><option value="olive" selected>Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson">Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div><div><label class="label" for="paint2">PLAYER 2 / CPU PAINT</label><select id="paint2"><option value="mint">Arctic mint</option><option value="olive">Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson" selected>Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div></div><div class="selectrow"><div><label class="label" for="fenceStyle">FENCE STYLE</label><select id="fenceStyle"><option value="industrial">Industrial steel</option><option value="chainlink" selected>Chain link</option><option value="warning">Hazard-marked</option></select></div><div><label class="label" for="fogLevel">ATMOSPHERE</label><select id="fogLevel"><option value="low">Clear visibility</option><option value="medium" selected>Moody</option><option value="high">Dense fog</option></select></div></div><div class="selectrow"><div><label class="label" for="tankHealth">TANK DURABILITY</label><select id="tankHealth"><option value="2">Fragile · 2 hits</option><option value="3" selected>Standard · 3 hits</option><option value="5">Armoured · 5 hits</option></select></div><div><label class="label" for="roundLimit">MATCH LENGTH</label><select id="roundLimit"><option value="3">First to 3 rounds</option><option value="5" selected>First to 5 rounds</option><option value="7">First to 7 rounds</option></select></div></div><button id="startBtn" class="btn primary full">DEPLOY INTO 3D ARENA ↗</button><button class="btn full" id="setupLibraryBtn">← BACK TO GAME LIBRARY</button><div class="note">Settings: choose a vehicle for each player, pick a map and select CPU skill. You can reset or restart at any time.</div></div>
+  <div class="menuleft"><div class="tag">3D VEHICLE COMBAT / TRAINING SYSTEM</div><h1>STEEL<br><span>ARENA.</span></h1><p>A fully 3D arcade tank arena with detailed armoured vehicles, tracked treads, rotating turrets, physical cover, arena hazards, glowing tag pulses and pickups. Choose a local two-player battle or take on the computer.</p><div class="chips"><div class="chip"><b>01</b> Detailed 3D tanks</div><div class="chip"><b>02</b> 10 arena layouts</div><div class="chip"><b>03</b> Weather + clouds</div><div class="chip"><b>04</b> Local P1 / P2</div></div><div class="preview-scene" id="worldPreview"><canvas class="map-preview-canvas" id="mapPreviewCanvas" width="720" height="250" aria-label="Visual preview of the selected arena"></canvas><div class="preview-sky" id="previewSky"><span id="previewClouds">☁ ☁</span></div><div class="preview-horizon"></div><div class="preview-fence"></div><div class="preview-tank" id="previewTank">▰</div><div class="preview-title"><b id="previewMapTitle">NEON GRID</b><small id="previewWeatherTitle">MIST · SCATTERED CLOUDS</small></div></div><div class="tag">CONTROLS</div><div class="controls"><div class="control"><span class="key">W / S</span> Drive / reverse<br><span class="key">A / D</span> Steer · <span class="key">Q / E</span> Turret</div><div class="control"><span class="key">SPACE</span> Tag pulse<br><span class="key">SHIFT</span> Boost</div><div class="control"><span class="key">ARROWS</span> Player 2 drive<br><span class="key">J / L</span> Turret</div><div class="control"><span class="key">ENTER</span> Player 2 pulse</div></div><p class="note">This is a fictional arcade tag battle. Pulses score hits without graphic effects. Best on a current browser with WebGL enabled.</p></div>
+  <div class="menuright"><div class="tag">MATCH SETUP / 3D CONFIG</div><h2>CONFIGURE YOUR BATTLE</h2><label class="label" for="mode">MATCH TYPE</label><select id="mode"><option value="local" selected>2 Players · Same device</option><option value="cpu">1 Player vs Computer</option></select><div id="diffWrap" style="display:none"><label class="label" for="difficulty">CPU DIFFICULTY</label><select id="difficulty"><option value="easy">Easy · forgiving</option><option value="medium" selected>Medium · balanced</option><option value="hard">Hard · tactical</option></select></div><div class="selectrow"><div><label class="label" for="tank1">PLAYER 1 TANK</label><select id="tank1"><option value="0">Scout · Fast</option><option value="1">Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div><div><label class="label" for="tank2">PLAYER 2 / CPU TANK</label><select id="tank2"><option value="0">Scout · Fast</option><option value="1" selected>Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div></div><label class="label" for="map">ARENA MAP · 15 ENVIRONMENTS</label><select id="map"><option value="0">Neon Grid · Training Grounds</option><option value="1">Desert Docks · Woodland Track</option><option value="2">Frozen Circuit · River Crossing</option><option value="3">Forest Maze · Farm Outskirts</option><option value="4">Crystal Caves · Quarry Yard</option><option value="5">Sky Bridge · Coastal Base</option><option value="6">Factory Floor · Industrial Yard</option><option value="7">City Blocks · Rural Village</option><option value="8">Lava Loops · Dry Outpost</option><option value="9">Mega Arena · Open Field</option><option value="10">London Landmark District · Tower Bridge</option><option value="11">Tokyo Neon Ward · Rainy Night</option><option value="12">Alpine Snowfield · Blizzard Pass</option><option value="13">Grand Canyon Overlook · Dust Front</option><option value="14">Ancient Acropolis · Ruined Citadel</option></select><div class="selectrow"><div><label class="label" for="weather">WEATHER</label><select id="weather"><option value="clear">Clear / golden hour</option><option value="overcast" selected>Overcast</option><option value="mist">Low mist</option><option value="rain">Rain</option><option value="storm">Thunderstorm</option><option value="snow">Snowfall</option><option value="dust">Dusty wind</option></select></div><div><label class="label" for="clouds">CLOUD COVER</label><select id="clouds"><option value="none">No clouds</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Heavy overcast</option><option value="storm">Storm banks</option></select></div></div><div class="selectrow"><div><label class="label" for="paint1">PLAYER 1 PAINT</label><select id="paint1"><option value="mint">Arctic mint</option><option value="olive" selected>Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson">Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div><div><label class="label" for="paint2">PLAYER 2 / CPU PAINT</label><select id="paint2"><option value="mint">Arctic mint</option><option value="olive">Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson" selected>Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div></div><div class="selectrow"><div><label class="label" for="fenceStyle">FENCE STYLE</label><select id="fenceStyle"><option value="industrial">Industrial steel</option><option value="chainlink" selected>Chain link</option><option value="warning">Hazard-marked</option></select></div><div><label class="label" for="fogLevel">ATMOSPHERE</label><select id="fogLevel"><option value="low">Clear visibility</option><option value="medium" selected>Moody</option><option value="high">Dense fog</option></select></div></div><div class="selectrow"><div><label class="label" for="tankHealth">TANK DURABILITY</label><select id="tankHealth"><option value="2">Fragile · 2 hits</option><option value="3" selected>Standard · 3 hits</option><option value="5">Armoured · 5 hits</option></select></div><div><label class="label" for="roundLimit">MATCH LENGTH</label><select id="roundLimit"><option value="3">First to 3 rounds</option><option value="5" selected>First to 5 rounds</option><option value="7">First to 7 rounds</option></select></div></div><button id="startBtn" class="btn primary full">DEPLOY INTO 3D ARENA ↗</button><button class="btn full" id="setupLibraryBtn">← BACK TO GAME LIBRARY</button><div class="note">Settings: choose a vehicle for each player, pick a map and select CPU skill. You can reset or restart at any time.</div></div>
  </div>
 </div>
 <div class="overlay" id="pauseOverlay"><div class="panel result"><div class="tag">SIMULATION PAUSED</div><h2>HOLD POSITION</h2><p>The arena and all vehicles are paused.</p><button class="btn primary" id="resumeBtn">RESUME BATTLE</button> <button class="btn" id="pauseResetBtn">RESTART ROUND</button></div></div>
@@ -92,29 +92,56 @@ const MAPS=[
 {name:"Factory Floor",color:"#635d4f",accent:"#ffbd73",sky:"#292722",walls:[[.16,.17,.24,.08],[.60,.17,.24,.08],[.16,.75,.24,.08],[.60,.75,.24,.08],[.38,.30,.08,.40],[.54,.30,.08,.40]],style:"factory"},
 {name:"City Blocks",color:"#77786c",accent:"#ffd6a1",sky:"#252a2b",walls:[[.16,.20,.16,.18],[.42,.20,.16,.18],[.68,.20,.16,.18],[.16,.62,.16,.18],[.42,.62,.16,.18],[.68,.62,.16,.18]],style:"city"},
 {name:"Lava Loops",color:"#61594d",accent:"#ff784c",sky:"#382019",walls:[[.21,.22,.10,.10],[.69,.22,.10,.10],[.21,.68,.10,.10],[.69,.68,.10,.10],[.40,.25,.20,.06],[.40,.69,.20,.06]],style:"lava"},
-{name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"}
+{name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"},
+{name:"London Landmark District",color:"#557365",accent:"#dfc58b",sky:"#35454b",walls:[[.18,.22,.12,.25],[.70,.22,.12,.25],[.27,.62,.14,.10],[.60,.62,.14,.10],[.44,.42,.12,.08]],style:"london",defaultWeather:"overcast",defaultClouds:"overcast",landmark:"towerBridge"},
+{name:"Tokyo Neon Ward",color:"#444f57",accent:"#f477b5",sky:"#202b3b",walls:[[.15,.18,.14,.27],[.70,.18,.14,.27],[.15,.62,.14,.18],[.70,.62,.14,.18],[.40,.38,.12,.20]],style:"tokyo",defaultWeather:"rain",defaultClouds:"overcast",landmark:"tokyoTower"},
+{name:"Alpine Snowfield",color:"#8babae",accent:"#d9eff4",sky:"#a8c4cf",walls:[[.18,.18,.14,.12],[.68,.18,.14,.12],[.18,.69,.14,.12],[.68,.69,.14,.12],[.43,.40,.14,.10]],style:"alpine",defaultWeather:"snow",defaultClouds:"overcast",landmark:"alpineLodge"},
+{name:"Grand Canyon Overlook",color:"#a67b57",accent:"#e0b77b",sky:"#8d9ca0",walls:[[.17,.19,.10,.18],[.73,.19,.10,.18],[.18,.68,.10,.18],[.72,.68,.10,.18],[.42,.40,.16,.09]],style:"canyon",defaultWeather:"dust",defaultClouds:"wispy",landmark:"canyonArch"},
+{name:"Ancient Acropolis",color:"#8c8772",accent:"#e3d1a6",sky:"#63777c",walls:[[.19,.19,.12,.14],[.68,.19,.12,.14],[.19,.68,.12,.14],[.68,.68,.12,.14],[.42,.40,.16,.09]],style:"ruins",defaultWeather:"clear",defaultClouds:"scattered",landmark:"citadel"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function cylinder(parent,x,y,z,r1,r2,h,mat,seg=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function pulseSound(kind){
  if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
- const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
+ const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"],snowTrack:[125,.13,"triangle"],engineHit:[64,.11,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
  }catch(_){}
 }
 function syncWeatherAudio(){
  if(ambienceSource){try{ambienceSource.stop()}catch(_){}try{ambienceSource.disconnect();ambienceFilter?.disconnect();ambienceGain?.disconnect()}catch(_){}ambienceSource=null;ambienceFilter=null;ambienceGain=null}
- if(!soundOn||!audioCtx||!["rain","storm","dust"].includes(weatherMode))return;
+ if(!soundOn||!audioCtx||!["rain","storm","dust","snow"].includes(weatherMode))return;
  try{
   const sampleRate=audioCtx.sampleRate,buffer=audioCtx.createBuffer(1,sampleRate*2,sampleRate),data=buffer.getChannelData(0);
   for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.45;
   ambienceSource=audioCtx.createBufferSource();ambienceSource.buffer=buffer;ambienceSource.loop=true;
-  ambienceFilter=audioCtx.createBiquadFilter();ambienceFilter.type="lowpass";ambienceFilter.frequency.value=weatherMode==="storm"?620:weatherMode==="rain"?1450:340;
-  ambienceGain=audioCtx.createGain();ambienceGain.gain.value=weatherMode==="storm"?.024:weatherMode==="rain"?.013:.009;
+  ambienceFilter=audioCtx.createBiquadFilter();ambienceFilter.type="lowpass";ambienceFilter.frequency.value=weatherMode==="storm"?620:weatherMode==="rain"?1450:weatherMode==="snow"?430:340;
+  ambienceGain=audioCtx.createGain();ambienceGain.gain.value=weatherMode==="storm"?.024:weatherMode==="rain"?.013:weatherMode==="snow"?.006:.009;
   ambienceSource.connect(ambienceFilter);ambienceFilter.connect(ambienceGain);ambienceGain.connect(audioCtx.destination);ambienceSource.start();
  }catch(_){ambienceSource=null;ambienceFilter=null;ambienceGain=null}
+}
+function syncEngineAudio(){
+ if(!soundOn||!audioCtx)return;
+ try{
+  while(engineOscillators.length<2){
+   const i=engineOscillators.length,osc=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
+   osc.type="sawtooth";osc.frequency.value=43+i*9;filter.type="lowpass";filter.frequency.value=130;
+   gain.gain.value=.0001;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();
+   engineOscillators.push(osc);engineFilters.push(filter);engineGains.push(gain);
+  }
+ }catch(_){}
+}
+function updateEngineAudio(){
+ if(!audioCtx||!engineGains.length)return;
+ const now=audioCtx.currentTime;
+ for(let i=0;i<engineGains.length;i++){
+  const t=tanks[i],speed=t?Math.hypot(t.vx,t.vz):0,running=soundOn&&active&&!paused&&!matchOver&&!!t;
+  const volume=running?.0001+clamp(speed/15,0,1)*.013:.0001;
+  engineGains[i].gain.setTargetAtTime(volume,now,.13);
+  engineOscillators[i].frequency.setTargetAtTime(42+(running?speed*3.6:0)+i*8,now,.12);
+  engineFilters[i].frequency.setTargetAtTime(105+(running?speed*24:0),now,.15);
+ }
 }
 function showBanner(text,seconds=1.1){const el=$("banner");el.textContent=text;el.classList.add("show");clearTimeout(tagTimer);tagTimer=setTimeout(()=>el.classList.remove("show"),seconds*1000)}
 function createMaterials(){return{
@@ -185,10 +212,22 @@ function buildTank(id,idx){
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
- // Remove previous arena meshes but preserve the scene lights for clean map changes.
+ // Dispose transient map resources without destroying shared tank materials or scene lights.
+ const sharedMaterials=new Set(Object.values(common)),disposedMaterials=new Set(),disposedTextures=new Set();
  for(const child of [...scene.children]){
   if(child.isLight)continue;
-  child.traverse(obj=>{if(obj.geometry)obj.geometry.dispose()});
+  child.traverse(obj=>{
+   if(obj.geometry)obj.geometry.dispose();
+   const list=Array.isArray(obj.material)?obj.material:obj.material?[obj.material]:[];
+   for(const mat of list){
+    if(!mat||sharedMaterials.has(mat)||disposedMaterials.has(mat))continue;
+    disposedMaterials.add(mat);
+    for(const tex of [mat.map,mat.alphaMap,mat.bumpMap,mat.normalMap,mat.emissiveMap,mat.roughnessMap,mat.metalnessMap,mat.aoMap]){
+     if(tex&&tex!==mistTexture&&!disposedTextures.has(tex)){disposedTextures.add(tex);tex.dispose()}
+    }
+    mat.dispose();
+   }
+  });
   scene.remove(child);
  }
  if(mistTexture){mistTexture.dispose();mistTexture=null}
@@ -196,8 +235,15 @@ function clearDynamic(){
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
- const palette={block:material("#4c564a",.85,.12),crate:material("#73664a",.83,.05),ice:material("#b7d6d8",.3,.22),rock:material("#676c65",.98),crystal:material("#8f7fe0",.28,.26,{emissive:"#6654ba",emissiveIntensity:.28}),container:material("#455a50",.66,.22),building:material("#505b57",.8,.16)};
- const m=palette[kind]||palette.block,g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ let m;
+ if(kind==="crate")m=material("#73664a",.83,.05);
+ else if(kind==="ice")m=material("#b7d6d8",.3,.22);
+ else if(kind==="rock")m=material("#676c65",.98);
+ else if(kind==="crystal")m=material("#8f7fe0",.28,.26,{emissive:"#6654ba",emissiveIntensity:.28});
+ else if(kind==="container")m=material("#455a50",.66,.22);
+ else if(kind==="building")m=material("#505b57",.8,.16);
+ else m=material("#4c564a",.85,.12);
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
  box(g,0,h/2,0,w,h,d,m);
  box(g,0,h+.025,0,w*.94,.05,d*.94,kind==="ice"?common.glass:accent);
  if(w>d*1.45){
@@ -213,31 +259,31 @@ function addWall(x,z,w,d,h,kind){
   for(let i=1;i<Math.max(2,Math.floor(w/.45));i++)box(g,-w/2+i*w/Math.max(2,Math.floor(w/.45)),h/2,0,.025,h*.85,d+.015,common.metal);
  }
  if(kind==="building"){
-  const glassA=material("#92b4b3",.27,.24,{emissive:"#344e50",emissiveIntensity:.12});
-  const glassB=material("#d0bf91",.32,.18,{emissive:"#5d5137",emissiveIntensity:.08});
+  const glass=material("#ffffff",.3,.2,{emissive:"#182c2a",emissiveIntensity:.12});
   const frame=material("#313b37",.78,.2),floorBand=material("#69756b",.72,.22);
-  // Recessed-looking windows in multiple storeys on the front and side facades.
-  const floors=Math.max(2,Math.floor(h/1.65));
-  const columns=Math.max(2,Math.floor(w/.9));
+  const floors=Math.max(2,Math.min(14,Math.floor(h/1.65))),columns=Math.max(2,Math.min(7,Math.floor(w/1.0)));
+  const sideColumns=Math.max(2,Math.min(6,Math.floor(d/1.05)));
+  const maxWindows=floors*(columns+sideColumns),frameGeometry=new THREE.BoxGeometry(.43,.68,.035),windowGeometry=new THREE.BoxGeometry(.34,.52,.032);
+  const frameFront=new THREE.InstancedMesh(frameGeometry,frame,maxWindows),frameSide=new THREE.InstancedMesh(frameGeometry,frame,maxWindows);
+  const paneFront=new THREE.InstancedMesh(windowGeometry,glass,maxWindows),paneSide=new THREE.InstancedMesh(windowGeometry,glass,maxWindows);
+  const dummy=new THREE.Object3D();let fi=0,si=0;
   for(let floor=0;floor<floors;floor++){
-   const yy=.8+floor*1.55;
-   if(yy>h-.6)continue;
+   const yy=.8+floor*1.55;if(yy>h-.6)continue;
    box(g,0,yy,d/2+.018,w*.94,.075,.045,floorBand);
    for(let col=0;col<columns;col++){
     const xx=-w*.42+col*(w*.84/Math.max(1,columns-1));
-    const glass=(floor+col)%4===0?glassB:glassA;
-    box(g,xx,yy+.43,d/2+.025,.36,.58,.035,glass);
-    box(g,xx-.205,yy+.43,d/2+.046,.035,.64,.025,frame);
-    box(g,xx+.205,yy+.43,d/2+.046,.035,.64,.025,frame);
+    dummy.position.set(xx,yy+.43,d/2+.026);dummy.rotation.set(0,0,0);dummy.updateMatrix();frameFront.setMatrixAt(fi,dummy.matrix);
+    dummy.position.z=d/2+.05;dummy.scale.set(1,((floor+col)%4===0)?1.0:.9,1);dummy.updateMatrix();paneFront.setMatrixAt(fi,dummy.matrix);paneFront.setColorAt(fi,new THREE.Color((floor+col)%4===0?"#d0bf91":"#92b4b3"));dummy.scale.set(1,1,1);fi++;
    }
-   const sideColumns=Math.max(2,Math.floor(d/1.0));
    for(let col=0;col<sideColumns;col++){
     const zz=-d*.40+col*(d*.8/Math.max(1,sideColumns-1));
-    box(g,w/2+.025,yy+.43,zz,.035,.58,.36,(floor+col)%4===0?glassB:glassA);
-    box(g,w/2+.046,yy+.43,zz-.205,.025,.64,.035,frame);
-    box(g,w/2+.046,yy+.43,zz+.205,.025,.64,.035,frame);
+    dummy.position.set(w/2+.026,yy+.43,zz);dummy.rotation.set(0,Math.PI/2,0);dummy.scale.set(1,1,1);dummy.updateMatrix();frameSide.setMatrixAt(si,dummy.matrix);
+    dummy.position.x=w/2+.05;dummy.updateMatrix();paneSide.setMatrixAt(si,dummy.matrix);paneSide.setColorAt(si,new THREE.Color((floor+col)%4===0?"#d0bf91":"#92b4b3"));si++;
    }
   }
+  frameFront.count=fi;paneFront.count=fi;frameSide.count=si;paneSide.count=si;
+  frameFront.instanceMatrix.needsUpdate=true;paneFront.instanceMatrix.needsUpdate=true;frameSide.instanceMatrix.needsUpdate=true;paneSide.instanceMatrix.needsUpdate=true;if(paneFront.instanceColor)paneFront.instanceColor.needsUpdate=true;if(paneSide.instanceColor)paneSide.instanceColor.needsUpdate=true;
+  g.add(frameFront,paneFront,frameSide,paneSide);
   // Roof coping and small mechanical housings give each block a real skyline silhouette.
   box(g,0,h+.12,0,w+.16,.22,d+.16,floorBand);
   box(g,-w*.24,h+.32,-d*.18,w*.22,.30,d*.22,common.dark);
@@ -246,13 +292,174 @@ function addWall(x,z,w,d,h,kind){
  }
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
+function createLayeredTreeCanopy(){
+ const positions=[],tiers=[{base:1.05,height:1.55,radius:1.24},{base:1.65,height:1.48,radius:.98},{base:2.22,height:1.32,radius:.73},{base:2.72,height:1.08,radius:.48}],segments=9;
+ for(const tier of tiers){
+  for(let i=0;i<segments;i++){
+   const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
+   positions.push(Math.cos(a)*tier.radius,tier.base,Math.sin(a)*tier.radius);
+   positions.push(Math.cos(b)*tier.radius,tier.base,Math.sin(b)*tier.radius);
+   positions.push(0,tier.base+tier.height,0);
+  }
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.computeVertexNormals();return geo;
+}
 function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:4*s,kind:"tree",shape:"circle",r:.62*s});
- cylinder(g,0,.8*s,0,.22*s,.32*s,1.6*s,material("#5b4936",.98),7);
- const leaf=material(MAPS[mapIndex].style==="forest"?"#426348":"#65724e",.97);
- for(let i=0;i<3;i++){const cone=new THREE.Mesh(new THREE.ConeGeometry((1.2-i*.22)*s,1.55*s,7),leaf);cone.position.y=(1.65+i*.69)*s;cone.rotation.y=i*.3;g.add(cone)}
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s});
+ const trunk=material("#5b4735",.98),leafColor=MAPS[mapIndex].style==="alpine"?"#73918a":MAPS[mapIndex].style==="forest"?"#426b45":"#657a4d";
+ const trunkMesh=new THREE.Mesh(new THREE.CylinderGeometry(.18,.30,1.9,9),trunk);trunkMesh.position.y=.94*s;trunkMesh.scale.setScalar(s);trunkMesh.castShadow=true;trunkMesh.receiveShadow=true;g.add(trunkMesh);
+ const crown=new THREE.Mesh(createLayeredTreeCanopy(),new THREE.MeshStandardMaterial({color:leafColor,roughness:.98,side:THREE.DoubleSide}));
+ crown.scale.setScalar(s);crown.castShadow=true;crown.receiveShadow=true;g.add(crown);
  return g
 }
+function addGrassLayer(){
+ const style=MAPS[mapIndex].style;
+ let count=style==="forest"?1250:style==="mega"?850:["london","alpine"].includes(style)?430:["city","tokyo"].includes(style)?180:["factory","ice","crystal"].includes(style)?220:["desert","canyon","lava"].includes(style)?0:420;
+ if(weatherMode==="snow")count=Math.floor(count*.38);
+ if(!count)return;
+ const positions=[],colors=[];
+ const shades=weatherMode==="snow"?[[.70,.79,.77],[.82,.88,.85],[.60,.73,.69]]:[[.20,.35,.16],[.28,.43,.20],[.38,.48,.23],[.16,.29,.14]];
+ for(let i=0;i<count*2&&positions.length<count*9*3;i++){
+  const x=rand(-38,38),z=rand(-26,26);
+  if(Math.abs(x)<11&&Math.abs(z)<8)continue;
+  if(collides(x,z,.24,null))continue;
+  const color=shades[Math.floor(Math.random()*shades.length)];
+  for(let blade=0;blade<3;blade++){
+   const angle=rand(0,Math.PI*2),w=rand(.025,.07),h=weatherMode==="snow"?rand(.04,.12):rand(.12,.42),lean=rand(.04,.17);
+   const dx=Math.cos(angle)*w,dz=Math.sin(angle)*w,tx=Math.cos(angle+.9)*lean,tz=Math.sin(angle+.9)*lean;
+   const tri=[[x-dx,-.045,z-dz],[x+dx,-.045,z+dz],[x+tx,-.045+h,z+tz]];
+   for(const p of tri){positions.push(p[0],p[1],p[2]);colors.push(color[0],color[1],color[2])}
+  }
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
+ const mat=new THREE.MeshStandardMaterial({color:"#ffffff",vertexColors:true,side:THREE.DoubleSide,roughness:1,metalness:0});
+ const grass=new THREE.Mesh(geo,mat);grass.frustumCulled=false;grass.receiveShadow=true;scene.add(grass);
+}
+function addStreetFurniture(){
+ const style=MAPS[mapIndex].style,urban=["city","london","tokyo"].includes(style);
+ const steel=material("#5c6b65",.62,.52),lampGlow=material("#f3dda1",.25,.1,{emissive:"#f3d48b",emissiveIntensity:.75});
+ if(urban){
+  // Light poles, short arms and warm lamps add scale around the streets.
+  for(const x of [-34,-23,-11,11,23,34])for(const z of [-22,0,22]){
+   if(collides(x,z,.65,null))continue;
+   cylinder(scene,x,2.15,z,.075,.11,4.3,steel,8);
+   const arm=box(scene,x+.35,4.18,z,.75,.075,.075,steel);arm.rotation.z=-.12;
+   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),lampGlow);lamp.position.set(x+.65,4.05,z);scene.add(lamp);
+   obstacles.push({x,z,w:.36,d:.36,h:4.5,kind:"street lamp",shape:"circle",r:.22});
+  }
+ }
+ if(style==="city"||style==="london"){
+  const benchMat=material("#7a6851",.88,.05),legMat=material("#373e38",.7,.32);
+  for(const x of [-31,-18,18,31])for(const z of [-8,8]){
+   if(collides(x,z,.9,null))continue;
+   box(scene,x,.48,z,1.5,.13,.48,benchMat);box(scene,x,.72,z-.19,1.5,.45,.12,benchMat);
+   for(const side of [-.55,.55])box(scene,x+side,.23,z,.10,.48,.10,legMat);
+   obstacles.push({x,z,w:1.6,d:.62,h:.9,kind:"bench"});
+  }
+ }
+ if(style==="factory"||style==="desert"||style==="canyon"){
+  const barrelMats=[material("#7b6544",.7,.25),material("#6a7a69",.7,.22),material("#b08b4d",.6,.25)];
+  for(let i=0;i<18;i++){
+   const x=rand(-36,36),z=rand(-24,24);if(Math.abs(x)<12&&Math.abs(z)<8)continue;if(collides(x,z,.55,null))continue;
+   const m=barrelMats[i%barrelMats.length];cylinder(scene,x,.48,z,.32,.28,.96,m,10);
+   cylinder(scene,x,.93,z,.30,.30,.07,steel,10);
+   obstacles.push({x,z,w:.62,d:.62,h:1,kind:"barrel",shape:"circle",r:.34});
+  }
+ }
+}
+
+function addLandmarkDetails(){
+ const style=MAPS[mapIndex].style;
+ const stone=material(style==="canyon"?"#b78259":style==="london"?"#b1a58c":"#9c9882",.86,.06);
+ const darkStone=material("#4b514b",.9,.04),metal=material("#586967",.57,.55),window=material("#e9d59c",.3,.1,{emissive:"#b69b5b",emissiveIntensity:.3});
+ if(style==="london"){
+  // Thames-style river and a distinctive twin-tower bascule bridge.
+  const river=new THREE.Mesh(new THREE.PlaneGeometry(77,5.2),material("#315a68",.22,.4,{transparent:true,opacity:.92}));river.rotation.x=-Math.PI/2;river.position.set(0,-.068,21.5);scene.add(river);
+  box(scene,5,.38,21.5,7.2,.38,11.5,stone);
+  for(const x of [1.0,9.0]){
+   box(scene,x,2.2,21.5,1.55,3.3,2.2,stone);box(scene,x,4.0,21.5,1.9,.25,2.6,darkStone);
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(1.35,1.8,4),darkStone);roof.position.set(x,5.0,21.5);roof.rotation.y=Math.PI/4;scene.add(roof);
+   for(let y=1.2;y<3.6;y+=.7)box(scene,x,y,22.63,.7,.34,.05,window);
+  }
+  box(scene,5,3.5,21.5,5.5,.42,1.4,stone);
+  for(const [x,z] of [[23,-17],[31,-17],[23,4],[32,4]])addWall(x,z,3.2,3.4,rand(12,17),"building");
+  // A clock-tower landmark silhouette with lit clock faces.
+  const tx=-31,tz=-15,th=17;
+  box(scene,tx,th/2,tz,3.9,th,3.9,stone);box(scene,tx,th+.3,tz,4.25,.55,4.25,darkStone);
+  for(const y of [th-1.2,th+1.25]){
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(y>th?2.2:1.9,1.8,4),darkStone);roof.position.set(tx,y+.5,tz);roof.rotation.y=Math.PI/4;scene.add(roof);
+  }
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,.06,28),window);face.rotation.x=Math.PI/2;face.position.set(tx,13.1,tz+1.99);scene.add(face);
+  box(scene,tx,13.1,tz+2.04,.04,.76,.035,darkStone);box(scene,tx+.18,13.28,tz+2.04,.38,.04,.035,darkStone);
+  obstacles.push({x:tx,z:tz,w:3.9,d:3.9,h:th,kind:"clock tower"});
+ }
+ if(style==="tokyo"){
+  // A red-and-white communications tower beside compact neon mid-rises.
+  const tx=30,tz=15;
+  const towerRed=material("#c65c53",.6,.18),towerWhite=material("#e0d8c1",.7,.12);
+  cylinder(scene,tx,6,tz,.55,1.75,12,towerRed,12);
+  for(const y of [3.1,5.7,8.6])box(scene,tx,y,tz,5.2,.2,.24,towerWhite);
+  for(const y of [3.1,5.7,8.6])box(scene,tx,y,tz, .24,.2,5.2,towerWhite);
+  cylinder(scene,tx,12.8,tz,.16,.45,1.8,towerWhite,10);
+  const beacon=new THREE.Mesh(new THREE.SphereGeometry(.25,10,8),material("#ff708c",.2,.1,{emissive:"#ff315d",emissiveIntensity:1.4}));beacon.position.set(tx,14,tz);scene.add(beacon);
+  obstacles.push({x:tx,z:tz,w:2.7,d:2.7,h:14,kind:"tower",shape:"circle",r:1.5});
+  for(let i=0;i<8;i++){
+   const x=-34+i*9,z=i%2?-20:-23,w=rand(3.8,5.8),d=rand(3.3,5),h=rand(12,20);
+   addWall(x,z,w,d,h,"building");
+   const signMat=material(["#e16a9d","#77d9dd","#d6bc78"][i%3],.32,.15,{emissive:["#e16a9d","#77d9dd","#d6bc78"][i%3],emissiveIntensity:.45});
+   box(scene,x,h*.55,z+d/2+.05,w*.72,.42,.07,signMat);
+  }
+ }
+ if(style==="alpine"){
+  const lodgeX=-31,lodgeZ=-17;addWall(lodgeX,lodgeZ,8.2,5.4,4.3,"building");
+  const roofMat=material("#65483a",.86,.08);
+  const r1=box(scene,lodgeX-.0,4.9,lodgeZ,4.55,.28,6.2,roofMat);r1.rotation.z=.44;
+  const r2=box(scene,lodgeX+.0,4.9,lodgeZ,4.55,.28,6.2,roofMat);r2.rotation.z=-.44;
+  for(let x=-37;x<=37;x+=5){
+   if(Math.abs(x)<12)continue;addTree(x,24,rand(.75,1.1));addTree(x,25.8,rand(.75,1.05));
+  }
+  const peakMat=material("#d5e4e5",.98,.02);
+  for(const x of [-34,-24,-14,0,14,24,34]){
+   const peak=new THREE.Mesh(new THREE.ConeGeometry(rand(5,9),rand(14,25),5),peakMat);peak.position.set(x,rand(5,9),-24-rand(2,8));peak.rotation.z=rand(-.15,.15);scene.add(peak);
+  }
+  obstacles.push({x:lodgeX,z:lodgeZ,w:8.2,d:5.4,h:4.3,kind:"alpine lodge"});
+ }
+ if(style==="canyon"){
+  const rockMat=material("#b77f53",.98),highlight=material("#d7a06b",.93);
+  // A broad sandstone arch landmark and tall canyon spires.
+  for(const x of [-6.3,6.3]){
+   const pillar=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),rockMat);pillar.position.set(x,3.2,-22);pillar.scale.set(2.5,4.4,2.3);scene.add(pillar);
+   obstacles.push({x,z:-22,w:4.2,d:4,h:8.8,kind:"canyon pillar",shape:"circle",r:2.1});
+   for(let y=1.2;y<7;y+=1.45)box(scene,x,y,-19.7,3.8,.10,.035,highlight);
+  }
+  box(scene,0,7.25,-22,16.4,2.1,3.2,rockMat);box(scene,0,8.4,-22,14,.18,2.7,highlight);
+  for(const x of [-35,-29,29,35]){
+   const spire=new THREE.Mesh(new THREE.ConeGeometry(rand(2.4,4.5),rand(10,18),5),rockMat);spire.position.set(x,4,-12+rand(-8,8));spire.rotation.z=rand(-.14,.14);scene.add(spire);
+  }
+ }
+ if(style==="ruins"){
+  // An ancient courtyard with an obelisk, broken columns and a stepped pyramid.
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(5.7,6.3,.55,4),darkStone);base.position.set(0,.08,20);base.rotation.y=Math.PI/4;scene.add(base);
+  const pyramid=new THREE.Mesh(new THREE.ConeGeometry(5.1,8,4),stone);pyramid.position.set(0,4.15,20);pyramid.rotation.y=Math.PI/4;scene.add(pyramid);
+  box(scene,10,2.3,18,2.1,4.6,2.1,stone);box(scene,10,4.8,18,2.7,.35,2.7,darkStone);
+  for(const x of [-17,-12,-7,7,12,17]){
+   cylinder(scene,x,1.7,20,.48,.55,3.4,stone,12);
+   cylinder(scene,x,3.45,20,.7,.68,.18,darkStone,12);
+   obstacles.push({x,z:20,w:1.15,d:1.15,h:3.4,kind:"ruin column",shape:"circle",r:.62});
+  }
+ }
+ if(style==="city"||style==="london"){
+  // Street trees and small green pockets soften the denser urban maps.
+  let planted=0,tries=0;
+  while(planted<11&&tries<100){
+   tries++;const x=rand(-36,36),z=rand(-24,24);
+   if(Math.abs(x)<12&&Math.abs(z)<8)continue;
+   if(collides(x,z,1.05,null))continue;
+   addTree(x,z,rand(.62,.86));planted++;
+  }
+ }
+}
+
 function addCrystal(x,z,s=1){
  obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal",shape:"circle",r:.78*s});
  const m=material(MAPS[mapIndex].accent,.28,.2,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.35});
@@ -292,8 +499,8 @@ function buildFenceLine(axis,coordinate,length){
  obstacles.push({x:axis==="x"?coordinate:0,z:axis==="x"?0:coordinate,w:axis==="x"?.20:length,d:axis==="x"?length:.20,h:2.65,kind:"fence",fence:true});
 }
 function addFencePerimeter(){
- buildFenceLine("x",-30,40);buildFenceLine("x",30,40);
- buildFenceLine("z",-20,60);buildFenceLine("z",20,60);
+ buildFenceLine("x",-40,56);buildFenceLine("x",40,56);
+ buildFenceLine("z",-28,80);buildFenceLine("z",28,80);
 }
 function addFarHorizon(){
  const map=MAPS[mapIndex],hillMat=material(new THREE.Color(map.sky).lerp(new THREE.Color("#27352e"),.28),.98,.02);
@@ -308,12 +515,12 @@ function addFarHorizon(){
  const skylineColor=new THREE.Color(map.sky).lerp(new THREE.Color("#17211e"),.28);
  const skylineMat=new THREE.MeshStandardMaterial({color:skylineColor,roughness:1,metalness:0,transparent:true,opacity:.54,depthWrite:false});
  const skylineWindowMat=new THREE.MeshStandardMaterial({color:map.accent,roughness:.8,transparent:true,opacity:.14,depthWrite:false,emissive:map.accent,emissiveIntensity:.10});
- if(map.style==="city"||map.style==="factory"){
-  const count=map.style==="city"?42:24;
+ if(["city","factory","london","tokyo"].includes(map.style)){
+  const count=map.style==="tokyo"?50:map.style==="city"?44:map.style==="london"?36:24;
   for(let i=0;i<count;i++){
    const side=i%4,along=rand(-74,74);
-   const x=side===0?-rand(39,68):side===1?rand(39,68):along;
-   const z=side===2?-rand(29,53):side===3?rand(29,53):along*.52;
+   const x=side===0?-rand(47,82):side===1?rand(47,82):along;
+   const z=side===2?-rand(35,66):side===3?rand(35,66):along*.52;
    const w=rand(4,11),d=rand(4,9),h=map.style==="city"?rand(8,28):rand(5,14);
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);
    mesh.position.set(x,h/2-.1,z);mesh.rotation.y=rand(-.09,.09);scene.add(mesh);
@@ -325,7 +532,7 @@ function addFarHorizon(){
  }else{
   // Distant, simplified outpost roofs and silhouettes make the map feel continuous without adding cover.
   for(let i=0;i<12;i++){
-   const side=i%4,along=rand(-65,65),x=side===0?-rand(39,56):side===1?rand(39,56):along,z=side===2?-rand(30,44):side===3?rand(30,44):along*.48;
+   const side=i%4,along=rand(-65,65),x=side===0?-rand(47,66):side===1?rand(47,66):along,z=side===2?-rand(35,52):side===3?rand(35,52):along*.48;
    const w=rand(4,9),d=rand(3,8),h=rand(2.5,7);
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);mesh.position.set(x,h/2-.08,z);scene.add(mesh);
   }
@@ -391,10 +598,10 @@ function initCustomSettings(){
  categories.forEach(cat=>{const b=document.createElement("button");b.type="button";b.className="setting-tab"+(cat.id==="match"?" active":"");b.dataset.tab=cat.id;b.textContent=cat.label;b.addEventListener("click",()=>activateTab(cat.id));tabBar.appendChild(b)});
  heading.insertAdjacentElement("afterend",tabBar);
  const categoryFor={mode:"match",difficulty:"match",tank1:"tanks",tank2:"tanks",paint1:"tanks",paint2:"tanks",map:"world",weather:"world",clouds:"world",fenceStyle:"world",fogLevel:"world",tankHealth:"rules",roundLimit:"rules"};
- const desc={tank1:["FAST","HEAVY","BALANCED","ACCELERATION","ARMOURED","AGILE","DEFENDER","SCOUT","HEAVY","BALANCED"],tank2:["FAST","HEAVY","BALANCED","ACCELERATION","ARMOURED","AGILE","DEFENDER","SCOUT","HEAVY","BALANCED"],map:["NEON TRAINING","SAND & DOCKS","ICE CIRCUIT","WOODLAND","CRYSTAL QUARRY","SKY BRIDGE","INDUSTRIAL","CITY RUINS","VOLCANIC","OPEN FIELD"],weather:["SUNLIT","LOW CLOUD","GROUND HAZE","WET TRACK","LIGHTNING","SNOWFALL","DUST WIND"],clouds:["CLEAR SKY","HIGH CIRRUS","BROKEN CLOUD","OVERCAST","STORM BANKS"],fenceStyle:["STEEL GRID","DIAMOND MESH","WARNING STRIPES"],fogLevel:["LONG VISIBILITY","CINEMATIC","LOW VISIBILITY"],tankHealth:["FAST ROUNDS","STANDARD","HEAVY DUTY"],roundLimit:["SHORT MATCH","STANDARD MATCH","LONG MATCH"],difficulty:["RELAXED CPU","BALANCED CPU","TACTICAL CPU"]};
+ const desc={tank1:["FAST","HEAVY","BALANCED","ACCELERATION","ARMOURED","AGILE","DEFENDER","SCOUT","HEAVY","BALANCED"],tank2:["FAST","HEAVY","BALANCED","ACCELERATION","ARMOURED","AGILE","DEFENDER","SCOUT","HEAVY","BALANCED"],map:["NEON TRAINING","SAND & DOCKS","ICE CIRCUIT","WOODLAND","CRYSTAL QUARRY","SKY BRIDGE","INDUSTRIAL","CITY RUINS","VOLCANIC","OPEN FIELD","TOWER BRIDGE","TOKYO NEON","ALPINE LODGE","CANYON ARCH","ANCIENT RUINS"],weather:["SUNLIT","LOW CLOUD","GROUND HAZE","WET TRACK","LIGHTNING","SNOWFALL","DUST WIND"],clouds:["CLEAR SKY","HIGH CIRRUS","BROKEN CLOUD","OVERCAST","STORM BANKS"],fenceStyle:["STEEL GRID","DIAMOND MESH","WARNING STRIPES"],fogLevel:["LONG VISIBILITY","CINEMATIC","LOW VISIBILITY"],tankHealth:["FAST ROUNDS","STANDARD","HEAVY DUTY"],roundLimit:["SHORT MATCH","STANDARD MATCH","LONG MATCH"],difficulty:["RELAXED CPU","BALANCED CPU","TACTICAL CPU"]};
  const paintNames={mint:"Arctic mint",olive:"Military olive",desert:"Desert sand",navy:"Deep navy",crimson:"Crimson",white:"Winter white",purple:"Violet",black:"Graphite"};
  const paintHex={mint:"#789e8b",olive:"#69765b",desert:"#a58a5b",navy:"#405c76",crimson:"#994b49",white:"#c3c6b7",purple:"#77638f",black:"#414744"};
- const icons={weather:{clear:"☀",overcast:"☁",mist:"≋",rain:"☂",storm:"ϟ",snow:"❄",dust:"〰"},clouds:{none:"○",wispy:"〰",scattered:"☁",overcast:"☁",storm:"ϟ"},mode:{local:"⚔",cpu:"◉"},map:["✦","▤","❄","♠","◇","⌁","▦","▥","♨","✧"]};
+ const icons={weather:{clear:"☀",overcast:"☁",mist:"≋",rain:"☂",storm:"ϟ",snow:"❄",dust:"〰"},clouds:{none:"○",wispy:"〰",scattered:"☁",overcast:"☁",storm:"ϟ"},mode:{local:"⚔",cpu:"◉"},map:["✦","▤","❄","♠","◇","⌁","▦","▥","♨","✧","♜","夜","❄","△","♟"]};
  function labelFor(s,o){if(s.id==="paint1"||s.id==="paint2")return paintNames[o.value]||o.textContent;if(s.id==="tankHealth")return ({2:"2 hits",3:"3 hits",5:"5 hits"})[o.value]||o.textContent;if(s.id==="roundLimit")return "First to "+o.value;return o.textContent.replace(" · Same device","").replace(" · forgiving","").replace(" · balanced","").replace(" · tactical","")}
  function iconFor(s,o,i){if(s.id==="paint1"||s.id==="paint2")return paintHex[o.value]||"#69765b";if(s.id==="weather"||s.id==="clouds"||s.id==="mode")return (icons[s.id]&&icons[s.id][o.value])||"◇";if(s.id==="map")return icons.map[i]||"◇";if(s.id==="fenceStyle")return o.value==="warning"?"⚠":o.value==="industrial"?"▦":"▧";if(s.id==="tankHealth")return o.value==="5"?"⬟":o.value==="2"?"◇":"⬡";if(s.id==="roundLimit")return o.value==="7"?"Ⅶ":o.value==="3"?"Ⅲ":"Ⅴ";if(s.id==="difficulty")return o.value==="hard"?"◆":o.value==="easy"?"◇":"◈";if(s.id==="fogLevel")return o.value==="high"?"≋":o.value==="low"?"◎":"◌";return "▰"}
  function syncGrid(s,g){[...g.children].forEach(b=>{const on=b.dataset.value===s.value;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on))})}
@@ -410,7 +617,11 @@ function initCustomSettings(){
   const grid=document.createElement("div");grid.className="choice-grid choices-"+id;grid.setAttribute("role","group");grid.setAttribute("aria-label",label.textContent.trim());field.appendChild(grid);
   [...s.options].forEach((o,i)=>{
    const b=document.createElement("button");b.type="button";b.className="choice-option";b.dataset.value=o.value;const glyph=iconFor(s,o,i);
-   if(id==="paint1"||id==="paint2"){const dot=document.createElement("span");dot.className="paint-swatch";dot.style.background=glyph;b.appendChild(dot)}
+   if(id==="map"){
+    const thumb=document.createElement("canvas");thumb.className="map-choice-preview";thumb.width=320;thumb.height=100;thumb.setAttribute("aria-hidden","true");b.appendChild(thumb);
+    const thumbMap=MAPS[i],thumbWeather=thumbMap.defaultWeather||$("weather").value,thumbClouds=thumbMap.defaultClouds||$("clouds").value;
+    drawMapPreview(thumbMap,thumbWeather,thumbClouds,thumb);
+   }else if(id==="paint1"||id==="paint2"){const dot=document.createElement("span");dot.className="paint-swatch";dot.style.background=glyph;b.appendChild(dot)}
    else{const symbol=document.createElement("span");symbol.className="choice-icon";symbol.textContent=glyph;b.appendChild(symbol)}
    const txt=document.createElement("span");txt.className="choice-label";txt.textContent=labelFor(s,o);
    const sub=(desc[id]||[])[i];if(sub){const small=document.createElement("span");small.className="choice-note";small.textContent=sub;txt.appendChild(small)}
@@ -423,56 +634,105 @@ function initCustomSettings(){
  activateTab("match");
 }
 
+function drawMapPreview(map,weather,cloud,canvasTarget=null){
+ const canvas=canvasTarget||$("mapPreviewCanvas");if(!canvas)return;
+ const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,style=map.style;
+ const skyColors={clear:["#d39b60","#e8cf9a"],overcast:["#596d78","#a4b1b1"],mist:["#536969","#9daea6"],rain:["#2d4053","#687e88"],storm:["#1c273b","#4c5b68"],snow:["#8ab1c0","#e4eff0"],dust:["#826146","#d0a779"]};
+ const colors=skyColors[weather]||skyColors.overcast,g=ctx.createLinearGradient(0,0,0,h);
+ g.addColorStop(0,colors[0]);g.addColorStop(.63,colors[1]);
+ g.addColorStop(1,style==="canyon"||style==="desert"?"#98704b":style==="alpine"||style==="ice"?"#b8d5d9":"#243b32");
+ ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+ for(let i=0;i<18;i++){const x=i*w/17,ht=12+((i*19+Math.max(0,MAPS.indexOf(map))*7)%29);ctx.fillStyle=["city","london","tokyo","factory"].includes(style)?"#23343b99":"#34483b88";ctx.fillRect(x-12,h*.33-ht,24,ht+h*.12)}
+ if(style==="alpine"||weather==="snow"){ctx.fillStyle="#dce9e8";for(let i=0;i<9;i++){const x=i*w/8;ctx.beginPath();ctx.moveTo(x-48,h*.4);ctx.lineTo(x,h*.06+((i*17)%28));ctx.lineTo(x+50,h*.4);ctx.closePath();ctx.fill()}}
+ const ground=ctx.createLinearGradient(0,h*.28,0,h);
+ ground.addColorStop(0,weather==="snow"?"#aebfc0":style==="canyon"||style==="desert"?"#b18a5c":["city","london","tokyo"].includes(style)?"#53605b":style==="ice"||style==="alpine"?"#829fa0":"#4a6d4d");
+ ground.addColorStop(1,weather==="snow"?"#e5eeee":style==="canyon"||style==="desert"?"#73523d":["city","london","tokyo"].includes(style)?"#293b3b":style==="ice"||style==="alpine"?"#c5d8d9":"#203b2e");
+ ctx.fillStyle=ground;ctx.fillRect(0,h*.34,w,h*.66);
+ const left=w*.065,right=w*.935,top=h*.16,bottom=h*.90;ctx.save();ctx.shadowColor="#0008";ctx.shadowBlur=10;ctx.shadowOffsetY=5;
+ ctx.beginPath();ctx.moveTo(left+40,top);ctx.lineTo(right-40,top);ctx.lineTo(right,bottom-15);ctx.lineTo(left,bottom-15);ctx.closePath();
+ ctx.fillStyle=weather==="snow"?"#d5e4e6":style==="canyon"||style==="desert"?"#c09a6b":["city","london","tokyo"].includes(style)?"#66716d":"#66855c";ctx.fill();ctx.restore();
+ let seed=Number($("map").value)*941+23;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ if(!["city","tokyo","factory","desert","canyon","lava"].includes(style)){
+  for(let i=0;i<260;i++){const x=left+rnd()*(right-left),y=top+rnd()*(bottom-top);ctx.strokeStyle=weather==="snow"?"#f3f8f7aa":"rgba(60,100,55,.48)";ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-1,y-3-rnd()*3);ctx.stroke()}
+ }
+ for(let i=0;i<map.walls.length;i++){
+  const a=map.walls[i],inset=(right-left)*.09,cx=left+inset+a[0]*(right-left-inset*2),cy=top+(bottom-top)*.04+a[1]*(bottom-top)*.90,bw=Math.max(8,a[2]*(right-left)*1.02),bh=Math.max(6,a[3]*(bottom-top)*1.35);
+  const urban=["city","london","tokyo"].includes(style),baseColor=urban?"#35444a":style==="ice"||style==="alpine"?"#c2d8dd":style==="crystal"?"#746aa3":style==="canyon"||style==="desert"?"#936849":"#3f5147";
+  ctx.fillStyle="#10191688";ctx.fillRect(cx-bw/2+4,cy-bh/2+5,bw,bh);ctx.fillStyle=baseColor;ctx.fillRect(cx-bw/2,cy-bh/2,bw,bh);
+  ctx.fillStyle=urban?"#64777b":style==="ice"||style==="alpine"?"#edf7f7":style==="crystal"?"#b3a4ed":style==="canyon"||style==="desert"?"#dab07c":"#87968a";
+  ctx.fillRect(cx-bw/2,cy-bh/2,bw,Math.max(3,bh*.22));
+  if(urban){ctx.fillStyle=weather==="rain"||weather==="storm"?"#8ab9c7":"#d9cda4";for(let x=cx-bw/2+3;x<cx+bw/2-2;x+=Math.max(5,bw/5))for(let y=cy-bh/2+5;y<cy+bh/2-2;y+=Math.max(6,bh/4))ctx.fillRect(x,y,2.5,3.5)}
+ }
+ ctx.lineWidth=3;ctx.lineCap="round";
+ if(style==="london"){ctx.fillStyle="#d1c4a5";ctx.fillRect(w*.18,h*.30,19,h*.43);ctx.fillRect(w*.175,h*.25,29,8);ctx.fillStyle="#f1d88f";ctx.beginPath();ctx.arc(w*.19,h*.39,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#bdc9c2";ctx.beginPath();ctx.moveTo(w*.57,h*.67);ctx.lineTo(w*.57,h*.45);ctx.lineTo(w*.72,h*.45);ctx.lineTo(w*.72,h*.67);ctx.stroke();ctx.fillRect(w*.55,h*.43,w*.19,5)}
+ if(style==="tokyo"){ctx.strokeStyle="#e66f80";ctx.beginPath();ctx.moveTo(w*.78,h*.64);ctx.lineTo(w*.82,h*.27);ctx.lineTo(w*.85,h*.64);ctx.stroke();ctx.strokeStyle="#f3d1b2";for(let y=h*.38;y<h*.57;y+=14){ctx.beginPath();ctx.moveTo(w*.795,y);ctx.lineTo(w*.84,y);ctx.stroke()}}
+ if(style==="alpine"){ctx.fillStyle="#6b5144";ctx.fillRect(w*.67,h*.55,34,23);ctx.fillStyle="#604238";ctx.beginPath();ctx.moveTo(w*.64,h*.55);ctx.lineTo(w*.69,h*.44);ctx.lineTo(w*.74,h*.55);ctx.fill();ctx.fillStyle="#e9f1ef";ctx.fillRect(w*.68,h*.61,6,7)}
+ if(style==="canyon"){ctx.fillStyle="#a77249";ctx.fillRect(w*.38,h*.48,12,h*.21);ctx.fillRect(w*.55,h*.48,12,h*.21);ctx.fillRect(w*.38,h*.47,w*.19,10);ctx.fillStyle="#dfb17d";ctx.fillRect(w*.4,h*.47,w*.15,3)}
+ if(style==="ruins"){ctx.fillStyle="#c7b995";for(let i=0;i<5;i++)ctx.fillRect(w*.34+i*12,h*.48,5,27);ctx.fillRect(w*.31,h*.46,66,5);ctx.beginPath();ctx.moveTo(w*.7,h*.38);ctx.lineTo(w*.74,h*.23);ctx.lineTo(w*.78,h*.38);ctx.fill()}
+ if(["forest","alpine","mega","london"].includes(style)){
+  const count=style==="forest"?15:style==="alpine"?13:style==="london"?5:8;
+  for(let i=0;i<count;i++){const x=left+18+rnd()*(right-left-36),y=top+14+rnd()*(bottom-top-28),r=style==="alpine"?6:5;ctx.fillStyle="#344f3a";ctx.beginPath();ctx.arc(x,y,r+2,0,Math.PI*2);ctx.fill();ctx.fillStyle=weather==="snow"?"#b9d1d0":"#568251";ctx.beginPath();ctx.arc(x,y-2,r,0,Math.PI*2);ctx.fill()}
+ }
+ ctx.strokeStyle="#d2ded4c9";ctx.lineWidth=3;ctx.strokeRect(left,top,right-left,bottom-top);ctx.strokeStyle="#e5efd8";ctx.beginPath();ctx.moveTo(w*.47,bottom);ctx.lineTo(w*.53,bottom);ctx.stroke();
+ const drawTank=(x,y,col)=>{ctx.save();ctx.translate(x,y);ctx.fillStyle="#14201bcc";ctx.fillRect(-13,-6,26,12);ctx.fillStyle=col;ctx.fillRect(-10,-8,20,16);ctx.fillStyle="#c7d0c2";ctx.fillRect(-3,-13,6,10);ctx.restore()};
+ drawTank(left+55,bottom-30,"#79e7c0");drawTank(right-55,top+30,"#ff917d");
+ if(weather==="snow"){for(let i=0;i<82;i++){ctx.fillStyle="#f7fbffb9";ctx.beginPath();ctx.arc(rnd()*w,rnd()*h,rnd()*1.8+.4,0,Math.PI*2);ctx.fill()}}
+ else if(weather==="rain"||weather==="storm"){ctx.strokeStyle="#c2dbe26e";ctx.lineWidth=1.5;for(let i=0;i<65;i++){const x=rnd()*w,y=rnd()*h;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+7);ctx.stroke()}}
+ else if(weather==="dust"){ctx.fillStyle="#d8bb8a30";ctx.fillRect(0,0,w,h)}
+ if(cloud!=="none"){ctx.fillStyle=weather==="storm"?"#202c3aa8":"#e0e9e3a0";const n=cloud==="wispy"?3:cloud==="storm"?7:cloud==="overcast"?8:5;for(let i=0;i<n;i++){const x=i*w/n+14,y=10+(i%2)*8;ctx.beginPath();ctx.ellipse(x,y,20,5,0,0,Math.PI*2);ctx.fill()}}
+ const shade=ctx.createLinearGradient(0,0,0,h);shade.addColorStop(0,"#00000012");shade.addColorStop(1,"#03100a36");ctx.fillStyle=shade;ctx.fillRect(0,0,w,h);
+}
+
 function updateMenuPreview(){
  const map=MAPS[Number($("map").value)]||MAPS[0],weather=$("weather").value,cloud=$("clouds").value,paint=PAINTS[$("paint1").value]||"#c8f27a";
  $("previewMapTitle").textContent=map.name.toUpperCase();$("previewWeatherTitle").textContent=weather.toUpperCase()+" · "+cloud.toUpperCase()+" CLOUDS";
  $("previewSky").style.background=({clear:"linear-gradient(#c58b53,#e0c48f)",overcast:"linear-gradient(#576b78,#a1a9aa)",mist:"linear-gradient(#415b5c,#9aa9a0)",rain:"linear-gradient(#273a4a,#657782)",storm:"linear-gradient(#141d30,#485664)",snow:"linear-gradient(#91b2bd,#e2e8e5)",dust:"linear-gradient(#80674d,#c4a477)"})[weather];
  $("previewClouds").textContent=cloud==="none"?"":cloud==="wispy"?"☁ 〰":cloud==="storm"?"☁ ☁ ☁":cloud==="overcast"?"☁ ☁ ☁ ☁":"☁  ☁";$("previewTank").style.color=paint;
- $("worldPreview").style.filter=weather==="storm"?"saturate(.65) brightness(.78)":weather==="rain"?"saturate(.72) brightness(.86)":weather==="snow"?"brightness(1.1)":weather==="dust"?"sepia(.18)":"none";
+ $("worldPreview").style.filter="none";drawMapPreview(map,weather,cloud);
 }
 function buildArena(){
  clearDynamic();
  const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.0005,weather.fog+(fogLevel==="high"?.002:fogLevel==="low"?-.0007:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
  const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
  if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();if(weatherMode==="snow")addSnowField();addFarHorizon();
- const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
+ const base=material("#202a24",.88,.12);box(scene,0,-.43,0,83,.55,59,base);
  // Floor tile seams, pads and perimeter lights.
  const seam=material(map.accent,.38,.22,{emissive:map.accent,emissiveIntensity:map.style==="neon"?.22:.08});
- for(let x=-28;x<=28;x+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.006,36),seam);m.position.set(x,-.098,0);scene.add(m)}
- for(let z=-18;z<=18;z+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(56,.006,.025),seam);m.position.set(0,-.097,z);scene.add(m)}
+ for(let x=-38;x<=38;x+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.006,52),seam);m.position.set(x,-.098,0);scene.add(m)}
+ for(let z=-26;z<=26;z+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(76,.006,.025),seam);m.position.set(0,-.097,z);scene.add(m)}
  // Raised, padded perimeter with corner braces and illuminated edge marks.
  const edgeMat=material(map.accent,.32,.2,{emissive:map.accent,emissiveIntensity:.25});
  addFencePerimeter();
  // Map-specific cover converted from the original 10 arena layouts.
  const specs=map.walls;
  for(const a of specs){
-  const x=(a[0]+a[2]/2)*56-28,z=(a[1]+a[3]/2)*36-18,w=Math.max(1.3,a[2]*56),d=Math.max(1.3,a[3]*36);
-  const kind=map.style==="crystal"?"crystal":map.style==="ice"?"ice":map.style==="desert"?"crate":map.style==="factory"?"container":map.style==="city"?"building":"block";
-  addWall(x,z,w,d,kind==="building"?rand(9,17):kind==="container"?2.8:rand(1.6,2.8),kind);
+  const x=(a[0]+a[2]/2)*76-38,z=(a[1]+a[3]/2)*52-26,w=Math.max(1.3,a[2]*76),d=Math.max(1.3,a[3]*52);
+  const kind=map.style==="crystal"?"crystal":map.style==="ice"?"ice":map.style==="desert"||map.style==="canyon"?"crate":map.style==="factory"?"container":["city","london","tokyo"].includes(map.style)?"building":"block";
+  addWall(x,z,w,d,kind==="building"?rand(10,22):kind==="container"?2.8:rand(1.6,2.8),kind);
  }
  // Terrain dressing varies by map but stays outside the important driving lanes.
  if(map.style==="forest"){
-  for(let i=0;i<28;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<9&&Math.abs(z)<7)continue;const tree=addTree(x,z,rand(.65,1.15));}
+  for(let i=0;i<54;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<11&&Math.abs(z)<8)continue;addTree(x,z,rand(.75,1.35));}
  }
  if(map.style==="crystal"){
-  for(let i=0;i<30;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<8&&Math.abs(z)<6)continue;addCrystal(x,z,rand(.55,1.05))}
+  for(let i=0;i<36;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;addCrystal(x,z,rand(.55,1.05))}
  }
  if(map.style==="desert"){
   const dune=material("#b29a6c",.98);
-  for(let i=0;i<18;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const mound=new THREE.Mesh(new THREE.SphereGeometry(rand(1.1,2.5),9,6),dune);mound.position.set(x,-.04,z);mound.scale.y=.28;mound.scale.z=rand(.8,1.7);scene.add(mound)}
+  for(let i=0;i<24;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;const mound=new THREE.Mesh(new THREE.SphereGeometry(rand(1.1,2.5),9,6),dune);mound.position.set(x,-.04,z);mound.scale.y=.28;mound.scale.z=rand(.8,1.7);scene.add(mound)}
  }
  if(map.style==="ice"){
-  for(let i=0;i<13;i++){const x=rand(-26,26),z=rand(-16,16);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const size=rand(.4,1.1),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"ice rock",shape:"circle",r:size*1.05})}
+  for(let i=0;i<18;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;const size=rand(.4,1.1),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"ice rock",shape:"circle",r:size*1.05})}
  }
  if(map.style==="factory"){
   const pipe=material("#8b806a",.55,.45);
-  for(let i=0;i<8;i++){const x=-24+i*6;const p=cylinder(scene,x,.4,-18,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-18,.48,.44,.2,common.dark);obstacles.push({x,z:-18,w:.34,d:2.8,h:.7,kind:"pipe"})}
+  for(let i=0;i<10;i++){const x=-36+i*8;const p=cylinder(scene,x,.4,-25,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-25,.48,.44,.2,common.dark);obstacles.push({x,z:-25,w:.34,d:2.8,h:.7,kind:"pipe"})}
  }
  if(map.style==="city"){
   // A denser second ring of mid-rise structures makes the city read as a place, not just cover.
-  for(let i=0;i<14;i++){
-   const side=i%4,row=Math.floor(i/4),offset=-23+row*15.3;
-   const x=side===0?-24:side===1?24:offset,z=side===2?-16:side===3?16:-16+row*10.5;
+  for(let i=0;i<18;i++){
+   const side=i%4,row=Math.floor(i/4),offset=-34+row*18;
+   const x=side===0?-35:side===1?35:offset,z=side===2?-24:side===3?24:-24+row*15;
    if(Math.abs(x)<10&&Math.abs(z)<8)continue;
    const w=rand(3.8,6.4),d=rand(3.3,5.6),h=rand(10,19);
    addWall(x,z,w,d,h,"building");
@@ -480,21 +740,22 @@ function buildArena(){
  }
  if(map.style==="lava"){
   const lava=material("#ff6e43",.3,.08,{emissive:"#c72f1d",emissiveIntensity:.85});
-  for(const x of [-19,-9,9,19]){const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,.045,35),lava);m.position.set(x,.0,0);scene.add(m)}
+  for(const x of [-30,-15,15,30]){const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,.045,49),lava);m.position.set(x,.0,0);scene.add(m)}
   for(let i=0;i<14;i++){const x=rand(-26,26),z=rand(-16,16),size=rand(.45,.95),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),material("#423b34",.98));rock.position.set(x,.25,z);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"lava rock",shape:"circle",r:size*.9})}
  }
  if(map.style==="sky"){
   const pillar=material("#4b686c",.65,.3);
-  for(const x of [-26,-13,0,13,26]){cylinder(scene,x,-1.5,-19,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,19,.55,.7,3.4,pillar,8);obstacles.push({x,z:-19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7},{x,z:19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7})}
+  for(const x of [-35,-18,0,18,35]){cylinder(scene,x,-1.5,-27,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,27,.55,.7,3.4,pillar,8);obstacles.push({x,z:-27,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7},{x,z:27,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7})}
  }
  if(map.style==="neon"||map.style==="mega"){
-  for(const x of [-24,-12,0,12,24])for(const z of [-14,14]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
+  for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
+ addLandmarkDetails();addStreetFurniture();addGrassLayer();
  // Padded start bays and spawn protection lights.
- for(const x of [-23,23]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
+ for(const x of [-25,25]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
  tanks=[buildTank(0,vehicleIdx[0]),buildTank(1,vehicleIdx[1])];
- tanks[0].x=-23;tanks[0].z=0;tanks[0].angle=Math.PI/2;tanks[0].group.position.set(tanks[0].x,0,tanks[0].z);
- tanks[1].x=23;tanks[1].z=0;tanks[1].angle=-Math.PI/2;tanks[1].group.position.set(tanks[1].x,0,tanks[1].z);
+ tanks[0].x=-25;tanks[0].z=0;tanks[0].angle=Math.PI/2;tanks[0].group.position.set(tanks[0].x,0,tanks[0].z);
+ tanks[1].x=25;tanks[1].z=0;tanks[1].angle=-Math.PI/2;tanks[1].group.position.set(tanks[1].x,0,tanks[1].z);
  tanks.forEach(t=>t.group.rotation.y=t.angle);
  seedPickups();
 }
@@ -503,7 +764,7 @@ function seedPickups(){
  for(const type of types){
   let found=null;
   for(let tries=0;tries<70&&!found;tries++){
-   const x=rand(-24,24),z=rand(-14,14);
+   const x=rand(-34,34),z=rand(-24,24);
    if(collides(x,z,1,null))continue;
    if(tanks.some(t=>Math.hypot(t.x-x,t.z-z)<5))continue;
    if(used.some(p=>Math.hypot(p.x-x,p.z-z)<5))continue;
@@ -519,10 +780,10 @@ function addSnowField(){
  const farMat=new THREE.MeshBasicMaterial({color:"#d9e6e9",transparent:true,opacity:.035,depthWrite:false});
  snowFarSurface=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),farMat);snowFarSurface.rotation.x=-Math.PI/2;snowFarSurface.position.y=-.094;snowFarSurface.renderOrder=1;scene.add(snowFarSurface);
  const coverMat=new THREE.MeshBasicMaterial({color:"#edf4f4",transparent:true,opacity:.09,depthWrite:false});
- snowSurface=new THREE.Mesh(new THREE.PlaneGeometry(59.6,39.6),coverMat);snowSurface.rotation.x=-Math.PI/2;snowSurface.position.y=-.083;snowSurface.renderOrder=2;scene.add(snowSurface);
+ snowSurface=new THREE.Mesh(new THREE.PlaneGeometry(79.6,55.6),coverMat);snowSurface.rotation.x=-Math.PI/2;snowSurface.position.y=-.083;snowSurface.renderOrder=2;scene.add(snowSurface);
  const moundMat=new THREE.MeshStandardMaterial({color:"#e4eff0",roughness:1,transparent:true,opacity:.42,depthWrite:false});
- for(let i=0;i<44;i++){
-  let x=rand(-27.5,27.5),z=rand(-17.5,17.5);
+ for(let i=0;i<75;i++){
+  let x=rand(-37.5,37.5),z=rand(-25.5,25.5);
   if(Math.abs(x)>20&&Math.abs(z)<4)x*=.6;
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,8,5),moundMat.clone());
   const bx=rand(.75,2.4),bz=rand(.7,2.0);
@@ -532,6 +793,7 @@ function addSnowField(){
 }
 function spawnSnowPuff(t){
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle),rx=Math.cos(t.angle),rz=-Math.sin(t.angle);
+  pulseSound("snowTrack");
  for(const side of [-1,1]){
   const mat=new THREE.MeshBasicMaterial({color:"#e6f1f2",transparent:true,opacity:.66,depthWrite:false});
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(rand(.045,.095),6,5),mat);
@@ -548,7 +810,7 @@ function spawnSnowPuff(t){
 }
 function stepSnow(dt){
  if(weatherMode!=="snow"||!snowSurface)return;
- snowAccumulation=Math.min(1,snowAccumulation+dt*.0065);
+ snowAccumulation=Math.min(1,snowAccumulation+dt*.015);
  snowFarSurface.material.opacity=.025+snowAccumulation*.035;
  snowSurface.material.opacity=.075+snowAccumulation*.19;
  for(const patch of snowPatches){
@@ -567,8 +829,8 @@ function stepSnow(dt){
  }
  for(const t of tanks){
   const speed=Math.hypot(t.vx,t.vz);t.snowTrackTimer=Math.max(0,(t.snowTrackTimer||0)-dt);
-  t.snowLoad=Math.min(1,(t.snowLoad||0)+dt*.012);
-  if(speed>2.0&&t.snowTrackTimer<=0){spawnSnowPuff(t);t.snowTrackTimer=.36;t.snowLoad=Math.max(0,t.snowLoad-.07)}
+  t.snowLoad=Math.min(1,(t.snowLoad||0)+dt*(weatherMode==="snow"?.09:.006));
+  if(speed>2.0&&t.snowTrackTimer<=0){spawnSnowPuff(t);t.snowTrackTimer=.36;t.snowLoad=Math.max(0,t.snowLoad-.02)}
   (t.snowCoats||[]).forEach((mat,i)=>{mat.opacity=Math.max(0,(t.snowLoad||0)*(.20+i*.08));mat.visible=mat.opacity>.015});
  }
  for(let i=snowTrackMarks.length-1;i>=0;i--){
@@ -665,18 +927,18 @@ function tankOverlapInfo(a,b){
  return {depth:minDepth,nx:best[0],nz:best[1]};
 }
 function moveTank(t,dt,forward,steer,boosting){
- const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38;
+ const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38,surfaceFactor=weatherMode==="snow"?.78:weatherMode==="rain"?.92:1;
  t.angle-=steer*v.turn*turnFactor*dt;
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle);
- if(forward!==0)t.vx+=fx*forward*v.accel*damageFactor*dt,t.vz+=fz*forward*v.accel*damageFactor*dt;
- const drag=Math.pow(forward===0?.30:.84,dt);t.vx*=drag;t.vz*=drag;
- if(boosting&&t.boost<=0&&t.boostCooldown<=0){t.boost=.72;t.boostCooldown=4.2;pulseSound("boost")}const max=v.speed*damageFactor*(t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
+ if(forward!==0)t.vx+=fx*forward*v.accel*damageFactor*surfaceFactor*dt,t.vz+=fz*forward*v.accel*damageFactor*surfaceFactor*dt;
+ const drag=Math.pow(forward===0?(weatherMode==="snow"?.43:.30):(weatherMode==="snow"?.91:weatherMode==="rain"?.88:.84),dt);t.vx*=drag;t.vz*=drag;
+ if(boosting&&t.boost<=0&&t.boostCooldown<=0){t.boost=.72;t.boostCooldown=4.2;pulseSound("boost")}const max=v.speed*damageFactor*surfaceFactor*(t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
  if(sp>max){t.vx*=max/sp;t.vz*=max/sp}
  if(boosting&&t.boost<=0)t.boost=.0;
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
  if(!tankCollides(t,nx,t.z))t.x=nx;else{if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vx=0;t.vz*=.96}
  if(!tankCollides(t,t.x,nz))t.z=nz;else{if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vz=0;t.vx*=.96}
- t.x=clamp(t.x,-30+(t.hitHalfWidth||1.38)+.22,30-(t.hitHalfWidth||1.38)-.22);t.z=clamp(t.z,-20+(t.hitHalfLength||1.78)+.22,20-(t.hitHalfLength||1.78)-.22);
+ t.x=clamp(t.x,-40+(t.hitHalfWidth||1.38)+.22,40-(t.hitHalfWidth||1.38)-.22);t.z=clamp(t.z,-28+(t.hitHalfLength||1.78)+.22,28-(t.hitHalfLength||1.78)-.22);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
  t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
  const treadShift=((t.trackTime%3.3)+3.3)%3.3;
@@ -738,7 +1000,7 @@ function tagHit(t,owner){
 }
 function resetRound(){
  projectiles.forEach(p=>{scene.remove(p.mesh);scene.remove(p.trail)});projectiles=[];
- tanks.forEach((t,i)=>{t.x=i===0?-23:23;t.z=0;t.angle=i===0?Math.PI/2:-Math.PI/2;t.vx=t.vz=0;t.hits=maxTankHits;t.inv=1.25;t.boost=0;t.boostCooldown=0;t.shield=0;t.fireCd=0;t.smokeTimer=rand(.1,.4);updateTankDamageVisual(t);t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0)});
+ tanks.forEach((t,i)=>{t.x=i===0?-25:25;t.z=0;t.angle=i===0?Math.PI/2:-Math.PI/2;t.vx=t.vz=0;t.hits=maxTankHits;t.inv=1.25;t.boost=0;t.boostCooldown=0;t.shield=0;t.fireCd=0;t.smokeTimer=rand(.1,.4);updateTankDamageVisual(t);t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0)});
  pickups.forEach(p=>scene.remove(p.group));pickups=[];seedPickups();showBanner("ROUND "+roundNo,1);updateHUD()
 }
 function finishMatch(winner){
@@ -756,10 +1018,11 @@ function updateHUD(){
 }
 function drawRadar(){
  const w=radar.width,h=radar.height;rc.clearRect(0,0,w,h);rc.fillStyle="#16231b";rc.fillRect(0,0,w,h);
+ const sx=x=>w/2+x/80*(w-20),sz=z=>h/2+z/56*(h-20);
  rc.strokeStyle=MAPS[mapIndex].accent;rc.globalAlpha=.42;rc.strokeRect(10,10,w-20,h-20);rc.globalAlpha=1;
- for(const o of obstacles){if(o.decor||!o.w||!o.d)continue;rc.fillStyle="#778275";rc.fillRect(w/2+(o.x-o.w/2)/60*(w-20),h/2+(o.z-o.d/2)/40*(h-20),o.w/60*(w-20),o.d/40*(h-20))}
- for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(w/2+p.x/60*(w-20),h/2+p.z/40*(h-20),3.3,0,Math.PI*2);rc.fill()}
- tanks.forEach((t,i)=>{rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(w/2+t.x/60*(w-20),h/2+t.z/40*(h-20),5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(w/2+t.x/60*(w-20),h/2+t.z/40*(h-20));rc.lineTo(w/2+(t.x+Math.sin(t.angle)*3)/60*(w-20),h/2+(t.z+Math.cos(t.angle)*3)/40*(h-20));rc.stroke()})
+ for(const o of obstacles){if(o.decor||!o.w||!o.d)continue;rc.fillStyle=o.fence?"#b6c5b9":"#778275";rc.fillRect(sx(o.x-o.w/2),sz(o.z-o.d/2),o.w/80*(w-20),o.d/56*(h-20))}
+ for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(sx(p.x),sz(p.z),3.3,0,Math.PI*2);rc.fill()}
+ tanks.forEach((t,i)=>{const x=sx(t.x),y=sz(t.z);rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(x,y,5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(x,y);rc.lineTo(sx(t.x+Math.sin(t.angle)*3),sz(t.z+Math.cos(t.angle)*3));rc.stroke()})
 }
 function updateHUDAndRadar(){updateHUD();drawRadar()}
 function stepProjectiles(dt){
@@ -769,7 +1032,7 @@ function stepProjectiles(dt){
   const target=tanks[1-p.owner];let consumed=false,escaped=false;
   for(let s=1;s<=steps;s++){
    const t=s/steps,x=oldX+p.vx*dt*t,z=oldZ+p.vz*dt*t;p.x=x;p.z=z;p.mesh.position.set(p.x,p.y,p.z);
-   if(Math.abs(x)>31||Math.abs(z)>21){escaped=true;break}
+   if(Math.abs(x)>41||Math.abs(z)>29){escaped=true;break}
    if(collides(x,z,.18,null)){
     spawnExplosion(x,.35,z,p.owner===0?"#9bfff0":"#ffb29c",.58);pulseSound("explosion");consumed=true;break;
    }
@@ -784,7 +1047,7 @@ function stepProjectiles(dt){
 }
 function stepPickups(dt){
  spawnTimer-=dt;
- if(spawnTimer<=0&&pickups.length<4){const x=rand(-22,22),z=rand(-13,13);if(!collides(x,z,1,null)){spawnPickup(x,z,["boost","shield","repair"][Math.floor(Math.random()*3)])}spawnTimer=6.8}
+ if(spawnTimer<=0&&pickups.length<4){const x=rand(-34,34),z=rand(-24,24);if(!collides(x,z,1,null)){spawnPickup(x,z,["boost","shield","repair"][Math.floor(Math.random()*3)])}spawnTimer=6.8}
  for(let i=pickups.length-1;i>=0;i--){
   const p=pickups[i];p.phase+=dt;p.group.position.y=.65+Math.sin(p.phase*2.5)*.13;p.group.rotation.y+=dt*.8;
   for(const t of tanks)if(Math.hypot(t.x-p.x,t.z-p.z)<1.7){
@@ -813,7 +1076,7 @@ function update(dt){
   const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")?1:0)-(held.has("arrowleft")?1:0);
   moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
- resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);
+ resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);updateEngineAudio();
  for(let i=particles.length-1;i>=0;i--){
   const p=particles[i];p.life-=dt;
   if(p.kind==="explosion"){
@@ -845,10 +1108,10 @@ function cameraUpdate(dt){
  const a=tanks[0],b=tanks[1];
  const midX=a&&b?(a.x+b.x)*.5:a?.x||0,midZ=a&&b?(a.z+b.z)*.5:a?.z||0;
  const separation=a&&b?Math.hypot(a.x-b.x,a.z-b.z):0;
- const height=clamp(39+separation*.56,40,72),back=clamp(31+separation*.29,31,49);
- const target=V(midX,.55,midZ);
+ const height=clamp(27+separation*.32,29,52),back=clamp(23+separation*.20,23,38);
+ const target=V(midX,.95,midZ);
  const dest=V(midX,height,midZ+back);
- const desiredFov=clamp(46+separation*.24,46,63);
+ const desiredFov=clamp(43+separation*.15,43,55);
  camera.position.lerp(dest,1-Math.exp(-dt*2.0));
  const nextFov=camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*1.7));
  if(Math.abs(nextFov-camera.fov)>.025){camera.fov=nextFov;camera.updateProjectionMatrix()}
@@ -873,7 +1136,7 @@ function createScene(){
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
  scene=new THREE.Scene();scene.background=new THREE.Color("#101713");scene.fog=new THREE.FogExp2("#101713",.018);
- camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,520);camera.position.set(0,43,37);camera.lookAt(0,0,0);
+ camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,.1,520);camera.position.set(0,43,37);camera.lookAt(0,0,0);
  const hemi=new THREE.HemisphereLight("#cbd8c5","#18211c",1.35);scene.add(hemi);
  const sun=new THREE.DirectionalLight("#d4d8c8",2.05);sun.position.set(-18,35,18);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;sun.shadow.bias=-.00025;scene.add(sun);
  const fill=new THREE.DirectionalLight("#71989b",.62);fill.position.set(20,18,-14);scene.add(fill);
@@ -889,9 +1152,9 @@ function startGame(resetScores=true){
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
  $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
- active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
+ active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();syncEngineAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
-function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear()}
+function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear();updateEngineAudio()}
 $("startBtn").addEventListener("click",()=>startGame(true));
 $("mode").addEventListener("change",()=>{$("diffWrap").style.display=$("mode").value==="cpu"?"block":"none"});
 $("restartBtn").addEventListener("click",()=>startGame(true));
@@ -900,7 +1163,7 @@ $("resumeBtn").addEventListener("click",pauseGame);
 $("pauseResetBtn").addEventListener("click",()=>{paused=false;$("pauseOverlay").style.display="none";score=[0,0];roundNo=1;startGame(true)});
 $("againBtn").addEventListener("click",()=>startGame(true));
 $("setupAgainBtn").addEventListener("click",()=>{$("endOverlay").style.display="none";$("setupOverlay").style.display="grid";$("hud").style.display="none";active=false});
-$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn)pulseSound("pickup");syncWeatherAudio()});
+$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn){pulseSound("pickup");syncEngineAudio()}syncWeatherAudio();if(!soundOn)engineGains.forEach(g=>g.gain.setTargetAtTime(.0001,audioCtx?.currentTime||0,.06))});
 $("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}});
 function exitToLibrary(){if(window.parent!==window){try{window.parent.closeStandaloneGame();return}catch(_){}}location.href="index.html"} $("exitBtn").addEventListener("click",exitToLibrary);$("setupLibraryBtn").addEventListener("click",exitToLibrary);$("endLibraryBtn").addEventListener("click",exitToLibrary);
 window.addEventListener("keydown",e=>{
@@ -922,6 +1185,11 @@ document.querySelectorAll(".touch button").forEach(btn=>{
 window.addEventListener("resize",()=>{if(active){$("touch1").style.display=innerWidth<=760?"flex":"none";$("touch2").style.display=innerWidth<=760&&mode==="local"?"flex":"none"}});
 $("difficulty").addEventListener("change",()=>difficulty=$("difficulty").value);
 initCustomSettings();
+$("map").addEventListener("change",()=>{
+ const preset=MAPS[Number($("map").value)];
+ if(preset?.defaultWeather){$("weather").value=preset.defaultWeather;$("clouds").value=preset.defaultClouds||"scattered";$("weather").dispatchEvent(new Event("change",{bubbles:true}));$("clouds").dispatchEvent(new Event("change",{bubbles:true}))}
+ updateMenuPreview();
+});
 for(const id of ["map","weather","clouds","paint1","paint2","fenceStyle","fogLevel","tankHealth","roundLimit"])$(id).addEventListener("change",updateMenuPreview);
 updateMenuPreview();
 try{createScene();requestAnimationFrame(animate)}catch(err){$("errorOverlay").style.display="grid";$("errorText").textContent="3D setup failed: "+(err?.message||"WebGL was unavailable")+"\nTry refreshing in a current browser with hardware acceleration enabled."}
