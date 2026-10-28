@@ -490,8 +490,8 @@ function addFarHorizon(){
   const count=map.style==="tokyo"?50:map.style==="city"?44:map.style==="london"?36:24;
   for(let i=0;i<count;i++){
    const side=i%4,along=rand(-74,74);
-   const x=side===0?-rand(39,68):side===1?rand(39,68):along;
-   const z=side===2?-rand(29,53):side===3?rand(29,53):along*.52;
+   const x=side===0?-rand(47,82):side===1?rand(47,82):along;
+   const z=side===2?-rand(35,66):side===3?rand(35,66):along*.52;
    const w=rand(4,11),d=rand(4,9),h=map.style==="city"?rand(8,28):rand(5,14);
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);
    mesh.position.set(x,h/2-.1,z);mesh.rotation.y=rand(-.09,.09);scene.add(mesh);
@@ -503,7 +503,7 @@ function addFarHorizon(){
  }else{
   // Distant, simplified outpost roofs and silhouettes make the map feel continuous without adding cover.
   for(let i=0;i<12;i++){
-   const side=i%4,along=rand(-65,65),x=side===0?-rand(39,56):side===1?rand(39,56):along,z=side===2?-rand(30,44):side===3?rand(30,44):along*.48;
+   const side=i%4,along=rand(-65,65),x=side===0?-rand(47,66):side===1?rand(47,66):along,z=side===2?-rand(35,52):side===3?rand(35,52):along*.48;
    const w=rand(4,9),d=rand(3,8),h=rand(2.5,7);
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);mesh.position.set(x,h/2-.08,z);scene.add(mesh);
   }
@@ -898,12 +898,12 @@ function tankOverlapInfo(a,b){
  return {depth:minDepth,nx:best[0],nz:best[1]};
 }
 function moveTank(t,dt,forward,steer,boosting){
- const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38;
+ const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38,surfaceFactor=weatherMode==="snow"?.78:weatherMode==="rain"?.92:1;
  t.angle-=steer*v.turn*turnFactor*dt;
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle);
- if(forward!==0)t.vx+=fx*forward*v.accel*damageFactor*dt,t.vz+=fz*forward*v.accel*damageFactor*dt;
- const drag=Math.pow(forward===0?.30:.84,dt);t.vx*=drag;t.vz*=drag;
- if(boosting&&t.boost<=0&&t.boostCooldown<=0){t.boost=.72;t.boostCooldown=4.2;pulseSound("boost")}const max=v.speed*damageFactor*(t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
+ if(forward!==0)t.vx+=fx*forward*v.accel*damageFactor*surfaceFactor*dt,t.vz+=fz*forward*v.accel*damageFactor*surfaceFactor*dt;
+ const drag=Math.pow(forward===0?(weatherMode==="snow"?.43:.30):(weatherMode==="snow"?.91:weatherMode==="rain"?.88:.84),dt);t.vx*=drag;t.vz*=drag;
+ if(boosting&&t.boost<=0&&t.boostCooldown<=0){t.boost=.72;t.boostCooldown=4.2;pulseSound("boost")}const max=v.speed*damageFactor*surfaceFactor*(t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
  if(sp>max){t.vx*=max/sp;t.vz*=max/sp}
  if(boosting&&t.boost<=0)t.boost=.0;
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
