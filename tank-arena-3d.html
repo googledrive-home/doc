@@ -26,7 +26,7 @@
 .menuright{padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:11px}.menuright h2{font-size:14px;letter-spacing:.13em;margin:0}.label{font-size:10px;color:#acbdad;font-weight:850;letter-spacing:.04em;display:block;margin:2px 0 5px}.menuright select{width:100%;padding:11px;border-radius:8px;border:1px solid #718b6e55;background:#101e17;color:#eff5e8;outline:none}.selectrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{width:100%;padding:13px}.note{font-size:10px;line-height:1.6;color:#7f9684;margin-top:2px}
 #pauseOverlay,#endOverlay,#errorOverlay{display:none;z-index:10}.result{width:min(480px,95vw);padding:30px;text-align:center}.result h2{font-size:34px;margin:11px 0}.result p{font-size:12px;line-height:1.7;color:#aabdac}
 .touch{position:fixed;z-index:4;bottom:14px;left:50%;transform:translateX(-50%);display:none;gap:8px;align-items:flex-end;pointer-events:none}.touchgroup{display:grid;grid-template-columns:repeat(3,47px);gap:5px;pointer-events:auto;padding:8px;border-radius:14px;background:#101a15b9;border:1px solid #d9efad26;backdrop-filter:blur(8px)}.touch button{height:40px;border-radius:8px;border:1px solid #d9efad45;background:#17241cdb;color:#edf7dc;font-size:12px;font-weight:950;touch-action:none}.touch button.down{background:#d1eca0;color:#142017}.touch .fire{border-color:#8cebe3a0;color:#8cebe3}
-@media(max-width:760px){.top{top:6px;left:6px;right:6px;gap:4px;align-items:flex-start}.brand{min-width:0;padding:6px}.crest{width:27px;height:27px;font-size:16px}.brand b{font-size:8px}.brand small{font-size:6px}.scoreboard{gap:3px}.score{min-width:72px;padding:6px}.score .label{font-size:7px}.score strong{font-size:15px}.score em{font-size:7px}.score .health{font-size:9px;letter-spacing:1px}.toolbar{gap:3px}.toolbar .btn{padding:7px 6px;font-size:8px}.leftcard{left:6px;top:66px;width:145px;padding:8px}.turn{font-size:15px}.sub{font-size:9px}.stat{font-size:9px}.rightcard{right:6px;top:66px;width:155px;padding:7px}.legend{font-size:7px}.bottom{left:6px;bottom:6px}.info{font-size:8px;max-width:230px;padding:7px}.banner{top:28%;font-size:10px}.touch{display:flex;bottom:8px;gap:6px}.touchgroup{grid-template-columns:repeat(3,38px);gap:4px;padding:5px}.touch button{height:34px;font-size:10px}.menu{grid-template-columns:1fr;max-height:96dvh}.menuleft,.menuright{padding:20px}.menu h1{font-size:47px}.menu p{font-size:11px}.chips{margin:11px 0}.controls{margin-top:8px}.menuright{border-top:1px solid #ffffff13}.note{font-size:9px}}
+@media(max-width:760px){.top{top:6px;left:6px;right:6px;gap:4px;align-items:flex-start}.brand{min-width:0;padding:6px}.crest{width:27px;height:27px;font-size:16px}.brand b{font-size:8px}.brand small{font-size:6px}.scoreboard{gap:3px}.score{min-width:72px;padding:6px}.score .label{font-size:7px}.score strong{font-size:15px}.score em{font-size:7px}.score .health{font-size:9px;letter-spacing:1px}.toolbar{gap:3px}.toolbar .btn{padding:7px 6px;font-size:8px}.leftcard{left:6px;top:66px;width:145px;padding:8px}.turn{font-size:15px}.sub{font-size:9px}.stat{font-size:9px}.rightcard{right:6px;top:66px;width:155px;padding:7px}.legend{font-size:7px}.bottom{left:6px;bottom:6px}.info{font-size:8px;max-width:230px;padding:7px}.banner{top:28%;font-size:10px}.touch{display:flex;bottom:8px;gap:6px}.touch#touch1{left:18%}.touch#touch2{left:82%}.touchgroup{grid-template-columns:repeat(3,38px);gap:4px;padding:5px}.touch button{height:34px;font-size:10px}.menu{grid-template-columns:1fr;max-height:96dvh}.menuleft,.menuright{padding:20px}.menu h1{font-size:47px}.menu p{font-size:11px}.chips{margin:11px 0}.controls{margin-top:8px}.menuright{border-top:1px solid #ffffff13}.note{font-size:9px}}
 @media(max-width:430px){.leftcard{width:120px}.rightcard{width:126px}.brand small{display:none}.score{min-width:56px}.score .health{letter-spacing:0}.touchgroup{grid-template-columns:repeat(3,32px);gap:3px}.touch button{height:31px;padding:0;font-size:9px}.info{display:none}}
 </style>
 </head>
@@ -43,7 +43,7 @@
  </div>
  <div class="leftcard panel"><div class="eyebrow" id="turnLabel">ROUND 1</div><div class="turn" id="turnName">READY</div><div class="sub" id="stateText">Tag your rival with a pulse. First to 5 rounds wins.</div><div class="rule"></div><div class="stat"><span>ROUND PROGRESS</span><b id="roundText">0 / 5</b></div><div class="bar"><span id="progress"></span></div><div class="stat"><span>ACTIVE MAP</span><b id="mapSmall">NEON GRID</b></div><div class="stat"><span>YOUR VEHICLE</span><b id="tankSmall">SCOUT</b></div><div class="sub" id="pickupText">Pickups: BOOST · SHIELD · REPAIR</div></div>
  <div class="rightcard panel"><div class="cardtitle"><span>ARENA RADAR</span><b>LIVE</b></div><canvas class="minimap" id="radar" width="260" height="170"></canvas><div class="legend"><span><i class="keydot" style="background:#75e3ac"></i>Player 1</span><span><i class="keydot" style="background:#ff8872"></i><span id="radarP2">Player 2</span></span><span><i class="keydot" style="background:#e5c96f"></i>Pickup</span><span><i class="keydot" style="background:#a7b5a5"></i>Cover</span></div></div>
- <div class="bottom"><div class="info panel"><strong>FIELD CONTROLS</strong><br><span class="green">P1</span> WASD drive · <span class="green">SPACE</span> tag pulse<br><span class="green">P2</span> Arrows drive · <span class="green">J / L</span> turret · <span class="green">ENTER</span> pulse · <span class="green">M</span> boost</div></div>
+ <div class="bottom"><div class="info panel"><strong>FIELD CONTROLS</strong><br><span class="green">P1</span> WASD drive · <span class="green">Q / E</span> turret · <span class="green">SPACE</span> pulse · <span class="green">SHIFT</span> boost<br><span class="green">P2</span> Arrows drive · <span class="green">J / L</span> turret · <span class="green">ENTER</span> pulse · <span class="green">M</span> boost</div></div>
  <div class="banner" id="banner">ARENA READY</div>
 </div>
 <div class="touch" id="touch1">
@@ -56,7 +56,7 @@
 </div>
 <div class="overlay" id="setupOverlay">
  <div class="menu">
-  <div class="menuleft"><div class="tag">3D VEHICLE COMBAT / TRAINING SYSTEM</div><h1>STEEL<br><span>ARENA.</span></h1><p>A fully 3D arcade tank arena with detailed armoured vehicles, tracked treads, rotating turrets, physical cover, arena hazards, glowing tag pulses and pickups. Choose a local two-player battle or take on the computer.</p><div class="chips"><div class="chip"><b>01</b> 3D tanks + track detail</div><div class="chip"><b>02</b> 10 maps + dynamic lighting</div><div class="chip"><b>03</b> Physics + collision</div><div class="chip"><b>04</b> P1 / P2 local controls</div></div><div class="tag">CONTROLS</div><div class="controls"><div class="control"><span class="key">W / S</span> Drive / reverse<br><span class="key">A / D</span> Steer</div><div class="control"><span class="key">SPACE</span> Tag pulse<br><span class="key">SHIFT</span> Boost</div><div class="control"><span class="key">ARROWS</span> Player 2 drive</div><div class="control"><span class="key">ENTER</span> Player 2 pulse</div></div><p class="note">This is a fictional arcade tag battle. Pulses score hits without graphic effects. Best on a current browser with WebGL enabled.</p></div>
+  <div class="menuleft"><div class="tag">3D VEHICLE COMBAT / TRAINING SYSTEM</div><h1>STEEL<br><span>ARENA.</span></h1><p>A fully 3D arcade tank arena with detailed armoured vehicles, tracked treads, rotating turrets, physical cover, arena hazards, glowing tag pulses and pickups. Choose a local two-player battle or take on the computer.</p><div class="chips"><div class="chip"><b>01</b> 3D tanks + track detail</div><div class="chip"><b>02</b> 10 maps + dynamic lighting</div><div class="chip"><b>03</b> Physics + collision</div><div class="chip"><b>04</b> P1 / P2 local controls</div></div><div class="tag">CONTROLS</div><div class="controls"><div class="control"><span class="key">W / S</span> Drive / reverse<br><span class="key">A / D</span> Steer · <span class="key">Q / E</span> Turret</div><div class="control"><span class="key">SPACE</span> Tag pulse<br><span class="key">SHIFT</span> Boost</div><div class="control"><span class="key">ARROWS</span> Player 2 drive<br><span class="key">J / L</span> Turret</div><div class="control"><span class="key">ENTER</span> Player 2 pulse</div></div><p class="note">This is a fictional arcade tag battle. Pulses score hits without graphic effects. Best on a current browser with WebGL enabled.</p></div>
   <div class="menuright"><div class="tag">MATCH SETUP / 3D CONFIG</div><h2>CONFIGURE YOUR BATTLE</h2><label class="label" for="mode">MATCH TYPE</label><select id="mode"><option value="local" selected>2 Players · Same device</option><option value="cpu">1 Player vs Computer</option></select><div id="diffWrap" style="display:none"><label class="label" for="difficulty">CPU DIFFICULTY</label><select id="difficulty"><option value="easy">Easy · forgiving</option><option value="medium" selected>Medium · balanced</option><option value="hard">Hard · tactical</option></select></div><div class="selectrow"><div><label class="label" for="tank1">PLAYER 1 TANK</label><select id="tank1"><option value="0">Scout · Fast</option><option value="1">Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div><div><label class="label" for="tank2">PLAYER 2 / CPU TANK</label><select id="tank2"><option value="0">Scout · Fast</option><option value="1" selected>Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div></div><label class="label" for="map">ARENA MAP · 10 ENVIRONMENTS</label><select id="map"><option value="0">Neon Grid · Training Grounds</option><option value="1">Desert Docks · Woodland Track</option><option value="2">Frozen Circuit · River Crossing</option><option value="3">Forest Maze · Farm Outskirts</option><option value="4">Crystal Caves · Quarry Yard</option><option value="5">Sky Bridge · Coastal Base</option><option value="6">Factory Floor · Industrial Yard</option><option value="7">City Blocks · Rural Village</option><option value="8">Lava Loops · Dry Outpost</option><option value="9">Mega Arena · Open Field</option></select><button id="startBtn" class="btn primary full">DEPLOY INTO 3D ARENA ↗</button><a class="btn full" href="index.html" style="text-align:center;text-decoration:none">← BACK TO GAME LIBRARY</a><div class="note">Settings: choose a vehicle for each player, pick a map and select CPU skill. You can reset or restart at any time.</div></div>
  </div>
 </div>
@@ -198,13 +198,14 @@ function addWall(x,z,w,d,h,kind){
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
 function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:4*s,kind:"tree"});
  cylinder(g,0,.8*s,0,.22*s,.32*s,1.6*s,material("#5b4936",.98),7);
  const leaf=material(MAPS[mapIndex].style==="forest"?"#426348":"#65724e",.97);
  for(let i=0;i<3;i++){const cone=new THREE.Mesh(new THREE.ConeGeometry((1.2-i*.22)*s,1.55*s,7),leaf);cone.position.y=(1.65+i*.69)*s;cone.rotation.y=i*.3;g.add(cone)}
  return g
 }
 function addCrystal(x,z,s=1){
+ obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal"});
  const m=material(MAPS[mapIndex].accent,.28,.2,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.35});
  for(let i=0;i<3;i++){const geo=new THREE.ConeGeometry((.35+(i%2)*.22)*s,(1.3+i*.38)*s,5);const mesh=new THREE.Mesh(geo,m);mesh.position.set(x+(i-1)*.38*s,(.65+i*.18)*s,z+(i%2)*.18);mesh.rotation.z=(i-1)*.18;scene.add(mesh)}
 }
@@ -274,7 +275,22 @@ function buildArena(){
  tanks[0].x=-23;tanks[0].z=0;tanks[0].angle=Math.PI/2;tanks[0].group.position.set(tanks[0].x,0,tanks[0].z);
  tanks[1].x=23;tanks[1].z=0;tanks[1].angle=-Math.PI/2;tanks[1].group.position.set(tanks[1].x,0,tanks[1].z);
  tanks.forEach(t=>t.group.rotation.y=t.angle);
- spawnPickup(-12,-9,"boost");spawnPickup(12,8,"shield");spawnPickup(0,0,"repair");
+ seedPickups();
+}
+function seedPickups(){
+ const types=["boost","shield","repair"],used=[];
+ for(const type of types){
+  let found=null;
+  for(let tries=0;tries<70&&!found;tries++){
+   const x=rand(-24,24),z=rand(-14,14);
+   if(collides(x,z,1,null))continue;
+   if(tanks.some(t=>Math.hypot(t.x-x,t.z-z)<5))continue;
+   if(used.some(p=>Math.hypot(p.x-x,p.z-z)<5))continue;
+   found={x,z};
+  }
+  if(!found)found={x:rand(-18,18),z:rand(-10,10)};
+  used.push(found);spawnPickup(found.x,found.z,type);
+ }
 }
 function spawnPickup(x,z,type){
  const g=new THREE.Group();g.position.set(x,.65,z);
@@ -353,7 +369,7 @@ function tagHit(t,owner){
 function resetRound(){
  projectiles.forEach(p=>{scene.remove(p.mesh);scene.remove(p.trail)});projectiles=[];
  tanks.forEach((t,i)=>{t.x=i===0?-23:23;t.z=0;t.angle=i===0?Math.PI/2:-Math.PI/2;t.vx=t.vz=0;t.hits=3;t.inv=1.25;t.boost=0;t.shield=0;t.fireCd=0;t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0)});
- pickups.forEach(p=>scene.remove(p.group));pickups=[];spawnPickup(-12,-9,"boost");spawnPickup(12,8,"shield");spawnPickup(0,0,"repair");showBanner("ROUND "+roundNo,1);updateHUD()
+ pickups.forEach(p=>scene.remove(p.group));pickups=[];seedPickups();showBanner("ROUND "+roundNo,1);updateHUD()
 }
 function finishMatch(winner){
  matchOver=true;active=false;paused=false;$("endTitle").textContent=(winner===0?"PLAYER 1":"PLAYER 2")+" WINS";$("endText").textContent="Final score "+score[0]+" — "+score[1]+". The tank with five round wins takes the match.";$("endOverlay").style.display="grid";
@@ -454,7 +470,7 @@ function startGame(resetScores=true){
  if(!renderer)createScene();
  mode=$("mode").value;difficulty=$("difficulty").value;mapIndex=Number($("map").value);vehicleIdx=[Number($("tank1").value),Number($("tank2").value)];
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
- $("touch2").style.display=mode==="local"?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
+ $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
  active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;buildArena();updateHUDAndRadar();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
