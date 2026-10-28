@@ -79,6 +79,9 @@ const VEHICLES=[
 {name:"Atlas",color:"#555b4c",speed:9.4,accel:7.7,turn:1.02,boost:1.1,armor:1.48},
 {name:"Vanguard",color:"#858e6e",speed:11.6,accel:10.8,turn:1.48,boost:1.22,armor:1.1}
 ];
+const PAINTS={mint:"#789e8b",olive:"#69765b",desert:"#a58a5b",navy:"#405c76",crimson:"#994b49",white:"#c3c6b7",purple:"#77638f",black:"#414744"};
+const WEATHER_PRESETS={clear:{sky:"#d1a878",fog:.004,ambient:1.25,key:2.45,precip:"none",tone:1.05},overcast:{sky:"#646f73",fog:.014,ambient:1.05,key:1.25,precip:"none",tone:.94},mist:{sky:"#546b68",fog:.022,ambient:1.05,key:1.45,precip:"mist",tone:.91},rain:{sky:"#3d5156",fog:.018,ambient:.9,key:1.5,precip:"rain",tone:.88},storm:{sky:"#242e38",fog:.026,ambient:.62,key:1.35,precip:"rain",tone:.82},snow:{sky:"#a1b2b2",fog:.016,ambient:1.22,key:1.45,precip:"snow",tone:.98},dust:{sky:"#85715a",fog:.014,ambient:1.0,key:1.55,precip:"dust",tone:.91}};
+const CLOUD_PRESETS={none:{count:0,shade:"#b5c4c0",height:23,scale:.8},wispy:{count:7,shade:"#d3dedb",height:27,scale:.65},scattered:{count:15,shade:"#b3c0bf",height:22,scale:1},overcast:{count:26,shade:"#7b898b",height:18,scale:1.35},storm:{count:23,shade:"#46535c",height:16,scale:1.55}};
 const MAPS=[
 {name:"Neon Grid",color:"#4d7658",accent:"#8cddc6",sky:"#19271f",walls:[[.26,.18,.10,.28],[.64,.18,.10,.28],[.26,.64,.10,.18],[.64,.64,.10,.18],[.44,.41,.12,.10]],style:"neon"},
 {name:"Desert Docks",color:"#9b825b",accent:"#e6bd69",sky:"#3c3428",walls:[[.18,.22,.20,.07],[.62,.22,.20,.07],[.18,.71,.20,.07],[.62,.71,.20,.07],[.46,.34,.08,.28]],style:"desert"},
@@ -91,7 +94,7 @@ const MAPS=[
 {name:"Lava Loops",color:"#61594d",accent:"#ff784c",sky:"#382019",walls:[[.21,.22,.10,.10],[.69,.22,.10,.10],[.21,.68,.10,.10],[.69,.68,.10,.10],[.40,.25,.20,.06],[.40,.69,.20,.06]],style:"lava"},
 {name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"}
 ];
-let renderer,scene,camera,clock, tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMode="mist",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,weatherMode="mist",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
