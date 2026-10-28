@@ -162,7 +162,7 @@ function buildTank(id,idx){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),paintEdge);orb.position.set(.76,1.41,-.88);group.add(orb);
  const labelMat=material(team,.3,.15,{emissive:team,emissiveIntensity:.45});
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.32),labelMat);marker.position.set(0,1.73,-.02);group.add(marker);
- group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,x:id===0?-23:23,z:id===0?0:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
+ group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hitHalfWidth:1.56*group.scale.x,hitHalfLength:1.82*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
@@ -198,14 +198,14 @@ function addWall(x,z,w,d,h,kind){
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
 function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:4*s,kind:"tree"});
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:4*s,kind:"tree",shape:"circle",r:.62*s});
  cylinder(g,0,.8*s,0,.22*s,.32*s,1.6*s,material("#5b4936",.98),7);
  const leaf=material(MAPS[mapIndex].style==="forest"?"#426348":"#65724e",.97);
  for(let i=0;i<3;i++){const cone=new THREE.Mesh(new THREE.ConeGeometry((1.2-i*.22)*s,1.55*s,7),leaf);cone.position.y=(1.65+i*.69)*s;cone.rotation.y=i*.3;g.add(cone)}
  return g
 }
 function addCrystal(x,z,s=1){
- obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal"});
+ obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal",shape:"circle",r:.58*s});
  const m=material(MAPS[mapIndex].accent,.28,.2,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.35});
  for(let i=0;i<3;i++){const geo=new THREE.ConeGeometry((.35+(i%2)*.22)*s,(1.3+i*.38)*s,5);const mesh=new THREE.Mesh(geo,m);mesh.position.set(x+(i-1)*.38*s,(.65+i*.18)*s,z+(i%2)*.18);mesh.rotation.z=(i-1)*.18;scene.add(mesh)}
 }
@@ -314,15 +314,48 @@ function spawnTag(t){
 }
 function collides(x,z,r,ignoreTank){
  for(const o of obstacles){
-  if(o.decor||!o.w||!o.d)continue;
+  if(o.decor)continue;
+  if(o.shape==="circle"){if(Math.hypot(x-o.x,z-o.z)<r+(o.r||.5))return true;continue}
+  if(!o.w||!o.d)continue;
   const nx=clamp(x,o.x-o.w/2,o.x+o.w/2),nz=clamp(z,o.z-o.d/2,o.z+o.d/2),dx=x-nx,dz=z-nz;
   if(dx*dx+dz*dz<r*r)return true;
  }
  return false;
 }
+function tankCollides(t,x,z){
+ const hw=t.hitHalfWidth||1.56,hl=t.hitHalfLength||1.82;
+ const rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
+ for(const o of obstacles){
+  if(o.decor)continue;
+  const dx=x-o.x,dz=z-o.z;
+  if(o.shape==="circle"){
+   const lx=dx*rx+dz*rz,lz=dx*fx+dz*fz,qx=clamp(lx,-hw,hw),qz=clamp(lz,-hl,hl),ox=lx-qx,oz=lz-qz;
+   if(ox*ox+oz*oz<(o.r||.6)*(o.r||.6))return true;
+   continue;
+  }
+  if(!o.w||!o.d)continue;
+  const ax=o.w*.5,az=o.d*.5,worldX=hw*Math.abs(rx)+hl*Math.abs(fx),worldZ=hw*Math.abs(rz)+hl*Math.abs(fz);
+  if(Math.abs(dx)>ax+worldX||Math.abs(dz)>az+worldZ)continue;
+  if(Math.abs(dx*rx+dz*rz)>hw+ax*Math.abs(rx)+az*Math.abs(rz))continue;
+  if(Math.abs(dx*fx+dz*fz)>hl+ax*Math.abs(fx)+az*Math.abs(fz))continue;
+  return true;
+ }
+ return false;
+}
+function tankHit(t,x,z,pad=.25){
+ const dx=x-t.x,dz=z-t.z,rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
+ return Math.abs(dx*rx+dz*rz)<=t.hitHalfWidth+pad&&Math.abs(dx*fx+dz*fz)<=t.hitHalfLength+pad;
+}
+function tankOverlapInfo(a,b){
+ const dx=b.x-a.x,dz=b.z-a.z,axes=[[Math.cos(a.angle),-Math.sin(a.angle)],[Math.sin(a.angle),Math.cos(a.angle)],[Math.cos(b.angle),-Math.sin(b.angle)],[Math.sin(b.angle),Math.cos(b.angle)]];
+ let minDepth=Infinity,best=null;
+ const radius=(t,ax,az)=>t.hitHalfWidth*Math.abs(ax*Math.cos(t.angle)-az*Math.sin(t.angle))+t.hitHalfLength*Math.abs(ax*Math.sin(t.angle)+az*Math.cos(t.angle));
+ for(const [ax,az] of axes){const dist=dx*ax+dz*az,depth=radius(a,ax,az)+radius(b,ax,az)-Math.abs(dist);if(depth<=0)return null;if(depth<minDepth){minDepth=depth;const sign=dist>=0?1:-1;best=[ax*sign,az*sign]}}
+ return {depth:minDepth,nx:best[0],nz:best[1]};
+}
 function moveTank(t,dt,forward,steer,boosting){
  const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed));
- t.angle+=steer*v.turn*turnFactor*dt;
+ t.angle-=steer*v.turn*turnFactor*dt;
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  if(forward!==0)t.vx+=fx*forward*v.accel*dt,t.vz+=fz*forward*v.accel*dt;
  const drag=Math.pow(forward===0?.30:.84,dt);t.vx*=drag;t.vz*=drag;
@@ -330,9 +363,9 @@ function moveTank(t,dt,forward,steer,boosting){
  if(sp>max){t.vx*=max/sp;t.vz*=max/sp}
  if(boosting&&t.boost<=0)t.boost=.0;
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
- if(!collides(nx,t.z,1.2,t))t.x=nx;else t.vx*=-.22;
- if(!collides(t.x,nz,1.2,t))t.z=nz;else t.vz*=-.22;
- t.x=clamp(t.x,-ARENA_X+1.7,ARENA_X-1.7);t.z=clamp(t.z,-ARENA_Z+1.7,ARENA_Z-1.7);
+ if(!tankCollides(t,nx,t.z))t.x=nx;else{t.vx=0;t.vz*=.96}
+ if(!tankCollides(t,t.x,nz))t.z=nz;else{t.vz=0;t.vx*=.96}
+ t.x=clamp(t.x,-ARENA_X+.25,ARENA_X-.25);t.z=clamp(t.z,-ARENA_Z+.15,ARENA_Z-.15);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
  t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
  const treadShift=((t.trackTime%3.3)+3.3)%3.3;
