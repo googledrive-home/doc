@@ -94,7 +94,7 @@ const MAPS=[
 {name:"Lava Loops",color:"#61594d",accent:"#ff784c",sky:"#382019",walls:[[.21,.22,.10,.10],[.69,.22,.10,.10],[.21,.68,.10,.10],[.69,.68,.10,.10],[.40,.25,.20,.06],[.40,.69,.20,.06]],style:"lava"},
 {name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
@@ -188,7 +188,7 @@ function clearDynamic(){
   scene.remove(child);
  }
  if(mistTexture){mistTexture.dispose();mistTexture=null}
- obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];clouds3d=[];weatherMeta=[];weatherPoints=null;tanks=[];
+ obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];clouds3d=[];weatherMeta=[];weatherPoints=null;snowPatches=[];snowTrackMarks=[];snowSurface=null;snowFarSurface=null;snowAccumulation=0;tanks=[];
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
@@ -345,16 +345,16 @@ function buildCloudLayer(){
 function buildWeatherParticles(){
  weatherPoints=null;weatherMeta=[];weatherKind=WEATHER_PRESETS[weatherMode]?.precip||"none";
  if(weatherKind==="none"||weatherKind==="mist")return;
- const count=weatherKind==="rain"?240:weatherKind==="snow"?260:190;
+ const count=weatherKind==="rain"?240:weatherKind==="snow"?900:190;
  const positions=new Float32Array(count*(weatherKind==="rain"?6:3));
  for(let i=0;i<count;i++){
-  const p={x:rand(-37,37),y:rand(1,28),z:rand(-27,27),speed:weatherKind==="rain"?rand(15,23):weatherKind==="snow"?rand(1.4,3.4):rand(2,5),wind:weatherMode==="storm"?rand(2.2,4.2):weatherKind==="rain"?rand(.8,1.8):weatherKind==="dust"?rand(2,4):rand(-.6,.6),phase:rand(0,6)};
+  const p={x:rand(-37,37),y:rand(1,28),z:rand(-27,27),speed:weatherKind==="rain"?rand(15,23):weatherKind==="snow"?rand(2.1,4.4):rand(2,5),wind:weatherMode==="storm"?rand(2.2,4.2):weatherKind==="rain"?rand(.8,1.8):weatherKind==="dust"?rand(2,4):rand(-.6,.6),phase:rand(0,6)};
   weatherMeta.push(p);
   if(weatherKind==="rain"){const k=i*6;positions[k]=p.x;positions[k+1]=p.y;positions[k+2]=p.z;positions[k+3]=p.x-.16;positions[k+4]=p.y-.72;positions[k+5]=p.z+.10}
   else{const k=i*3;positions[k]=p.x;positions[k+1]=p.y;positions[k+2]=p.z}
  }
  const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
- const mat=weatherKind==="rain"?new THREE.LineBasicMaterial({color:weatherMode==="storm"?"#aabac9":"#9baeb9",transparent:true,opacity:weatherMode==="storm"?.47:.36}):new THREE.PointsMaterial({color:weatherKind==="snow"?"#ecf4f1":"#c3b396",size:weatherKind==="snow"?.12:.18,transparent:true,opacity:weatherKind==="snow"?.76:.28,sizeAttenuation:true,depthWrite:false});
+ const mat=weatherKind==="rain"?new THREE.LineBasicMaterial({color:weatherMode==="storm"?"#aabac9":"#9baeb9",transparent:true,opacity:weatherMode==="storm"?.47:.36}):new THREE.PointsMaterial({color:weatherKind==="snow"?"#ecf4f1":"#c3b396",size:weatherKind==="snow"?.19:.18,transparent:true,opacity:weatherKind==="snow"?.88:.28,sizeAttenuation:true,depthWrite:false});
  weatherPoints=weatherKind==="rain"?new THREE.LineSegments(geometry,mat):new THREE.Points(geometry,mat);weatherPoints.frustumCulled=false;scene.add(weatherPoints);
 }
 function stepWeather(dt){
@@ -430,7 +430,7 @@ function buildArena(){
  clearDynamic();
  const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.0005,weather.fog+(fogLevel==="high"?.002:fogLevel==="low"?-.0007:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
  const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
- if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();addFarHorizon();
+ if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();if(weatherMode==="snow")addSnowField();addFarHorizon();
  const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
  // Floor tile seams, pads and perimeter lights.
  const seam=material(map.accent,.38,.22,{emissive:map.accent,emissiveIntensity:map.style==="neon"?.22:.08});
