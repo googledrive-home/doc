@@ -162,7 +162,7 @@ function buildTank(id,idx){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),paintEdge);orb.position.set(.76,1.41,-.88);group.add(orb);
  const labelMat=material(team,.3,.15,{emissive:team,emissiveIntensity:.45});
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.32),labelMat);marker.position.set(0,1.73,-.02);group.add(marker);
- const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,x:id===0?-23:23,z:id===0?0:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
+ group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,x:id===0?-23:23,z:id===0?0:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
@@ -326,7 +326,7 @@ function moveTank(t,dt,forward,steer,boosting){
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  if(forward!==0)t.vx+=fx*forward*v.accel*dt,t.vz+=fz*forward*v.accel*dt;
  const drag=Math.pow(forward===0?.30:.84,dt);t.vx*=drag;t.vz*=drag;
- const max=v.speed*(boosting&&t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
+ if(boosting&&t.boost<=0&&t.boostCooldown<=0){t.boost=.72;t.boostCooldown=4.2;pulseSound("boost")}const max=v.speed*(t.boost>0?v.boost:1);const sp=Math.hypot(t.vx,t.vz);
  if(sp>max){t.vx*=max/sp;t.vz*=max/sp}
  if(boosting&&t.boost<=0)t.boost=.0;
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
@@ -368,11 +368,11 @@ function tagHit(t,owner){
 }
 function resetRound(){
  projectiles.forEach(p=>{scene.remove(p.mesh);scene.remove(p.trail)});projectiles=[];
- tanks.forEach((t,i)=>{t.x=i===0?-23:23;t.z=0;t.angle=i===0?Math.PI/2:-Math.PI/2;t.vx=t.vz=0;t.hits=3;t.inv=1.25;t.boost=0;t.shield=0;t.fireCd=0;t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0)});
+ tanks.forEach((t,i)=>{t.x=i===0?-23:23;t.z=0;t.angle=i===0?Math.PI/2:-Math.PI/2;t.vx=t.vz=0;t.hits=3;t.inv=1.25;t.boost=0;t.boostCooldown=0;t.shield=0;t.fireCd=0;t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0)});
  pickups.forEach(p=>scene.remove(p.group));pickups=[];seedPickups();showBanner("ROUND "+roundNo,1);updateHUD()
 }
 function finishMatch(winner){
- matchOver=true;active=false;paused=false;$("endTitle").textContent=(winner===0?"PLAYER 1":"PLAYER 2")+" WINS";$("endText").textContent="Final score "+score[0]+" — "+score[1]+". The tank with five round wins takes the match.";$("endOverlay").style.display="grid";
+ matchOver=true;active=false;paused=false;$("endTitle").textContent=mode==="cpu"?(winner===0?"YOU WIN":"CPU WINS"):(winner===0?"PLAYER 1":"PLAYER 2")+" WINS";$("endText").textContent="Final score "+score[0]+" — "+score[1]+". The tank with five round wins takes the match.";$("endOverlay").style.display="grid";
 }
 function updateHUD(){
  $("score1").textContent=score[0];$("score2").textContent=score[1];
@@ -418,7 +418,7 @@ function resolveTankCollision(){
 }
 function update(dt){
  if(!active||paused||matchOver)return;
- tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt)});
+ tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt);if(t.boostCooldown>0)t.boostCooldown=Math.max(0,t.boostCooldown-dt)});
  const p1=tanks[0],p2=tanks[1];
  p1.turret.rotation.y+=((held.has("e")?1:0)-(held.has("q")?1:0))*1.45*dt;
  const forward=(held.has("w")?1:0)-(held.has("s")?1:0),steer=(held.has("d")?1:0)-(held.has("a")?1:0);
