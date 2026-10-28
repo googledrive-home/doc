@@ -407,11 +407,11 @@ function cpuThink(t,target,dt){
  const dx=target.x-t.x,dz=target.z-t.z,dist=Math.hypot(dx,dz);
  const desired=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(desired-t.angle),Math.cos(desired-t.angle));
  const turretDelta=Math.atan2(Math.sin(desired-(t.angle+t.turret.rotation.y)),Math.cos(desired-(t.angle+t.turret.rotation.y)));t.turret.rotation.y+=clamp(turretDelta,-2.1*dt,2.1*dt);
- const steer=Math.abs(delta)>.09?Math.sign(delta):0;
+ const steer=Math.abs(delta)>.09?-Math.sign(delta):0;
  let forward=dist>7?1:dist<4?-.25:.18;
  if(Math.abs(delta)>1.7)forward*=.25;
  moveTank(t,dt,forward,steer*diff.aim,false);
- if(Math.abs(delta)<.24&&dist<31&&t.fireCd<=0&&Math.random()<dt*2.6*diff.fire)spawnTag(t);
+ if(Math.abs(turretDelta)<.24&&dist<31&&t.fireCd<=0&&Math.random()<dt*2.6*diff.fire)spawnTag(t);
 }
 function spawnParticles(x,y,z,color,count=10){
  for(let i=0;i<count;i++){
