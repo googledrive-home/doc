@@ -66,7 +66,7 @@
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
 const $=id=>document.getElementById(id),canvas=$("view"),radar=$("radar"),rc=radar.getContext("2d");
-const ARENA_X=29,ARENA_Z=19;
+const ARENA_X=40,ARENA_Z=28;
 const VEHICLES=[
 {name:"Scout",color:"#7f9670",speed:13.2,accel:12.5,turn:1.75,boost:1.28,armor:1},
 {name:"Guardian",color:"#6d7e66",speed:10.6,accel:9.2,turn:1.28,boost:1.18,armor:1.25},
@@ -99,7 +99,7 @@ const MAPS=[
 {name:"Grand Canyon Overlook",color:"#a67b57",accent:"#e0b77b",sky:"#8d9ca0",walls:[[.17,.19,.10,.18],[.73,.19,.10,.18],[.18,.68,.10,.18],[.72,.68,.10,.18],[.42,.40,.16,.09]],style:"canyon",defaultWeather:"dust",defaultClouds:"wispy",landmark:"canyonArch"},
 {name:"Ancient Acropolis",color:"#8c8772",accent:"#e3d1a6",sky:"#63777c",walls:[[.19,.19,.12,.14],[.68,.19,.12,.14],[.19,.68,.12,.14],[.68,.68,.12,.14],[.42,.40,.16,.09]],style:"ruins",defaultWeather:"clear",defaultClouds:"scattered",landmark:"citadel"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,terrainMesh=null,terrainMarks=[],craterRecords=[],replayFrames=[],replayCaptureTimer=0,replayMode=false,replayPaused=false,replayCursor=0,replayCameraMode="follow",replayProjectiles=[],onlineSocket=null,onlineStatus="offline",onlineName="Tank Pilot",onlineRoom=null,onlineSide=-1,onlineStateTimer=0,onlineLastState=null,onlineShotSeq=0,onlineChatLog=[],onlinePeer=null,onlineLocalStream=null,onlineVoiceEnabled=false,onlinePendingSignals=[],weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
@@ -690,10 +690,61 @@ function updateMenuPreview(){
  $("previewClouds").textContent=cloud==="none"?"":cloud==="wispy"?"☁ 〰":cloud==="storm"?"☁ ☁ ☁":cloud==="overcast"?"☁ ☁ ☁ ☁":"☁  ☁";$("previewTank").style.color=paint;
  $("worldPreview").style.filter="none";drawMapPreview(map,weather,cloud);
 }
+function buildTerrainOverlay(color){
+ const geometry=new THREE.PlaneGeometry(80,56,160,112);geometry.rotateX(-Math.PI/2);
+ const mesh=new THREE.Mesh(geometry,material(color,1,.02));mesh.position.set(0,-.08,0);mesh.receiveShadow=true;mesh.castShadow=false;mesh.name="deformable-arena-terrain";scene.add(mesh);return mesh;
+}
+function deformTerrain(x,z,radius=2.6,depth=.035){
+ if(!terrainMesh)return;
+ const attr=terrainMesh.geometry.attributes.position;
+ for(let i=0;i<attr.count;i++){
+  const px=attr.getX(i),pz=-attr.getY(i),dx=px-x,dz=pz-z,d=Math.hypot(dx,dz);
+  if(d>radius)continue;
+  const u=1-d/radius,fall=u*u*(3-2*u),lip=Math.max(0,1-Math.abs(d/radius-.82)/.12)*depth*.24;
+  attr.setZ(i,attr.getZ(i)-fall*depth+lip);
+ }
+ attr.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();terrainMesh.geometry.computeBoundingSphere();
+}
+function createCrater(x,z,radius=2.25,depth=.055){
+ if(!terrainMesh)return;
+ deformTerrain(x,z,radius,depth);craterRecords.push({x,z,radius,depth,life:1});if(craterRecords.length>42)craterRecords.shift();
+ const positions=[],indices=[],rings=5,segments=28;
+ for(let ring=0;ring<=rings;ring++){
+  const r=radius*ring/rings;
+  for(let j=0;j<segments;j++){
+   const a=j/segments*Math.PI*2,d=r/radius,y=-.084+.060*d*d;
+   positions.push(x+Math.cos(a)*r,y,z+Math.sin(a)*r);
+  }
+ }
+ for(let ring=0;ring<rings;ring++)for(let j=0;j<segments;j++){
+  const a=ring*segments+j,b=ring*segments+(j+1)%segments,cc=(ring+1)*segments+j,d=(ring+1)*segments+(j+1)%segments;
+  indices.push(a,cc,b,b,cc,d);
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const mat=material(MAPS[mapIndex].style==="desert"||MAPS[mapIndex].style==="canyon"?"#6f523c":weatherMode==="snow"?"#839496":"#303831",.98,.01,{side:THREE.DoubleSide});
+ const bowl=new THREE.Mesh(geo,mat);bowl.name="terrain-crater";scene.add(bowl);terrainMarks.push({mesh:bowl,life:999,max:999,crater:true});
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(radius*.78,.065,5,28),material(MAPS[mapIndex].style==="desert"||MAPS[mapIndex].style==="canyon"?"#b28a61":weatherMode==="snow"?"#dae6e8":"#59644f",.99));rim.rotation.x=-Math.PI/2;rim.position.set(x,-.026,z);scene.add(rim);terrainMarks.push({mesh:rim,life:999,max:999,crater:true});
+}
+function addTerrainTrack(t){
+ const speed=Math.hypot(t.vx,t.vz);if(speed<1.6)return;
+ t.trackMarkTimer=Math.max(0,(t.trackMarkTimer||0)-.016);if(t.trackMarkTimer>0)return;t.trackMarkTimer=.17;
+ const rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
+ for(const side of [-1,1]){
+  const mat=new THREE.MeshBasicMaterial({color:weatherMode==="snow"?"#526a70":MAPS[mapIndex].style==="desert"||MAPS[mapIndex].style==="canyon"?"#5f4a36":"#202a24",transparent:true,opacity:weatherMode==="snow"?.42:.28,depthWrite:false,side:THREE.DoubleSide});
+  const mark=new THREE.Mesh(new THREE.PlaneGeometry(.38,1.18),mat);mark.rotation.x=-Math.PI/2;mark.rotation.y=t.angle;
+  mark.position.set(t.x-fx*.55+rx*side*.92,-.048,t.z-fz*.55+rz*side*.92);scene.add(mark);
+  terrainMarks.push({mesh:mark,life:weatherMode==="snow"?80:18,max:weatherMode==="snow"?80:18,crater:false});
+ }
+ if(terrainMarks.length>220){const m=terrainMarks.shift();scene.remove(m.mesh);m.mesh.geometry.dispose();m.mesh.material.dispose()}
+}
+function updateTerrainMarks(dt){
+ for(let i=terrainMarks.length-1;i>=0;i--){const mark=terrainMarks[i];if(mark.crater)continue;mark.life-=dt;mark.mesh.material.opacity=(weatherMode==="snow"?.42:.28)*Math.max(0,mark.life/mark.max);if(mark.life<=0){scene.remove(mark.mesh);mark.mesh.geometry.dispose();mark.mesh.material.dispose();terrainMarks.splice(i,1)}}
+}
 function buildArena(){
  clearDynamic();
  const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.0005,weather.fog+(fogLevel==="high"?.002:fogLevel==="low"?-.0007:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
- const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
+ const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.18;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
+ terrainMesh=buildTerrainOverlay(floorColor);
  if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();if(weatherMode==="snow")addSnowField();addFarHorizon();
  const base=material("#202a24",.88,.12);box(scene,0,-.43,0,83,.55,59,base);
  // Floor tile seams, pads and perimeter lights.
