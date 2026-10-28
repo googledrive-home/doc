@@ -31,6 +31,59 @@
 
 /* Tank Arena online rooms, lobby and replay UI */
 .online-shell{width:min(860px,96vw);max-height:92dvh;overflow:auto;background:linear-gradient(145deg,#101e18f5,#07100cf7);border:1px solid #d9efad55;border-radius:18px;box-shadow:0 28px 100px #000c;padding:clamp(14px,2.5vw,26px);color:var(--txt)}.online-head{display:flex;align-items:center;gap:12px;justify-content:space-between}.online-head h2{margin:0;font-size:clamp(19px,3vw,29px)}.online-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}.online-field{display:grid;gap:5px;text-align:left;font-size:10px;font-weight:900;letter-spacing:.08em;color:var(--muted)}.online-field input,.online-field select,.online-chat-form input{width:100%;min-width:0;padding:10px;border-radius:9px;border:1px solid #d9efad35;background:#09140f;color:var(--txt);outline-color:var(--lime)}.online-actions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.online-actions .btn{flex:1;min-width:130px}.online-status{padding:10px 12px;border-radius:10px;background:#d9efad0d;border:1px solid #d9efad24;color:#dbe9d0;font-size:12px;line-height:1.5}.online-room-list,.online-players{display:grid;gap:7px;margin-top:8px;max-height:180px;overflow:auto}.online-room-row,.online-player-row{display:flex;align-items:center;gap:9px;justify-content:space-between;padding:9px 11px;border:1px solid #ffffff14;border-radius:10px;background:#ffffff06;font-size:11px}.online-room-row small,.online-player-row small{display:block;color:var(--muted);margin-top:4px}.online-room-row button{padding:7px 9px;white-space:nowrap}.online-chat{position:fixed;right:14px;bottom:14px;z-index:5;width:min(330px,calc(100vw - 28px));pointer-events:auto;background:#07110def;border:1px solid #d9efad4f;border-radius:13px;padding:10px;box-shadow:0 15px 50px #0009;display:none}.online-chat-head{display:flex;align-items:center;gap:8px;justify-content:space-between;font-size:11px;font-weight:900}.online-chat-messages{height:100px;overflow:auto;padding:8px 3px;display:flex;flex-direction:column;gap:5px;font-size:11px;color:#e4eee1}.online-chat-line{overflow-wrap:anywhere}.online-chat-line b{color:var(--lime)}.online-chat-form{display:flex;gap:5px}.online-chat-form input{flex:1;min-width:0;font-size:12px}.online-chat-form button{padding:8px}.online-mini{position:fixed;right:14px;top:75px;z-index:4;display:none;gap:6px;pointer-events:auto}.online-mini .btn{background:#0b1a12ef}.editor-overlay{position:fixed;inset:0;z-index:15;display:none;pointer-events:none}.editor-card{pointer-events:auto;position:absolute;right:14px;top:80px;width:min(320px,calc(100vw - 28px));padding:12px;border:1px solid #d9efad5c;border-radius:13px;background:#08120ff2;box-shadow:0 18px 50px #0009}.editor-card h3{margin:0 0 7px;font-size:13px}.editor-card p{font-size:10px;color:var(--muted);line-height:1.5}.editor-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.editor-tools .btn{padding:8px 4px;font-size:9px}.replay-card{width:min(620px,94vw);padding:18px;background:#08120ff2;border:1px solid #d9efad4a;border-radius:16px}.replay-card h2{margin:0 0 8px}.replay-card input[type=range]{width:100%;accent-color:var(--lime)}@media(max-width:650px){.online-grid{grid-template-columns:1fr}.online-shell{max-height:94dvh;padding:12px}.online-chat{width:min(290px,calc(100vw - 20px));right:10px;bottom:10px}.online-mini{right:10px;top:55px}.online-room-row{align-items:flex-start}}
+
+/* Simpler setup and Hockey-style online lobby */
+.setup-more,.online-advanced{margin-top:9px;border:1px solid #d9efad28;border-radius:10px;background:#ffffff05;padding:9px 10px}
+.setup-more summary,.online-advanced summary{cursor:pointer;list-style:none;color:#dcebd7;font-size:11px;font-weight:900;letter-spacing:.03em}
+.setup-more summary::-webkit-details-marker,.online-advanced summary::-webkit-details-marker{display:none}
+.setup-more summary:after,.online-advanced summary:after{content:"+";float:right;color:var(--lime);font-size:16px;line-height:11px}
+.setup-more[open] summary:after,.online-advanced[open] summary:after{content:"−"}
+.setup-more[open]{display:grid;gap:10px}
+.setup-more .selectrow{margin-top:4px}
+.online-simple-shell{width:min(940px,97vw);max-height:94dvh;padding:clamp(13px,2vw,22px);background:linear-gradient(145deg,#101a20f7,#091015fb);border-color:#7be7df4d}
+.online-simple-shell .tag{color:#7be7df}
+.online-simple-shell .online-head{align-items:flex-start;margin-bottom:10px}
+.online-simple-shell .online-head h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.035em;margin:4px 0}
+.online-simple-shell .online-head .note{margin:5px 0 0;max-width:450px}
+.online-simple-shell .online-status{margin:10px 0;background:#7be7df0e;border-color:#7be7df30}
+.online-lobby-layout{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:11px}
+.online-card{min-width:0;border:1px solid #ffffff16;background:linear-gradient(145deg,#152129d9,#0d171df0);border-radius:12px;padding:13px}
+.online-card h3{font-size:12px;margin:0 0 10px;color:#e8f1ed;letter-spacing:.025em}
+.online-simple-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.online-simple-field{display:grid;gap:5px;min-width:0;font-size:10px;font-weight:800;color:#afc0c4}
+.online-simple-field input,.online-simple-field select{width:100%;min-width:0;border:1px solid #b7d0d522;border-radius:8px;padding:10px;background:#081117;color:#e9f0ed;font:inherit;outline-color:#7be7df}
+.online-simple-actions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 5px}
+.online-simple-actions .btn{flex:1;min-width:112px}
+.online-hint{font-size:10px;color:#92a6ab;line-height:1.5;margin:9px 0 0}
+.online-advanced{border-color:#b7d0d522;background:#091318a8}
+.online-advanced summary{color:#b9d1d4;font-size:10px}
+.online-advanced-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.online-join-fields{margin-top:12px}
+.online-join-button{width:100%;margin-top:8px;padding:11px}
+.online-room-card{grid-column:1/-1}
+.online-room-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.online-room-heading h3{margin-bottom:3px}
+.online-invite{display:grid;grid-template-columns:auto auto;align-items:center;gap:3px 9px;text-align:right;border:1px solid #7be7df28;border-radius:9px;padding:7px 9px;background:#7be7df09}
+.online-invite .note{grid-column:1/-1;font-size:8px;letter-spacing:.12em}
+.online-invite b{font-size:17px;letter-spacing:.12em;color:#7be7df}
+.online-invite .btn{padding:5px 8px;font-size:9px}
+.online-room-actions{margin-top:12px}
+.online-room-actions .btn{min-width:108px}
+.online-simple-shell .online-room-list{max-height:170px;min-height:60px}
+.online-simple-shell .online-player-row,.online-simple-shell .online-room-row{background:#091318a8;border-color:#ffffff15}
+@media(max-width:720px){
+ .online-lobby-layout{grid-template-columns:1fr}
+ .online-room-card{grid-column:auto}
+ .online-simple-grid,.online-advanced-grid{grid-template-columns:1fr 1fr}
+ .online-simple-shell{padding:12px;max-height:96dvh}
+ .online-room-heading{align-items:flex-start}
+}
+@media(max-width:430px){
+ .online-simple-grid,.online-advanced-grid{grid-template-columns:1fr}
+ .online-invite{grid-template-columns:1fr auto;text-align:left}
+ .online-invite .note{grid-column:1/-1}
+ .online-simple-actions .btn{min-width:100%}
+}
 </style>
 </head>
 <body>
@@ -60,13 +113,74 @@
 <div class="overlay" id="setupOverlay">
  <div class="menu">
   <div class="menuleft"><div class="tag">3D VEHICLE COMBAT / TRAINING SYSTEM</div><h1>STEEL<br><span>ARENA.</span></h1><p>A fully 3D arcade tank arena with detailed armoured vehicles, tracked treads, rotating turrets, physical cover, arena hazards, glowing tag pulses and pickups. Choose a local two-player battle or take on the computer.</p><div class="chips"><div class="chip"><b>01</b> Detailed 3D tanks</div><div class="chip"><b>02</b> 10 arena layouts</div><div class="chip"><b>03</b> Weather + clouds</div><div class="chip"><b>04</b> Local P1 / P2</div></div><div class="preview-scene" id="worldPreview"><canvas class="map-preview-canvas" id="mapPreviewCanvas" width="720" height="250" aria-label="Visual preview of the selected arena"></canvas><div class="preview-sky" id="previewSky"><span id="previewClouds">☁ ☁</span></div><div class="preview-horizon"></div><div class="preview-fence"></div><div class="preview-tank" id="previewTank">▰</div><div class="preview-title"><b id="previewMapTitle">NEON GRID</b><small id="previewWeatherTitle">MIST · SCATTERED CLOUDS</small></div></div><div class="tag">CONTROLS</div><div class="controls"><div class="control"><span class="key">W / S</span> Drive / reverse<br><span class="key">A / D</span> Steer · <span class="key">Q / E</span> Turret</div><div class="control"><span class="key">SPACE</span> Tag pulse<br><span class="key">SHIFT</span> Boost</div><div class="control"><span class="key">ARROWS</span> Player 2 drive<br><span class="key">J / L</span> Turret</div><div class="control"><span class="key">ENTER</span> Player 2 pulse</div></div><p class="note">This is a fictional arcade tag battle. Pulses score hits without graphic effects. Best on a current browser with WebGL enabled.</p></div>
-  <div class="menuright"><div class="tag">MATCH SETUP / 3D CONFIG</div><h2>CONFIGURE YOUR BATTLE</h2><label class="label" for="mode">MATCH TYPE</label><select id="mode"><option value="local" selected>2 Players · Same device</option><option value="cpu">1 Player vs Computer</option><option value="online">🌐 Online Driving Race</option></select><div id="diffWrap" style="display:none"><label class="label" for="difficulty">CPU DIFFICULTY</label><select id="difficulty"><option value="easy">Easy · forgiving</option><option value="medium" selected>Medium · balanced</option><option value="hard">Hard · tactical</option></select></div><div class="selectrow"><div><label class="label" for="tank1">PLAYER 1 TANK</label><select id="tank1"><option value="0">Scout · Fast</option><option value="1">Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div><div><label class="label" for="tank2">PLAYER 2 / CPU TANK</label><select id="tank2"><option value="0">Scout · Fast</option><option value="1" selected>Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Defender</option><option value="7">Pathfinder · Scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select></div></div><label class="label" for="map">ARENA MAP · 15 ENVIRONMENTS</label><select id="map"><option value="0">Neon Grid · Training Grounds</option><option value="1">Desert Docks · Woodland Track</option><option value="2">Frozen Circuit · River Crossing</option><option value="3">Forest Maze · Farm Outskirts</option><option value="4">Crystal Caves · Quarry Yard</option><option value="5">Sky Bridge · Coastal Base</option><option value="6">Factory Floor · Industrial Yard</option><option value="7">City Blocks · Rural Village</option><option value="8">Lava Loops · Dry Outpost</option><option value="9">Mega Arena · Open Field</option><option value="10">London Landmark District · Tower Bridge</option><option value="11">Tokyo Neon Ward · Rainy Night</option><option value="12">Alpine Snowfield · Blizzard Pass</option><option value="13">Grand Canyon Overlook · Dust Front</option><option value="14">Ancient Acropolis · Ruined Citadel</option></select><div class="selectrow"><div><label class="label" for="weather">WEATHER</label><select id="weather"><option value="clear">Clear / golden hour</option><option value="overcast" selected>Overcast</option><option value="mist">Low mist</option><option value="rain">Rain</option><option value="storm">Thunderstorm</option><option value="snow">Snowfall</option><option value="dust">Dusty wind</option></select></div><div><label class="label" for="clouds">CLOUD COVER</label><select id="clouds"><option value="none">No clouds</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Heavy overcast</option><option value="storm">Storm banks</option></select></div></div><div class="selectrow"><div><label class="label" for="paint1">PLAYER 1 PAINT</label><select id="paint1"><option value="mint">Arctic mint</option><option value="olive" selected>Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson">Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div><div><label class="label" for="paint2">PLAYER 2 / CPU PAINT</label><select id="paint2"><option value="mint">Arctic mint</option><option value="olive">Military olive</option><option value="desert">Desert sand</option><option value="navy">Deep navy</option><option value="crimson" selected>Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div></div><div class="selectrow"><div><label class="label" for="fenceStyle">FENCE STYLE</label><select id="fenceStyle"><option value="industrial">Industrial steel</option><option value="chainlink" selected>Chain link</option><option value="warning">Hazard-marked</option></select></div><div><label class="label" for="fogLevel">ATMOSPHERE</label><select id="fogLevel"><option value="low">Clear visibility</option><option value="medium" selected>Moody</option><option value="high">Dense fog</option></select></div></div><div class="selectrow"><div><label class="label" for="tankHealth">TANK DURABILITY</label><select id="tankHealth"><option value="2">Fragile · 2 hits</option><option value="3" selected>Standard · 3 hits</option><option value="5">Armoured · 5 hits</option></select></div><div><label class="label" for="roundLimit">MATCH LENGTH</label><select id="roundLimit"><option value="3">First to 3 rounds</option><option value="5" selected>First to 5 rounds</option><option value="7">First to 7 rounds</option></select></div></div><button id="startBtn" class="btn primary full">DEPLOY INTO 3D ARENA ↗</button><button class="btn full" id="onlineOpenBtn">🌐 ONLINE LOBBY · JOIN FRIENDS</button><button class="btn full" id="editorOpenBtn">🧱 MAP EDITOR · BUILD A COURSE</button><button class="btn full" id="setupLibraryBtn">← BACK TO GAME LIBRARY</button><div class="note">Settings: choose a vehicle for each player, pick a map and select CPU skill. You can reset or restart at any time.</div></div>
+  <div class="menuright">
+   <div class="tag">QUICK SETUP</div><h2>START PLAYING</h2>
+   <label class="label" for="mode">How do you want to play?</label>
+   <select id="mode"><option value="local" selected>2 players · Same device</option><option value="cpu">1 player · Vs computer</option><option value="online">Online · Race with friends</option></select>
+   <div id="diffWrap" style="display:none"><label class="label" for="difficulty">Computer difficulty</label><select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Normal</option><option value="hard">Hard</option></select></div>
+   <label class="label" for="tank1">Choose your vehicle</label>
+   <select id="tank1"><option value="0">Scout · Fast</option><option value="1">Guardian · Heavy</option><option value="2">Ranger · Balanced</option><option value="3">Comet · Quick acceleration</option><option value="4">Bulwark · Armoured</option><option value="5">Striker · Agile</option><option value="6">Sentinel · Steady</option><option value="7">Pathfinder · Agile scout</option><option value="8">Atlas · Heavy</option><option value="9">Vanguard · Balanced</option></select>
+   <label class="label" for="map">Choose a map</label>
+   <select id="map">
+    <option value="0">Neon Grid</option><option value="1">Desert Docks</option><option value="2">Frozen Circuit</option><option value="3">Forest Maze</option><option value="4">Crystal Caves</option><option value="5">Sky Bridge</option><option value="6">Factory Floor</option><option value="7">City Blocks</option><option value="8">Lava Loops</option><option value="9">Mega Arena</option><option value="10">London Landmark District</option><option value="11">Tokyo Neon Ward</option><option value="12">Alpine Snowfield</option><option value="13">Grand Canyon Overlook</option><option value="14">Ancient Acropolis</option>
+   </select>
+   <label class="label" for="weather">Weather</label>
+   <select id="weather"><option value="clear">Sunny</option><option value="overcast" selected>Cloudy</option><option value="mist">Mist</option><option value="rain">Rain</option><option value="storm">Storm</option><option value="snow">Snow</option><option value="dust">Dusty</option></select>
+   <details class="setup-more"><summary>More settings</summary>
+    <div class="selectrow"><div><label class="label" for="tank2">Second vehicle</label><select id="tank2"><option value="0">Scout</option><option value="1" selected>Guardian</option><option value="2">Ranger</option><option value="3">Comet</option><option value="4">Bulwark</option><option value="5">Striker</option><option value="6">Sentinel</option><option value="7">Pathfinder</option><option value="8">Atlas</option><option value="9">Vanguard</option></select></div><div><label class="label" for="clouds">Clouds</label><select id="clouds"><option value="none">Clear sky</option><option value="wispy">Light clouds</option><option value="scattered" selected>Some clouds</option><option value="overcast">Cloudy</option><option value="storm">Storm clouds</option></select></div></div>
+    <div class="selectrow"><div><label class="label" for="paint1">Your colour</label><select id="paint1"><option value="mint">Mint</option><option value="olive" selected>Olive</option><option value="desert">Sand</option><option value="navy">Navy</option><option value="crimson">Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div><div><label class="label" for="paint2">Second colour</label><select id="paint2"><option value="mint">Mint</option><option value="olive">Olive</option><option value="desert">Sand</option><option value="navy">Navy</option><option value="crimson" selected>Crimson</option><option value="white">Winter white</option><option value="purple">Violet</option><option value="black">Graphite</option></select></div></div>
+    <div class="selectrow"><div><label class="label" for="fenceStyle">Fence style</label><select id="fenceStyle"><option value="industrial">Steel</option><option value="chainlink" selected>Chain link</option><option value="warning">Hazard stripes</option></select></div><div><label class="label" for="fogLevel">Visibility</label><select id="fogLevel"><option value="low">Clear</option><option value="medium" selected>Moody</option><option value="high">Foggy</option></select></div></div>
+    <div class="selectrow"><div><label class="label" for="tankHealth">Vehicle durability</label><select id="tankHealth"><option value="2">Low</option><option value="3" selected>Standard</option><option value="5">High</option></select></div><div><label class="label" for="roundLimit">Match length</label><select id="roundLimit"><option value="3">Short · 3 rounds</option><option value="5" selected>Normal · 5 rounds</option><option value="7">Long · 7 rounds</option></select></div></div>
+   </details>
+   <button id="startBtn" class="btn primary full">START GAME</button>
+   <button class="btn full" id="onlineOpenBtn">🌐 PLAY ONLINE</button>
+   <button class="btn full" id="editorOpenBtn">🧱 BUILD A MAP</button>
+   <button class="btn full" id="setupLibraryBtn">← GAME LIBRARY</button>
+   <div class="note">Start with the basics. Open More settings only when you want to customise the race.</div>
+  </div>
  </div>
 </div>
 <div class="overlay" id="pauseOverlay"><div class="panel result"><div class="tag">SIMULATION PAUSED</div><h2>HOLD POSITION</h2><p>The arena and all vehicles are paused.</p><button class="btn primary" id="resumeBtn">RESUME BATTLE</button> <button class="btn" id="pauseResetBtn">RESTART ROUND</button></div></div>
 <div class="overlay" id="endOverlay"><div class="panel result"><div class="tag">MATCH COMPLETE</div><h2 id="endTitle">PLAYER 1 WINS</h2><p id="endText">Final score</p><button class="btn primary" id="againBtn">PLAY AGAIN</button><button class="btn" id="setupAgainBtn">CHANGE SETUP</button><button class="btn" id="endLibraryBtn">GAME LIBRARY</button></div></div>
 <div class="overlay" id="errorOverlay"><div class="panel result"><div class="tag">3D SETUP ERROR</div><h2>WebGL couldn't start</h2><p id="errorText">Your browser may have WebGL turned off. Try an up-to-date browser with hardware acceleration enabled.</p><a class="btn primary" href="index.html">RETURN TO GAME LIBRARY</a></div></div>
-<div class="overlay" id="onlineOverlay" style="display:none;z-index:20"><section class="online-shell"><div class="online-head"><div><div class="tag">SHARED MULTIPLAYER SERVICE</div><h2>🌐 TANK ARENA LOBBY</h2></div><button class="btn" id="onlineCloseBtn">✕ CLOSE</button></div><p class="note">Separate Tank Arena rooms on the same server as Hockey. Online play is a driving race with server-synchronised movement, checkpoint laps and weather-dependent handling.</p><div class="online-status" id="onlineStatus">Connect to create or join a Tank Arena room.</div><div class="online-grid"><label class="online-field">PLAYER NAME<input id="onlinePlayerName" maxlength="18" value="Tank Pilot" autocomplete="nickname"></label><label class="online-field">LOBBY NAME<input id="onlineLobbyName" maxlength="32" value="Tank Drivers"></label><label class="online-field">MAP<select id="onlineMap"></select></label><label class="online-field">WEATHER<select id="onlineWeather"><option value="clear">Clear</option><option value="overcast" selected>Overcast</option><option value="mist">Mist</option><option value="rain">Rain</option><option value="storm">Storm</option><option value="snow">Snow</option><option value="dust">Dust / sand</option></select></label><label class="online-field">CLOUD COVER<select id="onlineClouds"><option value="none">None</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Overcast</option><option value="storm">Storm banks</option></select></label><label class="online-field">LAPS<select id="onlineLaps"><option value="1">1 lap</option><option value="2">2 laps</option><option value="3" selected>3 laps</option><option value="4">4 laps</option><option value="5">5 laps</option><option value="6">6 laps</option><option value="7">7 laps</option></select></label><label class="online-field">PRIVATE LOBBY PASSWORD<input id="onlinePassword" type="password" minlength="4" maxlength="64" placeholder="Required for private rooms"></label><label class="online-field">ROOM CODE<input id="onlineCode" maxlength="8" autocapitalize="characters" placeholder="Enter an invite code"></label></div><div class="online-actions"><button class="btn primary" id="onlineCreatePublic">🌍 CREATE PUBLIC</button><button class="btn" id="onlineCreatePrivate">🔒 CREATE PRIVATE</button><button class="btn" id="onlineRefreshRooms">↻ FIND PUBLIC</button><button class="btn" id="onlineRefreshPrivate">🔒 FIND PRIVATE</button><button class="btn" id="onlineJoinCode">JOIN BY CODE</button></div><div class="tag">AVAILABLE TANK ROOMS</div><div class="online-room-list" id="onlineRoomList"><div class="online-player-row">Press FIND ROOMS to list public lobbies.</div></div><div class="online-head" style="margin-top:15px"><div><div class="tag">ROOM ROSTER</div><b id="onlineRoomTitle">Not connected</b></div><span id="onlineRoomCode">—</span></div><div class="online-players" id="onlinePlayers"><div class="online-player-row">Join a room to see the drivers here.</div></div><div class="online-actions"><button class="btn" id="onlineReadyBtn" disabled>✓ READY UP</button><button class="btn primary" id="onlineStartBtn" disabled>START RACE</button><button class="btn" id="onlineLeaveBtn" disabled>LEAVE ROOM</button><button class="btn" id="onlineVoiceBtn" disabled>🎙 JOIN VOICE</button></div><p class="note">Voice chat is opt-in. Your microphone is only requested when you press JOIN VOICE; use MUTE or LEAVE VOICE any time.</p></section></div>
+<div class="overlay" id="onlineOverlay" style="display:none;z-index:20"><section class="online-shell online-simple-shell" role="dialog" aria-modal="true" aria-labelledby="onlineHeading">
+ <div class="online-head"><div><div class="tag">ONLINE PLAY</div><h2 id="onlineHeading">Race with friends</h2><p class="note">Create a room or join a friend. Pick a map, ready up, and start racing.</p></div><button class="btn" id="onlineCloseBtn">← BACK</button></div>
+ <div class="online-status" id="onlineStatus" role="status" aria-live="polite">Connect to create or join a Tank Arena room.</div>
+ <div class="online-lobby-layout">
+  <section class="online-card">
+   <h3>1. Set up your race</h3>
+   <div class="online-simple-grid">
+    <label class="online-simple-field">Your name<input id="onlinePlayerName" maxlength="18" value="Tank Pilot" autocomplete="nickname"></label>
+    <label class="online-simple-field">Map<select id="onlineMap"></select></label>
+    <label class="online-simple-field">Race length<select id="onlineLaps"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option></select></label>
+   </div>
+   <input id="onlineLobbyName" type="hidden" value="Tank Drivers">
+   <details class="online-advanced"><summary>More race settings</summary><div class="online-advanced-grid">
+    <label class="online-simple-field">Weather<select id="onlineWeather"><option value="clear">Sunny</option><option value="overcast" selected>Cloudy</option><option value="mist">Mist</option><option value="rain">Rain</option><option value="storm">Storm</option><option value="snow">Snow</option><option value="dust">Dusty</option></select></label>
+    <label class="online-simple-field">Clouds<select id="onlineClouds"><option value="none">Clear sky</option><option value="wispy">Light clouds</option><option value="scattered" selected>Some clouds</option><option value="overcast">Cloudy</option><option value="storm">Storm clouds</option></select></label>
+   </div></details>
+   <p class="online-hint">Choose the main options here. Extra weather options stay tucked away until you need them.</p>
+   <div class="online-simple-actions"><button class="btn primary" id="onlineCreatePublic">CREATE PUBLIC ROOM</button><button class="btn" id="onlineCreatePrivate">CREATE PRIVATE ROOM</button></div>
+   <p class="online-hint">Private rooms use the password below. Share the invite code with your friend.</p>
+  </section>
+  <section class="online-card">
+   <h3>2. Join a game</h3>
+   <div class="online-simple-actions"><button class="btn primary" id="onlineRefreshRooms">FIND PUBLIC ROOMS</button><button class="btn" id="onlineRefreshPrivate">FIND PRIVATE ROOMS</button></div>
+   <div class="online-room-list" id="onlineRoomList"><div class="online-player-row">Find rooms to see who is racing.</div></div>
+   <div class="online-advanced-grid online-join-fields">
+    <label class="online-simple-field">Invite code<input id="onlineCode" maxlength="8" autocapitalize="characters" placeholder="Enter code"></label>
+    <label class="online-simple-field">Room password<input id="onlinePassword" type="password" minlength="4" maxlength="64" placeholder="Private room only"></label>
+   </div>
+   <button class="btn primary online-join-button" id="onlineJoinCode">JOIN BY CODE</button>
+  </section>
+  <section class="online-card online-room-card">
+   <div class="online-room-heading"><div><h3>Your room</h3><span class="note" id="onlineRoomTitle">Not connected</span></div><div class="online-invite"><span class="note">INVITE CODE</span><b id="onlineRoomCode">—</b><button class="btn" id="onlineCopyCodeBtn" type="button">COPY</button></div></div>
+   <div class="online-players" id="onlinePlayers"><div class="online-player-row">Join a room to see the drivers here.</div></div>
+   <div class="online-simple-actions online-room-actions"><button class="btn" id="onlineReadyBtn" disabled>READY UP</button><button class="btn primary" id="onlineStartBtn" disabled>START RACE</button><button class="btn" id="onlineVoiceBtn" disabled>JOIN VOICE</button><button class="btn" id="onlineLeaveBtn" disabled>LEAVE ROOM</button></div>
+   <p class="online-hint">Voice chat is optional. Your microphone is only requested when you press JOIN VOICE.</p>
+  </section>
+ </div>
+</section></div>
 <div class="online-mini" id="onlineMini"><button class="btn" id="onlineOpenLobbyHud">LOBBY / CHAT</button><button class="btn" id="onlineVoiceHud">🎙 VOICE OFF</button></div>
 <div class="online-chat" id="onlineChat"><div class="online-chat-head"><span>ROOM CHAT</span><button class="btn" id="onlineChatHide">—</button></div><div class="online-chat-messages" id="onlineChatMessages" aria-live="polite"></div><form class="online-chat-form" id="onlineChatForm"><input id="onlineChatInput" maxlength="280" placeholder="Message the lobby…" autocomplete="off"><button class="btn primary" type="submit">SEND</button></form></div>
 <div class="overlay" id="replayOverlay" style="display:none;z-index:21"><section class="replay-card"><div class="tag">RACE / DRIVE REPLAY</div><h2>REPLAY TIMELINE</h2><p class="note" id="replayInfo">Review the last run with both vehicles in frame.</p><input id="replaySeek" type="range" min="0" max="1000" value="0" aria-label="Replay timeline"><div class="online-actions"><button class="btn primary" id="replayPlayBtn">▶ PLAY</button><button class="btn" id="replayExitBtn">RETURN TO GAME</button></div></section></div>
@@ -111,14 +225,31 @@ const MAPS=[
 {name:"Grand Canyon Overlook",color:"#a67b57",accent:"#e0b77b",sky:"#8d9ca0",walls:[[.17,.19,.10,.18],[.73,.19,.10,.18],[.18,.68,.10,.18],[.72,.68,.10,.18],[.42,.40,.16,.09]],style:"canyon",defaultWeather:"dust",defaultClouds:"wispy",landmark:"canyonArch"},
 {name:"Ancient Acropolis",color:"#8c8772",accent:"#e3d1a6",sky:"#63777c",walls:[[.19,.19,.12,.14],[.68,.19,.12,.14],[.19,.68,.12,.14],[.68,.68,.12,.14],[.42,.40,.16,.09]],style:"ruins",defaultWeather:"clear",defaultClouds:"scattered",landmark:"citadel"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,terrainMesh=null,terrainMarks=[],craterRecords=[],replayFrames=[],replayCaptureTimer=0,replayMode=false,replayPaused=false,replayCursor=0,replayCameraMode="follow",replayProjectiles=[],onlineSocket=null,onlineStatus="offline",onlineName="Tank Pilot",onlineRoom=null,onlineSide=-1,onlineStateTimer=0,onlineLastState=null,onlineShotSeq=0,onlineChatLog=[],onlinePeer=null,onlineLocalStream=null,onlineVoiceEnabled=false,onlinePendingSignals=[],weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowSurface=null,snowFarSurface=null,snowAccumulation=0,terrainMesh=null,terrainMarks=[],craterRecords=[],replayFrames=[],replayCaptureTimer=0,replayMode=false,replayPaused=false,replayCursor=0,replayCameraMode="follow",replayProjectiles=[],onlineSocket=null,onlineStatus="offline",onlineName="Tank Pilot",onlineRoom=null,onlineSide=-1,onlineStateTimer=0,onlineLastState=null,onlineShotSeq=0,onlineChatLog=[],onlinePeer=null,onlineLocalStream=null,onlineVoiceEnabled=false,onlinePendingSignals=[],weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,engineOscillators=[],engineFilters=[],engineGains=[],engineHarmonicOscillators=[],engineHarmonicFilters=[],engineHarmonicGains=[],trackRumbleSource=null,trackRumbleFilter=null,trackRumbleGain=null,impactNoiseBuffer=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function cylinder(parent,x,y,z,r1,r2,h,mat,seg=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function pulseSound(kind){
- if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
- const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"],snowTrack:[125,.13,"triangle"],engineHit:[64,.11,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
+ if(!soundOn)return;
+ try{
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended")audioCtx.resume();
+  const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"],snowTrack:[125,.13,"triangle"],engineHit:[64,.11,"sawtooth"]},s=specs[kind]||specs.fire;
+  const osc=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain(),now=audioCtx.currentTime;
+  osc.type=s[2];osc.frequency.setValueAtTime(s[0],now);
+  filter.type=kind==="fence"||kind==="engineHit"?"lowpass":"lowpass";filter.frequency.value=kind==="fence"?820:kind==="explosion"?420:kind==="damage"?260:1500;
+  if(["hit","explosion","damage","thunder","engineHit"].includes(kind))osc.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,now+s[1]);
+  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.065,now+.01);gain.gain.exponentialRampToValueAtTime(.0001,now+s[1]);
+  osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(now+s[1]+.02);
+  // A short band-limited noise layer adds the rough scrape and rattle missing from pure tones.
+  if(["fence","damage","explosion","engineHit","snowTrack"].includes(kind)){
+   if(!impactNoiseBuffer){const length=Math.floor(audioCtx.sampleRate*.5);impactNoiseBuffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate);const samples=impactNoiseBuffer.getChannelData(0);let brown=0;for(let i=0;i<length;i++){brown=brown*.91+(Math.random()*2-1)*.18;samples[i]=clamp(brown*2.4,-1,1);}}
+   const noise=audioCtx.createBufferSource(),shape=audioCtx.createBiquadFilter(),ng=audioCtx.createGain(),duration=kind==="explosion"?.22:kind==="damage"?.12:.075;
+   noise.buffer=impactNoiseBuffer;shape.type=kind==="fence"?"bandpass":"lowpass";shape.frequency.value=kind==="fence"?1100:kind==="explosion"?280:kind==="snowTrack"?500:650;shape.Q.value=kind==="fence"?1.2:.65;
+   ng.gain.setValueAtTime(.0001,now);ng.gain.exponentialRampToValueAtTime(kind==="explosion"?.026:.012,now+.008);ng.gain.exponentialRampToValueAtTime(.0001,now+duration);
+   noise.connect(shape);shape.connect(ng);ng.connect(audioCtx.destination);noise.start(now);noise.stop(now+duration);
+  }
  }catch(_){}
 }
 function syncWeatherAudio(){
@@ -134,25 +265,50 @@ function syncWeatherAudio(){
  }catch(_){ambienceSource=null;ambienceFilter=null;ambienceGain=null}
 }
 function syncEngineAudio(){
- if(!soundOn||!audioCtx)return;
+ if(!audioCtx)return;
  try{
   while(engineOscillators.length<2){
    const i=engineOscillators.length,osc=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
-   osc.type="sawtooth";osc.frequency.value=43+i*9;filter.type="lowpass";filter.frequency.value=130;
+   osc.type="sawtooth";osc.frequency.value=36+i*5;filter.type="lowpass";filter.frequency.value=125;
    gain.gain.value=.0001;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();
    engineOscillators.push(osc);engineFilters.push(filter);engineGains.push(gain);
+  }
+  while(engineHarmonicOscillators.length<2){
+   const i=engineHarmonicOscillators.length,osc=audioCtx.createOscillator(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
+   osc.type="triangle";osc.frequency.value=76+i*7;filter.type="lowpass";filter.frequency.value=260;
+   gain.gain.value=.0001;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();
+   engineHarmonicOscillators.push(osc);engineHarmonicFilters.push(filter);engineHarmonicGains.push(gain);
+  }
+  if(!trackRumbleSource){
+   const sampleRate=audioCtx.sampleRate,length=sampleRate*2,buffer=audioCtx.createBuffer(1,length,sampleRate),samples=buffer.getChannelData(0);let brown=0;
+   for(let i=0;i<length;i++){brown=brown*.965+(Math.random()*2-1)*.055;samples[i]=clamp(brown*7,-.8,.8);}
+   trackRumbleSource=audioCtx.createBufferSource();trackRumbleSource.buffer=buffer;trackRumbleSource.loop=true;
+   trackRumbleFilter=audioCtx.createBiquadFilter();trackRumbleFilter.type="bandpass";trackRumbleFilter.frequency.value=340;trackRumbleFilter.Q.value=.7;
+   trackRumbleGain=audioCtx.createGain();trackRumbleGain.gain.value=.0001;
+   trackRumbleSource.connect(trackRumbleFilter);trackRumbleFilter.connect(trackRumbleGain);trackRumbleGain.connect(audioCtx.destination);trackRumbleSource.start();
   }
  }catch(_){}
 }
 function updateEngineAudio(){
  if(!audioCtx||!engineGains.length)return;
- const now=audioCtx.currentTime;
+ const now=audioCtx.currentTime;let totalSpeed=0,activeEngines=0;
  for(let i=0;i<engineGains.length;i++){
-  const t=tanks[i],speed=t?Math.hypot(t.vx,t.vz):0,running=soundOn&&active&&!paused&&!matchOver&&!!t;
-  const volume=running?.0001+clamp(speed/15,0,1)*.013:.0001;
-  engineGains[i].gain.setTargetAtTime(volume,now,.13);
-  engineOscillators[i].frequency.setTargetAtTime(42+(running?speed*3.6:0)+i*8,now,.12);
-  engineFilters[i].frequency.setTargetAtTime(105+(running?speed*24:0),now,.15);
+  const t=tanks[i],speed=t?Math.hypot(t.vx,t.vz):0,running=soundOn&&active&&!paused&&!matchOver&&!!t,ratio=clamp(speed/14,0,1);
+  if(running){totalSpeed+=speed;activeEngines++;}
+  const idle=running?.0018:.0001,volume=running?idle+ratio*.014:.0001;
+  engineGains[i].gain.setTargetAtTime(volume,now,.12);
+  engineOscillators[i].frequency.setTargetAtTime(35+(running?speed*4.3:0)+i*5,now,.10);
+  engineFilters[i].frequency.setTargetAtTime(125+(running?speed*38:0),now,.14);
+  if(engineHarmonicGains[i]){
+   engineHarmonicGains[i].gain.setTargetAtTime(running?.0008+ratio*.0045:.0001,now,.14);
+   engineHarmonicOscillators[i].frequency.setTargetAtTime(74+(running?speed*7.4:0)+i*6,now,.11);
+   engineHarmonicFilters[i].frequency.setTargetAtTime(240+(running?speed*55:0),now,.15);
+  }
+ }
+ if(trackRumbleGain&&trackRumbleFilter){
+  const avgSpeed=activeEngines?totalSpeed/activeEngines:0,ratio=clamp(avgSpeed/14,0,1),running=soundOn&&active&&!paused&&!matchOver&&activeEngines>0;
+  trackRumbleGain.gain.setTargetAtTime(running?.0001+ratio*.0065:.0001,now,.18);
+  trackRumbleFilter.frequency.setTargetAtTime(260+avgSpeed*38,now,.18);
  }
 }
 function showBanner(text,seconds=1.1){const el=$("banner");el.textContent=text;el.classList.add("show");clearTimeout(tagTimer);tagTimer=setTimeout(()=>el.classList.remove("show"),seconds*1000)}
@@ -301,6 +457,20 @@ function addWall(x,z,w,d,h,kind){
   box(g,-w*.24,h+.32,-d*.18,w*.22,.30,d*.22,common.dark);
   box(g,w*.20,h+.24,d*.17,w*.16,.18,d*.18,common.metal);
   cylinder(g,w*.28,h+.62,-d*.18,.055,.055,.65,common.metal,8);
+ }
+ if(kind==="building"){
+  g.userData.occlusionBuilding=true;
+  g.traverse(obj=>{
+   if(!obj.isMesh||!obj.material)return;
+   const sharedMaterials=Object.values(common);
+   const sourceMats=Array.isArray(obj.material)?obj.material:[obj.material];
+   const localMats=sourceMats.map(mat=>{
+    const local=sharedMaterials.includes(mat)?mat.clone():mat;
+    if(!local.userData.tankArenaOcclusionBase)local.userData.tankArenaOcclusionBase={opacity:local.opacity,transparent:local.transparent,depthWrite:local.depthWrite};
+    return local;
+   });
+   obj.material=Array.isArray(obj.material)?localMats:localMats[0];
+  });
  }
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g,destructible:["building","crate","container","block","rock"].includes(kind),hp:kind==="building"?5:kind==="container"?4:2.8});return g
 }
@@ -711,9 +881,48 @@ function addOnlineRouteMarkers(){
   const base=new THREE.Mesh(new THREE.TorusGeometry(2.25,.025,5,40),m);base.rotation.x=Math.PI/2;base.position.set(p[0],.025,p[1]);scene.add(base);
  });
 }
+function createTerrainTexture(style,color){
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
+ const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)return null;
+ ctx.fillStyle="#e8e5dd";ctx.fillRect(0,0,512,512);
+ const urban=["city","london","tokyo","factory"].includes(style),desert=["desert","canyon"].includes(style),green=["forest","mega"].includes(style),ice=["ice","alpine"].includes(style),lava=style==="lava",crystal=style==="crystal";
+ // Fine grain across the whole floor helps the surface read as material, not a flat colour.
+ for(let i=0;i<9500;i++){
+  const x=Math.random()*512,y=Math.random()*512,r=Math.random()*(urban?1.2:1.75)+.25;
+  const shade=Math.random()>.5?"37,47,42":"255,255,255",alpha=.025+Math.random()*.09;
+  ctx.fillStyle="rgba("+shade+","+alpha+")";ctx.fillRect(x,y,r,r);
+ }
+ if(urban){
+  ctx.lineWidth=1.1;ctx.strokeStyle="rgba(49,57,54,.15)";
+  for(let p=0;p<=512;p+=64){ctx.beginPath();ctx.moveTo(p,0);ctx.lineTo(p,512);ctx.stroke();ctx.beginPath();ctx.moveTo(0,p);ctx.lineTo(512,p);ctx.stroke();}
+  for(let i=0;i<45;i++){const x=Math.random()*512,y=Math.random()*512;ctx.strokeStyle="rgba(35,44,42,"+(.05+Math.random()*.1)+")";ctx.lineWidth=.5+Math.random()*.8;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+rand(4,24),y+rand(-3,5));ctx.lineTo(x+rand(15,35),y+rand(0,9));ctx.stroke();}
+ }else if(desert){
+  for(let i=0;i<170;i++){const y=Math.random()*512;ctx.strokeStyle="rgba(115,91,55,"+(.025+Math.random()*.09)+")";ctx.lineWidth=1+Math.random()*3;ctx.beginPath();ctx.moveTo(-10,y);ctx.bezierCurveTo(120,y-18,330,y+18,522,y+rand(-8,8));ctx.stroke();}
+  for(let i=0;i<240;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(91,76,56,"+(.08+Math.random()*.12)+")";ctx.beginPath();ctx.ellipse(x,y,rand(.5,2),rand(.4,1.3),Math.random()*2,0,Math.PI*2);ctx.fill();}
+ }else if(green){
+  for(let i=0;i<2400;i++){const x=Math.random()*512,y=Math.random()*512;ctx.strokeStyle=Math.random()>.5?"rgba(66,103,56,.14)":"rgba(255,255,255,.08)";ctx.lineWidth=.5+Math.random();ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+rand(-2,2),y-rand(2,7));ctx.stroke();}
+  for(let i=0;i<90;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(69,91,52,.08)";ctx.beginPath();ctx.ellipse(x,y,rand(3,10),rand(2,7),Math.random()*3,0,Math.PI*2);ctx.fill();}
+ }else if(ice){
+  for(let i=0;i<85;i++){let x=Math.random()*512,y=Math.random()*512;ctx.strokeStyle="rgba(64,116,135,.12)";ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(x,y);for(let j=0;j<3;j++){x+=rand(-20,20);y+=rand(-14,14);ctx.lineTo(x,y)}ctx.stroke();}
+  for(let i=0;i<2100;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(255,255,255,.22)";ctx.fillRect(x,y,rand(.5,1.8),rand(.5,1.8));}
+ }else if(lava){
+  for(let i=0;i<70;i++){let x=Math.random()*512,y=Math.random()*512;ctx.strokeStyle="rgba(80,49,39,.20)";ctx.lineWidth=rand(1,2);ctx.beginPath();ctx.moveTo(x,y);for(let j=0;j<3;j++){x+=rand(-22,22);y+=rand(-16,16);ctx.lineTo(x,y)}ctx.stroke();}
+  for(let i=0;i<130;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(39,37,34,.13)";ctx.beginPath();ctx.ellipse(x,y,rand(1,4),rand(1,3),Math.random()*3,0,Math.PI*2);ctx.fill();}
+ }else if(crystal){
+  for(let i=0;i<230;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(128,115,174,.13)";ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+rand(1,5),y+rand(-4,4));ctx.lineTo(x+rand(3,7),y+rand(1,7));ctx.closePath();ctx.fill();}
+ }else{
+  for(let i=0;i<500;i++){const x=Math.random()*512,y=Math.random()*512;ctx.fillStyle="rgba(65,77,66,.08)";ctx.beginPath();ctx.ellipse(x,y,rand(.5,2),rand(.5,1.5),Math.random()*3,0,Math.PI*2);ctx.fill();}
+ }
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+ texture.wrapS=THREE.ClampToEdgeWrapping;texture.wrapT=THREE.ClampToEdgeWrapping;
+ if(renderer)texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+ return texture;
+}
 function buildTerrainOverlay(color){
  const geometry=new THREE.PlaneGeometry(80,56,160,112);geometry.rotateX(-Math.PI/2);
- const mesh=new THREE.Mesh(geometry,material(color,1,.02));mesh.position.set(0,-.08,0);mesh.receiveShadow=true;mesh.castShadow=false;mesh.name="deformable-arena-terrain";scene.add(mesh);return mesh;
+ const texture=createTerrainTexture(MAPS[mapIndex]?.style||"mega",color);
+ const terrainMaterial=material(color,1,.02,texture?{map:texture}:{});
+ const mesh=new THREE.Mesh(geometry,terrainMaterial);mesh.position.set(0,-.08,0);mesh.receiveShadow=true;mesh.castShadow=false;mesh.name="deformable-arena-terrain";scene.add(mesh);return mesh;
 }
 function deformTerrain(x,z,radius=2.6,depth=.035){
  if(!terrainMesh)return;
@@ -1233,6 +1442,42 @@ function update(dt){
  }
  updateHUDAndRadar()
 }
+
+const buildingOcclusionRaycaster=new THREE.Raycaster();
+function setBuildingOcclusion(group,fade){
+ if(!group||group.userData.cameraOccluded===fade)return;
+ group.userData.cameraOccluded=fade;
+ group.traverse(obj=>{
+  if(!obj.isMesh||!obj.material)return;
+  const mats=Array.isArray(obj.material)?obj.material:[obj.material];
+  for(const mat of mats){
+   const base=mat.userData.tankArenaOcclusionBase;if(!base)continue;
+   if(fade){mat.transparent=true;mat.opacity=Math.min(base.opacity,.24);mat.depthWrite=false;}
+   else{mat.transparent=base.transparent;mat.opacity=base.opacity;mat.depthWrite=base.depthWrite;}
+   mat.needsUpdate=true;
+  }
+ });
+}
+function updateBuildingOcclusion(){
+ if(!camera||!tanks.length)return;
+ const buildings=obstacles.filter(o=>o.kind==="building"&&o.group?.userData?.occlusionBuilding).map(o=>o.group);
+ if(!buildings.length)return;
+ const faded=new Set();
+ for(const tank of tanks){
+  if(!tank.group||tank.group.visible===false)continue;
+  const target=tank.group.getWorldPosition(new THREE.Vector3());target.y+=1.18;
+  const ray=target.sub(camera.position),distance=ray.length();
+  if(distance<1)continue;
+  buildingOcclusionRaycaster.set(camera.position,ray.normalize());
+  buildingOcclusionRaycaster.far=Math.max(.1,distance-.8);
+  const hits=buildingOcclusionRaycaster.intersectObjects(buildings,true);
+  for(const hit of hits){
+   let node=hit.object;while(node&&!node.userData?.occlusionBuilding)node=node.parent;
+   if(node)faded.add(node);
+  }
+ }
+ for(const group of buildings)setBuildingOcclusion(group,faded.has(group));
+}
 function cameraUpdate(dt){
  if(!camera)return;
  const a=tanks[0],b=tanks[1];
@@ -1257,6 +1502,7 @@ function animate(now){
   tanks.forEach(t=>{if(mode!=="online")t.group.visible=!(t.inv>0&&Math.floor(now/75)%2===0);t.group.userData.fire=Math.max(0,(t.group.userData.fire||0)-dt);});
  }
  cameraUpdate(dt);
+ updateBuildingOcclusion();
  renderer.render(scene,camera);
 }
 function createScene(){
@@ -1611,6 +1857,7 @@ $("onlineJoinCode").addEventListener("click",()=>void joinTankRoomByCode());
 $("onlineReadyBtn").addEventListener("click",()=>{if(!onlineRoom||!onlineLastState)return;const me=onlinePlayerArray().find(p=>p.id===onlineRoom.sessionId);try{onlineRoom.send("ready",{ready:!me?.ready});}catch(_){}});
 $("onlineStartBtn").addEventListener("click",()=>{if(onlineRoom)try{onlineRoom.send("startMatch",{});}catch(_){}});
 $("onlineLeaveBtn").addEventListener("click",()=>void leaveTankOnlineRoom());
+$("onlineCopyCodeBtn").addEventListener("click",async()=>{const code=$("onlineRoomCode").textContent.trim();if(!code||code==="—"){setOnlineStatus("Create or join a room first to get an invite code.");return;}try{await navigator.clipboard.writeText(code);setOnlineStatus("Invite code copied: "+code);}catch(_){$("onlineCode").value=code;$("onlineCode").focus();$("onlineCode").select();setOnlineStatus("Invite code is in the field above; copy it to share.");}});
 $("onlineVoiceBtn").addEventListener("click",()=>void joinTankVoice());
 $("onlineOpenLobbyHud").addEventListener("click",()=>openTankOnline(true));
 $("onlineVoiceHud").addEventListener("click",toggleTankVoiceMute);
