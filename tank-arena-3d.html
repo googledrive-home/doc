@@ -768,10 +768,11 @@ function buildArena(){
  addFencePerimeter();
  // Map-specific cover converted from the original 10 arena layouts.
  const specs=map.walls;
- for(const a of specs){
+ for(const [wallIndex,a] of specs.entries()){
   const x=(a[0]+a[2]/2)*76-38,z=(a[1]+a[3]/2)*52-26,w=Math.max(1.3,a[2]*76),d=Math.max(1.3,a[3]*52);
   const kind=map.style==="crystal"?"crystal":map.style==="ice"?"ice":map.style==="desert"||map.style==="canyon"?"crate":map.style==="factory"?"container":["city","london","tokyo"].includes(map.style)?"building":"block";
-  addWall(x,z,w,d,kind==="building"?rand(10,22):kind==="container"?2.8:rand(1.6,2.8),kind);
+  const wallMesh=addWall(x,z,w,d,kind==="building"?rand(10,22):kind==="container"?2.8:rand(1.6,2.8),kind);
+  const wallObstacle=obstacles.find(o=>o.group===wallMesh);if(wallObstacle)wallObstacle.mapWallIndex=wallIndex;
  }
  // Terrain dressing varies by map but stays outside the important driving lanes.
  if(map.style==="forest"){
@@ -950,7 +951,7 @@ function spawnTag(t){
 }
 function collides(x,z,r,ignoreTank){
  for(const o of obstacles){
-  if(o.decor)continue;
+  if(o.decor||o.destroyedByServer)continue;
   if(o.shape==="circle"){if(Math.hypot(x-o.x,z-o.z)<r+(o.r||.5))return true;continue}
   if(!o.w||!o.d)continue;
   const nx=clamp(x,o.x-o.w/2,o.x+o.w/2),nz=clamp(z,o.z-o.d/2,o.z+o.d/2),dx=x-nx,dz=z-nz;
@@ -962,7 +963,7 @@ function tankCollides(t,x,z){
  const hw=t.hitHalfWidth||1.38,hl=t.hitHalfLength||1.78;
  const rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  for(const o of obstacles){
-  if(o.decor)continue;
+  if(o.decor||o.destroyedByServer)continue;
   const dx=x-o.x,dz=z-o.z;
   if(o.shape==="circle"){
    const lx=dx*rx+dz*rz,lz=dx*fx+dz*fz,qx=clamp(lx,-hw,hw),qz=clamp(lz,-hl,hl),ox=lx-qx,oz=lz-qz;
@@ -1288,8 +1289,23 @@ function updateOnlineRoomUI(state=onlineLastState){
   $("onlineOverlay").style.display="grid";$("onlineVoiceHud").style.display="inline-block";
  }else $("onlineVoiceHud").style.display="inline-block";
 }
+function syncOnlineScenery(state){
+ if(!state?.scenery?.forEach)return;
+ state.scenery.forEach((wall,key)=>{
+  const index=Number.isFinite(Number(wall.index))?Number(wall.index):Number(String(key).replace("wall-",""));
+  const o=obstacles.find(q=>q.mapWallIndex===index);if(!o) return;
+  if(wall.active&&wall.hp>0){
+   if(o.destroyedByServer){o.destroyedByServer=false;if(o.group)o.group.visible=true;}
+   o.hp=wall.hp;
+  }else if(!o.destroyedByServer){
+   o.destroyedByServer=true;o.hp=0;if(o.group)o.group.visible=false;
+   createCrater(Number(wall.x)||o.x,Number(wall.z)||o.z,Math.max(1.1,Math.min(2.1,Math.hypot(o.w||1,o.d||1)*.15)),.012);
+   spawnParticles(o.x,Math.max(.3,(o.h||2)*.5),o.z,"#a9a58e",10);
+  }
+ });
+}
 function renderTankOnlineState(state){
- if(!state)return;onlineLastState=state;
+ if(!state)return;onlineLastState=state;syncOnlineScenery(state);
  const code=state.code||onlineRoom?.state?.code||"";
  if(code&&$("onlineCode").value!==code)$("onlineCode").value=code;
  applyTankRoomSettings(state);
@@ -1333,6 +1349,7 @@ function attachTankOnlineRoom(room){
  room.onMessage("raceCountdown",message=>setOnlineStatus("Race starting in "+Math.ceil(message?.seconds||3)+"…"));
  room.onMessage("raceStarted",message=>setOnlineStatus("Race started · "+(message?.weather||"weather")+" conditions."));
  room.onMessage("raceFinished",message=>{setOnlineStatus((message?.winnerName||"Driver")+" finished first!");if(onlineLastState)updateOnlineRoomUI(onlineLastState);});
+ room.onMessage("sceneryImpact",message=>{if(soundOn)pulseSound("fence");if(message?.active===false)setOnlineStatus("A "+(onlineLastState?.mapName||"map")+" barrier collapsed. The gap is now open.");});
  room.onMessage("partyChatMessage",message=>appendTankOnlineChat(message));
  room.onMessage("partyChatError",message=>appendTankOnlineChat({name:"SERVER",text:message?.message||"Message not sent."}));
  room.onMessage("voicePeers",message=>{for(const p of message?.peers||[])void connectTankVoicePeer(p.sessionId,p.name,true);});
