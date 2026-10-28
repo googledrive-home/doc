@@ -252,12 +252,133 @@ function addWall(x,z,w,d,h,kind){
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
 function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:4*s,kind:"tree",shape:"circle",r:.62*s});
- cylinder(g,0,.8*s,0,.22*s,.32*s,1.6*s,material("#5b4936",.98),7);
- const leaf=material(MAPS[mapIndex].style==="forest"?"#426348":"#65724e",.97);
- for(let i=0;i<3;i++){const cone=new THREE.Mesh(new THREE.ConeGeometry((1.2-i*.22)*s,1.55*s,7),leaf);cone.position.y=(1.65+i*.69)*s;cone.rotation.y=i*.3;g.add(cone)}
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s});
+ const bark=material("#5b4735",.98),barkLight=material("#796047",.95);
+ cylinder(g,0,.94*s,0,.18*s,.32*s,1.88*s,bark,9);
+ for(let i=0;i<4;i++){
+  const branch=cylinder(g,rand(-.16,.16)*s,(1.10+i*.23)*s,rand(-.1,.1)*s,.045*s,.10*s,.72*s,barkLight,6);
+  branch.rotation.z=(i%2?-.55:.55);branch.rotation.x=rand(-.2,.2);
+ }
+ const forest=["#2f583b","#3d6945","#52784c","#658454"],leafMats=forest.map(col=>material(MAPS[mapIndex].style==="alpine"?"#5d817b":col,.97));
+ // Layered irregular crowns with small secondary clusters rather than a single cone.
+ for(let i=0;i<4;i++){
+  const crown=new THREE.Mesh(new THREE.ConeGeometry((1.35-i*.19)*s,(1.35+rand(0,.3))*s,9),leafMats[i]);
+  crown.position.set(rand(-.10,.10)*s,(1.65+i*.62)*s,rand(-.10,.10)*s);crown.rotation.y=rand(0,6.2);g.add(crown);
+  for(let j=0;j<2;j++){
+   const cluster=new THREE.Mesh(new THREE.SphereGeometry(.38*s,7,5),leafMats[(i+j+1)%leafMats.length]);
+   cluster.position.set(rand(-.48,.48)*s,(1.85+i*.57)*s,rand(-.42,.42)*s);cluster.scale.set(1,.9,1);g.add(cluster);
+  }
+ }
  return g
 }
+function addGrassLayer(){
+ const style=MAPS[mapIndex].style;
+ let count=style==="forest"?1250:style==="mega"?850:["london","alpine"].includes(style)?430:["city","tokyo"].includes(style)?180:["factory","ice","crystal"].includes(style)?220:["desert","canyon","lava"].includes(style)?0:420;
+ if(weatherMode==="snow")count=Math.floor(count*.38);
+ if(!count)return;
+ const positions=[],colors=[];
+ const shades=weatherMode==="snow"?[[.70,.79,.77],[.82,.88,.85],[.60,.73,.69]]:[[.20,.35,.16],[.28,.43,.20],[.38,.48,.23],[.16,.29,.14]];
+ for(let i=0;i<count*2&&positions.length<count*9*3;i++){
+  const x=rand(-38,38),z=rand(-26,26);
+  if(Math.abs(x)<11&&Math.abs(z)<8)continue;
+  if(collides(x,z,.24,null))continue;
+  const color=shades[Math.floor(Math.random()*shades.length)];
+  for(let blade=0;blade<3;blade++){
+   const angle=rand(0,Math.PI*2),w=rand(.025,.07),h=weatherMode==="snow"?rand(.04,.12):rand(.12,.42),lean=rand(.04,.17);
+   const dx=Math.cos(angle)*w,dz=Math.sin(angle)*w,tx=Math.cos(angle+.9)*lean,tz=Math.sin(angle+.9)*lean;
+   const tri=[[x-dx,-.045,z-dz],[x+dx,-.045,z+dz],[x+tx,-.045+h,z+tz]];
+   for(const p of tri){positions.push(p[0],p[1],p[2]);colors.push(color[0],color[1],color[2])}
+  }
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
+ const mat=new THREE.MeshStandardMaterial({color:"#ffffff",vertexColors:true,side:THREE.DoubleSide,roughness:1,metalness:0});
+ const grass=new THREE.Mesh(geo,mat);grass.frustumCulled=false;grass.receiveShadow=true;scene.add(grass);
+}
+function addLandmarkDetails(){
+ const style=MAPS[mapIndex].style;
+ const stone=material(style==="canyon"?"#b78259":style==="london"?"#b1a58c":"#9c9882",.86,.06);
+ const darkStone=material("#4b514b",.9,.04),metal=material("#586967",.57,.55),window=material("#e9d59c",.3,.1,{emissive:"#b69b5b",emissiveIntensity:.3});
+ if(style==="london"){
+  // Thames-style river and a distinctive twin-tower bascule bridge.
+  const river=new THREE.Mesh(new THREE.PlaneGeometry(77,5.2),material("#315a68",.22,.4,{transparent:true,opacity:.92}));river.rotation.x=-Math.PI/2;river.position.set(0,-.068,21.5);scene.add(river);
+  box(scene,5,.38,21.5,7.2,.38,11.5,stone);
+  for(const x of [1.0,9.0]){
+   box(scene,x,2.2,21.5,1.55,3.3,2.2,stone);box(scene,x,4.0,21.5,1.9,.25,2.6,darkStone);
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(1.35,1.8,4),darkStone);roof.position.set(x,5.0,21.5);roof.rotation.y=Math.PI/4;scene.add(roof);
+   for(let y=1.2;y<3.6;y+=.7)box(scene,x,y,22.63,.7,.34,.05,window);
+  }
+  box(scene,5,3.5,21.5,5.5,.42,1.4,stone);
+  for(const x of [-30,-28.5,-27,-25.5]){
+   const h=rand(12,18),w=3.1,d=3.1;
+   addWall(x,rand(-18,-10),w,d,h,"building");
+  }
+  // A clock-tower landmark silhouette with lit clock faces.
+  const tx=-31,tz=-15,th=17;
+  box(scene,tx,th/2,tz,3.9,th,3.9,stone);box(scene,tx,th+.3,tz,4.25,.55,4.25,darkStone);
+  for(const y of [th-1.2,th+1.25]){
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(y>th?2.2:1.9,1.8,4),darkStone);roof.position.set(tx,y+.5,tz);roof.rotation.y=Math.PI/4;scene.add(roof);
+  }
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,.06,28),window);face.rotation.x=Math.PI/2;face.position.set(tx,13.1,tz+1.99);scene.add(face);
+  box(scene,tx,13.1,tz+2.04,.04,.76,.035,darkStone);box(scene,tx+.18,13.28,tz+2.04,.38,.04,.035,darkStone);
+  obstacles.push({x:tx,z:tz,w:3.9,d:3.9,h:th,kind:"clock tower"});
+ }
+ if(style==="tokyo"){
+  // A red-and-white communications tower beside compact neon mid-rises.
+  const tx=30,tz=15;
+  const towerRed=material("#c65c53",.6,.18),towerWhite=material("#e0d8c1",.7,.12);
+  cylinder(scene,tx,6,tz,.55,1.75,12,towerRed,12);
+  for(const y of [3.1,5.7,8.6])box(scene,tx,y,tz,5.2,.2,.24,towerWhite);
+  for(const y of [3.1,5.7,8.6])box(scene,tx,y,tz, .24,.2,5.2,towerWhite);
+  cylinder(scene,tx,12.8,tz,.16,.45,1.8,towerWhite,10);
+  const beacon=new THREE.Mesh(new THREE.SphereGeometry(.25,10,8),material("#ff708c",.2,.1,{emissive:"#ff315d",emissiveIntensity:1.4}));beacon.position.set(tx,14,tz);scene.add(beacon);
+  obstacles.push({x:tx,z:tz,w:2.7,d:2.7,h:14,kind:"tower",shape:"circle",r:1.5});
+  for(let i=0;i<8;i++){
+   const x=-34+i*9,z=i%2?-20:-23,w=rand(3.8,5.8),d=rand(3.3,5),h=rand(12,20);
+   addWall(x,z,w,d,h,"building");
+   const signMat=material(["#e16a9d","#77d9dd","#d6bc78"][i%3],.32,.15,{emissive:["#e16a9d","#77d9dd","#d6bc78"][i%3],emissiveIntensity:.45});
+   box(scene,x,h*.55,z+d/2+.05,w*.72,.42,.07,signMat);
+  }
+ }
+ if(style==="alpine"){
+  const lodgeX=-31,lodgeZ=-17;addWall(lodgeX,lodgeZ,8.2,5.4,4.3,"building");
+  const roofMat=material("#65483a",.86,.08);
+  const r1=box(scene,lodgeX-.0,4.9,lodgeZ,4.55,.28,6.2,roofMat);r1.rotation.z=.44;
+  const r2=box(scene,lodgeX+.0,4.9,lodgeZ,4.55,.28,6.2,roofMat);r2.rotation.z=-.44;
+  for(let x=-37;x<=37;x+=5){
+   if(Math.abs(x)<12)continue;addTree(x,24,rand(.75,1.1));addTree(x,25.8,rand(.75,1.05));
+  }
+  const peakMat=material("#d5e4e5",.98,.02);
+  for(const x of [-34,-24,-14,0,14,24,34]){
+   const peak=new THREE.Mesh(new THREE.ConeGeometry(rand(5,9),rand(14,25),5),peakMat);peak.position.set(x,rand(5,9),-24-rand(2,8));peak.rotation.z=rand(-.15,.15);scene.add(peak);
+  }
+  obstacles.push({x:lodgeX,z:lodgeZ,w:8.2,d:5.4,h:4.3,kind:"alpine lodge"});
+ }
+ if(style==="canyon"){
+  const rockMat=material("#b77f53",.98),highlight=material("#d7a06b",.93);
+  // A broad sandstone arch landmark and tall canyon spires.
+  for(const x of [-6.3,6.3]){
+   const pillar=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),rockMat);pillar.position.set(x,3.2,-22);pillar.scale.set(2.5,4.4,2.3);scene.add(pillar);
+   obstacles.push({x,z:-22,w:4.2,d:4,h:8.8,kind:"canyon pillar",shape:"circle",r:2.1});
+   for(let y=1.2;y<7;y+=1.45)box(scene,x,y,-19.7,3.8,.10,.035,highlight);
+  }
+  box(scene,0,7.25,-22,16.4,2.1,3.2,rockMat);box(scene,0,8.4,-22,14,.18,2.7,highlight);
+  for(const x of [-35,-29,29,35]){
+   const spire=new THREE.Mesh(new THREE.ConeGeometry(rand(2.4,4.5),rand(10,18),5),rockMat);spire.position.set(x,4,-12+rand(-8,8));spire.rotation.z=rand(-.14,.14);scene.add(spire);
+  }
+ }
+ if(style==="ruins"){
+  // An ancient courtyard with an obelisk, broken columns and a stepped pyramid.
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(5.7,6.3,.55,4),darkStone);base.position.set(0,.08,20);base.rotation.y=Math.PI/4;scene.add(base);
+  const pyramid=new THREE.Mesh(new THREE.ConeGeometry(5.1,8,4),stone);pyramid.position.set(0,4.15,20);pyramid.rotation.y=Math.PI/4;scene.add(pyramid);
+  box(scene,10,2.3,18,2.1,4.6,2.1,stone);box(scene,10,4.8,18,2.7,.35,2.7,darkStone);
+  for(const x of [-17,-12,-7,7,12,17]){
+   cylinder(scene,x,1.7,20,.48,.55,3.4,stone,12);
+   cylinder(scene,x,3.45,20,.7,.68,.18,darkStone,12);
+   obstacles.push({x,z:20,w:1.15,d:1.15,h:3.4,kind:"ruin column",shape:"circle",r:.62});
+  }
+ }
+}
+
 function addCrystal(x,z,s=1){
  obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal",shape:"circle",r:.78*s});
  const m=material(MAPS[mapIndex].accent,.28,.2,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.35});
@@ -495,6 +616,7 @@ function buildArena(){
  if(map.style==="neon"||map.style==="mega"){
   for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
+ addLandmarkDetails();addGrassLayer();
  // Padded start bays and spawn protection lights.
  for(const x of [-25,25]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
  tanks=[buildTank(0,vehicleIdx[0]),buildTank(1,vehicleIdx[1])];
