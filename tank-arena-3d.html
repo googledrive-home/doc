@@ -321,7 +321,7 @@ function updateMenuPreview(){
 }
 function buildArena(){
  clearDynamic();
- const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.002,weather.fog+(fogLevel==="high"?.014:fogLevel==="low"?-.003:0)));
+ const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.002,weather.fog+(fogLevel==="high"?.014:fogLevel==="low"?-.003:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
  const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
  if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();addFarHorizon();
  const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
@@ -674,10 +674,12 @@ function resize(){if(!renderer||!camera)return;renderer.setSize(innerWidth,inner
 function startGame(resetScores=true){
  if(!renderer)createScene();
  mode=$("mode").value;difficulty=$("difficulty").value;mapIndex=Number($("map").value);vehicleIdx=[Number($("tank1").value),Number($("tank2").value)];
+ weatherMode=$("weather").value;cloudMode=$("clouds").value;fogLevel=$("fogLevel").value;fenceStyle=$("fenceStyle").value;
+ paintMode=[$("paint1").value,$("paint2").value];maxTankHits=Number($("tankHealth").value);roundLimit=Number($("roundLimit").value);
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
  $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
- active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;buildArena();updateHUDAndRadar();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
+ active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
 function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear()}
 $("startBtn").addEventListener("click",()=>startGame(true));
@@ -688,7 +690,7 @@ $("resumeBtn").addEventListener("click",pauseGame);
 $("pauseResetBtn").addEventListener("click",()=>{paused=false;$("pauseOverlay").style.display="none";score=[0,0];roundNo=1;startGame(true)});
 $("againBtn").addEventListener("click",()=>startGame(true));
 $("setupAgainBtn").addEventListener("click",()=>{$("endOverlay").style.display="none";$("setupOverlay").style.display="grid";$("hud").style.display="none";active=false});
-$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn)pulseSound("pickup")});
+$("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♪ SOUND ON":"♪ SOUND OFF";if(soundOn)pulseSound("pickup");syncWeatherAudio()});
 $("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(_){}});
 function exitToLibrary(){if(window.parent!==window){try{window.parent.closeStandaloneGame();return}catch(_){}}location.href="index.html"} $("exitBtn").addEventListener("click",exitToLibrary);$("setupLibraryBtn").addEventListener("click",exitToLibrary);$("endLibraryBtn").addEventListener("click",exitToLibrary);
 window.addEventListener("keydown",e=>{
@@ -709,6 +711,8 @@ document.querySelectorAll(".touch button").forEach(btn=>{
 });
 window.addEventListener("resize",()=>{if(active){$("touch1").style.display=innerWidth<=760?"flex":"none";$("touch2").style.display=innerWidth<=760&&mode==="local"?"flex":"none"}});
 $("difficulty").addEventListener("change",()=>difficulty=$("difficulty").value);
+for(const id of ["map","weather","clouds","paint1","paint2","fenceStyle","fogLevel","tankHealth","roundLimit"])$(id).addEventListener("change",updateMenuPreview);
+updateMenuPreview();
 try{createScene();requestAnimationFrame(animate)}catch(err){$("errorOverlay").style.display="grid";$("errorText").textContent="3D setup failed: "+(err?.message||"WebGL was unavailable")+"\nTry refreshing in a current browser with hardware acceleration enabled."}
 </script>
 </body>
