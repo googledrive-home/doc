@@ -240,31 +240,31 @@ function addWall(x,z,w,d,h,kind){
   for(let i=1;i<Math.max(2,Math.floor(w/.45));i++)box(g,-w/2+i*w/Math.max(2,Math.floor(w/.45)),h/2,0,.025,h*.85,d+.015,common.metal);
  }
  if(kind==="building"){
-  const glassA=material("#92b4b3",.27,.24,{emissive:"#344e50",emissiveIntensity:.12});
-  const glassB=material("#d0bf91",.32,.18,{emissive:"#5d5137",emissiveIntensity:.08});
+  const glass=material("#ffffff",.3,.2,{emissive:"#182c2a",emissiveIntensity:.12});
   const frame=material("#313b37",.78,.2),floorBand=material("#69756b",.72,.22);
-  // Recessed-looking windows in multiple storeys on the front and side facades.
-  const floors=Math.max(2,Math.floor(h/1.65));
-  const columns=Math.max(2,Math.floor(w/.9));
+  const floors=Math.max(2,Math.min(14,Math.floor(h/1.65))),columns=Math.max(2,Math.min(7,Math.floor(w/1.0)));
+  const sideColumns=Math.max(2,Math.min(6,Math.floor(d/1.05)));
+  const maxWindows=floors*(columns+sideColumns),frameGeometry=new THREE.BoxGeometry(.43,.68,.035),windowGeometry=new THREE.BoxGeometry(.34,.52,.032);
+  const frameFront=new THREE.InstancedMesh(frameGeometry,frame,maxWindows),frameSide=new THREE.InstancedMesh(frameGeometry,frame,maxWindows);
+  const paneFront=new THREE.InstancedMesh(windowGeometry,glass,maxWindows),paneSide=new THREE.InstancedMesh(windowGeometry,glass,maxWindows);
+  const dummy=new THREE.Object3D();let fi=0,si=0;
   for(let floor=0;floor<floors;floor++){
-   const yy=.8+floor*1.55;
-   if(yy>h-.6)continue;
+   const yy=.8+floor*1.55;if(yy>h-.6)continue;
    box(g,0,yy,d/2+.018,w*.94,.075,.045,floorBand);
    for(let col=0;col<columns;col++){
     const xx=-w*.42+col*(w*.84/Math.max(1,columns-1));
-    const glass=(floor+col)%4===0?glassB:glassA;
-    box(g,xx,yy+.43,d/2+.025,.36,.58,.035,glass);
-    box(g,xx-.205,yy+.43,d/2+.046,.035,.64,.025,frame);
-    box(g,xx+.205,yy+.43,d/2+.046,.035,.64,.025,frame);
+    dummy.position.set(xx,yy+.43,d/2+.026);dummy.rotation.set(0,0,0);dummy.updateMatrix();frameFront.setMatrixAt(fi,dummy.matrix);
+    dummy.position.z=d/2+.05;dummy.scale.set(1,((floor+col)%4===0)?1.0:.9,1);dummy.updateMatrix();paneFront.setMatrixAt(fi,dummy.matrix);paneFront.setColorAt(fi,new THREE.Color((floor+col)%4===0?"#d0bf91":"#92b4b3"));dummy.scale.set(1,1,1);fi++;
    }
-   const sideColumns=Math.max(2,Math.floor(d/1.0));
    for(let col=0;col<sideColumns;col++){
     const zz=-d*.40+col*(d*.8/Math.max(1,sideColumns-1));
-    box(g,w/2+.025,yy+.43,zz,.035,.58,.36,(floor+col)%4===0?glassB:glassA);
-    box(g,w/2+.046,yy+.43,zz-.205,.025,.64,.035,frame);
-    box(g,w/2+.046,yy+.43,zz+.205,.025,.64,.035,frame);
+    dummy.position.set(w/2+.026,yy+.43,zz);dummy.rotation.set(0,Math.PI/2,0);dummy.scale.set(1,1,1);dummy.updateMatrix();frameSide.setMatrixAt(si,dummy.matrix);
+    dummy.position.x=w/2+.05;dummy.updateMatrix();paneSide.setMatrixAt(si,dummy.matrix);paneSide.setColorAt(si,new THREE.Color((floor+col)%4===0?"#d0bf91":"#92b4b3"));si++;
    }
   }
+  frameFront.count=fi;paneFront.count=fi;frameSide.count=si;paneSide.count=si;
+  frameFront.instanceMatrix.needsUpdate=true;paneFront.instanceMatrix.needsUpdate=true;frameSide.instanceMatrix.needsUpdate=true;paneSide.instanceMatrix.needsUpdate=true;
+  g.add(frameFront,paneFront,frameSide,paneSide);
   // Roof coping and small mechanical housings give each block a real skyline silhouette.
   box(g,0,h+.12,0,w+.16,.22,d+.16,floorBand);
   box(g,-w*.24,h+.32,-d*.18,w*.22,.30,d*.22,common.dark);
@@ -1087,7 +1087,7 @@ function startGame(resetScores=true){
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
  active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();syncEngineAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
-function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear()}
+function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear();updateEngineAudio()}
 $("startBtn").addEventListener("click",()=>startGame(true));
 $("mode").addEventListener("change",()=>{$("diffWrap").style.display=$("mode").value==="cpu"?"block":"none"});
 $("restartBtn").addEventListener("click",()=>startGame(true));
