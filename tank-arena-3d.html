@@ -582,8 +582,8 @@ function updateHUD(){
  $("p2Label").textContent=mode==="cpu"?"COMPUTER":"PLAYER 2";$("radarP2").textContent=mode==="cpu"?"Computer":"Player 2";
  $("turnLabel").textContent="ROUND "+roundNo;$("turnName").textContent=mode==="cpu"?"YOU VS CPU":"LOCAL DUEL";
  $("stateText").textContent=paused?"Simulation paused":matchOver?"Match complete":"Tag pulses cause visible damage. "+maxTankHits+" hits lose a round; first to "+roundLimit+" rounds wins.";
- $("roundText").textContent=(score[0]+score[1])+" / "+roundLimit;$("progress").style.width=Math.min(100,(score[0]+score[1])/5*100)+"%";
- $("mapTitleHUD").textContent=MAPS[mapIndex].name.toUpperCase()+" · TAG ARENA";$("mapSmall").textContent=MAPS[mapIndex].name.toUpperCase();$("tankSmall").textContent=VEHICLES[vehicleIdx[0]].name.toUpperCase();
+ $("roundText").textContent=(score[0]+score[1])+" / "+roundLimit;$("progress").style.width=Math.min(100,(score[0]+score[1])/roundLimit*100)+"%";
+ $("mapTitleHUD").textContent=MAPS[mapIndex].name.toUpperCase()+" · "+weatherMode.toUpperCase();$("mapSmall").textContent=MAPS[mapIndex].name.toUpperCase();$("tankSmall").textContent=VEHICLES[vehicleIdx[0]].name.toUpperCase();$("pickupText").textContent="WEATHER: "+weatherMode.toUpperCase()+" · CLOUDS: "+cloudMode.toUpperCase()+" · FENCE: "+fenceStyle.toUpperCase();
 }
 function drawRadar(){
  const w=radar.width,h=radar.height;rc.clearRect(0,0,w,h);rc.fillStyle="#16231b";rc.fillRect(0,0,w,h);
