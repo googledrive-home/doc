@@ -70,7 +70,7 @@
 <div class="online-mini" id="onlineMini"><button class="btn" id="onlineOpenLobbyHud">LOBBY / CHAT</button><button class="btn" id="onlineVoiceHud">🎙 VOICE OFF</button></div>
 <div class="online-chat" id="onlineChat"><div class="online-chat-head"><span>ROOM CHAT</span><button class="btn" id="onlineChatHide">—</button></div><div class="online-chat-messages" id="onlineChatMessages" aria-live="polite"></div><form class="online-chat-form" id="onlineChatForm"><input id="onlineChatInput" maxlength="280" placeholder="Message the lobby…" autocomplete="off"><button class="btn primary" type="submit">SEND</button></form></div>
 <div class="overlay" id="replayOverlay" style="display:none;z-index:21"><section class="replay-card"><div class="tag">RACE / DRIVE REPLAY</div><h2>REPLAY TIMELINE</h2><p class="note" id="replayInfo">Review the last run with both vehicles in frame.</p><input id="replaySeek" type="range" min="0" max="1000" value="0" aria-label="Replay timeline"><div class="online-actions"><button class="btn primary" id="replayPlayBtn">▶ PLAY</button><button class="btn" id="replayExitBtn">RETURN TO GAME</button></div></section></div>
-<div class="editor-overlay" id="editorOverlay"><section class="editor-card"><h3>🧱 ARENA MAP EDITOR</h3><p>Click the ground to place or erase scenery. Layouts are saved on this device per map; use SAVE before leaving the map.</p><div class="editor-tools"><button class="btn primary" data-editor-tool="building">🏙 BUILDING</button><button class="btn" data-editor-tool="crate">📦 CRATE</button><button class="btn" data-editor-tool="tree">🌲 TREE</button><button class="btn" data-editor-tool="rock">🪨 ROCK</button><button class="btn" data-editor-tool="erase">⌫ ERASE</button><button class="btn" data-editor-tool="move">↖ MOVE VIEW</button></div><div class="online-actions"><button class="btn primary" id="editorSaveBtn">💾 SAVE MAP</button><button class="btn" id="editorLoadBtn">↻ RELOAD</button><button class="btn" id="editorClearBtn">CLEAR CUSTOM</button><button class="btn" id="editorCloseBtn">DONE</button></div><div class="online-status" id="editorStatus">Choose a tool and click the arena floor to edit.</div></section></div>
+<div class="editor-overlay" id="editorOverlay"><section class="editor-card"><h3>🧱 ARENA MAP EDITOR</h3><p>Click the ground to place or erase scenery. Layouts are saved on this device per map; use SAVE before leaving the map.</p><div class="editor-tools"><button class="btn primary" data-editor-tool="building">🏙 BUILDING</button><button class="btn" data-editor-tool="crate">📦 CRATE</button><button class="btn" data-editor-tool="tree">🌲 TREE</button><button class="btn" data-editor-tool="rock">🪨 ROCK</button><button class="btn" data-editor-tool="erase">⌫ ERASE</button><button class="btn" data-editor-tool="block">🧱 BLOCK</button></div><div class="online-actions"><button class="btn primary" id="editorSaveBtn">💾 SAVE MAP</button><button class="btn" id="editorLoadBtn">↻ RELOAD</button><button class="btn" id="editorClearBtn">CLEAR CUSTOM</button><button class="btn" id="editorCloseBtn">DONE</button></div><div class="online-status" id="editorStatus">Choose a tool and click the arena floor to edit.</div></section></div>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
 import { Client } from "https://esm.sh/colyseus.js@0.16.22";
@@ -1113,7 +1113,7 @@ function drawRadar(){
  const w=radar.width,h=radar.height;rc.clearRect(0,0,w,h);rc.fillStyle="#16231b";rc.fillRect(0,0,w,h);
  const sx=x=>w/2+x/80*(w-20),sz=z=>h/2+z/56*(h-20);
  rc.strokeStyle=MAPS[mapIndex].accent;rc.globalAlpha=.42;rc.strokeRect(10,10,w-20,h-20);rc.globalAlpha=1;
- for(const o of obstacles){if(o.decor||!o.w||!o.d)continue;rc.fillStyle=o.fence?"#b6c5b9":"#778275";rc.fillRect(sx(o.x-o.w/2),sz(o.z-o.d/2),o.w/80*(w-20),o.d/56*(h-20))}
+ for(const o of obstacles){if(o.decor||o.destroyedByServer||!o.w||!o.d)continue;rc.fillStyle=o.fence?"#b6c5b9":"#778275";rc.fillRect(sx(o.x-o.w/2),sz(o.z-o.d/2),o.w/80*(w-20),o.d/56*(h-20))}
  for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(sx(p.x),sz(p.z),3.3,0,Math.PI*2);rc.fill()}
  tanks.forEach((t,i)=>{const x=sx(t.x),y=sz(t.z);rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(x,y,5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(x,y);rc.lineTo(sx(t.x+Math.sin(t.angle)*3),sz(t.z+Math.cos(t.angle)*3));rc.stroke()})
 }
@@ -1305,10 +1305,10 @@ function syncOnlineScenery(state){
  });
 }
 function renderTankOnlineState(state){
- if(!state)return;onlineLastState=state;syncOnlineScenery(state);
+ if(!state)return;onlineLastState=state;
  const code=state.code||onlineRoom?.state?.code||"";
  if(code&&$("onlineCode").value!==code)$("onlineCode").value=code;
- applyTankRoomSettings(state);
+ applyTankRoomSettings(state);syncOnlineScenery(state);
  updateOnlineRoomUI(state);
 }
 async function refreshTankRooms(kind="public"){
@@ -1484,16 +1484,16 @@ function tickTankReplay(dt){
 function editorSavePlacements(){try{localStorage.setItem(EDITOR_STORAGE_KEY,JSON.stringify(editorPlacementsByMap));$("editorStatus").textContent="Saved "+(editorPlacementsByMap[mapIndex]||[]).length+" custom objects for "+MAPS[mapIndex].name+" on this device.";}catch(error){$("editorStatus").textContent="Could not save on this device: "+(error?.message||"storage unavailable");}}
 function applyCustomEditorPlacements(){
  for(const p of (editorPlacementsByMap[mapIndex]||[])){
-  let g=null;if(p.type==="tree")g=addTree(p.x,p.z,1.15);else g=addWall(p.x,p.z,p.w||3.2,p.d||3.2,p.h||3,p.type==="building"?"building":p.type==="rock"?"rock":"crate");
+  let g=null;if(p.type==="tree")g=addTree(p.x,p.z,1.15);else g=addWall(p.x,p.z,p.w||3.2,p.d||3.2,p.h||3,p.type==="building"?"building":p.type==="rock"?"rock":p.type==="block"?"block":"crate");
   if(g){g.userData.editorPlacementId=p.id;const obstacle=obstacles.find(o=>o.group===g||o.mesh===g);if(obstacle){obstacle.editorPlacementId=p.id;obstacle.customPlacement=true;obstacle.destructible=true;obstacle.hp=obstacle.hp||3;}}
  }
 }
 function editorAddPlacement(x,z){
  if(mode==="online"&&onlineRoom){$("editorStatus").textContent="The online room uses a shared race layout. Disconnect before editing local scenery.";return;}
- const type=editorTool;if(!["building","crate","tree","rock"].includes(type))return;
+ const type=editorTool;if(!["building","crate","tree","rock","block"].includes(type))return;
  const p={id:"ed-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7),map:mapIndex,type,x:Math.round(x*2)/2,z:Math.round(z*2)/2,w:type==="building"?5.4:type==="rock"?2.5:3.2,d:type==="building"?4.6:type==="rock"?2.6:2.8,h:type==="building"?rand(9,17):type==="rock"?2.4:2.6};
  if(!editorPlacementsByMap[mapIndex])editorPlacementsByMap[mapIndex]=[];editorPlacementsByMap[mapIndex].push(p);
- let g=type==="tree"?addTree(p.x,p.z,1.15):addWall(p.x,p.z,p.w,p.d,p.h,type==="building"?"building":type==="rock"?"rock":"crate");
+ let g=type==="tree"?addTree(p.x,p.z,1.15):addWall(p.x,p.z,p.w,p.d,p.h,type==="building"?"building":type==="rock"?"rock":type==="block"?"block":"crate");
  if(g){g.userData.editorPlacementId=p.id;const o=obstacles.find(q=>q.group===g||q.mesh===g);if(o){o.editorPlacementId=p.id;o.customPlacement=true;o.destructible=true;o.hp=o.hp||3;}}
  $("editorStatus").textContent=type.toUpperCase()+" placed at "+p.x+", "+p.z+". Press SAVE MAP to keep it.";updateHUDAndRadar();
 }
