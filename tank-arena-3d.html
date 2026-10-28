@@ -702,6 +702,15 @@ function updateMenuPreview(){
  $("previewClouds").textContent=cloud==="none"?"":cloud==="wispy"?"☁ 〰":cloud==="storm"?"☁ ☁ ☁":cloud==="overcast"?"☁ ☁ ☁ ☁":"☁  ☁";$("previewTank").style.color=paint;
  $("worldPreview").style.filter="none";drawMapPreview(map,weather,cloud);
 }
+function addOnlineRouteMarkers(){
+ const points=[[-31,-20],[31,-20],[31,20],[-31,20]],m=new THREE.MeshStandardMaterial({color:"#d9efad",emissive:"#8fc75a",emissiveIntensity:.45,roughness:.4,metalness:.2,transparent:true,opacity:.88});
+ points.forEach((p,i)=>{
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.75,.075,8,40),m);ring.rotation.x=Math.PI/2;ring.position.set(p[0],.045,p[1]);scene.add(ring);
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,1.35,8),m);post.position.set(p[0],.65,p[1]);scene.add(post);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),m);cap.position.set(p[0],1.42,p[1]);scene.add(cap);
+  const base=new THREE.Mesh(new THREE.TorusGeometry(2.25,.025,5,40),m);base.rotation.x=Math.PI/2;base.position.set(p[0],.025,p[1]);scene.add(base);
+ });
+}
 function buildTerrainOverlay(color){
  const geometry=new THREE.PlaneGeometry(80,56,160,112);geometry.rotateX(-Math.PI/2);
  const mesh=new THREE.Mesh(geometry,material(color,1,.02));mesh.position.set(0,-.08,0);mesh.receiveShadow=true;mesh.castShadow=false;mesh.name="deformable-arena-terrain";scene.add(mesh);return mesh;
@@ -814,7 +823,7 @@ function buildArena(){
  if(map.style==="neon"||map.style==="mega"){
   for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
- addLandmarkDetails();addStreetFurniture();addGrassLayer();applyCustomEditorPlacements();
+ addLandmarkDetails();addStreetFurniture();addGrassLayer();applyCustomEditorPlacements();if(mode==="online")addOnlineRouteMarkers();
  // Padded start bays and spawn protection lights.
  for(const x of [-25,25]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
  tanks=[buildTank(0,vehicleIdx[0]),buildTank(1,vehicleIdx[1])];
@@ -1137,6 +1146,7 @@ function drawRadar(){
  const w=radar.width,h=radar.height;rc.clearRect(0,0,w,h);rc.fillStyle="#16231b";rc.fillRect(0,0,w,h);
  const sx=x=>w/2+x/80*(w-20),sz=z=>h/2+z/56*(h-20);
  rc.strokeStyle=MAPS[mapIndex].accent;rc.globalAlpha=.42;rc.strokeRect(10,10,w-20,h-20);rc.globalAlpha=1;
+ if(mode==="online"){const route=[[-31,-20],[31,-20],[31,20],[-31,20]];rc.strokeStyle="#d9efad";rc.lineWidth=2;rc.setLineDash([5,4]);rc.beginPath();route.forEach((p,i)=>{if(i===0)rc.moveTo(sx(p[0]),sz(p[1]));else rc.lineTo(sx(p[0]),sz(p[1]));});rc.closePath();rc.stroke();rc.setLineDash([]);route.forEach((p,i)=>{rc.fillStyle="#d9efad";rc.beginPath();rc.arc(sx(p[0]),sz(p[1]),5.2,0,Math.PI*2);rc.fill();rc.fillStyle="#1b281c";rc.font="bold 9px system-ui";rc.textAlign="center";rc.fillText(String(i+1),sx(p[0]),sz(p[1])+3);});}
  for(const o of obstacles){if(o.decor||o.destroyedByServer||!o.w||!o.d)continue;rc.fillStyle=o.fence?"#b6c5b9":"#778275";rc.fillRect(sx(o.x-o.w/2),sz(o.z-o.d/2),o.w/80*(w-20),o.d/56*(h-20))}
  for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(sx(p.x),sz(p.z),3.3,0,Math.PI*2);rc.fill()}
  tanks.forEach((t,i)=>{const x=sx(t.x),y=sz(t.z);rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(x,y,5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(x,y);rc.lineTo(sx(t.x+Math.sin(t.angle)*3),sz(t.z+Math.cos(t.angle)*3));rc.stroke()})
@@ -1303,7 +1313,7 @@ function updateOnlineRoomUI(state=onlineLastState){
  $("onlineStartBtn").disabled=!host||drivers.length<2||!drivers.every(p=>p.ready)||roomLive||!["practice","waiting"].includes(state.status);
  $("onlineStartBtn").textContent=state.status==="finished"?"NEXT RACE":host?"START RACE":"HOST STARTS";
  $("onlineLeaveBtn").disabled=false;$("onlineVoiceBtn").disabled=!me||!!me.spectator;
- const status=state.status==="practice"?"Lobby open · ready up when you are set":state.status==="waiting"?"Waiting in lobby · host can start once everyone is ready":state.status==="countdown"?"Race starting…":state.status==="playing"?"Race live · steer through all four checkpoints each lap":state.status==="finished"?"Race finished · results are shown below":"Room connected";
+ const status=state.status==="practice"?"Lobby open · ready up when you are set":state.status==="waiting"?"Waiting in lobby · host can start once everyone is ready":state.status==="countdown"?"Race starting…":state.status==="playing"?"Race live · drive through checkpoints 1 → 2 → 3 → 4 in order, then repeat":state.status==="finished"?"Race finished · results are shown below":"Room connected";
  setOnlineStatus((state.lobbyName||"Tank Arena")+" · "+drivers.length+"/2 drivers · "+status+(state.code?" · Room code "+state.code:""));
  $("onlineToggleHUD").style.display="inline-block";$("onlineMini").style.display="flex";$("onlineChat").style.display="block";
  if(state.status==="playing"&&!onlinePanelPinned){
