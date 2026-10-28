@@ -75,6 +75,9 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
 import { Client } from "https://esm.sh/colyseus.js@0.16.22";
 const $=id=>document.getElementById(id),canvas=$("view"),radar=$("radar"),rc=radar.getContext("2d");
+let onlineVoicePeers=new Map(),onlineVoiceAudios=new Map(),onlineVoiceMuted=false,onlineWorldSignature="",onlineVehicleSignature="",onlineDriveSendAt=0,onlineRoomClosing=false,onlineRoomKind="public",onlineRoomFilter="public",onlineReplayWasActive=false,onlineReplayWasPaused=false,editorActive=false,editorTool="building",editorPlacementsByMap={},editorRaycaster=null,editorMouse=null,replayTimelineStart=0,replayPlaying=false,replayReturnActive=false,replayReturnPaused=false,replayDuration=0,lastReplayCaptureAt=0;
+const EDITOR_STORAGE_KEY="tankArenaMapEditor.v1",ONLINE_HTTP_BASE="https://hockey-multiplayer.onrender.com",ONLINE_WS_BASE="wss://hockey-multiplayer.onrender.com";
+try{const saved=JSON.parse(localStorage.getItem(EDITOR_STORAGE_KEY)||"{}");if(saved&&typeof saved==="object")editorPlacementsByMap=saved;}catch(_){}
 const ARENA_X=40,ARENA_Z=28;
 const VEHICLES=[
 {name:"Scout",color:"#7f9670",speed:13.2,accel:12.5,turn:1.75,boost:1.28,armor:1},
@@ -1204,6 +1207,268 @@ function createScene(){
  buildArena();clock=new THREE.Clock();window.addEventListener("resize",resize);
 }
 function resize(){if(!renderer||!camera)return;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+function setOnlineStatus(message){onlineStatus=message;const el=$("onlineStatus");if(el)el.textContent=message;const mini=$("onlineToggleHUD");if(mini)mini.textContent=onlineRoom?"🌐 "+(onlineLastState?.code||"ONLINE"):"🌐 LOBBY";}
+function onlinePlayerArray(state=onlineLastState){const players=[];if(state?.players?.forEach)state.players.forEach((p,id)=>players.push({id,...p}));return players.sort((a,b)=>(a.slot??0)-(b.slot??0));}
+function onlineRoomOpts(){
+ const idx=Number($("onlineMap").value)||0,name=($("onlinePlayerName").value.trim()||"Tank Pilot").slice(0,18),vehicle=Number($("tank1").value)||0;
+ return {name,lobbyName:($("onlineLobbyName").value.trim()||"Tank Drivers").slice(0,32),map:String(idx),mapName:MAPS[idx]?.name||MAPS[0].name,weather:$("onlineWeather").value,clouds:$("onlineClouds").value,fogLevel:$("fogLevel").value,fenceStyle:$("fenceStyle").value,roundLimit:Number($("onlineLaps").value)||3,vehicle,paint:PAINTS[$("paint1").value]||"#8ca67b"};
+}
+function initOnlineMapOptions(){const select=$("onlineMap");if(!select)return;select.replaceChildren();MAPS.forEach((map,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=map.name;select.appendChild(o)});select.value=String(Number($("map").value)||0);}
+function openTankOnline(show=true){if(show)$("onlineOverlay").style.display="grid";initOnlineMapOptions();if(onlineRoom){renderTankOnlineState(onlineLastState||onlineRoom.state);return;}setOnlineStatus("Connect to create a public room, create a password-protected private room, or join a friend by room code.");void refreshTankRooms("public");}
+function closeTankOnlinePanel(){ $("onlineOverlay").style.display="none";if(onlineRoom){$("onlineMini").style.display="flex";$("onlineChat").style.display="block";}}
+function currentOnlineSettings(){return [onlineLastState?.map,onlineLastState?.weather,onlineLastState?.clouds,onlineLastState?.fogLevel,onlineLastState?.fenceStyle,onlineLastState?.roundLimit,onlinePlayerArray().filter(p=>!p.spectator).map(p=>p.slot+":"+p.vehicle).join(",")].join("|");}
+function applyTankRoomSettings(state,force=false){
+ const signature=[state.map,state.weather,state.clouds,state.fogLevel,state.fenceStyle,state.roundLimit,onlinePlayerArray(state).filter(p=>!p.spectator).map(p=>p.slot+":"+p.vehicle).join(",")].join("|");
+ const canRebuild=!["playing","countdown"].includes(state.status);
+ if(!force&&(signature===onlineWorldSignature||!canRebuild))return;
+ onlineWorldSignature=signature;
+ const idx=Math.max(0,Math.min(MAPS.length-1,Number(state.map)||0));$("mode").value="online";$("map").value=String(idx);$("weather").value=state.weather||"overcast";$("clouds").value=state.clouds||"scattered";$("fogLevel").value=state.fogLevel||"medium";$("fenceStyle").value=state.fenceStyle||"chainlink";$("roundLimit").value=String(state.roundLimit||3);
+ const drivers=onlinePlayerArray(state).filter(p=>!p.spectator);
+ for(let i=0;i<2;i++){const p=drivers.find(q=>q.slot===i)||drivers[i];if(p&&Number.isFinite(Number(p.vehicle)))$("tank"+(i+1)).value=String(Math.max(0,Math.min(9,Number(p.vehicle))));}
+ if(!renderer)createScene();
+ startGame(true);
+}
+function updateOnlineRoomUI(state=onlineLastState){
+ if(!state||!onlineRoom)return;
+ const players=onlinePlayerArray(state),drivers=players.filter(p=>!p.spectator),me=players.find(p=>p.id===onlineRoom.sessionId),host=state.hostId===onlineRoom.sessionId;
+ $("onlineRoomTitle").textContent=(state.lobbyName||"Tank Arena Lobby")+" · "+String(state.status||"lobby").toUpperCase();
+ $("onlineRoomCode").textContent=state.code||"";
+ $("onlinePlayers").replaceChildren();
+ if(!players.length){const empty=document.createElement("div");empty.className="online-player-row";empty.textContent="Waiting for drivers…";$("onlinePlayers").appendChild(empty);}
+ for(const p of players){
+  const row=document.createElement("div");row.className="online-player-row";
+  const details=document.createElement("div"),title=document.createElement("b"),sub=document.createElement("small");
+  title.textContent=(p.name||"Driver")+(p.id===onlineRoom.sessionId?" · YOU":"")+(host&&p.id===state.hostId?" · HOST":"");
+  sub.textContent=(p.spectator?"Spectating":("Driver "+((p.slot||0)+1)+" · "+(VEHICLES[Math.max(0,Math.min(9,Number(p.vehicle)||0))]?.name||"Scout")))+" · Lap "+(p.lap||0)+"/"+(state.roundLimit||3)+(p.finishedAt?" · FINISHED":p.ready?" · READY":" · NOT READY");
+  details.append(title,sub);row.appendChild(details);const badge=document.createElement("span");badge.textContent=p.spectator?"WATCH":p.ready?"READY":"WAITING";badge.style.color=p.ready?"var(--lime)":"var(--muted)";row.appendChild(badge);$("onlinePlayers").appendChild(row);
+ }
+ const roomLive=["playing","countdown"].includes(state.status);
+ $("onlineReadyBtn").disabled=!me||me.spectator||roomLive||!["practice","waiting"].includes(state.status);
+ $("onlineReadyBtn").textContent=me?.ready?"✓ READY · CLICK TO UNREADY":"✓ READY UP";
+ $("onlineStartBtn").disabled=!host||drivers.length<2||!drivers.every(p=>p.ready)||roomLive||!["practice","waiting","finished"].includes(state.status);
+ $("onlineStartBtn").textContent=state.status==="finished"?"NEXT RACE":host?"START RACE":"HOST STARTS";
+ $("onlineLeaveBtn").disabled=false;$("onlineVoiceBtn").disabled=!me||!!me.spectator;
+ const status=state.status==="practice"?"Lobby open · ready up when you are set":state.status==="waiting"?"Waiting in lobby · host can start once everyone is ready":state.status==="countdown"?"Race starting…":state.status==="playing"?"Race live · steer through all four checkpoints each lap":state.status==="finished"?"Race finished · results are shown below":"Room connected";
+ setOnlineStatus((state.lobbyName||"Tank Arena")+" · "+drivers.length+"/2 drivers · "+status+(state.code?" · Room code "+state.code:""));
+ $("onlineToggleHUD").style.display="inline-block";$("onlineMini").style.display="flex";$("onlineChat").style.display="block";
+ if(state.status==="playing"){
+  $("onlineOverlay").style.display="none";$("onlineStatus").textContent=status;
+  $("onlineVoiceHud").style.display="inline-block";
+ }else if(state.status==="finished"){
+  $("onlineOverlay").style.display="grid";$("onlineVoiceHud").style.display="inline-block";
+ }else $("onlineVoiceHud").style.display="inline-block";
+}
+function renderTankOnlineState(state){
+ if(!state)return;onlineLastState=state;
+ const code=state.code||onlineRoom?.state?.code||"";
+ if(code&&$("onlineCode").value!==code)$("onlineCode").value=code;
+ applyTankRoomSettings(state);
+ updateOnlineRoomUI(state);
+}
+async function refreshTankRooms(kind="public"){
+ onlineRoomFilter=kind==="private"?"private":"public";
+ const list=$("onlineRoomList");list.replaceChildren();const loading=document.createElement("div");loading.className="online-player-row";loading.textContent="Searching "+onlineRoomFilter+" Tank Arena rooms…";list.appendChild(loading);
+ try{
+  const path=onlineRoomFilter==="private"?"/private-rooms?game=tank":"/rooms?game=tank";
+  const response=await fetch(ONLINE_HTTP_BASE+path,{cache:"no-store"}),data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Room search failed.");
+  list.replaceChildren();const rooms=Array.isArray(data.rooms)?data.rooms:[];
+  if(!rooms.length){const empty=document.createElement("div");empty.className="online-player-row";empty.textContent=onlineRoomFilter==="private"?"No private Tank Arena rooms are currently listed.":"No public Tank Arena rooms yet. Create one and invite a friend.";list.appendChild(empty);return;}
+  for(const r of rooms){
+   const row=document.createElement("div");row.className="online-room-row";const meta=document.createElement("div"),strong=document.createElement("b"),small=document.createElement("small"),join=document.createElement("button");
+   strong.textContent=r.lobbyName||"Tank Drivers";small.textContent=(r.mapName||MAPS[Number(r.map)||0]?.name||"Arena")+" · "+(r.playerCount||0)+"/"+(r.capacity||2)+" drivers · "+(r.weather||"overcast")+" · "+(r.status||"lobby");
+   meta.append(strong,small);join.className="btn primary";join.textContent="JOIN";join.onclick=()=>{if(onlineRoomFilter==="private"){$("onlineCode").value=r.code||"";setOnlineStatus("Private room selected. Enter its password, then press JOIN BY CODE.");$("onlinePassword").focus();}else void joinTankPublicRoom(r.roomId);};row.append(meta,join);list.appendChild(row);
+  }
+ }catch(error){list.replaceChildren();const msg=document.createElement("div");msg.className="online-player-row";msg.textContent="Could not reach the multiplayer server: "+(error?.message||"connection error");list.appendChild(msg);setOnlineStatus(msg.textContent);}
+}
+async function createTankOnlineRoom(privateRoom=false){
+ if(onlineRoom){setOnlineStatus("Leave the current room before creating another.");return;}
+ const opts=onlineRoomOpts(),password=$("onlinePassword").value.trim();
+ if(!opts.name){setOnlineStatus("Enter a player name first.");return;}
+ if(!opts.lobbyName){setOnlineStatus("Enter a lobby name first.");return;}
+ if(privateRoom&&(password.length<4||password.length>64)){setOnlineStatus("Private room passwords must be 4–64 characters.");return;}
+ try{
+  openTankOnline(true);setOnlineStatus("Connecting to the shared Hockey / Tank Arena server…");
+  onlineSocket=new Client(ONLINE_WS_BASE);
+  onlineRoom=await onlineSocket.create(privateRoom?"tank_arena":"tank_arena_public",{...opts,private:privateRoom,privatePassword:privateRoom?password:undefined});
+  onlineRoomKind=privateRoom?"private":"public";attachTankOnlineRoom(onlineRoom);
+  onlineRoom.send("customize",{name:opts.name,vehicle:opts.vehicle,paint:opts.paint});
+  setOnlineStatus("Room created. Share code "+(onlineRoom.state.code||"…")+" with your friend.");
+ }catch(error){onlineRoom=null;onlineSocket=null;setOnlineStatus("Could not create the room: "+(error?.message||"server unavailable"));$("onlineOverlay").style.display="grid";}
+}
+function attachTankOnlineRoom(room){
+ room.onStateChange(state=>renderTankOnlineState(state));
+ room.onMessage("lobby",message=>{if(onlineLastState)updateOnlineRoomUI(onlineLastState);if(message?.code)$("onlineCode").value=message.code;});
+ room.onMessage("lobbyNotice",message=>setOnlineStatus(message?.message||"Lobby update."));
+ room.onMessage("raceCountdown",message=>setOnlineStatus("Race starting in "+Math.ceil(message?.seconds||3)+"…"));
+ room.onMessage("raceStarted",message=>setOnlineStatus("Race started · "+(message?.weather||"weather")+" conditions."));
+ room.onMessage("raceFinished",message=>{setOnlineStatus((message?.winnerName||"Driver")+" finished first!");if(onlineLastState)updateOnlineRoomUI(onlineLastState);});
+ room.onMessage("partyChatMessage",message=>appendTankOnlineChat(message));
+ room.onMessage("partyChatError",message=>appendTankOnlineChat({name:"SERVER",text:message?.message||"Message not sent."}));
+ room.onMessage("voicePeers",message=>{for(const p of message?.peers||[])void connectTankVoicePeer(p.sessionId,p.name,true);});
+ room.onMessage("voicePeerJoined",message=>{if(onlineVoiceEnabled&&message?.sessionId&&message.sessionId!==room.sessionId)void connectTankVoicePeer(message.sessionId,message.name,true);});
+ room.onMessage("voicePeerLeft",message=>dropTankVoicePeer(message?.sessionId));
+ room.onMessage("voiceSignal",message=>{void handleTankVoiceSignal(message);});
+ room.onLeave(()=>{if(onlineRoom===room&&!onlineRoomClosing){setOnlineStatus("Disconnected from the room.");disconnectTankOnline(false);}});
+ room.onError((code,message)=>setOnlineStatus("Multiplayer room error "+code+": "+(message||"try reconnecting.")));
+ if(room.state)renderTankOnlineState(room.state);
+}
+function tankJoinOptions(){const o=onlineRoomOpts();return {name:o.name,vehicle:o.vehicle,paint:o.paint,privatePassword:$("onlinePassword").value.trim()||undefined};}
+async function joinTankPublicRoom(roomId){
+ if(onlineRoom){setOnlineStatus("Leave the current room before joining another.");return;}
+ if(!roomId)return;
+ try{
+  setOnlineStatus("Joining public Tank Arena room…");onlineSocket=new Client(ONLINE_WS_BASE);onlineRoom=await onlineSocket.joinById(roomId,tankJoinOptions());onlineRoomKind="public";attachTankOnlineRoom(onlineRoom);onlineRoom.send("customize",tankJoinOptions());
+ }catch(error){onlineRoom=null;onlineSocket=null;setOnlineStatus("Could not join room: "+(error?.message||"room unavailable"));}
+}
+async function joinTankRoomByCode(){
+ if(onlineRoom){setOnlineStatus("Leave the current room before joining another.");return;}
+ const code=$("onlineCode").value.trim().toUpperCase(),password=$("onlinePassword").value.trim();
+ if(!code){setOnlineStatus("Enter the room code.");return;}
+ try{
+  setOnlineStatus("Looking up room "+code+"…");
+  const publicResponse=await fetch(ONLINE_HTTP_BASE+"/room/"+encodeURIComponent(code)+"?game=tank",{cache:"no-store"});
+  if(publicResponse.ok){
+   const data=await publicResponse.json();if(data.private)throw new Error("This is a private room. Use the password and try again.");
+   onlineSocket=new Client(ONLINE_WS_BASE);onlineRoom=await onlineSocket.joinById(data.roomId,tankJoinOptions());onlineRoomKind="public";attachTankOnlineRoom(onlineRoom);onlineRoom.send("customize",tankJoinOptions());return;
+  }
+  if(password.length<4||password.length>64)throw new Error("Room code not found as public. For a private room, enter its password (4–64 characters).");
+  const response=await fetch(ONLINE_HTTP_BASE+"/room/"+encodeURIComponent(code)+"/join?game=tank",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});
+  const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Room code or password is incorrect.");
+  onlineSocket=new Client(ONLINE_WS_BASE);onlineRoom=await onlineSocket.joinById(data.roomId,{...tankJoinOptions(),privatePassword:password});onlineRoomKind="private";attachTankOnlineRoom(onlineRoom);onlineRoom.send("customize",tankJoinOptions());
+ }catch(error){onlineRoom=null;onlineSocket=null;setOnlineStatus("Could not join room: "+(error?.message||"room unavailable"));}
+}
+async function leaveTankOnlineRoom(){
+ await disconnectTankOnline(true);
+}
+async function disconnectTankOnline(returnToMenu=true){
+ const room=onlineRoom;onlineRoomClosing=true;onlineRoom=null;onlineLastState=null;onlineWorldSignature="";onlineVehicleSignature="";
+ await leaveTankVoice();if(room){try{await room.leave();}catch(_){}}
+ onlineSocket=null;onlineRoomClosing=false;onlineStatus="offline";$("onlineMini").style.display="none";$("onlineChat").style.display="none";$("onlineToggleHUD").style.display="none";
+ if(returnToMenu){active=false;paused=false;matchOver=false;$("onlineOverlay").style.display="none";$("hud").style.display="none";$("setupOverlay").style.display="grid";$("mode").value="local";}
+ else{$("onlineReadyBtn").disabled=true;$("onlineStartBtn").disabled=true;$("onlineLeaveBtn").disabled=true;$("onlineVoiceBtn").disabled=true;setOnlineStatus("Disconnected. You can create or join a room again.");}
+}
+function appendTankOnlineChat(message){
+ const list=$("onlineChatMessages");if(!list)return;
+ const line=document.createElement("div");line.className="online-chat-line";const who=document.createElement("b");who.textContent=(message?.name||"Driver")+": ";const body=document.createElement("span");body.textContent=String(message?.text||"").slice(0,280);line.append(who,body);list.appendChild(line);while(list.children.length>60)list.firstChild.remove();list.scrollTop=list.scrollHeight;
+}
+function sendTankOnlineChat(event){event?.preventDefault();const input=$("onlineChatInput"),text=input.value.trim();if(!text||!onlineRoom)return;try{onlineRoom.send("partyChat",{text:text.slice(0,280)});input.value="";}catch(_){setOnlineStatus("Message could not be sent. Check the room connection.");}}
+async function joinTankVoice(){
+ if(!onlineRoom){setOnlineStatus("Join a Tank Arena room before joining voice chat.");return;}
+ if(onlineVoiceEnabled){await leaveTankVoice();$("onlineVoiceBtn").textContent="🎙 JOIN VOICE";$("onlineVoiceHud").textContent="🎙 VOICE OFF";setOnlineStatus("Voice chat disconnected.");return;}
+ if(!navigator.mediaDevices?.getUserMedia){setOnlineStatus("This browser does not support microphone capture.");return;}
+ try{
+  onlineLocalStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+  onlineVoiceEnabled=true;onlineVoiceMuted=false;onlineRoom.send("voiceJoin");$("onlineVoiceBtn").textContent="🎙 LEAVE VOICE";$("onlineVoiceHud").textContent="🎙 MUTE";setOnlineStatus("Voice chat connected. Your microphone is live; use MUTE to silence it.");
+ }catch(error){setOnlineStatus("Microphone permission was not granted: "+(error?.message||"permission denied"));}
+}
+async function leaveTankVoice(){
+ if(onlineRoom&&onlineVoiceEnabled){try{onlineRoom.send("voiceLeave");}catch(_){}}
+ for(const pc of onlineVoicePeers.values())try{pc.close()}catch(_){}onlineVoicePeers.clear();
+ for(const audio of onlineVoiceAudios.values()){try{audio.pause();audio.srcObject=null;audio.remove()}catch(_){}}onlineVoiceAudios.clear();
+ if(onlineLocalStream){for(const track of onlineLocalStream.getTracks())track.stop();onlineLocalStream=null;}
+ onlineVoiceEnabled=false;onlineVoiceMuted=false;
+}
+function dropTankVoicePeer(id){const pc=onlineVoicePeers.get(id);if(pc){try{pc.close()}catch(_){}onlineVoicePeers.delete(id);}const audio=onlineVoiceAudios.get(id);if(audio){try{audio.pause();audio.srcObject=null;audio.remove()}catch(_){}onlineVoiceAudios.delete(id);}}
+async function connectTankVoicePeer(id,name,initiator){
+ if(!onlineVoiceEnabled||!onlineRoom||!onlineLocalStream||!id||id===onlineRoom.sessionId||onlineVoicePeers.has(id))return;
+ const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});onlineVoicePeers.set(id,pc);
+ for(const track of onlineLocalStream.getTracks())pc.addTrack(track,onlineLocalStream);
+ pc.onicecandidate=e=>{if(e.candidate&&onlineRoom)try{onlineRoom.send("voiceSignal",{to:id,signal:{type:"candidate",candidate:e.candidate.toJSON()}})}catch(_){}};
+ pc.ontrack=e=>{let audio=onlineVoiceAudios.get(id);if(!audio){audio=document.createElement("audio");audio.autoplay=true;audio.playsInline=true;audio.volume=.8;audio.dataset.peer=id;document.body.appendChild(audio);onlineVoiceAudios.set(id,audio);}audio.srcObject=e.streams[0];audio.play().catch(()=>{});};
+ pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState))dropTankVoicePeer(id);};
+ if(initiator){try{const offer=await pc.createOffer();await pc.setLocalDescription(offer);onlineRoom.send("voiceSignal",{to:id,signal:{type:"offer",sdp:pc.localDescription.sdp}});}catch(error){setOnlineStatus("Voice connection to "+(name||"driver")+" failed.");dropTankVoicePeer(id);}}
+}
+async function handleTankVoiceSignal(message){
+ if(!onlineVoiceEnabled||!onlineRoom||!message?.from||!message.signal)return;
+ let pc=onlineVoicePeers.get(message.from);if(!pc)await connectTankVoicePeer(message.from,"Driver",false);pc=onlineVoicePeers.get(message.from);if(!pc)return;
+ try{
+  const sig=message.signal;
+  if(sig.type==="offer"){await pc.setRemoteDescription({type:"offer",sdp:sig.sdp});const answer=await pc.createAnswer();await pc.setLocalDescription(answer);onlineRoom.send("voiceSignal",{to:message.from,signal:{type:"answer",sdp:pc.localDescription.sdp}});}
+  else if(sig.type==="answer"){await pc.setRemoteDescription({type:"answer",sdp:sig.sdp});}
+  else if(sig.type==="candidate"&&sig.candidate){await pc.addIceCandidate(sig.candidate);}
+ }catch(_){}
+}
+function toggleTankVoiceMute(){
+ if(!onlineVoiceEnabled||!onlineLocalStream){void joinTankVoice();return;}
+ onlineVoiceMuted=!onlineVoiceMuted;for(const track of onlineLocalStream.getAudioTracks())track.enabled=!onlineVoiceMuted;
+ $("onlineVoiceHud").textContent=onlineVoiceMuted?"🎙 UNMUTE":"🎙 MUTE";setOnlineStatus(onlineVoiceMuted?"Microphone muted.":"Microphone unmuted.");
+}
+function updateOnlineDriving(dt){
+ if(!onlineRoom||!onlineLastState)return;
+ const typing=["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName);
+ if(onlineLastState.status==="playing"&&!typing&&!editorActive&&!replayMode){
+  if(performance.now()-onlineDriveSendAt>32){onlineDriveSendAt=performance.now();try{onlineRoom.send("drive",{forward:(held.has("w")?1:0)-(held.has("s")?1:0),steer:(held.has("d")?1:0)-(held.has("a")?1:0),boost:held.has("shift")});}catch(_){}}
+ }else if(performance.now()-onlineDriveSendAt>180){onlineDriveSendAt=performance.now();try{onlineRoom.send("drive",{forward:0,steer:0,boost:false});}catch(_){}}
+ const drivers=onlinePlayerArray(onlineLastState).filter(p=>!p.spectator),alpha=1-Math.exp(-dt*13);
+ for(let i=0;i<2;i++){
+  const t=tanks[i],p=drivers.find(q=>Number(q.slot)===i)||drivers[i];
+  if(!t)continue;if(!p){t.group.visible=false;continue;}t.group.visible=true;
+  t.x+=(Number(p.x)-t.x)*alpha;t.z+=(Number(p.z)-t.z)*alpha;t.vx=Number(p.vx)||0;t.vz=Number(p.vz)||0;
+  const diff=Math.atan2(Math.sin((Number(p.angle)||0)-t.angle),Math.cos((Number(p.angle)||0)-t.angle));t.angle+=diff*alpha;
+  t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0);t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
+  const shift=((t.trackTime%3.3)+3.3)%3.3;t.group.children.forEach(o=>{if(o.userData.tread)o.position.z=((o.userData.baseZ+shift+1.65)%3.3)-1.65;});
+  if(Math.hypot(t.vx,t.vz)>1.6)addTerrainTrack(t);
+ }
+ stepGroundMist(dt);stepWeather(dt);stepSnow(dt);updateTerrainMarks(dt);updateEngineAudio();captureReplayFrame(performance.now());
+}
+function captureReplayFrame(now){
+ if(!active||editorActive||replayMode||now-lastReplayCaptureAt<100||!tanks?.length)return;
+ lastReplayCaptureAt=now;if(!replayFrames.length)replayTimelineStart=now;
+ replayFrames.push({t:(now-replayTimelineStart)/1000,online:mode==="online",status:onlineLastState?.status||"local",mapIndex,weather:weatherMode,score:[...score],tanks:tanks.map(t=>({visible:!!t.group.visible,x:t.x,z:t.z,angle:t.angle,vx:t.vx||0,vz:t.vz||0,trackTime:t.trackTime||0,hits:t.hits||0}))});
+ if(replayFrames.length>900)replayFrames.shift();
+}
+function showTankReplay(){
+ if(replayFrames.length<2){$("replayInfo").textContent="Play for a few seconds first. Replays store the most recent 90 seconds of driving.";return;}
+ replayReturnActive=active;replayReturnPaused=paused;replayMode=true;replayPaused=false;replayPlaying=true;replayCursor=0;replayDuration=Math.max(.1,replayFrames[replayFrames.length-1].t-replayFrames[0].t);$("replaySeek").max=String(Math.round(replayDuration*1000));$("replaySeek").value="0";$("replayInfo").textContent="Recent "+Math.round(replayDuration)+" seconds · "+replayFrames.length+" sampled frames.";active=false;paused=true;$("replayOverlay").style.display="grid";$("replayPlayBtn").textContent="Ⅱ PAUSE";renderTankReplayAt(0);
+}
+function renderTankReplayAt(seconds){
+ if(replayFrames.length<2)return;const first=replayFrames[0].t,at=first+Math.max(0,Math.min(replayDuration,seconds));
+ let lo=0;while(lo<replayFrames.length-2&&replayFrames[lo+1].t<at)lo++;
+ const a=replayFrames[lo],b=replayFrames[Math.min(lo+1,replayFrames.length-1)],span=Math.max(.0001,b.t-a.t),u=Math.max(0,Math.min(1,(at-a.t)/span));
+ for(let i=0;i<2;i++){const t=tanks[i],x=a.tanks[i],y=b.tanks[i];if(!t||!x||!y)continue;t.group.visible=x.visible||y.visible;t.x=x.x+(y.x-x.x)*u;t.z=x.z+(y.z-x.z)*u;const d=Math.atan2(Math.sin(y.angle-x.angle),Math.cos(y.angle-x.angle));t.angle=x.angle+d*u;t.vx=x.vx+(y.vx-x.vx)*u;t.vz=x.vz+(y.vz-x.vz)*u;t.group.position.set(t.x,0,t.z);t.group.rotation.set(0,t.angle,0);}
+ $("replaySeek").value=String(Math.round(seconds*1000));cameraUpdate(.033);
+}
+function exitTankReplay(){replayMode=false;replayPlaying=false;$("replayOverlay").style.display="none";active=replayReturnActive;paused=replayReturnPaused;if(onlineRoom){active=true;paused=false;}}
+function tickTankReplay(dt){
+ if(!replayMode)return;if(replayPlaying&&!replayPaused){replayCursor+=dt;if(replayCursor>=replayDuration){replayCursor=replayDuration;replayPaused=true;$("replayPlayBtn").textContent="▶ PLAY";}renderTankReplayAt(replayCursor);}
+}
+function editorSavePlacements(){try{localStorage.setItem(EDITOR_STORAGE_KEY,JSON.stringify(editorPlacementsByMap));$("editorStatus").textContent="Saved "+(editorPlacementsByMap[mapIndex]||[]).length+" custom objects for "+MAPS[mapIndex].name+" on this device.";}catch(error){$("editorStatus").textContent="Could not save on this device: "+(error?.message||"storage unavailable");}}
+function applyCustomEditorPlacements(){
+ for(const p of (editorPlacementsByMap[mapIndex]||[])){
+  let g=null;if(p.type==="tree")g=addTree(p.x,p.z,1.15);else g=addWall(p.x,p.z,p.w||3.2,p.d||3.2,p.h||3,p.type==="building"?"building":p.type==="rock"?"rock":"crate");
+  if(g){g.userData.editorPlacementId=p.id;const obstacle=obstacles.find(o=>o.group===g||o.mesh===g);if(obstacle){obstacle.editorPlacementId=p.id;obstacle.customPlacement=true;obstacle.destructible=true;obstacle.hp=obstacle.hp||3;}}
+ }
+}
+function editorAddPlacement(x,z){
+ if(mode==="online"&&onlineRoom){$("editorStatus").textContent="The online room uses a shared race layout. Disconnect before editing local scenery.";return;}
+ const type=editorTool;if(!["building","crate","tree","rock"].includes(type))return;
+ const p={id:"ed-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7),map:mapIndex,type,x:Math.round(x*2)/2,z:Math.round(z*2)/2,w:type==="building"?5.4:type==="rock"?2.5:3.2,d:type==="building"?4.6:type==="rock"?2.6:2.8,h:type==="building"?rand(9,17):type==="rock"?2.4:2.6};
+ if(!editorPlacementsByMap[mapIndex])editorPlacementsByMap[mapIndex]=[];editorPlacementsByMap[mapIndex].push(p);
+ let g=type==="tree"?addTree(p.x,p.z,1.15):addWall(p.x,p.z,p.w,p.d,p.h,type==="building"?"building":type==="rock"?"rock":"crate");
+ if(g){g.userData.editorPlacementId=p.id;const o=obstacles.find(q=>q.group===g||q.mesh===g);if(o){o.editorPlacementId=p.id;o.customPlacement=true;o.destructible=true;o.hp=o.hp||3;}}
+ $("editorStatus").textContent=type.toUpperCase()+" placed at "+p.x+", "+p.z+". Press SAVE MAP to keep it.";updateHUDAndRadar();
+}
+function editorEraseAt(x,z){
+ const list=editorPlacementsByMap[mapIndex]||[];let best=null,distance=3.2;
+ for(const p of list){const d=Math.hypot(p.x-x,p.z-z);if(d<distance){distance=d;best=p;}}
+ if(!best){$("editorStatus").textContent="Click close to a custom object to erase it.";return;}
+ const obstacle=obstacles.find(o=>o.editorPlacementId===best.id);if(obstacle){const g=obstacle.group||obstacle.mesh;if(g)scene.remove(g);obstacles.splice(obstacles.indexOf(obstacle),1);}
+ editorPlacementsByMap[mapIndex]=list.filter(p=>p.id!==best.id);$("editorStatus").textContent="Custom object removed. Save to keep the change.";updateHUDAndRadar();
+}
+function toggleTankEditor(show=!editorActive){
+ if(show&&mode==="online"&&onlineRoom){$("editorStatus").textContent="Map editing is local-only; leave the online room first.";return;}
+ if(show&&!active)startGame(true);
+ editorActive=!!show;$("editorOverlay").style.display=editorActive?"block":"none";
+ if(editorActive){paused=false;active=true;$("pauseBtn").textContent="Ⅱ PAUSE";$("editorStatus").textContent="Selected tool: "+editorTool.toUpperCase()+". Click on the ground to place scenery.";}
+}
+function handleEditorPointer(event){
+ if(!editorActive||event.button!==0||editorTool==="move"||!terrainMesh)return;
+ const rect=canvas.getBoundingClientRect();editorMouse.set((event.clientX-rect.left)/rect.width*2-1,-((event.clientY-rect.top)/rect.height*2-1));editorRaycaster.setFromCamera(editorMouse,camera);
+ const hit=editorRaycaster.intersectObject(terrainMesh,false)[0];if(!hit)return;event.preventDefault();event.stopPropagation();
+ const x=clamp(hit.point.x,-37,37),z=clamp(hit.point.z,-25,25);if(editorTool==="erase")editorEraseAt(x,z);else editorAddPlacement(x,z);
+}
+
 function startGame(resetScores=true){
  if(!renderer)createScene();
  mode=$("mode").value;difficulty=$("difficulty").value;mapIndex=Number($("map").value);vehicleIdx=[Number($("tank1").value),Number($("tank2").value)];
