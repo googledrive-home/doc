@@ -412,7 +412,7 @@ function addWall(x,z,w,d,h,kind){
  else if(kind==="building")m=material("#505b57",.8,.16);
  else m=material("#4c564a",.85,.12);
  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
- box(g,0,h/2,0,w,h,d,m);
+ const shell=box(g,0,h/2,0,w,h,d,m);if(kind==="building")shell.userData.occlusionShell=true;
  box(g,0,h+.025,0,w*.94,.05,d*.94,kind==="ice"?common.glass:accent);
  if(w>d*1.45){
    box(g,0,h*.55,d*.35,w*.84,.08,.045,common.dark);
@@ -1462,6 +1462,8 @@ function updateBuildingOcclusion(){
  if(!camera||!tanks.length)return;
  const buildings=obstacles.filter(o=>o.kind==="building"&&o.group?.userData?.occlusionBuilding).map(o=>o.group);
  if(!buildings.length)return;
+ const buildingShells=[];for(const group of buildings)group.traverse(obj=>{if(obj.userData?.occlusionShell)buildingShells.push(obj)});
+ if(!buildingShells.length)return;
  const faded=new Set();
  for(const tank of tanks){
   if(!tank.group||tank.group.visible===false)continue;
@@ -1470,7 +1472,7 @@ function updateBuildingOcclusion(){
   if(distance<1)continue;
   buildingOcclusionRaycaster.set(camera.position,ray.normalize());
   buildingOcclusionRaycaster.far=Math.max(.1,distance-.8);
-  const hits=buildingOcclusionRaycaster.intersectObjects(buildings,true);
+  const hits=buildingOcclusionRaycaster.intersectObjects(buildingShells,false);
   for(const hit of hits){
    let node=hit.object;while(node&&!node.userData?.occlusionBuilding)node=node.parent;
    if(node)faded.add(node);
