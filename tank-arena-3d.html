@@ -94,7 +94,7 @@ const MAPS=[
 {name:"Lava Loops",color:"#61594d",accent:"#ff784c",sky:"#382019",walls:[[.21,.22,.10,.10],[.69,.22,.10,.10],[.21,.68,.10,.10],[.69,.68,.10,.10],[.40,.25,.20,.06],[.40,.69,.20,.06]],style:"lava"},
 {name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,snowPatches=[],snowTrackMarks=[],snowAccumulation=0,weatherMode="overcast",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
@@ -209,7 +209,36 @@ function addWall(x,z,w,d,h,kind){
   for(let i=1;i<Math.max(2,Math.floor(w/.45));i++)box(g,-w/2+i*w/Math.max(2,Math.floor(w/.45)),h/2,0,.025,h*.85,d+.015,common.metal);
  }
  if(kind==="building"){
-  for(let yy=.65;yy<h-.3;yy+=.95)for(let xx=-w/2+.35;xx<w/2-.2;xx+=.8)box(g,xx,yy,d/2+.012,.28,.32,.025,common.glass);
+  const glassA=material("#92b4b3",.27,.24,{emissive:"#344e50",emissiveIntensity:.12});
+  const glassB=material("#d0bf91",.32,.18,{emissive:"#5d5137",emissiveIntensity:.08});
+  const frame=material("#313b37",.78,.2),floorBand=material("#69756b",.72,.22);
+  // Recessed-looking windows in multiple storeys on the front and side facades.
+  const floors=Math.max(2,Math.floor(h/1.65));
+  const columns=Math.max(2,Math.floor(w/.9));
+  for(let floor=0;floor<floors;floor++){
+   const yy=.8+floor*1.55;
+   if(yy>h-.6)continue;
+   box(g,0,yy,d/2+.018,w*.94,.075,.045,floorBand);
+   for(let col=0;col<columns;col++){
+    const xx=-w*.42+col*(w*.84/Math.max(1,columns-1));
+    const glass=(floor+col)%4===0?glassB:glassA;
+    box(g,xx,yy+.43,d/2+.025,.36,.58,.035,glass);
+    box(g,xx-.205,yy+.43,d/2+.046,.035,.64,.025,frame);
+    box(g,xx+.205,yy+.43,d/2+.046,.035,.64,.025,frame);
+   }
+   const sideColumns=Math.max(2,Math.floor(d/1.0));
+   for(let col=0;col<sideColumns;col++){
+    const zz=-d*.40+col*(d*.8/Math.max(1,sideColumns-1));
+    box(g,w/2+.025,yy+.43,zz,.035,.58,.36,(floor+col)%4===0?glassB:glassA);
+    box(g,w/2+.046,yy+.43,zz-.205,.025,.64,.035,frame);
+    box(g,w/2+.046,yy+.43,zz+.205,.025,.64,.035,frame);
+   }
+  }
+  // Roof coping and small mechanical housings give each block a real skyline silhouette.
+  box(g,0,h+.12,0,w+.16,.22,d+.16,floorBand);
+  box(g,-w*.24,h+.32,-d*.18,w*.22,.30,d*.22,common.dark);
+  box(g,w*.20,h+.24,d*.17,w*.16,.18,d*.18,common.metal);
+  cylinder(g,w*.28,h+.62,-d*.18,.055,.055,.65,common.metal,8);
  }
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
@@ -388,7 +417,7 @@ function buildArena(){
  for(const a of specs){
   const x=(a[0]+a[2]/2)*56-28,z=(a[1]+a[3]/2)*36-18,w=Math.max(1.3,a[2]*56),d=Math.max(1.3,a[3]*36);
   const kind=map.style==="crystal"?"crystal":map.style==="ice"?"ice":map.style==="desert"?"crate":map.style==="factory"?"container":map.style==="city"?"building":"block";
-  addWall(x,z,w,d,kind==="building"?rand(3,5.2):kind==="container"?2.8:rand(1.6,2.8),kind);
+  addWall(x,z,w,d,kind==="building"?rand(9,17):kind==="container"?2.8:rand(1.6,2.8),kind);
  }
  // Terrain dressing varies by map but stays outside the important driving lanes.
  if(map.style==="forest"){
@@ -409,7 +438,14 @@ function buildArena(){
   for(let i=0;i<8;i++){const x=-24+i*6;const p=cylinder(scene,x,.4,-18,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-18,.48,.44,.2,common.dark);obstacles.push({x,z:-18,w:.34,d:2.8,h:.7,kind:"pipe"})}
  }
  if(map.style==="city"){
-  for(let i=0;i<10;i++){const x=-25+i*5.5,z=i%2?-17:17;const b=addWall(x,z,3.1,2.6,rand(3,5),"building");}
+  // A denser second ring of mid-rise structures makes the city read as a place, not just cover.
+  for(let i=0;i<14;i++){
+   const side=i%4,row=Math.floor(i/4),offset=-23+row*15.3;
+   const x=side===0?-24:side===1?24:offset,z=side===2?-16:side===3?16:-16+row*10.5;
+   if(Math.abs(x)<10&&Math.abs(z)<8)continue;
+   const w=rand(3.8,6.4),d=rand(3.3,5.6),h=rand(10,19);
+   addWall(x,z,w,d,h,"building");
+  }
  }
  if(map.style==="lava"){
   const lava=material("#ff6e43",.3,.08,{emissive:"#c72f1d",emissiveIntensity:.85});
