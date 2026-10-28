@@ -297,8 +297,8 @@ function buildFenceLine(axis,coordinate,length){
  obstacles.push({x:axis==="x"?coordinate:0,z:axis==="x"?0:coordinate,w:axis==="x"?.20:length,d:axis==="x"?length:.20,h:2.65,kind:"fence",fence:true});
 }
 function addFencePerimeter(){
- buildFenceLine("x",-30,40);buildFenceLine("x",30,40);
- buildFenceLine("z",-20,60);buildFenceLine("z",20,60);
+ buildFenceLine("x",-40,56);buildFenceLine("x",40,56);
+ buildFenceLine("z",-28,80);buildFenceLine("z",28,80);
 }
 function addFarHorizon(){
  const map=MAPS[mapIndex],hillMat=material(new THREE.Color(map.sky).lerp(new THREE.Color("#27352e"),.28),.98,.02);
@@ -440,44 +440,44 @@ function buildArena(){
  const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.0005,weather.fog+(fogLevel==="high"?.002:fogLevel==="low"?-.0007:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
  const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
  if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();if(weatherMode==="snow")addSnowField();addFarHorizon();
- const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
+ const base=material("#202a24",.88,.12);box(scene,0,-.43,0,83,.55,59,base);
  // Floor tile seams, pads and perimeter lights.
  const seam=material(map.accent,.38,.22,{emissive:map.accent,emissiveIntensity:map.style==="neon"?.22:.08});
- for(let x=-28;x<=28;x+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.006,36),seam);m.position.set(x,-.098,0);scene.add(m)}
- for(let z=-18;z<=18;z+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(56,.006,.025),seam);m.position.set(0,-.097,z);scene.add(m)}
+ for(let x=-38;x<=38;x+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.006,52),seam);m.position.set(x,-.098,0);scene.add(m)}
+ for(let z=-26;z<=26;z+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(76,.006,.025),seam);m.position.set(0,-.097,z);scene.add(m)}
  // Raised, padded perimeter with corner braces and illuminated edge marks.
  const edgeMat=material(map.accent,.32,.2,{emissive:map.accent,emissiveIntensity:.25});
  addFencePerimeter();
  // Map-specific cover converted from the original 10 arena layouts.
  const specs=map.walls;
  for(const a of specs){
-  const x=(a[0]+a[2]/2)*56-28,z=(a[1]+a[3]/2)*36-18,w=Math.max(1.3,a[2]*56),d=Math.max(1.3,a[3]*36);
+  const x=(a[0]+a[2]/2)*76-38,z=(a[1]+a[3]/2)*52-26,w=Math.max(1.3,a[2]*76),d=Math.max(1.3,a[3]*52);
   const kind=map.style==="crystal"?"crystal":map.style==="ice"?"ice":map.style==="desert"||map.style==="canyon"?"crate":map.style==="factory"?"container":["city","london","tokyo"].includes(map.style)?"building":"block";
   addWall(x,z,w,d,kind==="building"?rand(10,22):kind==="container"?2.8:rand(1.6,2.8),kind);
  }
  // Terrain dressing varies by map but stays outside the important driving lanes.
  if(map.style==="forest"){
-  for(let i=0;i<28;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<9&&Math.abs(z)<7)continue;const tree=addTree(x,z,rand(.65,1.15));}
+  for(let i=0;i<54;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<11&&Math.abs(z)<8)continue;addTree(x,z,rand(.75,1.35));}
  }
  if(map.style==="crystal"){
-  for(let i=0;i<30;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<8&&Math.abs(z)<6)continue;addCrystal(x,z,rand(.55,1.05))}
+  for(let i=0;i<36;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;addCrystal(x,z,rand(.55,1.05))}
  }
  if(map.style==="desert"){
   const dune=material("#b29a6c",.98);
-  for(let i=0;i<18;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const mound=new THREE.Mesh(new THREE.SphereGeometry(rand(1.1,2.5),9,6),dune);mound.position.set(x,-.04,z);mound.scale.y=.28;mound.scale.z=rand(.8,1.7);scene.add(mound)}
+  for(let i=0;i<24;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;const mound=new THREE.Mesh(new THREE.SphereGeometry(rand(1.1,2.5),9,6),dune);mound.position.set(x,-.04,z);mound.scale.y=.28;mound.scale.z=rand(.8,1.7);scene.add(mound)}
  }
  if(map.style==="ice"){
-  for(let i=0;i<13;i++){const x=rand(-26,26),z=rand(-16,16);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const size=rand(.4,1.1),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"ice rock",shape:"circle",r:size*1.05})}
+  for(let i=0;i<18;i++){const x=rand(-37,37),z=rand(-25,25);if(Math.abs(x)<10&&Math.abs(z)<8)continue;const size=rand(.4,1.1),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"ice rock",shape:"circle",r:size*1.05})}
  }
  if(map.style==="factory"){
   const pipe=material("#8b806a",.55,.45);
-  for(let i=0;i<8;i++){const x=-24+i*6;const p=cylinder(scene,x,.4,-18,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-18,.48,.44,.2,common.dark);obstacles.push({x,z:-18,w:.34,d:2.8,h:.7,kind:"pipe"})}
+  for(let i=0;i<10;i++){const x=-36+i*8;const p=cylinder(scene,x,.4,-25,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-25,.48,.44,.2,common.dark);obstacles.push({x,z:-25,w:.34,d:2.8,h:.7,kind:"pipe"})}
  }
  if(map.style==="city"){
   // A denser second ring of mid-rise structures makes the city read as a place, not just cover.
-  for(let i=0;i<14;i++){
-   const side=i%4,row=Math.floor(i/4),offset=-23+row*15.3;
-   const x=side===0?-24:side===1?24:offset,z=side===2?-16:side===3?16:-16+row*10.5;
+  for(let i=0;i<18;i++){
+   const side=i%4,row=Math.floor(i/4),offset=-34+row*18;
+   const x=side===0?-35:side===1?35:offset,z=side===2?-24:side===3?24:-24+row*15;
    if(Math.abs(x)<10&&Math.abs(z)<8)continue;
    const w=rand(3.8,6.4),d=rand(3.3,5.6),h=rand(10,19);
    addWall(x,z,w,d,h,"building");
@@ -485,15 +485,15 @@ function buildArena(){
  }
  if(map.style==="lava"){
   const lava=material("#ff6e43",.3,.08,{emissive:"#c72f1d",emissiveIntensity:.85});
-  for(const x of [-19,-9,9,19]){const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,.045,35),lava);m.position.set(x,.0,0);scene.add(m)}
+  for(const x of [-30,-15,15,30]){const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,.045,49),lava);m.position.set(x,.0,0);scene.add(m)}
   for(let i=0;i<14;i++){const x=rand(-26,26),z=rand(-16,16),size=rand(.45,.95),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),material("#423b34",.98));rock.position.set(x,.25,z);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"lava rock",shape:"circle",r:size*.9})}
  }
  if(map.style==="sky"){
   const pillar=material("#4b686c",.65,.3);
-  for(const x of [-26,-13,0,13,26]){cylinder(scene,x,-1.5,-19,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,19,.55,.7,3.4,pillar,8);obstacles.push({x,z:-19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7},{x,z:19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7})}
+  for(const x of [-35,-18,0,18,35]){cylinder(scene,x,-1.5,-27,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,27,.55,.7,3.4,pillar,8);obstacles.push({x,z:-27,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7},{x,z:27,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7})}
  }
  if(map.style==="neon"||map.style==="mega"){
-  for(const x of [-24,-12,0,12,24])for(const z of [-14,14]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
+  for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
  // Padded start bays and spawn protection lights.
  for(const x of [-23,23]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
@@ -524,10 +524,10 @@ function addSnowField(){
  const farMat=new THREE.MeshBasicMaterial({color:"#d9e6e9",transparent:true,opacity:.035,depthWrite:false});
  snowFarSurface=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),farMat);snowFarSurface.rotation.x=-Math.PI/2;snowFarSurface.position.y=-.094;snowFarSurface.renderOrder=1;scene.add(snowFarSurface);
  const coverMat=new THREE.MeshBasicMaterial({color:"#edf4f4",transparent:true,opacity:.09,depthWrite:false});
- snowSurface=new THREE.Mesh(new THREE.PlaneGeometry(59.6,39.6),coverMat);snowSurface.rotation.x=-Math.PI/2;snowSurface.position.y=-.083;snowSurface.renderOrder=2;scene.add(snowSurface);
+ snowSurface=new THREE.Mesh(new THREE.PlaneGeometry(79.6,55.6),coverMat);snowSurface.rotation.x=-Math.PI/2;snowSurface.position.y=-.083;snowSurface.renderOrder=2;scene.add(snowSurface);
  const moundMat=new THREE.MeshStandardMaterial({color:"#e4eff0",roughness:1,transparent:true,opacity:.42,depthWrite:false});
- for(let i=0;i<44;i++){
-  let x=rand(-27.5,27.5),z=rand(-17.5,17.5);
+ for(let i=0;i<75;i++){
+  let x=rand(-37.5,37.5),z=rand(-25.5,25.5);
   if(Math.abs(x)>20&&Math.abs(z)<4)x*=.6;
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,8,5),moundMat.clone());
   const bx=rand(.75,2.4),bz=rand(.7,2.0);
