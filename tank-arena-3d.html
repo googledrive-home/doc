@@ -94,7 +94,7 @@ const MAPS=[
 {name:"Lava Loops",color:"#61594d",accent:"#ff784c",sky:"#382019",walls:[[.21,.22,.10,.10],[.69,.22,.10,.10],[.21,.68,.10,.10],[.69,.68,.10,.10],[.40,.25,.20,.06],[.40,.69,.20,.06]],style:"lava"},
 {name:"Mega Arena",color:"#68785d",accent:"#c6f27c",sky:"#18251d",walls:[[.16,.16,.10,.10],[.74,.16,.10,.10],[.16,.74,.10,.10],[.74,.74,.10,.10],[.34,.42,.12,.06],[.54,.42,.12,.06],[.47,.34,.06,.32]],style:"mega"}
 ];
-let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,weatherMode="mist",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,fireFlash=0,followTarget=new THREE.Vector3();
+let renderer,scene,camera,clock,tanks=[],obstacles=[],projectiles=[],pickups=[],particles=[],mistPatches=[],mistTexture=null,clouds3d=[],weatherPoints=null,weatherMeta=[],weatherKind="none",stormLight=null,weatherMode="mist",cloudMode="scattered",fogLevel="medium",fenceStyle="chainlink",paintMode=["olive","crimson"],maxTankHits=3,roundLimit=5,weatherClock=0,held=new Set(),score=[0,0],roundNo=1,active=false,paused=false,matchOver=false,mode="local",difficulty="medium",mapIndex=0,vehicleIdx=[0,1],lastTime=0,spawnTimer=4.2,tagTimer=0,soundOn=true,audioCtx=null,ambienceSource=null,ambienceFilter=null,ambienceGain=null,stormWasFlashing=false,fireFlash=0,followTarget=new THREE.Vector3();
 const material=(color,roughness=.7,metalness=.08,extra={})=>new THREE.MeshStandardMaterial({color,roughness,metalness,...extra});
 const V=(x,y,z)=>new THREE.Vector3(x,y,z),rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
@@ -103,6 +103,18 @@ function pulseSound(kind){
  if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
  const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
  }catch(_){}
+}
+function syncWeatherAudio(){
+ if(ambienceSource){try{ambienceSource.stop()}catch(_){}try{ambienceSource.disconnect();ambienceFilter?.disconnect();ambienceGain?.disconnect()}catch(_){}ambienceSource=null;ambienceFilter=null;ambienceGain=null}
+ if(!soundOn||!audioCtx||!["rain","storm","dust"].includes(weatherMode))return;
+ try{
+  const sampleRate=audioCtx.sampleRate,buffer=audioCtx.createBuffer(1,sampleRate*2,sampleRate),data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.45;
+  ambienceSource=audioCtx.createBufferSource();ambienceSource.buffer=buffer;ambienceSource.loop=true;
+  ambienceFilter=audioCtx.createBiquadFilter();ambienceFilter.type="lowpass";ambienceFilter.frequency.value=weatherMode==="storm"?620:weatherMode==="rain"?1450:340;
+  ambienceGain=audioCtx.createGain();ambienceGain.gain.value=weatherMode==="storm"?.024:weatherMode==="rain"?.013:.009;
+  ambienceSource.connect(ambienceFilter);ambienceFilter.connect(ambienceGain);ambienceGain.connect(audioCtx.destination);ambienceSource.start();
+ }catch(_){ambienceSource=null;ambienceFilter=null;ambienceGain=null}
 }
 function showBanner(text,seconds=1.1){const el=$("banner");el.textContent=text;el.classList.add("show");clearTimeout(tagTimer);tagTimer=setTimeout(()=>el.classList.remove("show"),seconds*1000)}
 function createMaterials(){return{
