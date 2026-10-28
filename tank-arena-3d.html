@@ -162,7 +162,7 @@ function buildTank(id,idx){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),paintEdge);orb.position.set(.76,1.41,-.88);group.add(orb);
  const labelMat=material(team,.3,.15,{emissive:team,emissiveIntensity:.45});
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.32),labelMat);marker.position.set(0,1.73,-.02);group.add(marker);
- group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hitHalfWidth:1.56*group.scale.x,hitHalfLength:1.82*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
+ group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hitHalfWidth:1.38*group.scale.x,hitHalfLength:1.78*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
@@ -206,7 +206,7 @@ function addTree(x,z,s=1){
  return g
 }
 function addCrystal(x,z,s=1){
- obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal",shape:"circle",r:.58*s});
+ obstacles.push({x,z,w:.9*s,d:.75*s,h:2.3*s,kind:"crystal",shape:"circle",r:.78*s});
  const m=material(MAPS[mapIndex].accent,.28,.2,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.35});
  for(let i=0;i<3;i++){const geo=new THREE.ConeGeometry((.35+(i%2)*.22)*s,(1.3+i*.38)*s,5);const mesh=new THREE.Mesh(geo,m);mesh.position.set(x+(i-1)*.38*s,(.65+i*.18)*s,z+(i%2)*.18);mesh.rotation.z=(i-1)*.18;scene.add(mesh)}
 }
@@ -250,11 +250,11 @@ function buildArena(){
   for(let i=0;i<18;i++){const x=rand(-27,27),z=rand(-17,17);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const mound=new THREE.Mesh(new THREE.SphereGeometry(rand(1.1,2.5),9,6),dune);mound.position.set(x,-.04,z);mound.scale.y=.28;mound.scale.z=rand(.8,1.7);scene.add(mound)}
  }
  if(map.style==="ice"){
-  for(let i=0;i<13;i++){const x=rand(-26,26),z=rand(-16,16);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.4,1.1),0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock)}
+  for(let i=0;i<13;i++){const x=rand(-26,26),z=rand(-16,16);if(Math.abs(x)<8&&Math.abs(z)<6)continue;const size=rand(.4,1.1),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),common.glass);rock.position.set(x,.3,z);rock.scale.set(1,.45,1.2);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"ice rock",shape:"circle",r:size*1.05})}
  }
  if(map.style==="factory"){
   const pipe=material("#8b806a",.55,.45);
-  for(let i=0;i<8;i++){const x=-24+i*6;const p=cylinder(scene,x,.4,-18,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-18,.48,.44,.2,common.dark)}
+  for(let i=0;i<8;i++){const x=-24+i*6;const p=cylinder(scene,x,.4,-18,.12,.12,2.7,pipe,12);p.rotation.x=Math.PI/2;box(scene,x,.2,-18,.48,.44,.2,common.dark);obstacles.push({x,z:-18,w:.34,d:2.8,h:.7,kind:"pipe"})}
  }
  if(map.style==="city"){
   for(let i=0;i<10;i++){const x=-25+i*5.5,z=i%2?-17:17;const b=addWall(x,z,3.1,2.6,rand(3,5),"building");}
@@ -262,14 +262,14 @@ function buildArena(){
  if(map.style==="lava"){
   const lava=material("#ff6e43",.3,.08,{emissive:"#c72f1d",emissiveIntensity:.85});
   for(const x of [-19,-9,9,19]){const m=new THREE.Mesh(new THREE.BoxGeometry(2.5,.045,35),lava);m.position.set(x,.0,0);scene.add(m)}
-  for(let i=0;i<14;i++){const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.45,.95),0),material("#423b34",.98));rock.position.set(rand(-26,26),.25,rand(-16,16));rock.castShadow=true;scene.add(rock)}
+  for(let i=0;i<14;i++){const x=rand(-26,26),z=rand(-16,16),size=rand(.45,.95),rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),material("#423b34",.98));rock.position.set(x,.25,z);rock.castShadow=true;scene.add(rock);obstacles.push({x,z,kind:"lava rock",shape:"circle",r:size*.9})}
  }
  if(map.style==="sky"){
   const pillar=material("#4b686c",.65,.3);
-  for(const x of [-26,-13,0,13,26]){cylinder(scene,x,-1.5,-19,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,19,.55,.7,3.4,pillar,8)}
+  for(const x of [-26,-13,0,13,26]){cylinder(scene,x,-1.5,-19,.55,.7,3.4,pillar,8);cylinder(scene,x,-1.5,19,.55,.7,3.4,pillar,8);obstacles.push({x,z:-19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7},{x,z:19,w:1.4,d:1.4,h:3.4,kind:"pillar",shape:"circle",r:.7})}
  }
  if(map.style==="neon"||map.style==="mega"){
-  for(const x of [-24,-12,0,12,24])for(const z of [-14,14]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10)}
+  for(const x of [-24,-12,0,12,24])for(const z of [-14,14]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
  // Padded start bays and spawn protection lights.
  for(const x of [-23,23]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
@@ -352,7 +352,7 @@ function collides(x,z,r,ignoreTank){
  return false;
 }
 function tankCollides(t,x,z){
- const hw=t.hitHalfWidth||1.56,hl=t.hitHalfLength||1.82;
+ const hw=t.hitHalfWidth||1.38,hl=t.hitHalfLength||1.78;
  const rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  for(const o of obstacles){
   if(o.decor)continue;
@@ -371,7 +371,7 @@ function tankCollides(t,x,z){
  }
  return false;
 }
-function tankHit(t,x,z,pad=.25){
+function tankHit(t,x,z,pad=.20){
  const dx=x-t.x,dz=z-t.z,rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  return Math.abs(dx*rx+dz*rz)<=t.hitHalfWidth+pad&&Math.abs(dx*fx+dz*fz)<=t.hitHalfLength+pad;
 }
@@ -479,7 +479,7 @@ function stepProjectiles(dt){
    scene.remove(p.mesh);scene.remove(p.trail);projectiles.splice(i,1);continue;
   }
   const target=tanks[1-p.owner];
-  if(tankHit(target,p.x,p.z,.30)){
+  if(tankHit(target,p.x,p.z,.20)){
    if(target.inv<=0)tagHit(target,p.owner);else spawnExplosion(p.x,.8,p.z,p.owner===0?"#9bfff0":"#ffb29c",.55);
    scene.remove(p.mesh);scene.remove(p.trail);projectiles.splice(i,1);
   }
