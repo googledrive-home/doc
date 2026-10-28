@@ -66,7 +66,7 @@
 <div class="overlay" id="pauseOverlay"><div class="panel result"><div class="tag">SIMULATION PAUSED</div><h2>HOLD POSITION</h2><p>The arena and all vehicles are paused.</p><button class="btn primary" id="resumeBtn">RESUME BATTLE</button> <button class="btn" id="pauseResetBtn">RESTART ROUND</button></div></div>
 <div class="overlay" id="endOverlay"><div class="panel result"><div class="tag">MATCH COMPLETE</div><h2 id="endTitle">PLAYER 1 WINS</h2><p id="endText">Final score</p><button class="btn primary" id="againBtn">PLAY AGAIN</button><button class="btn" id="setupAgainBtn">CHANGE SETUP</button><button class="btn" id="endLibraryBtn">GAME LIBRARY</button></div></div>
 <div class="overlay" id="errorOverlay"><div class="panel result"><div class="tag">3D SETUP ERROR</div><h2>WebGL couldn't start</h2><p id="errorText">Your browser may have WebGL turned off. Try an up-to-date browser with hardware acceleration enabled.</p><a class="btn primary" href="index.html">RETURN TO GAME LIBRARY</a></div></div>
-<div class="overlay" id="onlineOverlay" style="display:none;z-index:20"><section class="online-shell"><div class="online-head"><div><div class="tag">SHARED MULTIPLAYER SERVICE</div><h2>🌐 TANK ARENA LOBBY</h2></div><button class="btn" id="onlineCloseBtn">✕ CLOSE</button></div><p class="note">Separate Tank Arena rooms on the same server as Hockey. Online play is a driving race with server-synchronised movement, checkpoint laps and weather-dependent handling.</p><div class="online-status" id="onlineStatus">Connect to create or join a Tank Arena room.</div><div class="online-grid"><label class="online-field">PLAYER NAME<input id="onlinePlayerName" maxlength="18" value="Tank Pilot" autocomplete="nickname"></label><label class="online-field">LOBBY NAME<input id="onlineLobbyName" maxlength="32" value="Tank Drivers"></label><label class="online-field">MAP<select id="onlineMap"></select></label><label class="online-field">WEATHER<select id="onlineWeather"><option value="clear">Clear</option><option value="overcast" selected>Overcast</option><option value="mist">Mist</option><option value="rain">Rain</option><option value="storm">Storm</option><option value="snow">Snow</option><option value="dust">Dust / sand</option></select></label><label class="online-field">CLOUD COVER<select id="onlineClouds"><option value="none">None</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Overcast</option><option value="storm">Storm banks</option></select></label><label class="online-field">LAPS<select id="onlineLaps"><option value="1">1 lap</option><option value="2">2 laps</option><option value="3" selected>3 laps</option><option value="4">4 laps</option><option value="5">5 laps</option><option value="6">6 laps</option><option value="7">7 laps</option></select></label><label class="online-field">PRIVATE LOBBY PASSWORD<input id="onlinePassword" type="password" minlength="4" maxlength="64" placeholder="Required for private rooms"></label><label class="online-field">ROOM CODE<input id="onlineCode" maxlength="8" autocapitalize="characters" placeholder="Enter an invite code"></label></div><div class="online-actions"><button class="btn primary" id="onlineCreatePublic">🌍 CREATE PUBLIC</button><button class="btn" id="onlineCreatePrivate">🔒 CREATE PRIVATE</button><button class="btn" id="onlineRefreshRooms">↻ FIND ROOMS</button><button class="btn" id="onlineJoinCode">JOIN BY CODE</button></div><div class="tag">AVAILABLE TANK ROOMS</div><div class="online-room-list" id="onlineRoomList"><div class="online-player-row">Press FIND ROOMS to list public lobbies.</div></div><div class="online-head" style="margin-top:15px"><div><div class="tag">ROOM ROSTER</div><b id="onlineRoomTitle">Not connected</b></div><span id="onlineRoomCode">—</span></div><div class="online-players" id="onlinePlayers"><div class="online-player-row">Join a room to see the drivers here.</div></div><div class="online-actions"><button class="btn" id="onlineReadyBtn" disabled>✓ READY UP</button><button class="btn primary" id="onlineStartBtn" disabled>START RACE</button><button class="btn" id="onlineLeaveBtn" disabled>LEAVE ROOM</button><button class="btn" id="onlineVoiceBtn" disabled>🎙 JOIN VOICE</button></div><p class="note">Voice chat is opt-in. Your microphone is only requested when you press JOIN VOICE; use MUTE or LEAVE VOICE any time.</p></section></div>
+<div class="overlay" id="onlineOverlay" style="display:none;z-index:20"><section class="online-shell"><div class="online-head"><div><div class="tag">SHARED MULTIPLAYER SERVICE</div><h2>🌐 TANK ARENA LOBBY</h2></div><button class="btn" id="onlineCloseBtn">✕ CLOSE</button></div><p class="note">Separate Tank Arena rooms on the same server as Hockey. Online play is a driving race with server-synchronised movement, checkpoint laps and weather-dependent handling.</p><div class="online-status" id="onlineStatus">Connect to create or join a Tank Arena room.</div><div class="online-grid"><label class="online-field">PLAYER NAME<input id="onlinePlayerName" maxlength="18" value="Tank Pilot" autocomplete="nickname"></label><label class="online-field">LOBBY NAME<input id="onlineLobbyName" maxlength="32" value="Tank Drivers"></label><label class="online-field">MAP<select id="onlineMap"></select></label><label class="online-field">WEATHER<select id="onlineWeather"><option value="clear">Clear</option><option value="overcast" selected>Overcast</option><option value="mist">Mist</option><option value="rain">Rain</option><option value="storm">Storm</option><option value="snow">Snow</option><option value="dust">Dust / sand</option></select></label><label class="online-field">CLOUD COVER<select id="onlineClouds"><option value="none">None</option><option value="wispy">Wispy</option><option value="scattered" selected>Scattered</option><option value="overcast">Overcast</option><option value="storm">Storm banks</option></select></label><label class="online-field">LAPS<select id="onlineLaps"><option value="1">1 lap</option><option value="2">2 laps</option><option value="3" selected>3 laps</option><option value="4">4 laps</option><option value="5">5 laps</option><option value="6">6 laps</option><option value="7">7 laps</option></select></label><label class="online-field">PRIVATE LOBBY PASSWORD<input id="onlinePassword" type="password" minlength="4" maxlength="64" placeholder="Required for private rooms"></label><label class="online-field">ROOM CODE<input id="onlineCode" maxlength="8" autocapitalize="characters" placeholder="Enter an invite code"></label></div><div class="online-actions"><button class="btn primary" id="onlineCreatePublic">🌍 CREATE PUBLIC</button><button class="btn" id="onlineCreatePrivate">🔒 CREATE PRIVATE</button><button class="btn" id="onlineRefreshRooms">↻ FIND PUBLIC</button><button class="btn" id="onlineRefreshPrivate">🔒 FIND PRIVATE</button><button class="btn" id="onlineJoinCode">JOIN BY CODE</button></div><div class="tag">AVAILABLE TANK ROOMS</div><div class="online-room-list" id="onlineRoomList"><div class="online-player-row">Press FIND ROOMS to list public lobbies.</div></div><div class="online-head" style="margin-top:15px"><div><div class="tag">ROOM ROSTER</div><b id="onlineRoomTitle">Not connected</b></div><span id="onlineRoomCode">—</span></div><div class="online-players" id="onlinePlayers"><div class="online-player-row">Join a room to see the drivers here.</div></div><div class="online-actions"><button class="btn" id="onlineReadyBtn" disabled>✓ READY UP</button><button class="btn primary" id="onlineStartBtn" disabled>START RACE</button><button class="btn" id="onlineLeaveBtn" disabled>LEAVE ROOM</button><button class="btn" id="onlineVoiceBtn" disabled>🎙 JOIN VOICE</button></div><p class="note">Voice chat is opt-in. Your microphone is only requested when you press JOIN VOICE; use MUTE or LEAVE VOICE any time.</p></section></div>
 <div class="online-mini" id="onlineMini"><button class="btn" id="onlineOpenLobbyHud">LOBBY / CHAT</button><button class="btn" id="onlineVoiceHud">🎙 VOICE OFF</button></div>
 <div class="online-chat" id="onlineChat"><div class="online-chat-head"><span>ROOM CHAT</span><button class="btn" id="onlineChatHide">—</button></div><div class="online-chat-messages" id="onlineChatMessages" aria-live="polite"></div><form class="online-chat-form" id="onlineChatForm"><input id="onlineChatInput" maxlength="280" placeholder="Message the lobby…" autocomplete="off"><button class="btn primary" type="submit">SEND</button></form></div>
 <div class="overlay" id="replayOverlay" style="display:none;z-index:21"><section class="replay-card"><div class="tag">RACE / DRIVE REPLAY</div><h2>REPLAY TIMELINE</h2><p class="note" id="replayInfo">Review the last run with both vehicles in frame.</p><input id="replaySeek" type="range" min="0" max="1000" value="0" aria-label="Replay timeline"><div class="online-actions"><button class="btn primary" id="replayPlayBtn">▶ PLAY</button><button class="btn" id="replayExitBtn">RETURN TO GAME</button></div></section></div>
@@ -302,7 +302,7 @@ function addWall(x,z,w,d,h,kind){
   box(g,w*.20,h+.24,d*.17,w*.16,.18,d*.18,common.metal);
   cylinder(g,w*.28,h+.62,-d*.18,.055,.055,.65,common.metal,8);
  }
- obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
+ obstacles.push({x,z,w,d,h,kind,mesh:g,group:g,destructible:["building","crate","container","block","rock"].includes(kind),hp:kind==="building"?5:kind==="container"?4:2.8});return g
 }
 function createLayeredTreeCanopy(){
  const positions=[],tiers=[{base:1.05,height:1.55,radius:1.24},{base:1.65,height:1.48,radius:.98},{base:2.22,height:1.32,radius:.73},{base:2.72,height:1.08,radius:.48}],segments=9;
@@ -317,7 +317,7 @@ function createLayeredTreeCanopy(){
  const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.computeVertexNormals();return geo;
 }
 function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s});
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s,mesh:g,group:g,destructible:true,hp:2.4});
  const trunk=material("#5b4735",.98),leafColor=MAPS[mapIndex].style==="alpine"?"#73918a":MAPS[mapIndex].style==="forest"?"#426b45":"#657a4d";
  const trunkMesh=new THREE.Mesh(new THREE.CylinderGeometry(.18,.30,1.9,9),trunk);trunkMesh.position.y=.94*s;trunkMesh.scale.setScalar(s);trunkMesh.castShadow=true;trunkMesh.receiveShadow=true;g.add(trunkMesh);
  const crown=new THREE.Mesh(createLayeredTreeCanopy(),new THREE.MeshStandardMaterial({color:leafColor,roughness:.98,side:THREE.DoubleSide}));
@@ -813,14 +813,14 @@ function buildArena(){
  if(map.style==="neon"||map.style==="mega"){
   for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
- addLandmarkDetails();addStreetFurniture();addGrassLayer();
+ addLandmarkDetails();addStreetFurniture();addGrassLayer();applyCustomEditorPlacements();
  // Padded start bays and spawn protection lights.
  for(const x of [-25,25]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
  tanks=[buildTank(0,vehicleIdx[0]),buildTank(1,vehicleIdx[1])];
  tanks[0].x=-25;tanks[0].z=0;tanks[0].angle=Math.PI/2;tanks[0].group.position.set(tanks[0].x,0,tanks[0].z);
  tanks[1].x=25;tanks[1].z=0;tanks[1].angle=-Math.PI/2;tanks[1].group.position.set(tanks[1].x,0,tanks[1].z);
  tanks.forEach(t=>t.group.rotation.y=t.angle);
- seedPickups();
+ if(mode!=="online")seedPickups();
 }
 function seedPickups(){
  const types=["boost","shield","repair"],used=[];
@@ -989,8 +989,36 @@ function tankOverlapInfo(a,b){
  for(const [ax,az] of axes){const dist=dx*ax+dz*az,depth=radius(a,ax,az)+radius(b,ax,az)-Math.abs(dist);if(depth<=0)return null;if(depth<minDepth){minDepth=depth;const sign=dist>=0?1:-1;best=[ax*sign,az*sign]}}
  return {depth:minDepth,nx:best[0],nz:best[1]};
 }
+function damageSceneryAt(x,z,speed){
+ let didHit=false;
+ for(let i=obstacles.length-1;i>=0;i--){
+  const o=obstacles[i];if(!o.destructible||!o.group||!o.group.parent)continue;
+  const radius=o.shape==="circle"?(o.r||.6):Math.hypot(o.w||1,o.d||1)*.5;
+  if(Math.hypot(x-o.x,z-o.z)>radius+2.2)continue;
+  o.hp=(o.hp??3)-Math.max(.28,Math.min(1.6,(speed-3.5)*.13));didHit=true;
+  spawnParticles(o.x,Math.max(.25,(o.h||1)*.55),o.z,o.kind==="building"?"#c3b7a0":"#8f9b7b",o.hp<=0?16:5);
+  if(o.hp<=0){
+   scene.remove(o.group);if(o.group.userData.editorPlacementId){}obstacles.splice(i,1);
+   const debrisMat=material(o.kind==="building"?"#6f746b":"#827b65",.96,.02);
+   for(let n=0;n<5;n++){const chip=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.12,.34),0),debrisMat);chip.position.set(o.x+rand(-1,1),.25+rand(0,.6),o.z+rand(-1,1));scene.add(chip);particles.push({mesh:chip,vx:rand(-3,3),vy:rand(1,4),vz:rand(-3,3),life:.8,max:.8});}
+   showBanner(o.kind.toUpperCase()+" COLLAPSED",.8);
+  }
+  break;
+ }
+ if(didHit)pulseSound("fence");
+}
+
+function terrainGrip(x,z){
+ const style=MAPS[mapIndex].style;let grip=weatherMode==="snow"?.74:weatherMode==="rain"?.90:weatherMode==="storm"?.84:weatherMode==="dust"?.83:1;
+ if(style==="ice"||style==="alpine")grip*=.67;
+ else if(style==="desert"||style==="canyon")grip*=.86;
+ else if(style==="forest")grip*=.90;
+ else if(style==="lava"&&Math.abs(Math.sin(x*.15)*Math.cos(z*.12))>.72)grip*=.78;
+ if(style==="factory"&&Math.sin(x*.22+z*.16)>.76)grip*=.82;
+ return clamp(grip,.42,1);
+}
 function moveTank(t,dt,forward,steer,boosting){
- const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38,surfaceFactor=weatherMode==="snow"?.78:weatherMode==="rain"?.92:1;
+ const v=t.spec,speed=Math.hypot(t.vx,t.vz),turnFactor=.25+Math.min(1,speed/Math.max(.1,v.speed)),damageFactor=1-clamp(1-t.hits/(t.maxHits||3),0,1)*.38,surfaceFactor=terrainGrip(t.x,t.z);
  t.angle-=steer*v.turn*turnFactor*dt;
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle);
  if(forward!==0)t.vx+=fx*forward*v.accel*damageFactor*surfaceFactor*dt,t.vz+=fz*forward*v.accel*damageFactor*surfaceFactor*dt;
@@ -999,8 +1027,8 @@ function moveTank(t,dt,forward,steer,boosting){
  if(sp>max){t.vx*=max/sp;t.vz*=max/sp}
  if(boosting&&t.boost<=0)t.boost=.0;
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
- if(!tankCollides(t,nx,t.z))t.x=nx;else{if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vx=0;t.vz*=.96}
- if(!tankCollides(t,t.x,nz))t.z=nz;else{if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vz=0;t.vx*=.96}
+ if(!tankCollides(t,nx,t.z))t.x=nx;else{if(speed>4.5&&(t.impactCooldown||0)<=0){damageSceneryAt(nx,t.z,speed);t.impactCooldown=.22;deformTerrain(t.x,t.z,1.2,.008)}if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vx=0;t.vz*=.96}
+ if(!tankCollides(t,t.x,nz))t.z=nz;else{if(speed>4.5&&(t.impactCooldown||0)<=0){damageSceneryAt(t.x,nz,speed);t.impactCooldown=.22;deformTerrain(t.x,t.z,1.2,.008)}if(t.fenceCooldown<=0){pulseSound("fence");t.fenceCooldown=.32}t.vz=0;t.vx*=.96}
  t.x=clamp(t.x,-40+(t.hitHalfWidth||1.38)+.22,40-(t.hitHalfWidth||1.38)-.22);t.z=clamp(t.z,-28+(t.hitHalfLength||1.78)+.22,28-(t.hitHalfLength||1.78)-.22);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
  t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
@@ -1070,13 +1098,14 @@ function finishMatch(winner){
  matchOver=true;active=false;paused=false;$("endTitle").textContent=mode==="cpu"?(winner===0?"YOU WIN":"CPU WINS"):(winner===0?"PLAYER 1":"PLAYER 2")+" WINS";$("endText").textContent="Final score "+score[0]+" — "+score[1]+". First to "+roundLimit+" round wins takes the match.";$("endOverlay").style.display="grid";
 }
 function updateHUD(){
- $("score1").textContent=score[0];$("score2").textContent=score[1];
+ const localOnlinePlayer=onlineRoom?onlinePlayerArray().find(p=>p.id===onlineRoom.sessionId):null;
+ $("score1").textContent=mode==="online"?(localOnlinePlayer?.lap||0):score[0];$("score2").textContent=mode==="online"?(onlinePlayerArray().find(p=>!p.spectator&&p.id!==onlineRoom?.sessionId)?.lap||0):score[1];
  $("health1").textContent=tanks[0]?"● ".repeat(tanks[0].hits).trim()+" "+"○ ".repeat(Math.max(0,maxTankHits-tanks[0].hits)).trim():"● ● ●";
  $("health2").textContent=tanks[1]?"● ".repeat(tanks[1].hits).trim()+" "+"○ ".repeat(Math.max(0,maxTankHits-tanks[1].hits)).trim():"● ● ●";
- $("p2Label").textContent=mode==="cpu"?"COMPUTER":"PLAYER 2";$("radarP2").textContent=mode==="cpu"?"Computer":"Player 2";
- $("turnLabel").textContent="ROUND "+roundNo;$("turnName").textContent=mode==="cpu"?"YOU VS CPU":"LOCAL DUEL";
- $("stateText").textContent=paused?"Simulation paused":matchOver?"Match complete":"Tag pulses cause visible damage. "+maxTankHits+" hits lose a round; first to "+roundLimit+" rounds wins.";
- $("roundText").textContent=(score[0]+score[1])+" / "+roundLimit;$("progress").style.width=Math.min(100,(score[0]+score[1])/roundLimit*100)+"%";
+ $("p2Label").textContent=mode==="cpu"?"COMPUTER":mode==="online"?"DRIVER 2":"PLAYER 2";$("radarP2").textContent=mode==="cpu"?"Computer":mode==="online"?"Driver 2":"Player 2";
+ $("turnLabel").textContent=mode==="online"?"LAP "+(localOnlinePlayer?.lap||0):"ROUND "+roundNo;$("turnName").textContent=mode==="online"?(onlineLastState?.status==="playing"?"ONLINE RACE":String(onlineLastState?.status||"ONLINE").toUpperCase()):mode==="cpu"?"YOU VS CPU":"LOCAL DUEL";
+ $("stateText").textContent=mode==="online"?"Follow every checkpoint in order · "+(localOnlinePlayer?.checkpoint??0)+"/4 checkpoints":paused?"Simulation paused":matchOver?"Match complete":"Tag pulses cause visible damage. "+maxTankHits+" hits lose a round; first to "+roundLimit+" rounds wins.";
+ $("roundText").textContent=mode==="online"?(localOnlinePlayer?.lap||0)+" / "+(onlineLastState?.roundLimit||roundLimit)+" laps":(score[0]+score[1])+" / "+roundLimit;$("progress").style.width=Math.min(100,(mode==="online"?(localOnlinePlayer?.lap||0)/(onlineLastState?.roundLimit||roundLimit):(score[0]+score[1])/roundLimit)*100)+"%";
  $("mapTitleHUD").textContent=MAPS[mapIndex].name.toUpperCase()+" · "+weatherMode.toUpperCase();$("mapSmall").textContent=MAPS[mapIndex].name.toUpperCase();$("tankSmall").textContent=VEHICLES[vehicleIdx[0]].name.toUpperCase();$("pickupText").textContent="WEATHER: "+weatherMode.toUpperCase()+" · CLOUDS: "+cloudMode.toUpperCase()+" · FENCE: "+fenceStyle.toUpperCase();
 }
 function drawRadar(){
@@ -1129,7 +1158,8 @@ function resolveTankCollision(){
 }
 function update(dt){
  if(!active||paused||matchOver)return;
- tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);t.fenceCooldown=Math.max(0,(t.fenceCooldown||0)-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt);if(t.boostCooldown>0)t.boostCooldown=Math.max(0,t.boostCooldown-dt);if(t.hits<t.maxHits){t.smokeTimer-=dt;if(t.smokeTimer<=0)spawnDamageSmoke(t)}});
+ if(mode==="online"&&onlineRoom){updateOnlineDriving(dt);updateHUDAndRadar();return;}
+ tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);t.fenceCooldown=Math.max(0,(t.fenceCooldown||0)-dt);t.impactCooldown=Math.max(0,(t.impactCooldown||0)-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt);if(t.boostCooldown>0)t.boostCooldown=Math.max(0,t.boostCooldown-dt);if(t.hits<t.maxHits){t.smokeTimer-=dt;if(t.smokeTimer<=0)spawnDamageSmoke(t)}});
  const p1=tanks[0],p2=tanks[1];
  p1.turret.rotation.y+=((held.has("e")?1:0)-(held.has("q")?1:0))*1.45*dt;
  const forward=(held.has("w")?1:0)-(held.has("s")?1:0),steer=(held.has("d")?1:0)-(held.has("a")?1:0);
@@ -1184,12 +1214,10 @@ function animate(now){
  requestAnimationFrame(animate);
  if(!renderer||!scene||!camera)return;
  const dt=Math.min(.033,(now-lastTime)/1000||.016);lastTime=now;
- if(active&&!paused&&!matchOver){
-  update(dt);
-  tanks.forEach(t=>{
-   t.group.visible=!(t.inv>0&&Math.floor(now/75)%2===0);
-   t.group.userData.fire=Math.max(0,(t.group.userData.fire||0)-dt);
-  });
+ if(replayMode){tickTankReplay(dt);}
+ else if(active&&!paused&&!matchOver){
+  update(dt);captureReplayFrame(now);
+  tanks.forEach(t=>{if(mode!=="online")t.group.visible=!(t.inv>0&&Math.floor(now/75)%2===0);t.group.userData.fire=Math.max(0,(t.group.userData.fire||0)-dt);});
  }
  cameraUpdate(dt);
  renderer.render(scene,camera);
@@ -1470,13 +1498,14 @@ function handleEditorPointer(event){
 }
 
 function startGame(resetScores=true){
+ mode=$("mode").value;if(mode==="online"&&!onlineRoom){openTankOnline(true);return;}
  if(!renderer)createScene();
  mode=$("mode").value;difficulty=$("difficulty").value;mapIndex=Number($("map").value);vehicleIdx=[Number($("tank1").value),Number($("tank2").value)];
  weatherMode=$("weather").value;cloudMode=$("clouds").value;fogLevel=$("fogLevel").value;fenceStyle=$("fenceStyle").value;
  paintMode=[$("paint1").value,$("paint2").value];maxTankHits=Number($("tankHealth").value);roundLimit=Number($("roundLimit").value);
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
- $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
- if(resetScores){score=[0,0];roundNo=1;matchOver=false}
+ $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";document.querySelectorAll("#touch1 .fire,#touch2 .fire").forEach(b=>b.style.display=mode==="online"?"none":"");$("onlineMini").style.display=mode==="online"?"flex":"none";$("onlineChat").style.display=mode==="online"?"block":"none";$("onlineToggleHUD").style.display=mode==="online"?"inline-block":"none";
+ if(resetScores){score=[0,0];roundNo=1;matchOver=false;replayFrames=[];lastReplayCaptureAt=0;replayTimelineStart=0;}
  active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();syncEngineAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
 function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear();updateEngineAudio()}
