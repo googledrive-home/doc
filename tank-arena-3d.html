@@ -43,7 +43,7 @@
  </div>
  <div class="leftcard panel"><div class="eyebrow" id="turnLabel">ROUND 1</div><div class="turn" id="turnName">READY</div><div class="sub" id="stateText">Tag your rival with a pulse. First to 5 rounds wins.</div><div class="rule"></div><div class="stat"><span>ROUND PROGRESS</span><b id="roundText">0 / 5</b></div><div class="bar"><span id="progress"></span></div><div class="stat"><span>ACTIVE MAP</span><b id="mapSmall">NEON GRID</b></div><div class="stat"><span>YOUR VEHICLE</span><b id="tankSmall">SCOUT</b></div><div class="sub" id="pickupText">Pickups: BOOST · SHIELD · REPAIR</div></div>
  <div class="rightcard panel"><div class="cardtitle"><span>ARENA RADAR</span><b>LIVE</b></div><canvas class="minimap" id="radar" width="260" height="170"></canvas><div class="legend"><span><i class="keydot" style="background:#75e3ac"></i>Player 1</span><span><i class="keydot" style="background:#ff8872"></i><span id="radarP2">Player 2</span></span><span><i class="keydot" style="background:#e5c96f"></i>Pickup</span><span><i class="keydot" style="background:#a7b5a5"></i>Cover</span></div></div>
- <div class="bottom"><div class="info panel"><strong>FIELD CONTROLS</strong><br><span class="green">P1</span> WASD drive · <span class="green">SPACE</span> tag pulse<br><span class="green">P2</span> Arrows drive · <span class="green">ENTER</span> tag pulse · <span class="green">Shift</span> boost</div></div>
+ <div class="bottom"><div class="info panel"><strong>FIELD CONTROLS</strong><br><span class="green">P1</span> WASD drive · <span class="green">SPACE</span> tag pulse<br><span class="green">P2</span> Arrows drive · <span class="green">J / L</span> turret · <span class="green">ENTER</span> pulse · <span class="green">M</span> boost</div></div>
  <div class="banner" id="banner">ARENA READY</div>
 </div>
 <div class="touch" id="touch1">
@@ -52,7 +52,7 @@
 </div>
 <div class="touch" id="touch2">
  <div class="touchgroup"><button data-key="arrowleft">◀</button><button data-key="arrowup">▲</button><button data-key="arrowright">▶</button><button data-key="j">↶</button><button data-key="arrowdown">▼</button><button data-key="l">↷</button></div>
- <div class="touchgroup"><button class="fire" data-key="enter">PULSE</button><button data-key="shift2">BOOST</button></div>
+ <div class="touchgroup"><button class="fire" data-key="enter">PULSE</button><button data-key="m">BOOST</button></div>
 </div>
 <div class="overlay" id="setupOverlay">
  <div class="menu">
@@ -166,8 +166,13 @@ function buildTank(id,idx){
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
- for(const o of [...obstacles,...projectiles,...pickups,...particles]){scene.remove(o.mesh||o.group);if(o.mesh&&o.mesh.geometry)o.mesh.geometry.dispose()}
- tanks.forEach(t=>scene.remove(t.group));obstacles=[];projectiles=[];pickups=[];particles=[];tanks=[];
+ // Remove previous arena meshes but preserve the scene lights for clean map changes.
+ for(const child of [...scene.children]){
+  if(child.isLight)continue;
+  child.traverse(obj=>{if(obj.geometry)obj.geometry.dispose()});
+  scene.remove(child);
+ }
+ obstacles=[];projectiles=[];pickups=[];particles=[];tanks=[];
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
@@ -281,7 +286,7 @@ function spawnPickup(x,z,type){
 }
 function spawnTag(t){
  if(!active||paused||matchOver||t.fireCd>0||!t.alive)return;
- const direction=V(Math.sin(t.angle),0,Math.cos(t.angle));
+ const turretAngle=t.angle+(t.turret.rotation.y||0),direction=V(Math.sin(turretAngle),0,Math.cos(turretAngle));
  const start=V(t.x+direction.x*2.05,1.05,t.z+direction.z*2.05);
  const color=t.id===0?"#85ffe4":"#ff9b82",m=material(color,.19,.1,{emissive:color,emissiveIntensity:1.4});
  const mesh=new THREE.Mesh(new THREE.SphereGeometry(.22,14,10),m);mesh.position.copy(start);scene.add(mesh);
@@ -320,6 +325,7 @@ function cpuThink(t,target,dt){
  const diff=difficulty==="easy"?{speed:.64,aim:.5,fire:.55}:difficulty==="hard"?{speed:1,aim:.9,fire:1.05}:{speed:.82,aim:.7,fire:.76};
  const dx=target.x-t.x,dz=target.z-t.z,dist=Math.hypot(dx,dz);
  const desired=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(desired-t.angle),Math.cos(desired-t.angle));
+ const turretDelta=Math.atan2(Math.sin(desired-(t.angle+t.turret.rotation.y)),Math.cos(desired-(t.angle+t.turret.rotation.y)));t.turret.rotation.y+=clamp(turretDelta,-2.1*dt,2.1*dt);
  const steer=Math.abs(delta)>.09?Math.sign(delta):0;
  let forward=dist>7?1:dist<4?-.25:.18;
  if(Math.abs(delta)>1.7)forward*=.25;
@@ -398,19 +404,20 @@ function update(dt){
  if(!active||paused||matchOver)return;
  tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt)});
  const p1=tanks[0],p2=tanks[1];
+ p1.turret.rotation.y+=((held.has("e")?1:0)-(held.has("q")?1:0))*1.45*dt;
  const forward=(held.has("w")?1:0)-(held.has("s")?1:0),steer=(held.has("d")?1:0)-(held.has("a")?1:0);
  moveTank(p1,dt,forward,steer,held.has("shift"));
  if(held.has("space"))spawnTag(p1);
  if(mode==="local"){
   const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")||held.has("l")?1:0)-(held.has("arrowleft")||held.has("j")?1:0);
-  moveTank(p2,dt,f2,s2,held.has("shift2"));if(held.has("enter"))spawnTag(p2);
+  moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
  resolveTankCollision();stepProjectiles(dt);stepPickups(dt);
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=8*dt;if(p.life<=0){scene.remove(p.mesh);particles.splice(i,1)}}
  updateHUDAndRadar()
 }
 function cameraUpdate(dt){
- const avgx=(tanks[0]?.x||0+(tanks[1]?.x||0))*.1;
+ const avgx=((tanks[0]?.x||0)+(tanks[1]?.x||0))*.1;
  const avgz=((tanks[0]?.z||0)+(tanks[1]?.z||0))*.08;
  const target=V(clamp(avgx,-4,4),0,clamp(avgz,-3,3));
  const dest=V(target.x,43,target.z+37);
@@ -424,7 +431,7 @@ function animate(now){
   update(dt);
   tanks.forEach(t=>{
    t.group.visible=!(t.inv>0&&Math.floor(now/75)%2===0);
-   t.turret.rotation.y=0;
+   t.group.userData.fire=Math.max(0,(t.group.userData.fire||0)-dt);
   });
  }
  cameraUpdate(dt);
@@ -465,7 +472,7 @@ $("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenEleme
 $("exitBtn").addEventListener("click",()=>{location.href="index.html"});
 window.addEventListener("keydown",e=>{
  const k=e.code==="Space"?"space":e.key===" "?"space":e.key==="Enter"?"enter":e.key.toLowerCase();
- if(["w","a","s","d"," ","space","enter","arrowup","arrowdown","arrowleft","arrowright","shift","j","l"].includes(k)){
+ if(["w","a","s","d"," ","space","enter","arrowup","arrowdown","arrowleft","arrowright","shift","j","l","q","e","m"].includes(k)){
   held.add(k);if(k==="space"||k==="enter")e.preventDefault()
  }
  if(k==="escape"&&active)pauseGame();
@@ -481,8 +488,7 @@ document.querySelectorAll(".touch button").forEach(btn=>{
 });
 window.addEventListener("resize",()=>{if(active){$("touch1").style.display=innerWidth<=760?"flex":"none";$("touch2").style.display=innerWidth<=760&&mode==="local"?"flex":"none"}});
 $("difficulty").addEventListener("change",()=>difficulty=$("difficulty").value);
-try{createScene();requestAnimationFrame(animate)}catch(err){$("errorOverlay").style.display="grid";$("errorText").textContent="3D setup failed: "+(err?.message||"WebGL was unavailable")+"
-Try refreshing in a current browser with hardware acceleration enabled."}
+try{createScene();requestAnimationFrame(animate)}catch(err){$("errorOverlay").style.display="grid";$("errorText").textContent="3D setup failed: "+(err?.message||"WebGL was unavailable")+"\nTry refreshing in a current browser with hardware acceleration enabled."}
 </script>
 </body>
 </html>
