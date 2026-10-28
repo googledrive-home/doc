@@ -595,19 +595,22 @@ function drawRadar(){
 function updateHUDAndRadar(){updateHUD();drawRadar()}
 function stepProjectiles(dt){
  for(let i=projectiles.length-1;i>=0;i--){
-  const p=projectiles[i];p.life-=dt;p.x+=p.vx*dt;p.z+=p.vz*dt;
-  p.mesh.position.set(p.x,p.y,p.z);
+  const p=projectiles[i],oldX=p.x,oldZ=p.z; p.life-=dt;
+  const travel=Math.hypot(p.vx*dt,p.vz*dt),steps=Math.max(1,Math.ceil(travel/.10));
+  const target=tanks[1-p.owner];let consumed=false,escaped=false;
+  for(let s=1;s<=steps;s++){
+   const t=s/steps,x=oldX+p.vx*dt*t,z=oldZ+p.vz*dt*t;p.x=x;p.z=z;p.mesh.position.set(p.x,p.y,p.z);
+   if(Math.abs(x)>31||Math.abs(z)>21){escaped=true;break}
+   if(collides(x,z,.18,null)){
+    spawnExplosion(x,.35,z,p.owner===0?"#9bfff0":"#ffb29c",.58);pulseSound("explosion");consumed=true;break;
+   }
+   if(tankHit(target,x,z,.20)){
+    if(target.inv<=0)tagHit(target,p.owner);else{spawnExplosion(x,.8,z,p.owner===0?"#9bfff0":"#ffb29c",.55);pulseSound("explosion")}
+    consumed=true;break;
+   }
+  }
   p.trailGeo.setFromPoints([V(p.x,p.y,p.z),V(p.x-p.vx*.025,p.y,p.z-p.vz*.025)]);p.trailGeo.attributes.position.needsUpdate=true;p.trailGeo.computeBoundingSphere();
-  if(p.life<=0||Math.abs(p.x)>31||Math.abs(p.z)>21){scene.remove(p.mesh);scene.remove(p.trail);projectiles.splice(i,1);continue}
-  if(collides(p.x,p.z,.18,null)){
-   spawnExplosion(p.x,.35,p.z,p.owner===0?"#9bfff0":"#ffb29c",.58);pulseSound("explosion");
-   scene.remove(p.mesh);scene.remove(p.trail);projectiles.splice(i,1);continue;
-  }
-  const target=tanks[1-p.owner];
-  if(tankHit(target,p.x,p.z,.20)){
-   if(target.inv<=0)tagHit(target,p.owner);else spawnExplosion(p.x,.8,p.z,p.owner===0?"#9bfff0":"#ffb29c",.55);
-   scene.remove(p.mesh);scene.remove(p.trail);projectiles.splice(i,1);
-  }
+  if(consumed||escaped||p.life<=0){scene.remove(p.mesh);scene.remove(p.trail);p.mesh.geometry.dispose();p.mesh.material.dispose();p.trailGeo.dispose();p.trail.material.dispose();projectiles.splice(i,1)}
  }
 }
 function stepPickups(dt){
@@ -707,7 +710,7 @@ function startGame(resetScores=true){
  $("setupOverlay").style.display="none";$("pauseOverlay").style.display="none";$("endOverlay").style.display="none";$("hud").style.display="block";
  $("touch2").style.display=mode==="local"&&innerWidth<=760?"flex":"none";$("touch1").style.display=innerWidth<=760?"flex":"none";
  if(resetScores){score=[0,0];roundNo=1;matchOver=false}
- active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
+ active=true;paused=false;matchOver=false;held.clear();spawnTimer=4.2;weatherClock=0;stormWasFlashing=false;buildArena();updateHUDAndRadar();pulseSound("round");syncWeatherAudio();showBanner(mode==="local"?"PLAYER 1 BREAKS":"TANKS DEPLOYED",1.2);lastTime=performance.now()
 }
 function pauseGame(){if(!active||matchOver)return;paused=!paused;$("pauseOverlay").style.display=paused?"grid":"none";$("pauseBtn").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";held.clear()}
 $("startBtn").addEventListener("click",()=>startGame(true));
