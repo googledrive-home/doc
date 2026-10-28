@@ -176,7 +176,7 @@ function clearDynamic(){
   scene.remove(child);
  }
  if(mistTexture){mistTexture.dispose();mistTexture=null}
- obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];tanks=[];
+ obstacles=[];projectiles=[];pickups=[];particles=[];mistPatches=[];clouds3d=[];weatherMeta=[];weatherPoints=null;tanks=[];
 }
 function addWall(x,z,w,d,h,kind){
  const map=MAPS[mapIndex],accent=material(map.accent,.48,.3,{emissive:map.accent,emissiveIntensity:.12});
@@ -321,22 +321,17 @@ function updateMenuPreview(){
 }
 function buildArena(){
  clearDynamic();
- const map=MAPS[mapIndex],fogColor=new THREE.Color(map.sky).multiplyScalar(.56);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,.019);
- const floorColor=new THREE.Color(map.color).multiplyScalar(.76),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,40),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
- addGroundMist(fogColor);
+ const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.002,weather.fog+(fogLevel==="high"?.014:fogLevel==="low"?-.003:0)));
+ const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
+ if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();addFarHorizon();
  const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
  // Floor tile seams, pads and perimeter lights.
  const seam=material(map.accent,.38,.22,{emissive:map.accent,emissiveIntensity:map.style==="neon"?.22:.08});
  for(let x=-28;x<=28;x+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.006,36),seam);m.position.set(x,-.098,0);scene.add(m)}
  for(let z=-18;z<=18;z+=4){const m=new THREE.Mesh(new THREE.BoxGeometry(56,.006,.025),seam);m.position.set(0,-.097,z);scene.add(m)}
  // Raised, padded perimeter with corner braces and illuminated edge marks.
- const wallMat=material("#353e34",.78,.17),edgeMat=material(map.accent,.32,.2,{emissive:map.accent,emissiveIntensity:.35});
- for(const s of [-1,1]){
-  const wx=box(scene,s*30.0,1.05,0,.45,2.2,40,wallMat);obstacles.push({x:s*30.0,z:0,w:.45,d:40,h:2.2,kind:"boundary",mesh:wx,group:wx});
-  const wz=box(scene,0,1.05,s*20.0,60,.2,2.2,wallMat);obstacles.push({x:0,z:s*20.0,w:60,d:.2,h:2.2,kind:"boundary",mesh:wz,group:wz});
-  box(scene,s*29.73,2.19,0,.06,.06,39.5,edgeMat);
-  box(scene,0,2.19,s*19.74,59.5,.06,.06,edgeMat);
- }
+ const edgeMat=material(map.accent,.32,.2,{emissive:map.accent,emissiveIntensity:.25});
+ addFencePerimeter();
  // Map-specific cover converted from the original 10 arena layouts.
  const specs=map.walls;
  for(const a of specs){
@@ -500,7 +495,7 @@ function moveTank(t,dt,forward,steer,boosting){
  const nx=t.x+t.vx*dt,nz=t.z+t.vz*dt;
  if(!tankCollides(t,nx,t.z))t.x=nx;else{t.vx=0;t.vz*=.96}
  if(!tankCollides(t,t.x,nz))t.z=nz;else{t.vz=0;t.vx*=.96}
- t.x=clamp(t.x,-ARENA_X+.25,ARENA_X-.25);t.z=clamp(t.z,-ARENA_Z+.15,ARENA_Z-.15);
+ t.x=clamp(t.x,-30+(t.hitHalfWidth||1.38)+.22,30-(t.hitHalfWidth||1.38)-.22);t.z=clamp(t.z,-20+(t.hitHalfLength||1.78)+.22,20-(t.hitHalfLength||1.78)-.22);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
  t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
  const treadShift=((t.trackTime%3.3)+3.3)%3.3;
@@ -666,13 +661,13 @@ function animate(now){
 function createScene(){
  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.91;
- scene=new THREE.Scene();scene.background=new THREE.Color("#101713");scene.fog=new THREE.FogExp2("#101713",.019);
- camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,.1,180);camera.position.set(0,43,37);camera.lookAt(0,0,0);
- scene.add(new THREE.HemisphereLight("#cbd8c5","#18211c",1.35));
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ scene=new THREE.Scene();scene.background=new THREE.Color("#101713");scene.fog=new THREE.FogExp2("#101713",.018);
+ camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,.1,240);camera.position.set(0,43,37);camera.lookAt(0,0,0);
+ const hemi=new THREE.HemisphereLight("#cbd8c5","#18211c",1.35);scene.add(hemi);
  const sun=new THREE.DirectionalLight("#d4d8c8",2.05);sun.position.set(-18,35,18);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;sun.shadow.bias=-.00025;scene.add(sun);
  const fill=new THREE.DirectionalLight("#71989b",.62);fill.position.set(20,18,-14);scene.add(fill);
- const glow=new THREE.PointLight("#8bca9c",17,42,2);glow.position.set(0,8,0);scene.add(glow);
+ const glow=new THREE.PointLight("#8bca9c",17,42,2);glow.position.set(0,8,0);scene.add(glow);stormLight=new THREE.DirectionalLight("#e0efff",0);stormLight.position.set(3,34,-5);stormLight.castShadow=false;scene.add(stormLight);
  buildArena();clock=new THREE.Clock();window.addEventListener("resize",resize);
 }
 function resize(){if(!renderer||!camera)return;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
