@@ -101,7 +101,7 @@ function box(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometr
 function cylinder(parent,x,y,z,r1,r2,h,mat,seg=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function pulseSound(kind){
  if(!soundOn)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
- const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(kind==="hit")o.frequency.exponentialRampToValueAtTime(72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
+ const specs={fire:[460,.055,"triangle"],hit:[145,.16,"sawtooth"],pickup:[820,.08,"sine"],round:[620,.18,"triangle"],boost:[350,.075,"sawtooth"],explosion:[95,.32,"sawtooth"],fence:[205,.12,"square"],damage:[72,.22,"triangle"],thunder:[48,.65,"sawtooth"]},s=specs[kind]||specs.fire,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=s[2];o.frequency.setValueAtTime(s[0],audioCtx.currentTime);if(["hit","explosion","damage","thunder"].includes(kind))o.frequency.exponentialRampToValueAtTime(kind==="explosion"?38:kind==="thunder"?24:kind==="damage"?44:72,audioCtx.currentTime+s[1]);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.065,audioCtx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+s[1]);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+s[1]+.02)
  }catch(_){}
 }
 function showBanner(text,seconds=1.1){const el=$("banner");el.textContent=text;el.classList.add("show");clearTimeout(tagTimer);tagTimer=setTimeout(()=>el.classList.remove("show"),seconds*1000)}
@@ -110,9 +110,9 @@ function createMaterials(){return{
 }}
 const common=createMaterials();
 function buildTank(id,idx){
- const spec=VEHICLES[idx],team=id===0?"#78e6b6":"#ff8a76",group=new THREE.Group();group.userData.rollers=[];
+ const spec=VEHICLES[idx],team=id===0?"#78e6b6":"#ff8a76",group=new THREE.Group(),paintHex=PAINTS[paintMode[id]]||spec.color;group.userData.rollers=[];
  group.userData.id=id;group.userData.idx=idx;group.rotation.order="YXZ";
- const hullMat=material(spec.color,.61,.28),hullDark=material(spec.color,.8,.12),paintEdge=material(team,.42,.26,{emissive:team,emissiveIntensity:.22}),accent=material(MAPS[mapIndex].accent,.36,.32,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.20});
+ const hullMat=material(paintHex,.61,.28),hullDark=material(paintHex,.8,.12),paintEdge=material(team,.42,.26,{emissive:team,emissiveIntensity:.22}),accent=material(MAPS[mapIndex].accent,.36,.32,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.20});
  const detail=material("#c7c9ac",.68,.26),tankName=["S","G","R","C","B","ST","SE","P","A","V"][idx];
  // Continuous tracks and individual tread shoes.
  for(const side of [-1,1]){
@@ -165,7 +165,7 @@ function buildTank(id,idx){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),paintEdge);orb.position.set(.76,1.41,-.88);group.add(orb);
  const labelMat=material(team,.3,.15,{emissive:team,emissiveIntensity:.45});
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.32),labelMat);marker.position.set(0,1.73,-.02);group.add(marker);
- group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hitHalfWidth:1.38*group.scale.x,hitHalfLength:1.78*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:3,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,trackTime:0,bodyTilt:0,alive:true};
+ group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hullMat,hullDark,paintHex,hitHalfWidth:1.38*group.scale.x,hitHalfLength:1.78*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:maxTankHits,maxHits:maxTankHits,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,smokeTimer:rand(.1,.4),trackTime:0,bodyTilt:0,alive:true};
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
