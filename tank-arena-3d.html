@@ -316,6 +316,39 @@ function addGrassLayer(){
  const mat=new THREE.MeshStandardMaterial({color:"#ffffff",vertexColors:true,side:THREE.DoubleSide,roughness:1,metalness:0});
  const grass=new THREE.Mesh(geo,mat);grass.frustumCulled=false;grass.receiveShadow=true;scene.add(grass);
 }
+function addStreetFurniture(){
+ const style=MAPS[mapIndex].style,urban=["city","london","tokyo"].includes(style);
+ const steel=material("#5c6b65",.62,.52),lampGlow=material("#f3dda1",.25,.1,{emissive:"#f3d48b",emissiveIntensity:.75});
+ if(urban){
+  // Light poles, short arms and warm lamps add scale around the streets.
+  for(const x of [-34,-23,-11,11,23,34])for(const z of [-22,0,22]){
+   if(collides(x,z,.65,null))continue;
+   cylinder(scene,x,2.15,z,.075,.11,4.3,steel,8);
+   const arm=box(scene,x+.35,4.18,z,.75,.075,.075,steel);arm.rotation.z=-.12;
+   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),lampGlow);lamp.position.set(x+.65,4.05,z);scene.add(lamp);
+   obstacles.push({x,z,w:.36,d:.36,h:4.5,kind:"street lamp",shape:"circle",r:.22});
+  }
+ }
+ if(style==="city"||style==="london"){
+  const benchMat=material("#7a6851",.88,.05),legMat=material("#373e38",.7,.32);
+  for(const x of [-31,-18,18,31])for(const z of [-8,8]){
+   if(collides(x,z,.9,null))continue;
+   box(scene,x,.48,z,1.5,.13,.48,benchMat);box(scene,x,.72,z-.19,1.5,.45,.12,benchMat);
+   for(const side of [-.55,.55])box(scene,x+side,.23,z,.10,.48,.10,legMat);
+   obstacles.push({x,z,w:1.6,d:.62,h:.9,kind:"bench"});
+  }
+ }
+ if(style==="factory"||style==="desert"||style==="canyon"){
+  const barrelMats=[material("#7b6544",.7,.25),material("#6a7a69",.7,.22),material("#b08b4d",.6,.25)];
+  for(let i=0;i<18;i++){
+   const x=rand(-36,36),z=rand(-24,24);if(Math.abs(x)<12&&Math.abs(z)<8)continue;if(collides(x,z,.55,null))continue;
+   const m=barrelMats[i%barrelMats.length];cylinder(scene,x,.48,z,.32,.28,.96,m,10);
+   cylinder(scene,x,.93,z,.30,.30,.07,steel,10);
+   obstacles.push({x,z,w:.62,d:.62,h:1,kind:"barrel",shape:"circle",r:.34});
+  }
+ }
+}
+
 function addLandmarkDetails(){
  const style=MAPS[mapIndex].style;
  const stone=material(style==="canyon"?"#b78259":style==="london"?"#b1a58c":"#9c9882",.86,.06);
@@ -688,7 +721,7 @@ function buildArena(){
  if(map.style==="neon"||map.style==="mega"){
   for(const x of [-34,-17,0,17,34])for(const z of [-23,23]){const p=cylinder(scene,x,1.1,z,.18,.25,2.2,common.dark,8);const l=cylinder(scene,x,2.2,z,.11,.11,.1,edgeMat,10);obstacles.push({x,z,w:.55,d:.55,h:2.2,kind:"light pole",shape:"circle",r:.27})}
  }
- addLandmarkDetails();addGrassLayer();
+ addLandmarkDetails();addStreetFurniture();addGrassLayer();
  // Padded start bays and spawn protection lights.
  for(const x of [-25,25]){const ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.045,8,48),edgeMat);ring.rotation.x=Math.PI/2;ring.position.set(x,.015,0);scene.add(ring)}
  tanks=[buildTank(0,vehicleIdx[0]),buildTank(1,vehicleIdx[1])];
