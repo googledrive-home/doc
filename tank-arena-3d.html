@@ -273,24 +273,24 @@ function addWall(x,z,w,d,h,kind){
  }
  obstacles.push({x,z,w,d,h,kind,mesh:g,group:g});return g
 }
-function addTree(x,z,s=1){
- const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s});
- const bark=material("#5b4735",.98),barkLight=material("#796047",.95);
- cylinder(g,0,.94*s,0,.18*s,.32*s,1.88*s,bark,9);
- for(let i=0;i<4;i++){
-  const branch=cylinder(g,rand(-.16,.16)*s,(1.10+i*.23)*s,rand(-.1,.1)*s,.045*s,.10*s,.72*s,barkLight,6);
-  branch.rotation.z=(i%2?-.55:.55);branch.rotation.x=rand(-.2,.2);
- }
- const forest=["#2f583b","#3d6945","#52784c","#658454"],leafMats=forest.map(col=>material(MAPS[mapIndex].style==="alpine"?"#5d817b":col,.97));
- // Layered irregular crowns with small secondary clusters rather than a single cone.
- for(let i=0;i<4;i++){
-  const crown=new THREE.Mesh(new THREE.ConeGeometry((1.35-i*.19)*s,(1.35+rand(0,.3))*s,9),leafMats[i]);
-  crown.position.set(rand(-.10,.10)*s,(1.65+i*.62)*s,rand(-.10,.10)*s);crown.rotation.y=rand(0,6.2);g.add(crown);
-  for(let j=0;j<2;j++){
-   const cluster=new THREE.Mesh(new THREE.SphereGeometry(.38*s,7,5),leafMats[(i+j+1)%leafMats.length]);
-   cluster.position.set(rand(-.48,.48)*s,(1.85+i*.57)*s,rand(-.42,.42)*s);cluster.scale.set(1,.9,1);g.add(cluster);
+function createLayeredTreeCanopy(){
+ const positions=[],tiers=[{base:1.05,height:1.55,radius:1.24},{base:1.65,height:1.48,radius:.98},{base:2.22,height:1.32,radius:.73},{base:2.72,height:1.08,radius:.48}],segments=9;
+ for(const tier of tiers){
+  for(let i=0;i<segments;i++){
+   const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
+   positions.push(Math.cos(a)*tier.radius,tier.base,Math.sin(a)*tier.radius);
+   positions.push(Math.cos(b)*tier.radius,tier.base,Math.sin(b)*tier.radius);
+   positions.push(0,tier.base+tier.height,0);
   }
  }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.computeVertexNormals();return geo;
+}
+function addTree(x,z,s=1){
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);obstacles.push({x,z,w:.9*s,d:.9*s,h:5*s,kind:"tree",shape:"circle",r:.62*s});
+ const trunk=material("#5b4735",.98),leafColor=MAPS[mapIndex].style==="alpine"?"#73918a":MAPS[mapIndex].style==="forest"?"#426b45":"#657a4d";
+ const trunkMesh=new THREE.Mesh(new THREE.CylinderGeometry(.18,.30,1.9,9),trunk);trunkMesh.position.y=.94*s;trunkMesh.scale.setScalar(s);trunkMesh.castShadow=true;trunkMesh.receiveShadow=true;g.add(trunkMesh);
+ const crown=new THREE.Mesh(createLayeredTreeCanopy(),new THREE.MeshStandardMaterial({color:leafColor,roughness:.98,side:THREE.DoubleSide}));
+ crown.scale.setScalar(s);crown.castShadow=true;crown.receiveShadow=true;g.add(crown);
  return g
 }
 function addGrassLayer(){
