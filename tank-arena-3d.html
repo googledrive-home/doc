@@ -330,10 +330,7 @@ function addLandmarkDetails(){
    for(let y=1.2;y<3.6;y+=.7)box(scene,x,y,22.63,.7,.34,.05,window);
   }
   box(scene,5,3.5,21.5,5.5,.42,1.4,stone);
-  for(const x of [-30,-28.5,-27,-25.5]){
-   const h=rand(12,18),w=3.1,d=3.1;
-   addWall(x,rand(-18,-10),w,d,h,"building");
-  }
+  for(const [x,z] of [[23,-17],[31,-17],[23,4],[32,4]])addWall(x,z,3.2,3.4,rand(12,17),"building");
   // A clock-tower landmark silhouette with lit clock faces.
   const tx=-31,tz=-15,th=17;
   box(scene,tx,th/2,tz,3.9,th,3.9,stone);box(scene,tx,th+.3,tz,4.25,.55,4.25,darkStone);
@@ -730,6 +727,7 @@ function addSnowField(){
 }
 function spawnSnowPuff(t){
  const fx=Math.sin(t.angle),fz=Math.cos(t.angle),rx=Math.cos(t.angle),rz=-Math.sin(t.angle);
+  pulseSound("snowTrack");
  for(const side of [-1,1]){
   const mat=new THREE.MeshBasicMaterial({color:"#e6f1f2",transparent:true,opacity:.66,depthWrite:false});
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(rand(.045,.095),6,5),mat);
@@ -746,7 +744,7 @@ function spawnSnowPuff(t){
 }
 function stepSnow(dt){
  if(weatherMode!=="snow"||!snowSurface)return;
- snowAccumulation=Math.min(1,snowAccumulation+dt*.0065);
+ snowAccumulation=Math.min(1,snowAccumulation+dt*.015);
  snowFarSurface.material.opacity=.025+snowAccumulation*.035;
  snowSurface.material.opacity=.075+snowAccumulation*.19;
  for(const patch of snowPatches){
@@ -765,8 +763,8 @@ function stepSnow(dt){
  }
  for(const t of tanks){
   const speed=Math.hypot(t.vx,t.vz);t.snowTrackTimer=Math.max(0,(t.snowTrackTimer||0)-dt);
-  t.snowLoad=Math.min(1,(t.snowLoad||0)+dt*.012);
-  if(speed>2.0&&t.snowTrackTimer<=0){spawnSnowPuff(t);t.snowTrackTimer=.36;t.snowLoad=Math.max(0,t.snowLoad-.07)}
+  t.snowLoad=Math.min(1,(t.snowLoad||0)+dt*(weatherMode==="snow"?.09:.006));
+  if(speed>2.0&&t.snowTrackTimer<=0){spawnSnowPuff(t);t.snowTrackTimer=.36;t.snowLoad=Math.max(0,t.snowLoad-.02)}
   (t.snowCoats||[]).forEach((mat,i)=>{mat.opacity=Math.max(0,(t.snowLoad||0)*(.20+i*.08));mat.visible=mat.opacity>.015});
  }
  for(let i=snowTrackMarks.length-1;i>=0;i--){
@@ -1071,7 +1069,7 @@ function createScene(){
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
  scene=new THREE.Scene();scene.background=new THREE.Color("#101713");scene.fog=new THREE.FogExp2("#101713",.018);
- camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,520);camera.position.set(0,43,37);camera.lookAt(0,0,0);
+ camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,.1,520);camera.position.set(0,43,37);camera.lookAt(0,0,0);
  const hemi=new THREE.HemisphereLight("#cbd8c5","#18211c",1.35);scene.add(hemi);
  const sun=new THREE.DirectionalLight("#d4d8c8",2.05);sun.position.set(-18,35,18);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;sun.shadow.bias=-.00025;scene.add(sun);
  const fill=new THREE.DirectionalLight("#71989b",.62);fill.position.set(20,18,-14);scene.add(fill);
