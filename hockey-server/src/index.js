@@ -900,6 +900,7 @@ const TANK_MAP_WALLS=[
  []
 ];
 const TANK_ROUTE=[[-31,-20],[31,-20],[31,20],[-31,20]];
+const TANK_VEHICLE_STATS=[[13.2,12.5,1.75,1.28],[10.6,9.2,1.28,1.18],[11.8,10.6,1.52,1.22],[13.6,14,1.44,1.34],[9.7,8,1.12,1.13],[12.2,11.6,1.64,1.24],[11.2,10.1,1.42,1.2],[12.7,11.7,1.78,1.25],[9.4,7.7,1.02,1.1],[11.6,10.8,1.48,1.22]];
 function resetTankScenery(state){
  if(!state?.scenery)return;state.scenery.clear();const idx=tankMapIndex(state.map),walls=TANK_MAP_WALLS[idx]||[];
  for(let i=0;i<walls.length;i++){
@@ -958,11 +959,14 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
    if(p.spectator||p.finishedAt)continue;
    p.boostCooldown=Math.max(0,p.boostCooldown-dt);p.boost=Math.max(0,p.boost-dt);p.impactCooldown=Math.max(0,p.impactCooldown-dt);
    const ix=p.inputForward,steer=p.inputSteer,speed=Math.hypot(p.vx,p.vz),map=Number(s.map)||0;
-   const traction=s.weather==="snow"?.72:s.weather==="rain"||s.weather==="storm"?.90:s.weather==="dust"?.86:map===2?.70:1;
-   const turn=.7+Math.min(1,speed/8);p.angle-=steer*1.55*turn*dt;
-   const fx=Math.sin(p.angle),fz=Math.cos(p.angle);if(ix!==0){p.vx+=fx*10.8*ix*traction*dt;p.vz+=fz*10.8*ix*traction*dt;}
-   const drag=Math.pow(ix===0?(traction<.8?.975:.91):(traction<.8?.985:.94),dt*60);p.vx*=drag;p.vz*=drag;
-   const boosted=p.boost>0,max=11.5*traction*(boosted?1.32:1),v=Math.hypot(p.vx,p.vz);if(v>max){p.vx*=max/v;p.vz*=max/v;}
+   let traction=s.weather==="snow"?.74:s.weather==="rain"?.90:s.weather==="storm"?.84:s.weather==="dust"?.83:1;
+   if(map===2||map===12)traction*=.67;else if(map===1||map===13)traction*=.86;else if(map===3)traction*=.90;
+   if(map===8&&Math.abs(Math.sin(p.x*.15)*Math.cos(p.z*.12))>.72)traction*=.78;
+   if(map===6&&Math.sin(p.x*.22+p.z*.16)>.76)traction*=.82;
+   const spec=TANK_VEHICLE_STATS[Math.max(0,Math.min(9,p.vehicle||0))],turn=.25+Math.min(1,speed/Math.max(.1,spec[0]/2));p.angle-=steer*spec[2]*turn*dt;
+   const fx=Math.sin(p.angle),fz=Math.cos(p.angle);if(ix!==0){p.vx+=fx*spec[1]*ix*traction*dt;p.vz+=fz*spec[1]*ix*traction*dt;}
+   const driveDrag=s.weather==="snow"?.91:s.weather==="rain"?.88:.84,drag=Math.pow(ix===0?(traction<.8?.43:.30):driveDrag,dt);p.vx*=drag;p.vz*=drag;
+   const boosted=p.boost>0,max=spec[0]*traction*(boosted?spec[3]:1),v=Math.hypot(p.vx,p.vz);if(v>max){p.vx*=max/v;p.vz*=max/v;}
    let nx=tankClamp(p.x+p.vx*dt,-38.4,38.4),nz=tankClamp(p.z+p.vz*dt,-26.4,26.4);
    const wallX=tankWallCollisionIndex(s.map,nx,p.z,1.35,s.scenery);
    if(wallX>=0){p.vx=0;p.vz*=.45;nx=p.x;this.damageTankWall(p,wallX,speed,now);}
