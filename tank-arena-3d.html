@@ -107,7 +107,7 @@ function createMaterials(){return{
 }}
 const common=createMaterials();
 function buildTank(id,idx){
- const spec=VEHICLES[idx],team=id===0?"#78e6b6":"#ff8a76",group=new THREE.Group();
+ const spec=VEHICLES[idx],team=id===0?"#78e6b6":"#ff8a76",group=new THREE.Group();group.userData.rollers=[];
  group.userData={id,idx};group.rotation.order="YXZ";
  const hullMat=material(spec.color,.61,.28),hullDark=material(spec.color,.8,.12),paintEdge=material(team,.42,.26,{emissive:team,emissiveIntensity:.22}),accent=material(MAPS[mapIndex].accent,.36,.32,{emissive:MAPS[mapIndex].accent,emissiveIntensity:.20});
  const detail=material("#c7c9ac",.68,.26),tankName=["S","G","R","C","B","ST","SE","P","A","V"][idx];
@@ -118,12 +118,12 @@ function buildTank(id,idx){
   for(let i=0;i<7;i++){
    const z=-1.48+i*.49;
    const w=box(group,side*1.325,.47,z,.055,.27,.36,common.metal);
-   w.userData.tread=true;
+   w.userData.tread=true;w.userData.baseZ=z;
   }
   for(const z of [-1.26,-.63,0,.63,1.26]){
    const wheel=cylinder(group,side*1.13,.43,z,.32,.32,.17,common.wheel,16);
-   wheel.rotation.z=Math.PI/2;
-   const hub=cylinder(group,side*1.235,.43,z,.145,.145,.18,common.gold,12);hub.rotation.z=Math.PI/2;
+   wheel.rotation.z=Math.PI/2;group.userData.rollers.push(wheel);
+   const hub=cylinder(group,side*1.235,.43,z,.145,.145,.18,common.gold,12);hub.rotation.z=Math.PI/2;group.userData.rollers.push(hub);
    cylinder(group,side*1.34,.43,z,.045,.045,.185,common.dark,10).rotation.z=Math.PI/2;
   }
  }
@@ -334,8 +334,11 @@ function moveTank(t,dt,forward,steer,boosting){
  if(!collides(t.x,nz,1.2,t))t.z=nz;else t.vz*=-.22;
  t.x=clamp(t.x,-ARENA_X+1.7,ARENA_X-1.7);t.z=clamp(t.z,-ARENA_Z+1.7,ARENA_Z-1.7);
  t.group.position.set(t.x,0,t.z);t.group.rotation.y=t.angle;t.group.rotation.z=clamp(-steer*.07,-.08,.08);
- t.trackTime+=speed*dt*2;
- t.group.children.forEach(o=>{if(o.userData.tread)o.position.y=.47+Math.sin(t.trackTime)*.012});
+ t.trackTime+=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt*1.7;
+ const treadShift=((t.trackTime%3.3)+3.3)%3.3;
+ t.group.children.forEach(o=>{if(o.userData.tread){o.position.y=.47;o.position.z=((o.userData.baseZ+treadShift+1.65)%3.3)-1.65}});
+ const roll=(t.vx*Math.sin(t.angle)+t.vz*Math.cos(t.angle))*dt/.32;
+ t.group.userData.rollers.forEach(w=>{w.rotation.x+=roll});
 }
 function cpuThink(t,target,dt){
  const diff=difficulty==="easy"?{speed:.64,aim:.5,fire:.55}:difficulty==="hard"?{speed:1,aim:.9,fire:1.05}:{speed:.82,aim:.7,fire:.76};
