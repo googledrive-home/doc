@@ -80,7 +80,7 @@ const VEHICLES=[
 {name:"Vanguard",color:"#858e6e",speed:11.6,accel:10.8,turn:1.48,boost:1.22,armor:1.1}
 ];
 const PAINTS={mint:"#789e8b",olive:"#69765b",desert:"#a58a5b",navy:"#405c76",crimson:"#994b49",white:"#c3c6b7",purple:"#77638f",black:"#414744"};
-const WEATHER_PRESETS={clear:{sky:"#d1a878",fog:.0015,ambient:1.25,key:2.45,precip:"none",tone:1.05},overcast:{sky:"#646f73",fog:.0028,ambient:1.05,key:1.25,precip:"none",tone:.97},mist:{sky:"#546b68",fog:.006,ambient:1.05,key:1.45,precip:"mist",tone:.96},rain:{sky:"#3d5156",fog:.005,ambient:.9,key:1.5,precip:"rain",tone:.91},storm:{sky:"#242e38",fog:.009,ambient:.62,key:1.35,precip:"rain",tone:.86},snow:{sky:"#a1b2b2",fog:.003,ambient:1.22,key:1.45,precip:"snow",tone:1.0},dust:{sky:"#85715a",fog:.004,ambient:1.0,key:1.55,precip:"dust",tone:.95}};
+const WEATHER_PRESETS={clear:{sky:"#d1a878",fog:.001,ambient:1.25,key:2.45,precip:"none",tone:1.05},overcast:{sky:"#646f73",fog:.0012,ambient:1.05,key:1.25,precip:"none",tone:.99},mist:{sky:"#546b68",fog:.0030,ambient:1.05,key:1.45,precip:"mist",tone:.97},rain:{sky:"#3d5156",fog:.0025,ambient:.9,key:1.5,precip:"rain",tone:.93},storm:{sky:"#242e38",fog:.0055,ambient:.62,key:1.35,precip:"rain",tone:.88},snow:{sky:"#a1b2b2",fog:.0017,ambient:1.22,key:1.45,precip:"snow",tone:1.02},dust:{sky:"#85715a",fog:.0028,ambient:1.0,key:1.55,precip:"dust",tone:.97}};
 const CLOUD_PRESETS={none:{count:0,shade:"#b5c4c0",height:60,scale:.8},wispy:{count:7,shade:"#d3dedb",height:72,scale:.65},scattered:{count:15,shade:"#b3c0bf",height:66,scale:1},overcast:{count:22,shade:"#7b898b",height:59,scale:1.2},storm:{count:20,shade:"#46535c",height:54,scale:1.4}};
 const MAPS=[
 {name:"Neon Grid",color:"#4d7658",accent:"#8cddc6",sky:"#19271f",walls:[[.26,.18,.10,.28],[.64,.18,.10,.28],[.26,.64,.10,.18],[.64,.64,.10,.18],[.44,.41,.12,.10]],style:"neon"},
@@ -292,12 +292,39 @@ function addFencePerimeter(){
  buildFenceLine("z",-20,60);buildFenceLine("z",20,60);
 }
 function addFarHorizon(){
- const hillMat=material(new THREE.Color(MAPS[mapIndex].sky).lerp(new THREE.Color("#27352e"),.35),.98,.02);
- for(let i=0;i<32;i++){
-  const a=i/32*Math.PI*2+rand(-.04,.04),radius=rand(86,145),size=rand(7,19);
-  const hill=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),hillMat);
+ const map=MAPS[mapIndex],hillMat=material(new THREE.Color(map.sky).lerp(new THREE.Color("#27352e"),.28),.98,.02);
+ // Low-detail terrain beyond the playable fence fades into the horizon.
+ for(let i=0;i<28;i++){
+  const a=i/28*Math.PI*2+rand(-.05,.05),radius=rand(76,136),size=rand(9,22);
+  const hill=new THREE.Mesh(new THREE.SphereGeometry(1,7,5),hillMat);
   hill.position.set(Math.cos(a)*radius,rand(-2,2),Math.sin(a)*radius);
-  hill.scale.set(size,rand(5,15),size*rand(1.1,2.2));scene.add(hill);
+  hill.scale.set(size,rand(4,12),size*rand(1.1,2.2));scene.add(hill);
+ }
+ // Urban maps continue into a distant skyline, but use simple silhouettes instead of detailed meshes.
+ const skylineColor=new THREE.Color(map.sky).lerp(new THREE.Color("#17211e"),.28);
+ const skylineMat=new THREE.MeshStandardMaterial({color:skylineColor,roughness:1,metalness:0,transparent:true,opacity:.54,depthWrite:false});
+ const skylineWindowMat=new THREE.MeshStandardMaterial({color:map.accent,roughness:.8,transparent:true,opacity:.14,depthWrite:false,emissive:map.accent,emissiveIntensity:.10});
+ if(map.style==="city"||map.style==="factory"){
+  const count=map.style==="city"?42:24;
+  for(let i=0;i<count;i++){
+   const side=i%4,along=rand(-74,74);
+   const x=side===0?-rand(39,68):side===1?rand(39,68):along;
+   const z=side===2?-rand(29,53):side===3?rand(29,53):along*.52;
+   const w=rand(4,11),d=rand(4,9),h=map.style==="city"?rand(8,28):rand(5,14);
+   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);
+   mesh.position.set(x,h/2-.1,z);mesh.rotation.y=rand(-.09,.09);scene.add(mesh);
+   if(i%3===0&&map.style==="city"){
+    const strip=new THREE.Mesh(new THREE.BoxGeometry(w*.68,.12,.025),skylineWindowMat);
+    strip.position.set(x,h*.62,z+d/2+.018);scene.add(strip);
+   }
+  }
+ }else{
+  // Distant, simplified outpost roofs and silhouettes make the map feel continuous without adding cover.
+  for(let i=0;i<12;i++){
+   const side=i%4,along=rand(-65,65),x=side===0?-rand(39,56):side===1?rand(39,56):along,z=side===2?-rand(30,44):side===3?rand(30,44):along*.48;
+   const w=rand(4,9),d=rand(3,8),h=rand(2.5,7);
+   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),skylineMat);mesh.position.set(x,h/2-.08,z);scene.add(mesh);
+  }
  }
 }
 function buildCloudLayer(){
@@ -401,7 +428,7 @@ function updateMenuPreview(){
 }
 function buildArena(){
  clearDynamic();
- const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.001,weather.fog+(fogLevel==="high"?.004:fogLevel==="low"?-.002:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
+ const map=MAPS[mapIndex],weather=WEATHER_PRESETS[weatherMode]||WEATHER_PRESETS.mist,fogColor=new THREE.Color(weather.sky).lerp(new THREE.Color(map.sky),.28);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,Math.max(.0005,weather.fog+(fogLevel==="high"?.002:fogLevel==="low"?-.0007:0)));renderer.toneMappingExposure=weather.tone;const dirLights=scene.children.filter(o=>o.isDirectionalLight);if(dirLights[0])dirLights[0].intensity=weather.key;if(dirLights[1])dirLights[1].intensity=weather.ambient*.58;const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.ambient;if(stormLight)stormLight.intensity=0;
  const floorColor=new THREE.Color(map.color).multiplyScalar(weatherMode==="clear"?.95:weatherMode==="snow"?1.05:.70),floorMat=material(floorColor,.96,.04);const floor=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.11;floor.receiveShadow=true;scene.add(floor);obstacles.push({mesh:floor,group:floor,decor:true});
  if(weatherMode==="mist"||fogLevel==="high")addGroundMist(fogColor);buildCloudLayer();buildWeatherParticles();addFarHorizon();
  const base=material("#202a24",.88,.12);box(scene,0,-.43,0,63,.55,43,base);
@@ -769,7 +796,7 @@ function createScene(){
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight,false);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
  scene=new THREE.Scene();scene.background=new THREE.Color("#101713");scene.fog=new THREE.FogExp2("#101713",.018);
- camera=new THREE.PerspectiveCamera(46,innerWidth/innerHeight,.1,240);camera.position.set(0,43,37);camera.lookAt(0,0,0);
+ camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,520);camera.position.set(0,43,37);camera.lookAt(0,0,0);
  const hemi=new THREE.HemisphereLight("#cbd8c5","#18211c",1.35);scene.add(hemi);
  const sun=new THREE.DirectionalLight("#d4d8c8",2.05);sun.position.set(-18,35,18);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;sun.shadow.bias=-.00025;scene.add(sun);
  const fill=new THREE.DirectionalLight("#71989b",.62);fill.position.set(20,18,-14);scene.add(fill);
