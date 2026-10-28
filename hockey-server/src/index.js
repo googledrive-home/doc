@@ -909,15 +909,16 @@ function resetTankScenery(state){
 }
 function tankMapIndex(value){const n=Number.parseInt(String(value),10);return Number.isFinite(n)?Math.max(0,Math.min(15,n)):0;}
 function tankClamp(n,lo,hi){return Math.max(lo,Math.min(hi,Number.isFinite(Number(n))?Number(n):0));}
-function tankMapCollides(mapValue,x,z,radius=1.35){
+function tankWallCollisionIndex(mapValue,x,z,radius=1.35,scenery=null){
  const walls=TANK_MAP_WALLS[tankMapIndex(mapValue)]||[];
- for(const a of walls){
-  const ox=(a[0]+a[2]/2)*76-38,oz=(a[1]+a[3]/2)*52-26,w=Math.max(1.3,a[2]*76),d=Math.max(1.3,a[3]*52);
-  const qx=tankClamp(x,ox-w/2-radius,ox+w/2+radius),qz=tankClamp(z,oz-d/2-radius,oz+d/2+radius);
-  if(Math.abs(x-ox)<=w/2+radius&&Math.abs(z-oz)<=d/2+radius)return true;
+ for(let i=0;i<walls.length;i++){
+  const record=scenery?.get("wall-"+i);if(record&&!record.active)continue;
+  const a=walls[i],ox=(a[0]+a[2]/2)*76-38,oz=(a[1]+a[3]/2)*52-26,w=Math.max(1.3,a[2]*76),d=Math.max(1.3,a[3]*52);
+  if(Math.abs(x-ox)<=w/2+radius&&Math.abs(z-oz)<=d/2+radius)return i;
  }
- return false;
+ return -1;
 }
+function tankMapCollides(mapValue,x,z,radius=1.35,scenery=null){return tankWallCollisionIndex(mapValue,x,z,radius,scenery)>=0;}
 class TankArenaRoom extends (await import("@colyseus/core")).Room {
  onCreate(options){
   this.maxClients=10;this.autoDispose=true;this.setPatchRate(1000/30);this.setState(new TankArenaState());
@@ -928,8 +929,8 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
   this.onMessage("customize",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator)return;p.name=cleanName(msg?.name);p.vehicle=Math.round(tankClamp(msg?.vehicle,0,9));p.paint=String(msg?.paint||"#8ca67b").slice(0,16);p.skin=Math.round(tankClamp(msg?.vehicle,0,9));this.broadcastLobby();});
   this.onMessage("drive",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator||state.status!=="playing"||p.finishedAt)return;p.inputForward=tankClamp(msg?.forward,-1,1);p.inputSteer=tankClamp(msg?.steer,-1,1);const boostHeld=!!msg?.boost,wasHeld=!!this.boostHeld.get(client.sessionId);if(boostHeld&&!wasHeld&&p.boostCooldown<=0){p.boost=.72;p.boostCooldown=4.2;}this.boostHeld.set(client.sessionId,boostHeld);});
   this.onMessage("ready",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator||![ "practice","waiting"].includes(state.status))return;p.ready=msg?.ready===undefined?!p.ready:!!msg.ready;this.broadcastLobby();});
-  this.onMessage("hostSettings",(client,msg)=>{if(client.sessionId!==state.hostId||![ "practice","waiting"].includes(state.status))return;if(msg?.map!==undefined){state.map=String(tankMapIndex(msg.map));state.mapName=String(msg.mapName||state.mapName).slice(0,48);}if(msg?.weather!==undefined&&["clear","overcast","mist","rain","storm","snow","dust"].includes(msg.weather))state.weather=msg.weather;if(msg?.clouds!==undefined&&["none","wispy","scattered","overcast","storm"].includes(msg.clouds))state.clouds=msg.clouds;if(msg?.fogLevel!==undefined&&["low","medium","high"].includes(msg.fogLevel))state.fogLevel=msg.fogLevel;if(msg?.fenceStyle!==undefined&&["industrial","chainlink","warning"].includes(msg.fenceStyle))state.fenceStyle=msg.fenceStyle;if(msg?.roundLimit!==undefined)state.roundLimit=Math.round(tankClamp(msg.roundLimit,1,7));this.broadcastLobby();});
-  this.onMessage("startMatch",client=>{if(client.sessionId!==state.hostId||![ "practice","waiting"].includes(state.status))return;const drivers=Array.from(state.players.values()).filter(p=>!p.spectator);if(drivers.length<2){client.send("lobbyNotice",{message:"Invite another driver before starting an online race."});return;}if(!drivers.every(p=>p.ready)){client.send("lobbyNotice",{message:"Every driver must be ready before the race starts."});return;}for(const p of drivers){p.lap=0;p.checkpoint=0;p.lastLap=0;p.bestLap=0;p.finishedAt=0;p.x=-34;p.z=p.slot===0?-23:-17;p.vx=0;p.vz=0;p.angle=Math.PI/2;p.inputForward=0;p.inputSteer=0;p.boost=0;p.ready=false;}state.elapsed=0;state.winnerId="";state.countdown=3;state.status="countdown";this.countdownUntil=Date.now()+3000;this.broadcast("raceCountdown",{seconds:3});this.countdownTimer=setTimeout(()=>{if(state.status!=="countdown")return;state.status="playing";state.elapsed=0;this.matchStartedAt=Date.now();this.broadcast("raceStarted",{map:state.map,weather:state.weather});this.broadcastLobby();},3000);});
+  this.onMessage("hostSettings",(client,msg)=>{if(client.sessionId!==state.hostId||![ "practice","waiting"].includes(state.status))return;const previousMap=state.map;if(msg?.map!==undefined){state.map=String(tankMapIndex(msg.map));state.mapName=String(msg.mapName||state.mapName).slice(0,48);}if(state.map!==previousMap)resetTankScenery(state);if(msg?.weather!==undefined&&["clear","overcast","mist","rain","storm","snow","dust"].includes(msg.weather))state.weather=msg.weather;if(msg?.clouds!==undefined&&["none","wispy","scattered","overcast","storm"].includes(msg.clouds))state.clouds=msg.clouds;if(msg?.fogLevel!==undefined&&["low","medium","high"].includes(msg.fogLevel))state.fogLevel=msg.fogLevel;if(msg?.fenceStyle!==undefined&&["industrial","chainlink","warning"].includes(msg.fenceStyle))state.fenceStyle=msg.fenceStyle;if(msg?.roundLimit!==undefined)state.roundLimit=Math.round(tankClamp(msg.roundLimit,1,7));this.broadcastLobby();});
+  this.onMessage("startMatch",client=>{if(client.sessionId!==state.hostId||![ "practice","waiting"].includes(state.status))return;const drivers=Array.from(state.players.values()).filter(p=>!p.spectator);if(drivers.length<2){client.send("lobbyNotice",{message:"Invite another driver before starting an online race."});return;}if(!drivers.every(p=>p.ready)){client.send("lobbyNotice",{message:"Every driver must be ready before the race starts."});return;}resetTankScenery(state);for(const p of drivers){p.lap=0;p.checkpoint=0;p.lastLap=0;p.bestLap=0;p.finishedAt=0;p.x=-34;p.z=p.slot===0?-23:-17;p.vx=0;p.vz=0;p.angle=Math.PI/2;p.inputForward=0;p.inputSteer=0;p.boost=0;p.ready=false;}state.elapsed=0;state.winnerId="";state.countdown=3;state.status="countdown";this.countdownUntil=Date.now()+3000;this.broadcast("raceCountdown",{seconds:3});this.countdownTimer=setTimeout(()=>{if(state.status!=="countdown")return;state.status="playing";state.elapsed=0;this.matchStartedAt=Date.now();this.broadcast("raceStarted",{map:state.map,weather:state.weather});this.broadcastLobby();},3000);});
   this.onMessage("partyChat",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator&&client.sessionId===state.hostId)return;const text=String(msg?.text??"").replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,280);if(!text)return;const now=Date.now(),recent=(this.chatRate.get(client.sessionId)||[]).filter(at=>now-at<5000);if(recent.length>=5||(recent.length&&now-recent[recent.length-1]<650)){this.chatRate.set(client.sessionId,recent);client.send("partyChatError",{message:"You're sending messages too quickly. Please wait a moment."});return;}recent.push(now);this.chatRate.set(client.sessionId,recent);this.broadcast("partyChatMessage",{name:p.name,text,at:now});});
   this.onMessage("voiceJoin",client=>{const p=state.players.get(client.sessionId);if(!p||p.spectator)return;if(this.voicePeers.has(client.sessionId)){client.send("voicePeers",{peers:[...this.voicePeers.entries()].filter(([id])=>id!==client.sessionId).map(([sessionId,v])=>({sessionId,name:v.name}))});return;}this.voicePeers.set(client.sessionId,{name:p.name});client.send("voicePeers",{peers:[...this.voicePeers.entries()].filter(([id])=>id!==client.sessionId).map(([sessionId,v])=>({sessionId,name:v.name}))});this.broadcast("voicePeerJoined",{sessionId:client.sessionId,name:p.name});});
   this.onMessage("voiceLeave",client=>{const peer=this.voicePeers.get(client.sessionId);if(!peer)return;this.voicePeers.delete(client.sessionId);this.voiceSignalRate.delete(client.sessionId);this.broadcast("voicePeerLeft",{sessionId:client.sessionId,name:peer.name});});
@@ -955,7 +956,7 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
   s.elapsed=Math.max(0,(now-this.matchStartedAt)/1000);
   for(const p of s.players.values()){
    if(p.spectator||p.finishedAt)continue;
-   p.boostCooldown=Math.max(0,p.boostCooldown-dt);p.boost=Math.max(0,p.boost-dt);
+   p.boostCooldown=Math.max(0,p.boostCooldown-dt);p.boost=Math.max(0,p.boost-dt);p.impactCooldown=Math.max(0,p.impactCooldown-dt);
    const ix=p.inputForward,steer=p.inputSteer,speed=Math.hypot(p.vx,p.vz),map=Number(s.map)||0;
    const traction=s.weather==="snow"?.72:s.weather==="rain"||s.weather==="storm"?.90:s.weather==="dust"?.86:map===2?.70:1;
    const turn=.7+Math.min(1,speed/8);p.angle-=steer*1.55*turn*dt;
@@ -963,11 +964,21 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
    const drag=Math.pow(ix===0?(traction<.8?.975:.91):(traction<.8?.985:.94),dt*60);p.vx*=drag;p.vz*=drag;
    const boosted=p.boost>0,max=11.5*traction*(boosted?1.32:1),v=Math.hypot(p.vx,p.vz);if(v>max){p.vx*=max/v;p.vz*=max/v;}
    let nx=tankClamp(p.x+p.vx*dt,-38.4,38.4),nz=tankClamp(p.z+p.vz*dt,-26.4,26.4);
-   if(tankMapCollides(s.map,nx,p.z)){p.vx=0;p.vz*=.45;nx=p.x;}if(tankMapCollides(s.map,p.x,nz)){p.vz=0;p.vx*=.45;nz=p.z;}
+   const wallX=tankWallCollisionIndex(s.map,nx,p.z,1.35,s.scenery);
+   if(wallX>=0){p.vx=0;p.vz*=.45;nx=p.x;this.damageTankWall(p,wallX,speed,now);}
+   const wallZ=tankWallCollisionIndex(s.map,p.x,nz,1.35,s.scenery);
+   if(wallZ>=0){p.vz=0;p.vx*=.45;nz=p.z;this.damageTankWall(p,wallZ,speed,now);}
    if(nx!==p.x||nz!==p.z){p.x=nx;p.z=nz;}
    const cp=TANK_ROUTE[p.checkpoint]||TANK_ROUTE[0];if(Math.hypot(p.x-cp[0],p.z-cp[1])<4.1){p.checkpoint=(p.checkpoint+1)%TANK_ROUTE.length;if(p.checkpoint===0){p.lap++;const lapTime=s.elapsed-p.lastLap;p.lastLap=s.elapsed;if(!p.bestLap||lapTime<p.bestLap)p.bestLap=lapTime;if(p.lap>=s.roundLimit){p.finishedAt=s.elapsed;p.inputForward=0;p.inputSteer=0;}}}
   }
   const drivers=Array.from(s.players.values()).filter(p=>!p.spectator);const winner=drivers.find(p=>p.lap>=s.roundLimit);if(winner){s.winnerId=winner.sessionId;s.status="finished";this.broadcast("raceFinished",{winnerId:winner.sessionId,winnerName:winner.name,lap:winner.lap,time:winner.finishedAt});setTimeout(()=>{if(this.state.status==="finished"){this.state.status="waiting";this.state.winnerId="";this.broadcastLobby();}},9000);}
+ }
+ damageTankWall(player,index,speed,now){
+  if(speed<4.4||player.impactCooldown>0)return;player.impactCooldown=.28;
+  const wall=this.state.scenery.get("wall-"+index);if(!wall||!wall.active)return;
+  wall.hp=Math.max(0,wall.hp-Math.max(.25,Math.min(1.5,(speed-3.4)*.085)));
+  if(wall.hp<=0){wall.hp=0;wall.active=false;}
+  this.broadcast("sceneryImpact",{wallIndex:index,x:wall.x,z:wall.z,hp:wall.hp,active:wall.active,driverId:player.sessionId});
  }
  onDispose(){clearTimeout(this.countdownTimer);if(codes.get(this.roomCode)===this.roomId)codes.delete(this.roomCode);activeRooms.delete(this.roomId);}
 }
