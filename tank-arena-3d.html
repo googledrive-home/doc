@@ -952,10 +952,11 @@ function updateHUD(){
 }
 function drawRadar(){
  const w=radar.width,h=radar.height;rc.clearRect(0,0,w,h);rc.fillStyle="#16231b";rc.fillRect(0,0,w,h);
+ const sx=x=>w/2+x/80*(w-20),sz=z=>h/2+z/56*(h-20);
  rc.strokeStyle=MAPS[mapIndex].accent;rc.globalAlpha=.42;rc.strokeRect(10,10,w-20,h-20);rc.globalAlpha=1;
- for(const o of obstacles){if(o.decor||!o.w||!o.d)continue;rc.fillStyle="#778275";rc.fillRect(w/2+(o.x-o.w/2)/60*(w-20),h/2+(o.z-o.d/2)/40*(h-20),o.w/60*(w-20),o.d/40*(h-20))}
- for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(w/2+p.x/60*(w-20),h/2+p.z/40*(h-20),3.3,0,Math.PI*2);rc.fill()}
- tanks.forEach((t,i)=>{rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(w/2+t.x/60*(w-20),h/2+t.z/40*(h-20),5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(w/2+t.x/60*(w-20),h/2+t.z/40*(h-20));rc.lineTo(w/2+(t.x+Math.sin(t.angle)*3)/60*(w-20),h/2+(t.z+Math.cos(t.angle)*3)/40*(h-20));rc.stroke()})
+ for(const o of obstacles){if(o.decor||!o.w||!o.d)continue;rc.fillStyle=o.fence?"#b6c5b9":"#778275";rc.fillRect(sx(o.x-o.w/2),sz(o.z-o.d/2),o.w/80*(w-20),o.d/56*(h-20))}
+ for(const p of pickups){rc.fillStyle="#e5c96f";rc.beginPath();rc.arc(sx(p.x),sz(p.z),3.3,0,Math.PI*2);rc.fill()}
+ tanks.forEach((t,i)=>{const x=sx(t.x),y=sz(t.z);rc.fillStyle=i===0?"#75e3ac":"#ff8872";rc.beginPath();rc.arc(x,y,5.5,0,Math.PI*2);rc.fill();rc.strokeStyle="#eff8dd";rc.beginPath();rc.moveTo(x,y);rc.lineTo(sx(t.x+Math.sin(t.angle)*3),sz(t.z+Math.cos(t.angle)*3));rc.stroke()})
 }
 function updateHUDAndRadar(){updateHUD();drawRadar()}
 function stepProjectiles(dt){
@@ -980,7 +981,7 @@ function stepProjectiles(dt){
 }
 function stepPickups(dt){
  spawnTimer-=dt;
- if(spawnTimer<=0&&pickups.length<4){const x=rand(-22,22),z=rand(-13,13);if(!collides(x,z,1,null)){spawnPickup(x,z,["boost","shield","repair"][Math.floor(Math.random()*3)])}spawnTimer=6.8}
+ if(spawnTimer<=0&&pickups.length<4){const x=rand(-34,34),z=rand(-24,24);if(!collides(x,z,1,null)){spawnPickup(x,z,["boost","shield","repair"][Math.floor(Math.random()*3)])}spawnTimer=6.8}
  for(let i=pickups.length-1;i>=0;i--){
   const p=pickups[i];p.phase+=dt;p.group.position.y=.65+Math.sin(p.phase*2.5)*.13;p.group.rotation.y+=dt*.8;
   for(const t of tanks)if(Math.hypot(t.x-p.x,t.z-p.z)<1.7){
