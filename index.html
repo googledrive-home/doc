@@ -83,7 +83,7 @@ body[data-decor="high"] #bgDecor .bg-shape{display:grid}
 
 <section class="card" style="--accent:#ffd35b"><span class="tag">Open World Drive</span><h2>Open World Drive</h2><p>Explore a massive free-roam city with the Drift Arena car roster and physics, drift zones, speed traps, stunt ramps, missions, time trials, garages, upgrades and 60 cash collectibles.</p><div class="play-card"><div class="icon art-icon" data-art="Open World Drive"><div style="font-size:34px">🚗</div></div><div><strong>Open World Drive</strong><span>Massive map · 60 cars · missions · stunts · upgrades · free roam</span></div><button class="btn" onclick="openStandaloneGame('open-world-drive.html','Open World Drive')">PLAY →</button></div></section>
 
-<section class="card" style="--accent:#6effd3"><span class="tag">Tank Arena</span><h2>Tank Arena</h2><p>Drive fictional neon tanks around 10 arenas, tag your rival with bumper hits, collect boosts and play first to 5 points.</p><div class="play-card"><div class="icon art-icon" data-art="Tank Arena"></div><div><strong>Tank Arena</strong><span>1 Player vs 3 CPU levels or 2 Players · 10 vehicles · 10 maps</span></div><button class="btn" onclick="openGame('vehicle')">PLAY →</button></div></section></section>
+<section class="card" style="--accent:#6effd3"><span class="tag">Tank Arena</span><h2>Tank Arena</h2><p>Drive detailed 3D tanks through 10 fully modelled arenas with turret aiming, solid cover, tag pulses, pickups, CPU battles and local two-player matches.</p><div class="play-card"><div class="icon art-icon" data-art="Tank Arena"></div><div><strong>Tank Arena 3D</strong><span>3D models · 10 maps · CPU or local 2-player · vehicle selection</span></div><button class="btn" onclick="openStandaloneGame('tank-arena-3d.html','Tank Arena 3D')">PLAY →</button></div></section></section>
 
 
 <section class="card" style="--accent:#68e8ff"><span class="tag">3D Flight Simulator</span><h2>FPV Drone Simulator</h2><p>Fly a first-person racing quad through a 3D city packed with high-rises, rooftops, roads, street details and a park. Explore freely or race the neon gates.</p><div class="play-card"><div class="icon" style="background:linear-gradient(140deg,#9cf5ff,#6f9bda);display:grid;place-items:center;font-size:31px">🚁</div><div><strong>FPV Drone Simulator</strong><span>3D city · Free flight · Gate time trial · Touch controls</span></div><button class="btn" onclick="event.stopPropagation();openStandaloneGame('drone-simulator.html','FPV Drone Simulator')">FLY →</button></div></section></section>
@@ -1390,7 +1390,8 @@ const STANDALONE_GAMES = new Map([
   ['pool.html','Pool Room · 8 Ball'],
   ['drone-simulator.html','FPV Drone Simulator'],
   ['drift-arena.html','Drift Arena'],
-  ['open-world-drive.html','Open World Drive']
+  ['open-world-drive.html','Open World Drive'],
+  ['tank-arena-3d.html','Tank Arena 3D']
 ]);
 function openStandaloneGame(file,title){
   if(!STANDALONE_GAMES.has(file)) return;
