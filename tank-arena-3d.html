@@ -177,7 +177,11 @@ function buildTank(id,idx){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),paintEdge);orb.position.set(.76,1.41,-.88);group.add(orb);
  const labelMat=material(team,.3,.15,{emissive:team,emissiveIntensity:.45});
  const marker=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.32),labelMat);marker.position.set(0,1.73,-.02);group.add(marker);
- group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hullMat,hullDark,paintHex,hitHalfWidth:1.38*group.scale.x,hitHalfLength:1.78*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:maxTankHits,maxHits:maxTankHits,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,smokeTimer:rand(.1,.4),fenceCooldown:0,trackTime:0,bodyTilt:0,alive:true};
+ const snowHullMat=new THREE.MeshStandardMaterial({color:"#eef4f4",roughness:1,transparent:true,opacity:0,depthWrite:false});
+ const snowHull=new THREE.Mesh(new THREE.BoxGeometry(1.58,.025,2.38),snowHullMat);snowHull.position.set(0,1.12,-.05);group.add(snowHull);
+ const snowTurretMat=new THREE.MeshStandardMaterial({color:"#f0f5f4",roughness:1,transparent:true,opacity:0,depthWrite:false});
+ const snowTurret=new THREE.Mesh(new THREE.BoxGeometry(1.25,.022,1.08),snowTurretMat);snowTurret.position.set(0,.416,-.12);turret.add(snowTurret);
+ group.scale.set(spec.armor>1.3?1.10:spec.speed>13?.92:1,spec.armor>1.3?1.05:1,spec.armor>1.3?1.10:spec.speed>13?.92:1);const tank={id,idx,spec,group,turret,barrel,team,teamMat:labelMat,hullMat,hullDark,paintHex,snowCoats:[snowHullMat,snowTurretMat],snowLoad:0,snowTrackTimer:rand(0,.2),hitHalfWidth:1.38*group.scale.x,hitHalfLength:1.78*group.scale.z,x:id===0?-23:23,z:0,angle:id===0?Math.PI/2:-Math.PI/2,vx:0,vz:0,hits:maxTankHits,maxHits:maxTankHits,inv:1.25,boost:0,boostCooldown:0,shield:0,fireCd:0,flash:0,smokeTimer:rand(.1,.4),fenceCooldown:0,trackTime:0,bodyTilt:0,alive:true};
  group.position.set(tank.x,0,tank.z);scene.add(group);return tank
 }
 function clearDynamic(){
@@ -809,7 +813,7 @@ function update(dt){
   const f2=(held.has("arrowup")?1:0)-(held.has("arrowdown")?1:0),s2=(held.has("arrowright")?1:0)-(held.has("arrowleft")?1:0);
   moveTank(p2,dt,f2,s2,held.has("m"));p2.turret.rotation.y+=((held.has("l")?1:0)-(held.has("j")?1:0))*1.45*dt;if(held.has("enter"))spawnTag(p2);
  }else cpuThink(p2,p1,dt);
- resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);
+ resolveTankCollision();stepProjectiles(dt);stepPickups(dt);stepGroundMist(dt);stepWeather(dt);stepSnow(dt);
  for(let i=particles.length-1;i>=0;i--){
   const p=particles[i];p.life-=dt;
   if(p.kind==="explosion"){
@@ -822,6 +826,9 @@ function update(dt){
    p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;
    p.mesh.scale.setScalar(p.scale*(1+(1-p.life/p.max)*3.4));
    p.mesh.material.opacity=Math.max(0,p.life/p.max*.30);
+  }else if(p.kind==="snowPuff"){
+   p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=1.6*dt;
+   p.mesh.scale.setScalar(p.scale*(.8+(1-p.life/p.max)*1.5));p.mesh.material.opacity=Math.max(0,p.life/p.max*.66);
   }else{
    p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=8*dt;
   }
@@ -834,11 +841,18 @@ function update(dt){
  updateHUDAndRadar()
 }
 function cameraUpdate(dt){
- const avgx=((tanks[0]?.x||0)+(tanks[1]?.x||0))*.1;
- const avgz=((tanks[0]?.z||0)+(tanks[1]?.z||0))*.08;
- const target=V(clamp(avgx,-4,4),0,clamp(avgz,-3,3));
- const dest=V(target.x,43,target.z+37);
- camera.position.lerp(dest,1-Math.exp(-dt*1.8));camera.lookAt(target)
+ if(!camera)return;
+ const a=tanks[0],b=tanks[1];
+ const midX=a&&b?(a.x+b.x)*.5:a?.x||0,midZ=a&&b?(a.z+b.z)*.5:a?.z||0;
+ const separation=a&&b?Math.hypot(a.x-b.x,a.z-b.z):0;
+ const height=clamp(39+separation*.56,40,72),back=clamp(31+separation*.29,31,49);
+ const target=V(midX,.55,midZ);
+ const dest=V(midX,height,midZ+back);
+ const desiredFov=clamp(46+separation*.24,46,63);
+ camera.position.lerp(dest,1-Math.exp(-dt*2.0));
+ const nextFov=camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*1.7));
+ if(Math.abs(nextFov-camera.fov)>.025){camera.fov=nextFov;camera.updateProjectionMatrix()}
+ camera.lookAt(target)
 }
 function animate(now){
  requestAnimationFrame(animate);
