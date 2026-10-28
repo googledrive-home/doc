@@ -263,7 +263,7 @@ function addWall(x,z,w,d,h,kind){
    }
   }
   frameFront.count=fi;paneFront.count=fi;frameSide.count=si;paneSide.count=si;
-  frameFront.instanceMatrix.needsUpdate=true;paneFront.instanceMatrix.needsUpdate=true;frameSide.instanceMatrix.needsUpdate=true;paneSide.instanceMatrix.needsUpdate=true;
+  frameFront.instanceMatrix.needsUpdate=true;paneFront.instanceMatrix.needsUpdate=true;frameSide.instanceMatrix.needsUpdate=true;paneSide.instanceMatrix.needsUpdate=true;if(paneFront.instanceColor)paneFront.instanceColor.needsUpdate=true;if(paneSide.instanceColor)paneSide.instanceColor.needsUpdate=true;
   g.add(frameFront,paneFront,frameSide,paneSide);
   // Roof coping and small mechanical housings give each block a real skyline silhouette.
   box(g,0,h+.12,0,w+.16,.22,d+.16,floorBand);
@@ -427,6 +427,16 @@ function addLandmarkDetails(){
    cylinder(scene,x,1.7,20,.48,.55,3.4,stone,12);
    cylinder(scene,x,3.45,20,.7,.68,.18,darkStone,12);
    obstacles.push({x,z:20,w:1.15,d:1.15,h:3.4,kind:"ruin column",shape:"circle",r:.62});
+  }
+ }
+ if(style==="city"||style==="london"){
+  // Street trees and small green pockets soften the denser urban maps.
+  let planted=0,tries=0;
+  while(planted<11&&tries<100){
+   tries++;const x=rand(-36,36),z=rand(-24,24);
+   if(Math.abs(x)<12&&Math.abs(z)<8)continue;
+   if(collides(x,z,1.05,null))continue;
+   addTree(x,z,rand(.62,.86));planted++;
   }
  }
 }
