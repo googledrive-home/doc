@@ -710,10 +710,10 @@ function deformTerrain(x,z,radius=2.6,depth=.035){
  if(!terrainMesh)return;
  const attr=terrainMesh.geometry.attributes.position;
  for(let i=0;i<attr.count;i++){
-  const px=attr.getX(i),pz=-attr.getY(i),dx=px-x,dz=pz-z,d=Math.hypot(dx,dz);
+  const px=attr.getX(i),pz=attr.getZ(i),dx=px-x,dz=pz-z,d=Math.hypot(dx,dz);
   if(d>radius)continue;
   const u=1-d/radius,fall=u*u*(3-2*u),lip=Math.max(0,1-Math.abs(d/radius-.82)/.12)*depth*.24;
-  attr.setZ(i,attr.getZ(i)-fall*depth+lip);
+  attr.setY(i,attr.getY(i)-fall*depth+lip);
  }
  attr.needsUpdate=true;terrainMesh.geometry.computeVertexNormals();terrainMesh.geometry.computeBoundingSphere();
 }
@@ -998,7 +998,7 @@ function damageSceneryAt(x,z,speed){
   o.hp=(o.hp??3)-Math.max(.28,Math.min(1.6,(speed-3.5)*.13));didHit=true;
   spawnParticles(o.x,Math.max(.25,(o.h||1)*.55),o.z,o.kind==="building"?"#c3b7a0":"#8f9b7b",o.hp<=0?16:5);
   if(o.hp<=0){
-   scene.remove(o.group);if(o.group.userData.editorPlacementId){}obstacles.splice(i,1);
+   scene.remove(o.group);createCrater(o.x,o.z,Math.max(1.1,Math.min(2.1,radius*.35)),.018);obstacles.splice(i,1);
    const debrisMat=material(o.kind==="building"?"#6f746b":"#827b65",.96,.02);
    for(let n=0;n<5;n++){const chip=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.12,.34),0),debrisMat);chip.position.set(o.x+rand(-1,1),.25+rand(0,.6),o.z+rand(-1,1));scene.add(chip);particles.push({mesh:chip,vx:rand(-3,3),vy:rand(1,4),vz:rand(-3,3),life:.8,max:.8});}
    showBanner(o.kind.toUpperCase()+" COLLAPSED",.8);
@@ -1158,6 +1158,7 @@ function resolveTankCollision(){
 }
 function update(dt){
  if(!active||paused||matchOver)return;
+ if(editorActive){stepGroundMist(dt);stepWeather(dt);updateEngineAudio();return;}
  if(mode==="online"&&onlineRoom){updateOnlineDriving(dt);updateHUDAndRadar();return;}
  tanks.forEach(t=>{t.inv=Math.max(0,t.inv-dt);t.flash=Math.max(0,t.flash-dt);t.fireCd=Math.max(0,t.fireCd-dt);t.fenceCooldown=Math.max(0,(t.fenceCooldown||0)-dt);t.impactCooldown=Math.max(0,(t.impactCooldown||0)-dt);if(t.boost>0)t.boost=Math.max(0,t.boost-dt);if(t.boostCooldown>0)t.boostCooldown=Math.max(0,t.boostCooldown-dt);if(t.hits<t.maxHits){t.smokeTimer-=dt;if(t.smokeTimer<=0)spawnDamageSmoke(t)}});
  const p1=tanks[0],p2=tanks[1];
@@ -1335,7 +1336,7 @@ function attachTankOnlineRoom(room){
  room.onMessage("partyChatMessage",message=>appendTankOnlineChat(message));
  room.onMessage("partyChatError",message=>appendTankOnlineChat({name:"SERVER",text:message?.message||"Message not sent."}));
  room.onMessage("voicePeers",message=>{for(const p of message?.peers||[])void connectTankVoicePeer(p.sessionId,p.name,true);});
- room.onMessage("voicePeerJoined",message=>{if(onlineVoiceEnabled&&message?.sessionId&&message.sessionId!==room.sessionId)void connectTankVoicePeer(message.sessionId,message.name,true);});
+ room.onMessage("voicePeerJoined",message=>{if(onlineVoiceEnabled&&message?.sessionId&&message.sessionId!==room.sessionId)setOnlineStatus("Voice peer joined: "+(message.name||"Driver")+". Establishing audio…");});
  room.onMessage("voicePeerLeft",message=>dropTankVoicePeer(message?.sessionId));
  room.onMessage("voiceSignal",message=>{void handleTankVoiceSignal(message);});
  room.onLeave(()=>{if(onlineRoom===room&&!onlineRoomClosing){setOnlineStatus("Disconnected from the room.");disconnectTankOnline(false);}});
@@ -1448,6 +1449,7 @@ function captureReplayFrame(now){
  if(replayFrames.length>900)replayFrames.shift();
 }
 function showTankReplay(){
+ if(onlineRoom)try{onlineRoom.send("drive",{forward:0,steer:0,boost:false});}catch(_){}
  if(replayFrames.length<2){$("replayInfo").textContent="Play for a few seconds first. Replays store the most recent 90 seconds of driving.";return;}
  replayReturnActive=active;replayReturnPaused=paused;replayMode=true;replayPaused=false;replayPlaying=true;replayCursor=0;replayDuration=Math.max(.1,replayFrames[replayFrames.length-1].t-replayFrames[0].t);$("replaySeek").max=String(Math.round(replayDuration*1000));$("replaySeek").value="0";$("replayInfo").textContent="Recent "+Math.round(replayDuration)+" seconds · "+replayFrames.length+" sampled frames.";active=false;paused=true;$("replayOverlay").style.display="grid";$("replayPlayBtn").textContent="Ⅱ PAUSE";renderTankReplayAt(0);
 }
@@ -1487,6 +1489,7 @@ function editorEraseAt(x,z){
 }
 function toggleTankEditor(show=!editorActive){
  if(show&&mode==="online"&&onlineRoom){$("editorStatus").textContent="Map editing is local-only; leave the online room first.";return;}
+ if(show&&$("mode").value==="online"&&!onlineRoom)$("mode").value="local";
  if(show&&!active)startGame(true);
  editorActive=!!show;$("editorOverlay").style.display=editorActive?"block":"none";
  if(editorActive){paused=false;active=true;$("pauseBtn").textContent="Ⅱ PAUSE";$("editorStatus").textContent="Selected tool: "+editorTool.toUpperCase()+". Click on the ground to place scenery.";}
