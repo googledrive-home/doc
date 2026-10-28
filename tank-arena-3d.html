@@ -216,6 +216,109 @@ function addCrystal(x,z,s=1){
 function addGlowStrip(x,z,w,d,color){
  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,.035,d),material(color,.3,.08,{emissive:color,emissiveIntensity:.45}));mesh.position.set(x,.05,z);scene.add(mesh)
 }
+function buildFenceLine(axis,coordinate,length){
+ const wireCanvas=document.createElement("canvas");wireCanvas.width=128;wireCanvas.height=128;
+ const ctx=wireCanvas.getContext("2d");ctx.clearRect(0,0,128,128);ctx.strokeStyle="rgba(205,218,209,.72)";ctx.lineWidth=fenceStyle==="industrial"?3:1.5;
+ if(fenceStyle==="industrial"){
+  for(let x=0;x<=128;x+=16){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,128);ctx.stroke()}
+  for(let y=0;y<=128;y+=16){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(128,y);ctx.stroke()}
+ }else{
+  for(let x=-128;x<=128;x+=16){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+128,128);ctx.stroke();ctx.beginPath();ctx.moveTo(x,128);ctx.lineTo(x+128,0);ctx.stroke()}
+ }
+ const tex=new THREE.CanvasTexture(wireCanvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(length/4,1);
+ const wireMat=new THREE.MeshStandardMaterial({map:tex,transparent:true,side:THREE.DoubleSide,roughness:.82,metalness:.32,alphaTest:.08});
+ const panel=new THREE.Mesh(new THREE.PlaneGeometry(length,2.55),wireMat);
+ panel.position.set(axis==="x"?coordinate:0,1.30,axis==="x"?0:coordinate);if(axis==="x")panel.rotation.y=Math.PI/2;
+ panel.castShadow=false;scene.add(panel);
+ const steel=material(fenceStyle==="warning"?"#d2ae54":"#78877e",.56,.58),rail=material(fenceStyle==="warning"?"#b49b57":"#59675f",.54,.56);
+ const putPost=(along)=>{if(axis==="x")box(scene,coordinate,1.28,along,.12,2.60,.12,steel);else box(scene,along,1.28,coordinate,.12,2.60,.12,steel)};
+ const putRail=(y,thick,mat)=>{if(axis==="x")box(scene,coordinate,y,0,.105,thick,length,mat);else box(scene,0,y,coordinate,length,thick,.105,mat)};
+ putRail(.16,.10,rail);putRail(1.20,.075,steel);putRail(2.50,.12,steel);
+ for(let pos=-length/2;pos<=length/2+.01;pos+=2.4)putPost(pos);
+ if(fenceStyle==="warning"){
+  const stripe=material("#d0b55d",.48,.38);
+  for(let pos=-length/2;pos<length/2;pos+=2.4){
+   if(Math.round((pos+length/2)/2.4)%2===0){
+    if(axis==="x")box(scene,coordinate+.012,2.58,pos+1.2,.13,.055,1.25,stripe);
+    else box(scene,pos+1.2,2.58,coordinate+.012,1.25,.055,.13,stripe);
+   }
+  }
+ }
+ obstacles.push({x:axis==="x"?coordinate:0,z:axis==="x"?0:coordinate,w:axis==="x"?.20:length,d:axis==="x"?length:.20,h:2.65,kind:"fence",fence:true});
+}
+function addFencePerimeter(){
+ buildFenceLine("x",-30,40);buildFenceLine("x",30,40);
+ buildFenceLine("z",-20,60);buildFenceLine("z",20,60);
+}
+function addFarHorizon(){
+ const hillMat=material(new THREE.Color(MAPS[mapIndex].sky).lerp(new THREE.Color("#27352e"),.35),.98,.02);
+ for(let i=0;i<32;i++){
+  const a=i/32*Math.PI*2+rand(-.04,.04),radius=rand(86,145),size=rand(7,19);
+  const hill=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),hillMat);
+  hill.position.set(Math.cos(a)*radius,rand(-2,2),Math.sin(a)*radius);
+  hill.scale.set(size,rand(5,15),size*rand(1.1,2.2));scene.add(hill);
+ }
+}
+function buildCloudLayer(){
+ clouds3d=[];const preset=CLOUD_PRESETS[cloudMode]||CLOUD_PRESETS.scattered;
+ for(let i=0;i<preset.count;i++){
+  const group=new THREE.Group(),cloudMat=new THREE.MeshStandardMaterial({color:preset.shade,roughness:1,transparent:true,opacity:weatherMode==="storm"?.68:.78,depthWrite:false});
+  const size=rand(3.2,7.5)*preset.scale;
+  for(let j=0;j<5+Math.floor(preset.scale*2);j++){
+   const puff=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),cloudMat);
+   puff.position.set(rand(-size,size),rand(-.4,.6)*size*.17,rand(-size*.48,size*.48));
+   puff.scale.set(rand(.85,1.6)*size*.42,rand(.20,.38)*size,rand(.34,.72)*size*.48);group.add(puff);
+  }
+  const a=rand(0,Math.PI*2),radius=rand(54,115);
+  group.position.set(Math.cos(a)*radius,preset.height+rand(-3,3),Math.sin(a)*radius);
+  group.userData.cloudMotion={x:rand(-.55,.55),z:rand(-.22,.22)};scene.add(group);clouds3d.push(group);
+ }
+}
+function buildWeatherParticles(){
+ weatherPoints=null;weatherMeta=[];weatherKind=WEATHER_PRESETS[weatherMode]?.precip||"none";
+ if(weatherKind==="none"||weatherKind==="mist")return;
+ const count=weatherKind==="rain"?240:weatherKind==="snow"?260:190;
+ const positions=new Float32Array(count*(weatherKind==="rain"?6:3));
+ for(let i=0;i<count;i++){
+  const p={x:rand(-37,37),y:rand(1,28),z:rand(-27,27),speed:weatherKind==="rain"?rand(15,23):weatherKind==="snow"?rand(1.4,3.4):rand(2,5),wind:weatherMode==="storm"?rand(2.2,4.2):weatherKind==="rain"?rand(.8,1.8):weatherKind==="dust"?rand(2,4):rand(-.6,.6),phase:rand(0,6)};
+  weatherMeta.push(p);
+  if(weatherKind==="rain"){const k=i*6;positions[k]=p.x;positions[k+1]=p.y;positions[k+2]=p.z;positions[k+3]=p.x-.16;positions[k+4]=p.y-.72;positions[k+5]=p.z+.10}
+  else{const k=i*3;positions[k]=p.x;positions[k+1]=p.y;positions[k+2]=p.z}
+ }
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
+ const mat=weatherKind==="rain"?new THREE.LineBasicMaterial({color:weatherMode==="storm"?"#aabac9":"#9baeb9",transparent:true,opacity:weatherMode==="storm"?.47:.36}):new THREE.PointsMaterial({color:weatherKind==="snow"?"#ecf4f1":"#c3b396",size:weatherKind==="snow"?.12:.18,transparent:true,opacity:weatherKind==="snow"?.76:.28,sizeAttenuation:true,depthWrite:false});
+ weatherPoints=weatherKind==="rain"?new THREE.LineSegments(geometry,mat):new THREE.Points(geometry,mat);weatherPoints.frustumCulled=false;scene.add(weatherPoints);
+}
+function stepWeather(dt){
+ for(const cloud of clouds3d){
+  const m=cloud.userData.cloudMotion;if(!m)continue;cloud.position.x+=m.x*dt;cloud.position.z+=m.z*dt;
+  if(cloud.position.x>150)cloud.position.x=-150;if(cloud.position.x<-150)cloud.position.x=150;
+  if(cloud.position.z>125)cloud.position.z=-125;if(cloud.position.z<-125)cloud.position.z=125;
+ }
+ if(weatherPoints){
+  const attr=weatherPoints.geometry.attributes.position;
+  for(let i=0;i<weatherMeta.length;i++){
+   const p=weatherMeta[i];p.x+=p.wind*dt;p.phase+=dt;
+   if(weatherKind==="rain"){
+    p.y-=p.speed*dt;p.z+=p.wind*.13*dt;if(p.y<0){p.y=rand(18,30);p.x=rand(-36,36);p.z=rand(-26,26)}
+    const k=i*6;attr.array[k]=p.x;attr.array[k+1]=p.y;attr.array[k+2]=p.z;attr.array[k+3]=p.x-.16;attr.array[k+4]=p.y-.72;attr.array[k+5]=p.z+.10;
+   }else{
+    p.y-=p.speed*dt;if(weatherKind==="snow"){p.x+=Math.sin(p.phase)*.018;p.z+=Math.cos(p.phase*.7)*.018}
+    if(p.y<0){p.y=rand(16,28);p.x=rand(-36,36);p.z=rand(-26,26)}
+    const k=i*3;attr.array[k]=p.x;attr.array[k+1]=p.y;attr.array[k+2]=p.z;
+   }
+  }
+  attr.needsUpdate=true;
+ }
+ weatherClock+=dt;if(stormLight){const phase=weatherClock%10;stormLight.intensity=weatherMode==="storm"?(phase>8.6&&phase<8.76?4.8:phase>8.76&&phase<8.96?1.4:0):0}
+}
+function updateMenuPreview(){
+ const map=MAPS[Number($("map").value)]||MAPS[0],weather=$("weather").value,cloud=$("clouds").value,paint=PAINTS[$("paint1").value]||"#c8f27a";
+ $("previewMapTitle").textContent=map.name.toUpperCase();$("previewWeatherTitle").textContent=weather.toUpperCase()+" · "+cloud.toUpperCase()+" CLOUDS";
+ $("previewSky").style.background=({clear:"linear-gradient(#c58b53,#e0c48f)",overcast:"linear-gradient(#576b78,#a1a9aa)",mist:"linear-gradient(#415b5c,#9aa9a0)",rain:"linear-gradient(#273a4a,#657782)",storm:"linear-gradient(#141d30,#485664)",snow:"linear-gradient(#91b2bd,#e2e8e5)",dust:"linear-gradient(#80674d,#c4a477)"})[weather];
+ $("previewClouds").textContent=cloud==="none"?"":cloud==="wispy"?"☁ 〰":cloud==="storm"?"☁ ☁ ☁":cloud==="overcast"?"☁ ☁ ☁ ☁":"☁  ☁";$("previewTank").style.color=paint;
+ $("worldPreview").style.filter=weather==="storm"?"saturate(.65) brightness(.78)":weather==="rain"?"saturate(.72) brightness(.86)":weather==="snow"?"brightness(1.1)":weather==="dust"?"sepia(.18)":"none";
+}
 function buildArena(){
  clearDynamic();
  const map=MAPS[mapIndex],fogColor=new THREE.Color(map.sky).multiplyScalar(.56);scene.background=fogColor;scene.fog=new THREE.FogExp2(fogColor,.019);
