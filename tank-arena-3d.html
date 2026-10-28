@@ -510,6 +510,69 @@ function seedPickups(){
  }
 }
 
+function addSnowField(){
+ snowAccumulation=.08;
+ const farMat=new THREE.MeshBasicMaterial({color:"#d9e6e9",transparent:true,opacity:.035,depthWrite:false});
+ snowFarSurface=new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),farMat);snowFarSurface.rotation.x=-Math.PI/2;snowFarSurface.position.y=-.094;snowFarSurface.renderOrder=1;scene.add(snowFarSurface);
+ const coverMat=new THREE.MeshBasicMaterial({color:"#edf4f4",transparent:true,opacity:.09,depthWrite:false});
+ snowSurface=new THREE.Mesh(new THREE.PlaneGeometry(59.6,39.6),coverMat);snowSurface.rotation.x=-Math.PI/2;snowSurface.position.y=-.083;snowSurface.renderOrder=2;scene.add(snowSurface);
+ const moundMat=new THREE.MeshStandardMaterial({color:"#e4eff0",roughness:1,transparent:true,opacity:.42,depthWrite:false});
+ for(let i=0;i<44;i++){
+  let x=rand(-27.5,27.5),z=rand(-17.5,17.5);
+  if(Math.abs(x)>20&&Math.abs(z)<4)x*=.6;
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,8,5),moundMat.clone());
+  const bx=rand(.75,2.4),bz=rand(.7,2.0);
+  mesh.position.set(x,-.075,z);mesh.scale.set(bx,.045,bz);mesh.renderOrder=3;scene.add(mesh);
+  snowPatches.push({mesh,x,z,bx,bz,compression:0,phase:rand(0,6)});
+ }
+}
+function spawnSnowPuff(t){
+ const fx=Math.sin(t.angle),fz=Math.cos(t.angle),rx=Math.cos(t.angle),rz=-Math.sin(t.angle);
+ for(const side of [-1,1]){
+  const mat=new THREE.MeshBasicMaterial({color:"#e6f1f2",transparent:true,opacity:.66,depthWrite:false});
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(rand(.045,.095),6,5),mat);
+  mesh.position.set(t.x-fx*1.15+rx*side*1.05,.10,t.z-fz*1.15+rz*side*1.05);scene.add(mesh);
+  particles.push({kind:"snowPuff",mesh,vx:t.vx*.08+rand(-.55,.55),vy:rand(.3,.9),vz:t.vz*.08+rand(-.55,.55),life:rand(.35,.62),max:.62,scale:rand(.10,.18)});
+ }
+ for(const side of [-1,1]){
+  const mat=new THREE.MeshBasicMaterial({color:"#667a7e",transparent:true,opacity:.22,depthWrite:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(.48,1.12),mat);
+  mesh.rotation.x=-Math.PI/2;mesh.rotation.y=t.angle;
+  mesh.position.set(t.x-fx*1.12+rx*side*1.04,-.068,t.z-fz*1.12+rz*side*1.04);
+  scene.add(mesh);snowTrackMarks.push({mesh,life:19,max:19,opacity:.22});
+ }
+}
+function stepSnow(dt){
+ if(weatherMode!=="snow"||!snowSurface)return;
+ snowAccumulation=Math.min(1,snowAccumulation+dt*.0065);
+ snowFarSurface.material.opacity=.025+snowAccumulation*.035;
+ snowSurface.material.opacity=.075+snowAccumulation*.19;
+ for(const patch of snowPatches){
+  patch.compression=Math.max(0,patch.compression-dt*.002);
+  for(const t of tanks){
+   const speed=Math.hypot(t.vx,t.vz);if(speed<1.0)continue;
+   const dx=patch.x-t.x,dz=patch.z-t.z,rx=Math.cos(t.angle),rz=-Math.sin(t.angle),fx=Math.sin(t.angle),fz=Math.cos(t.angle);
+   const localX=dx*rx+dz*rz,localZ=dx*fx+dz*fz;
+   if(Math.abs(localX)<(t.hitHalfWidth||1.4)+patch.bx*.42&&Math.abs(localZ)<(t.hitHalfLength||1.8)+patch.bz*.38)patch.compression=Math.min(.78,patch.compression+dt*2.4);
+  }
+  const growth=.82+snowAccumulation*.48,thickness=.035+snowAccumulation*.16;
+  patch.mesh.scale.set(patch.bx*growth*(1-patch.compression*.25),thickness*(1-patch.compression*.42),patch.bz*growth*(1-patch.compression*.25));
+  patch.mesh.position.y=-.092+patch.mesh.scale.y*.8;
+  patch.mesh.material.opacity=(.30+snowAccumulation*.48)*(1-patch.compression*.64);
+  patch.phase+=dt*.2;
+ }
+ for(const t of tanks){
+  const speed=Math.hypot(t.vx,t.vz);t.snowTrackTimer=Math.max(0,(t.snowTrackTimer||0)-dt);
+  t.snowLoad=Math.min(1,(t.snowLoad||0)+dt*.012);
+  if(speed>2.0&&t.snowTrackTimer<=0){spawnSnowPuff(t);t.snowTrackTimer=.36;t.snowLoad=Math.max(0,t.snowLoad-.07)}
+  (t.snowCoats||[]).forEach((mat,i)=>{mat.opacity=Math.max(0,(t.snowLoad||0)*(.20+i*.08));mat.visible=mat.opacity>.015});
+ }
+ for(let i=snowTrackMarks.length-1;i>=0;i--){
+  const mark=snowTrackMarks[i];mark.life-=dt;mark.mesh.material.opacity=mark.opacity*Math.max(0,mark.life/mark.max);
+  if(mark.life<=0){scene.remove(mark.mesh);mark.mesh.geometry.dispose();mark.mesh.material.dispose();snowTrackMarks.splice(i,1)}
+ }
+}
+
 function addGroundMist(fogColor){
  const fogCanvas=document.createElement("canvas");fogCanvas.width=128;fogCanvas.height=128;
  const ctx=fogCanvas.getContext("2d"),gradient=ctx.createRadialGradient(64,64,3,64,64,64);
