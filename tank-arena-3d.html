@@ -781,6 +781,7 @@ document.querySelectorAll(".touch button").forEach(btn=>{
 });
 window.addEventListener("resize",()=>{if(active){$("touch1").style.display=innerWidth<=760?"flex":"none";$("touch2").style.display=innerWidth<=760&&mode==="local"?"flex":"none"}});
 $("difficulty").addEventListener("change",()=>difficulty=$("difficulty").value);
+initCustomSettings();
 for(const id of ["map","weather","clouds","paint1","paint2","fenceStyle","fogLevel","tankHealth","roundLimit"])$(id).addEventListener("change",updateMenuPreview);
 updateMenuPreview();
 try{createScene();requestAnimationFrame(animate)}catch(err){$("errorOverlay").style.display="grid";$("errorText").textContent="3D setup failed: "+(err?.message||"WebGL was unavailable")+"\nTry refreshing in a current browser with hardware acceleration enabled."}
