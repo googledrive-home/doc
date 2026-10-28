@@ -870,13 +870,17 @@ class HockeyRoom extends (await import("@colyseus/core")).Room {
 
 
 class TankDriver extends Schema {
- constructor(){super();this.sessionId="";this.name="Driver";this.team=1;this.slot=0;this.x=0;this.z=0;this.vx=0;this.vz=0;this.angle=0;this.inputForward=0;this.inputSteer=0;this.vehicle=0;this.paint="#8ca67b";this.skin=0;this.ready=false;this.spectator=false;this.checkpoint=0;this.lap=0;this.lastLap=0;this.bestLap=0;this.finishedAt=0;this.boost=0;this.boostCooldown=0;this.damage=0;}
+ constructor(){super();this.sessionId="";this.name="Driver";this.team=1;this.slot=0;this.x=0;this.z=0;this.vx=0;this.vz=0;this.angle=0;this.inputForward=0;this.inputSteer=0;this.vehicle=0;this.paint="#8ca67b";this.skin=0;this.ready=false;this.spectator=false;this.checkpoint=0;this.lap=0;this.lastLap=0;this.bestLap=0;this.finishedAt=0;this.boost=0;this.boostCooldown=0;this.damage=0;this.impactCooldown=0;}
 }
-defineTypes(TankDriver,{sessionId:"string",name:"string",team:"number",slot:"number",x:"number",z:"number",vx:"number",vz:"number",angle:"number",inputForward:"number",inputSteer:"number",vehicle:"number",paint:"string",skin:"number",ready:"boolean",spectator:"boolean",checkpoint:"number",lap:"number",lastLap:"number",bestLap:"number",finishedAt:"number",boost:"number",boostCooldown:"number",damage:"number"});
+defineTypes(TankDriver,{sessionId:"string",name:"string",team:"number",slot:"number",x:"number",z:"number",vx:"number",vz:"number",angle:"number",inputForward:"number",inputSteer:"number",vehicle:"number",paint:"string",skin:"number",ready:"boolean",spectator:"boolean",checkpoint:"number",lap:"number",lastLap:"number",bestLap:"number",finishedAt:"number",boost:"number",boostCooldown:"number",damage:"number",impactCooldown:"number"});
+class TankScenery extends Schema {
+ constructor(){super();this.index=0;this.x=0;this.z=0;this.w=1;this.d=1;this.h=2;this.kind="block";this.hp=3;this.active=true;}
+}
+defineTypes(TankScenery,{index:"number",x:"number",z:"number",w:"number",d:"number",h:"number",kind:"string",hp:"number",active:"boolean"});
 class TankArenaState extends Schema {
- constructor(){super();this.players=new MapSchema();this.game="tank";this.mode="1v1";this.gameType="tank-driving";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Tank Arena Lobby";this.map="0";this.mapName="Neon Grid";this.weather="overcast";this.clouds="scattered";this.fogLevel="medium";this.fenceStyle="chainlink";this.roundLimit=3;this.code="";this.countdown=0;this.elapsed=0;this.winnerId="";this.revision=0;}
+ constructor(){super();this.players=new MapSchema();this.scenery=new MapSchema();this.game="tank";this.mode="1v1";this.gameType="tank-driving";this.status="practice";this.hostId="";this.private=false;this.lobbyName="Tank Arena Lobby";this.map="0";this.mapName="Neon Grid";this.weather="overcast";this.clouds="scattered";this.fogLevel="medium";this.fenceStyle="chainlink";this.roundLimit=3;this.code="";this.countdown=0;this.elapsed=0;this.winnerId="";this.revision=0;}
 }
-defineTypes(TankArenaState,{players:{map:TankDriver},game:"string",mode:"string",gameType:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",mapName:"string",weather:"string",clouds:"string",fogLevel:"string",fenceStyle:"string",roundLimit:"number",code:"string",countdown:"number",elapsed:"number",winnerId:"string",revision:"number"});
+defineTypes(TankArenaState,{players:{map:TankDriver},scenery:{map:TankScenery},game:"string",mode:"string",gameType:"string",status:"string",hostId:"string",private:"boolean",lobbyName:"string",map:"string",mapName:"string",weather:"string",clouds:"string",fogLevel:"string",fenceStyle:"string",roundLimit:"number",code:"string",countdown:"number",elapsed:"number",winnerId:"string",revision:"number"});
 const TANK_MAP_WALLS=[
  [[.26,.18,.10,.28],[.64,.18,.10,.28],[.26,.64,.10,.18],[.64,.64,.10,.18],[.44,.41,.12,.10]],
  [[.18,.22,.20,.07],[.62,.22,.20,.07],[.18,.71,.20,.07],[.62,.71,.20,.07],[.46,.34,.08,.28]],
@@ -896,6 +900,13 @@ const TANK_MAP_WALLS=[
  []
 ];
 const TANK_ROUTE=[[-31,-20],[31,-20],[31,20],[-31,20]];
+function resetTankScenery(state){
+ if(!state?.scenery)return;state.scenery.clear();const idx=tankMapIndex(state.map),walls=TANK_MAP_WALLS[idx]||[];
+ for(let i=0;i<walls.length;i++){
+  const a=walls[i],record=new TankScenery();record.index=i;record.x=(a[0]+a[2]/2)*76-38;record.z=(a[1]+a[3]/2)*52-26;record.w=Math.max(1.3,a[2]*76);record.d=Math.max(1.3,a[3]*52);
+  record.kind=[7,10,11].includes(idx)?"building":[1,6].includes(idx)?"crate":"block";record.h=record.kind==="building"?14:3;record.hp=record.kind==="building"?6:record.kind==="crate"?3.5:2.5;record.active=true;state.scenery.set("wall-"+i,record);
+ }
+}
 function tankMapIndex(value){const n=Number.parseInt(String(value),10);return Number.isFinite(n)?Math.max(0,Math.min(15,n)):0;}
 function tankClamp(n,lo,hi){return Math.max(lo,Math.min(hi,Number.isFinite(Number(n))?Number(n):0));}
 function tankMapCollides(mapValue,x,z,radius=1.35){
@@ -913,7 +924,7 @@ class TankArenaRoom extends (await import("@colyseus/core")).Room {
   const state=this.state;state.game="tank";state.mode="1v1";state.gameType="tank-driving";state.private=!!options.private;state.lobbyName=cleanRoomName(options.lobbyName||"Tank Arena Lobby");state.map=String(tankMapIndex(options.map));state.mapName=String(options.mapName||"Neon Grid").slice(0,48);state.weather=["clear","overcast","mist","rain","storm","snow","dust"].includes(options.weather)?options.weather:"overcast";state.clouds=["none","wispy","scattered","overcast","storm"].includes(options.clouds)?options.clouds:"scattered";state.fogLevel=["low","medium","high"].includes(options.fogLevel)?options.fogLevel:"medium";state.fenceStyle=["industrial","chainlink","warning"].includes(options.fenceStyle)?options.fenceStyle:"chainlink";state.roundLimit=[1,2,3,4,5,6,7].includes(Number(options.roundLimit))?Number(options.roundLimit):3;
   this.privatePasswordSalt=null;this.privatePasswordHash=null;if(state.private){const password=String(options.privatePassword||"").trim();if(password.length<4||password.length>64)throw new Error("Private lobby passwords must be between 4 and 64 characters.");this.privatePasswordSalt=randomBytes(16);this.privatePasswordHash=scryptSync(password,this.privatePasswordSalt,32);}
   this.roomCode=options.code||makeCode();state.code=this.roomCode;codes.set(this.roomCode,this.roomId);activeRooms.set(this.roomId,this);this.voicePeers=new Map();this.voiceSignalRate=new Map();this.chatRate=new Map();this.boostHeld=new Map();this.lastTick=Date.now();this.matchStartedAt=0;this.countdownUntil=0;this.lastBroadcastAt=0;
-  this.setMetadata({game:"tank",mode:state.mode,gameType:state.gameType,map:state.map,private:state.private,code:this.roomCode,lobbyName:state.lobbyName,weather:state.weather});
+  this.setMetadata({game:"tank",mode:state.mode,gameType:state.gameType,map:state.map,private:state.private,code:this.roomCode,lobbyName:state.lobbyName,weather:state.weather});resetTankScenery(state);
   this.onMessage("customize",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator)return;p.name=cleanName(msg?.name);p.vehicle=Math.round(tankClamp(msg?.vehicle,0,9));p.paint=String(msg?.paint||"#8ca67b").slice(0,16);p.skin=Math.round(tankClamp(msg?.vehicle,0,9));this.broadcastLobby();});
   this.onMessage("drive",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator||state.status!=="playing"||p.finishedAt)return;p.inputForward=tankClamp(msg?.forward,-1,1);p.inputSteer=tankClamp(msg?.steer,-1,1);const boostHeld=!!msg?.boost,wasHeld=!!this.boostHeld.get(client.sessionId);if(boostHeld&&!wasHeld&&p.boostCooldown<=0){p.boost=.72;p.boostCooldown=4.2;}this.boostHeld.set(client.sessionId,boostHeld);});
   this.onMessage("ready",(client,msg)=>{const p=state.players.get(client.sessionId);if(!p||p.spectator||![ "practice","waiting"].includes(state.status))return;p.ready=msg?.ready===undefined?!p.ready:!!msg.ready;this.broadcastLobby();});
