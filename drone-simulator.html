@@ -841,7 +841,8 @@ function addApocalypseFire(x,z,size=1){
   puff.position.set(rand(-.8,.8)*size,3*size+i*2.7*size,rand(-.6,.6)*size);
   puff.scale.setScalar(rand(1.5,2.5)*size);group.add(puff);smoke.push({mesh:puff,offset:i/4,baseScale:rand(1.5,2.5)*size});
  }
- const light=new THREE.PointLight("#ff6d31",size*2.4,30*size,2);light.position.set(0,2.1*size,0);group.add(light);
+ const light=size>=.98?new THREE.PointLight("#ff6d31",size*2.4,30*size,2):null;
+ if(light){light.position.set(0,2.1*size,0);group.add(light);}
  apocalypseEffects.push({group,flames,smoke,light,size,phase:rand(0,Math.PI*2)});
 }
 function updateApocalypseEffects(now){
@@ -858,7 +859,7 @@ function updateApocalypseEffects(now){
    const s=puff.baseScale*(.6+cycle*1.25);puff.mesh.scale.set(s,s*1.15,s);
    puff.mesh.material.opacity=.26*(1-cycle);
   }
-  fx.light.intensity=fx.size*2.0*pulse;
+  if(fx.light)fx.light.intensity=fx.size*2.0*pulse;
  }
 }
 function createKyivAftermathWorld(){
