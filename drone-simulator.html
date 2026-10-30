@@ -59,6 +59,9 @@
 .map-preview.coast{background:linear-gradient(120deg,#0b3543,#174b53)}.map-preview.coast .map-preview-icon{background:linear-gradient(145deg,#66c7d0,#28606a)}
 .map-preview.canyon{background:linear-gradient(120deg,#38251e,#513522)}.map-preview.canyon .map-preview-icon{background:linear-gradient(145deg,#d58c54,#78472f)}
 @media(max-width:780px){.map-preview{min-height:58px;padding:9px}.map-preview-icon{width:40px;height:40px}}
+
+.map-preview.kyiv{background:linear-gradient(145deg,#303c3c,#6a6559 52%,#2e3632)}
+.map-preview.kyiv .map-preview-icon{color:#ffc36b;text-shadow:0 0 18px #f27b36}
 </style>
 </head>
 <body>
@@ -143,6 +146,7 @@
         <option value="city">Neon District · City</option>
         <option value="coast">Coastal Run · Islands</option>
         <option value="canyon">Redrock Canyon · Desert</option>
+        <option value="kyiv">Kyiv Aftermath · Fictional city</option>
       </select>
       <div class="map-preview city" id="mapPreview">
         <div class="map-preview-icon" id="mapPreviewIcon">▦</div>
@@ -305,16 +309,25 @@ const mapCourses = {
     { x: 18, y: 20, z: 74 }, { x: -42, y: 24, z: 82 },
     { x: -84, y: 22, z: 31 }, { x: -68, y: 20, z: -27 },
     { x: 0, y: 18, z: -45 }
+  ],
+  kyiv: [
+    { x: -12, y: 24, z: -92 }, { x: 78, y: 29, z: -68 },
+    { x: 148, y: 32, z: 8 }, { x: 92, y: 25, z: 112 },
+    { x: -18, y: 24, z: 150 }, { x: -138, y: 30, z: 96 },
+    { x: -172, y: 27, z: -8 }, { x: -92, y: 22, z: -116 },
+    { x: -12, y: 24, z: -92 }
   ]
 };
 let currentMap = "city";
 let course = mapCourses.city;
 let persistentSceneChildren = new Set();
 let worldLoaded = false;
+let apocalypseEffects = [];
 const mapConfig = {
   city: { title: "NEON DISTRICT", desc: "Detailed streets, glass towers, parks and rooftop lines.", sky: "#9ebfca", fog: "#9ebfca", near: 225, far: 625, icon: "▦" },
   coast: { title: "COASTAL RUN", desc: "Bright shoreline, palms, a working pier, beach huts and a lighthouse.", sky: "#78c5d4", fog: "#8fcbd0", near: 235, far: 650, icon: "≋" },
-  canyon: { title: "REDROCK CANYON", desc: "Layered mesas, dry washes, stone spires, cacti and dusty trails.", sky: "#d3a978", fog: "#c9a177", near: 205, far: 590, icon: "⌁" }
+  canyon: { title: "REDROCK CANYON", desc: "Layered mesas, dry washes, stone spires, cacti and dusty trails.", sky: "#d3a978", fog: "#c9a177", near: 205, far: 590, icon: "⌁" },
+  kyiv: { title: "KYIV AFTERMATH · FICTIONAL", desc: "A stylised, non-geographic Kyiv-inspired city: landmark-style domes and towers, abandoned traffic, atmospheric fires, craters and a leafless woodland.", sky: "#737d7e", fog: "#737d7e", near: 105, far: 520, icon: "✥" }
 };
 const buildingPalette = [
   { wall: "#566b7c", window: "#7bd8e7" },
@@ -603,6 +616,289 @@ function createWorld() {
   addCityDetailPass();
   addWorldEdges();
 }
+
+function addDeadTree(x,z,scale=1){
+ const trunkMat=mat("#4b433a",.98),branchMat=mat("#5a5045",.98),scarMat=mat("#242825",1);
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.20*scale,.38*scale,5.2*scale,6),trunkMat);
+ trunk.position.set(x,2.6*scale,z);trunk.rotation.z=rand(-.06,.06);scene.add(trunk);
+ // Bare, crooked branches: a clear winter silhouette with no foliage.
+ const branches=Math.floor(rand(4,7));
+ for(let i=0;i<branches;i++){
+  const side=i%2?1:-1,level=.9+i*.48,reach=rand(1.25,2.35)*scale;
+  const limb=new THREE.Mesh(new THREE.CylinderGeometry(.045*scale,.12*scale,reach,5),branchMat);
+  limb.position.set(x+side*reach*.35,level*scale,z+rand(-.3,.3)*scale);
+  limb.rotation.z=side*(.55+rand(-.2,.35));limb.rotation.x=rand(-.18,.18);scene.add(limb);
+  if(i%2===0){
+   const twig=new THREE.Mesh(new THREE.CylinderGeometry(.018*scale,.055*scale,reach*.48,4),branchMat);
+   twig.position.set(x+side*reach*.72,(level+.43)*scale,z+rand(-.22,.22)*scale);
+   twig.rotation.z=-side*.52;scene.add(twig);
+  }
+ }
+ if(Math.random()<.16){
+  const snapped=new THREE.Mesh(new THREE.CylinderGeometry(.04*scale,.09*scale,.75*scale,5),scarMat);
+  snapped.position.set(x+.16*scale,4.3*scale,z);snapped.rotation.z=.9;scene.add(snapped);
+ }
+ addCollisionVolume(x,z,.8*scale,.8*scale,5.4*scale);
+}
+function addApocalypseRoads(){
+ const ground=mat("#56564f",.99),asphalt=mat("#282d2d",.99),curb=mat("#77756a",.95),line=mat("#aaa28d",.95);
+ addPlane(scene,0,-.13,0,630,630,ground);
+ for(let g=-240;g<=240;g+=48){
+  addPlane(scene,g,.004,0,12,560,asphalt);addPlane(scene,0,.005,g,560,12,asphalt);
+  for(const side of [-1,1]){
+   addPlane(scene,g+side*7.15,.012,0,.55,560,curb);
+   addPlane(scene,0,.013,g+side*7.15,560,.55,curb);
+  }
+  for(let t=-276;t<=276;t+=24){
+   addPlane(scene,g,.025,t,.18,4.8,line);addPlane(scene,t,.026,g,4.8,.18,line);
+  }
+ }
+ const worn=mat("#3c403d",1);
+ for(let i=0;i<90;i++){
+  const x=rand(-270,270),z=rand(-270,270);
+  const patch=new THREE.Mesh(new THREE.CircleGeometry(rand(.35,1.5),7),worn);
+  patch.rotation.x=-Math.PI/2;patch.position.set(x,.008,z);patch.scale.set(1,rand(.6,1.5),1);scene.add(patch);
+ }
+}
+function addBrokenFacadeDetails(x,z,w,d,h,seed){
+ const soot=mat("#222725",1),concrete=mat("#77766b",.98),brick=mat("#765d4e",.98),darkGlass=mat("#141e20",.4);
+ // Scattered facade scars and exposed concrete edges, without changing the flyable collision box.
+ for(let i=0;i<3;i++){
+  const side=i%2?1:-1,yy=rand(h*.22,h*.82),xx=x+rand(-w*.34,w*.34);
+  addBox(scene,xx,yy,z+side*(d/2+.035),rand(1.2,3.8),rand(.35,.8),.08,i%2?soot:concrete);
+ }
+ if(seed%3===0){
+  addBox(scene,x+rand(-w*.25,w*.25),h*.72,z+d/2+.06,rand(1.5,3.5),rand(1.6,3.5),.11,darkGlass);
+  addBox(scene,x+rand(-w*.25,w*.25),h*.18,z+d/2+.1,rand(1,2.4),.18,.12,brick);
+ }
+ // A broken parapet and scattered roof rubble make a few silhouettes visibly damaged.
+ if(seed%2===0){
+  addBox(scene,x-w*.27,h+.42,z,w*.43,.45,d*.9,concrete);
+  for(let j=0;j<5;j++){
+   const rubble=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.35,.85),0),j%2?brick:concrete);
+   rubble.position.set(x+rand(-w*.42,w*.42),h+.12,z+rand(-d*.4,d*.4));
+   rubble.rotation.set(rand(0,1),rand(0,2),rand(0,1));scene.add(rubble);
+  }
+ }
+}
+function addInspiredDomedHall(x,z,scale=1,blue=false){
+ const wall=mat(blue?"#536c79":"#958a75",.95),roof=mat("#373b3a",.96),gold=mat("#c69d4c",.34,{metalness:.55,emissive:"#6e4c1e",emissiveIntensity:.18}),domeBlue=mat("#5b788b",.38,{metalness:.28});
+ const group=new THREE.Group();group.position.set(x,0,z);group.scale.setScalar(scale);scene.add(group);
+ addBox(group,0,5,0,24,10,17,wall);addBox(group,0,10.2,0,25,.45,18,roof);
+ // A central cupola and four smaller cupolas evoke Kyiv's historic domed architecture.
+ for(const [dx,dz,r,h] of [[0,0,3.2,4.8],[-7,-5,1.6,2.7],[7,-5,1.6,2.7],[-7,5,1.6,2.7],[7,5,1.6,2.7]]){
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(r,12,8,0,Math.PI*2,0,Math.PI/2),blue?domeBlue:gold);
+  dome.position.set(dx,10.5+h*.42,dz);group.add(dome);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(r*.15,h*.42,7),gold);cap.position.set(dx,10.5+h*.88,dz);group.add(cap);
+  const finial=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.9,6),gold);finial.position.set(dx,10.5+h*1.13,dz);group.add(finial);
+ }
+ // Repeated arched openings and pale stone bands.
+ for(let side of [-1,1])for(let i=-2;i<=2;i++){
+  addBox(group,i*3.8,4.3,side*8.58,1.45,3.8,.08,darkGlass);
+  addBox(group,side*12.08,4.3,i*2.8,.08,3.8,1.25,darkGlass);
+ }
+ addCollisionVolume(x,z,26*scale,19*scale,17*scale);
+}
+function addInspiredBellTower(x,z,scale=1){
+ const stone=mat("#b3a58d",.95),trim=mat("#d8c9a5",.9),gold=mat("#c99b47",.35,{metalness:.55,emissive:"#76511c",emissiveIntensity:.16});
+ const group=new THREE.Group();group.position.set(x,0,z);group.scale.setScalar(scale);scene.add(group);
+ const plinth=new THREE.Mesh(new THREE.CylinderGeometry(7,8,2,10),stone);plinth.position.y=1;group.add(plinth);
+ const tiers=[{r:5,h:12,y:8},{r:4.1,h:9,y:18},{r:3.3,h:8,y:26}];
+ for(const t of tiers){
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(t.r*.9,t.r,t.h,10),stone);shaft.position.y=t.y;group.add(shaft);
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(t.r*1.02,t.r*1.02,.7,10),trim);band.position.y=t.y+t.h*.47;group.add(band);
+ }
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(3.15,14,8,0,Math.PI*2,0,Math.PI/2),gold);dome.position.y=30.2;group.add(dome);
+ const tip=new THREE.Mesh(new THREE.ConeGeometry(.48,4.8,8),gold);tip.position.y=34.2;group.add(tip);
+ addCollisionVolume(x,z,11*scale,11*scale,39*scale);
+}
+function addCivicMonument(x,z){
+ const stone=mat("#827f73",.97),metal=mat("#66706e",.62,{metalness:.35}),warm=mat("#b99c63",.45,{metalness:.3});
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(9,12,4,9),stone);base.position.set(x,2,z);scene.add(base);
+ const plinth=new THREE.Mesh(new THREE.BoxGeometry(7,22,7),stone);plinth.position.set(x,15,z);scene.add(plinth);
+ const figure=new THREE.Group();figure.position.set(x,27,z);scene.add(figure);
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(1.9,7,4,8),metal);torso.position.y=1;figure.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(1.45,10,8),metal);head.position.y=6.2;figure.add(head);
+ for(const side of [-1,1]){
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(.58,.85,8,7),metal);
+  arm.position.set(side*2.8,3.2,0);arm.rotation.z=side*.55;figure.add(arm);
+ }
+ const halo=new THREE.Mesh(new THREE.TorusGeometry(2.8,.12,5,20),warm);halo.position.set(0,8,0);figure.add(halo);
+ addCollisionVolume(x,z,18,18,43);
+}
+function addAbandonedTraffic(){
+ const bodyMats=[mat("#343d3d",.84),mat("#6d6252",.92),mat("#4e5b5d",.76),mat("#827666",.9),mat("#39434a",.8)];
+ const glass=mat("#1c282b",.4,{metalness:.1}),rubber=mat("#252627",.98),rust=mat("#765c46",.96),lamp=mat("#b77b43",.35,{emissive:"#a64c1c",emissiveIntensity:.34});
+ const cars=[
+  [-10,-24,0], [11,-73,Math.PI],[-12,72,0],[61,7,Math.PI/2],[-57,-11,Math.PI/2],[106,51,Math.PI],[-106,52,Math.PI/2],
+  [12,-105,0],[-10,105,Math.PI],[58,105,Math.PI/2],[202,-46,Math.PI/2],[202,-59,Math.PI/2],[202,-72,Math.PI/2],
+  [154,70,0],[168,70,0],[182,70,0],[-166,118,Math.PI/2],[-166,133,Math.PI/2]
+ ];
+ for(let i=0;i<cars.length;i++){
+  const [x,z,rot]=cars[i],group=new THREE.Group();group.position.set(x,.58,z);group.rotation.y=rot;scene.add(group);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(2.35,.85,4.5),bodyMats[i%bodyMats.length]);group.add(body);
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.8,.65,2.05),glass);cabin.position.set(0,.64,-.1);group.add(cabin);
+  for(const wx of [-1.05,1.05])for(const wz of [-1.36,1.36]){
+   const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.24,8),rubber);wheel.rotation.z=Math.PI/2;wheel.position.set(wx,-.22,wz);group.add(wheel);
+  }
+  for(const hx of [-.75,.75]){
+   const head=new THREE.Mesh(new THREE.BoxGeometry(.32,.15,.05),i%3===0?lamp:rust);head.position.set(hx,.08,2.28);group.add(head);
+  }
+  if(i%4===0){
+   const dent=new THREE.Mesh(new THREE.BoxGeometry(1.3,.16,.3),rust);dent.position.set(rand(-.3,.3),.38,-1.8);dent.rotation.y=rand(-.2,.2);group.add(dent);
+  }
+  if(i%5===0){
+   const door=new THREE.Mesh(new THREE.BoxGeometry(.06,.9,1.4),bodyMats[(i+1)%bodyMats.length]);door.position.set(1.38,.1,-.3);door.rotation.z=-.45;group.add(door);
+  }
+ }
+ // A stranded city bus makes the traffic queues readable from the air.
+ const bus=new THREE.Group();bus.position.set(-154,.82,-28);bus.rotation.y=Math.PI/2;scene.add(bus);
+ addBox(bus,0,0,0,3.1,1.55,12,bodyMats[2]);addBox(bus,0,.68,-.1,2.9,.65,9.8,glass);
+ for(let i=-4;i<=4;i+=2)addBox(bus,0,.55,i,3.12,.08,.12,rust);
+}
+function addImpactCrater(x,z,radius=5){
+ const rim=mat("#5a5248",.99),edge=mat("#82725f",.98),inside=mat("#292c29",1),dust=mat("#6d6150",1);
+ const bottom=new THREE.Mesh(new THREE.CircleGeometry(radius*.78,18),inside);bottom.rotation.x=-Math.PI/2;bottom.position.set(x,.018,z);bottom.scale.y=.82;scene.add(bottom);
+ const lip=new THREE.Mesh(new THREE.TorusGeometry(radius*.77,.72,6,28),rim);lip.rotation.x=Math.PI/2;lip.position.set(x,.10,z);lip.scale.set(1,.85,1);scene.add(lip);
+ const innerLip=new THREE.Mesh(new THREE.TorusGeometry(radius*.55,.16,5,24),edge);innerLip.rotation.x=Math.PI/2;innerLip.position.set(x,.045,z);innerLip.scale.set(1,.82,1);scene.add(innerLip);
+ for(let i=0;i<11;i++){
+  const a=i/11*Math.PI*2+rand(-.18,.18),r=radius*rand(.76,1.16),size=rand(.25,.85);
+  const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(size,0),i%3?dust:edge);
+  rock.position.set(x+Math.cos(a)*r,.18+size*.25,z+Math.sin(a)*r);rock.rotation.set(rand(0,2),rand(0,2),rand(0,2));scene.add(rock);
+ }
+}
+function addForestEarthworks(){
+ const earth=mat("#51483d",1),berm=mat("#6c6252",.99),debris=mat("#3d403a",1);
+ // Shallow, purely decorative, winding earthwork scars in the woodland floor.
+ const paths=[
+  [[108,105],[129,100],[151,108],[169,103],[188,112],[205,107],[230,116],[251,110],[255,115],[231,123],[206,117],[187,122],[169,113],[150,118],[130,110],[109,115]],
+  [[118,158],[139,151],[157,161],[177,154],[197,161],[217,156],[240,163],[242,169],[217,165],[198,171],[177,163],[157,170],[138,160],[119,166]],
+  [[158,197],[177,190],[195,198],[215,192],[237,199],[239,205],[216,201],[195,207],[176,199],[159,205]]
+ ];
+ for(const points of paths){
+  addShapeGround(points,.016,earth);
+  for(let i=0;i<points.length;i+=3){
+   const [x,z]=points[i],stone=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.5,1.2),0),i%2?debris:berm);
+   stone.position.set(x,.26,z);stone.scale.set(1,.45,1.4);scene.add(stone);
+  }
+ }
+}
+function addForestDistrict(){
+ const sootGround=mat("#41453f",.99),leafLitter=mat("#686052",.99),trunkScar=mat("#242722",1);
+ // An isolated woodland pocket is a visual zone, not a geographic recreation.
+ addShapeGround([[95,70],[252,72],[270,104],[266,226],[239,266],[106,258],[83,225],[86,111]],.006,sootGround);
+ for(let i=0;i<70;i++){
+  const x=rand(96,259),z=rand(78,253);
+  if(i%5===0)continue;
+  const treeScale=rand(.72,1.35);
+  addDeadTree(x,z,treeScale);
+ }
+ for(let i=0;i<55;i++){
+  const x=rand(92,260),z=rand(78,260),size=rand(.18,.7);
+  const stump=new THREE.Mesh(new THREE.CylinderGeometry(size*.65,size,size*.55,6),trunkScar);
+  stump.position.set(x,size*.26,z);stump.rotation.z=rand(-.12,.12);scene.add(stump);
+  if(i%3===0){
+   const leafPatch=new THREE.Mesh(new THREE.CircleGeometry(rand(.4,1.5),6),leafLitter);
+   leafPatch.rotation.x=-Math.PI/2;leafPatch.position.set(x,.018,z);leafPatch.scale.y=.7;scene.add(leafPatch);
+  }
+ }
+ addForestEarthworks();
+ // A broken forest-edge road sign gives the zone a readable entrance without navigation cues.
+ const post=mat("#4a4a43",.98),sign=mat("#5f665e",.92);
+ for(const x of [92,104]){
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.17,4.2,6),post);pole.position.set(x,2.1,70);scene.add(pole);
+ }
+ addBox(scene,98,3.4,70,8.2,1.3,.22,sign);
+ addBox(scene,98,3.4,69.86,7.4,.08,.03,leafLitter);
+}
+function addKyivInspiredLandmarks(){
+ // These are architectural nods, intentionally arranged as a fictional skyline rather than a real city plan.
+ addInspiredDomedHall(-82,-42,1.05,false);       // golden-domed historic hall
+ addInspiredDomedHall(28,-118,.88,true);        // blue-and-gold monastery-style hall
+ addInspiredBellTower(118,-92,.92);             // tiered bell tower
+ addCivicMonument(-12,178);                     // abstract civic monument silhouette
+ // A broad, decorative arch bridge marks the imaginary riverfront district.
+ const bridgeMat=mat("#626b68",.82,{metalness:.18}),deck=mat("#77796e",.92),arch=mat("#4c5552",.94);
+ addBox(scene,0,.5,-184,106,1.1,13,deck);
+ for(const x of [-47,-24,0,24,47]){
+  const pier=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.6,12,8),arch);pier.position.set(x,-5,-184);scene.add(pier);
+  const archRing=new THREE.Mesh(new THREE.TorusGeometry(5.2,.42,6,18,Math.PI),bridgeMat);archRing.rotation.z=Math.PI;archRing.position.set(x,-1.6,-184);scene.add(archRing);
+ }
+ for(const side of [-1,1])for(let x=-49;x<=49;x+=7)addBox(scene,x,1.25,-184+side*6.3,.14,1.25,.14,bridgeMat);
+}
+function addApocalypseFire(x,z,size=1){
+ const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
+ const outer=mat("#e85b27",.35,{emissive:"#bd3213",emissiveIntensity:1.45}),hot=mat("#ffb04b",.3,{emissive:"#ff761d",emissiveIntensity:1.8}),core=mat("#fff0b0",.25,{emissive:"#ffb13c",emissiveIntensity:2.0}),smokeMat=mat("#333633",1,{transparent:true,opacity:.24});
+ const flames=[];
+ for(let i=0;i<3;i++){
+  const height=rand(2.8,5.2)*size,r=rand(.55,.9)*size;
+  const flame=new THREE.Mesh(new THREE.ConeGeometry(r,height,7),i===0?core:i===1?hot:outer);
+  flame.position.set(rand(-.5,.5)*size,height*.5,z*0);flame.rotation.z=rand(-.18,.18);group.add(flame);flames.push(flame);
+ }
+ const smoke=[];
+ for(let i=0;i<4;i++){
+  const puff=new THREE.Mesh(new THREE.SphereGeometry(1,7,6),smokeMat.clone());
+  puff.position.set(rand(-.8,.8)*size,3*size+i*2.7*size,rand(-.6,.6)*size);
+  puff.scale.setScalar(rand(1.5,2.5)*size);group.add(puff);smoke.push({mesh:puff,offset:i/4,baseScale:rand(1.5,2.5)*size});
+ }
+ const light=new THREE.PointLight("#ff6d31",size*2.4,30*size,2);light.position.set(0,2.1*size,0);group.add(light);
+ apocalypseEffects.push({group,flames,smoke,light,size,phase:rand(0,Math.PI*2)});
+}
+function updateApocalypseEffects(now){
+ for(const fx of apocalypseEffects){
+  const pulse=.82+.14*Math.sin(now*.006+fx.phase)+.06*Math.sin(now*.014+fx.phase*1.7);
+  for(let i=0;i<fx.flames.length;i++){
+   const flame=fx.flames[i];flame.scale.y=pulse*(.88+.08*Math.sin(now*.009+i*1.8));
+   flame.rotation.z=Math.sin(now*.004+fx.phase+i)*.12;
+  }
+  for(const puff of fx.smoke){
+   const cycle=(now*.000055+puff.offset+fx.phase*.07)%1;
+   puff.mesh.position.y=2.2*fx.size+cycle*17*fx.size;
+   puff.mesh.position.x=Math.sin(now*.0007+fx.phase+puff.offset*5)*1.4*fx.size;
+   const s=puff.baseScale*(.6+cycle*1.25);puff.mesh.scale.set(s,s*1.15,s);
+   puff.mesh.material.opacity=.26*(1-cycle);
+  }
+  fx.light.intensity=fx.size*2.0*pulse;
+ }
+}
+function createKyivAftermathWorld(){
+ addApocalypseRoads();
+ // Mid-rise residential blocks and civic buildings are scattered on a fictional grid.
+ const centres=[-216,-144,-72,0,72,144,216];let seed=0;
+ for(const cx of centres)for(const cz of centres){
+  if(cx>60&&cz>45)continue; // keep the leafless woodland district open
+  if(Math.abs(cx)<65&&Math.abs(cz)<65)continue; // leave an open central boulevard square
+  if(Math.abs(cx)<95&&cz<-145)continue; // preserve the stylised riverfront / bridge view
+  const count=Math.random()<.62?1:2;
+  for(let n=0;n<count;n++){
+   const w=rand(12,22),d=rand(11,19),x=cx+(count===1?rand(-8,8):(n?10:-10)),z=cz+rand(-8,8);
+   const h=choose([rand(8,16),rand(16,27),rand(22,38),rand(34,52)]);
+   const palette=seed%buildingPalette.length;
+   addBuilding(x,z,w,d,h,palette,seed%8===0?"tower":"");
+   addBrokenFacadeDetails(x,z,w,d,h,seed++);
+   if(seed%4===0){
+    const rubbleMat=mat("#6d6253",.99);
+    for(let j=0;j<5;j++){
+     const rubble=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.45,1.05),0),rubbleMat);
+     rubble.position.set(x+rand(-w*.85,w*.85),.32,z+rand(-d*.8,d*.8));rubble.rotation.set(rand(0,2),rand(0,2),rand(0,2));scene.add(rubble);
+    }
+   }
+  }
+ }
+ addKyivInspiredLandmarks();
+ addAbandonedTraffic();
+ // Dead roadside trees and broken planting beds around the built-up streets.
+ for(const [x,z] of [[-24,-12],[24,12],[-120,24],[120,24],[-72,144],[48,144],[-210,-90],[210,-90]]){
+  addDeadTree(x,z,rand(.8,1.15));
+ }
+ // Leafless woods, shallow ornamental earthworks, cratered ground and ember-lit streets.
+ addForestDistrict();
+ for(const [x,z,r] of [[-196,-198,7],[-128,-42,5],[4,-52,8],[73,24,6],[222,-140,7],[-238,96,5],[-95,202,8],[46,237,6],[232,229,5],[-210,12,6],[145,34,4],[18,-234,5],[ -34,118,4]])addImpactCrater(x,z,r);
+ const fireSpots=[[-218,-110,1.1],[-164,26,.9],[-112,158,1.2],[-26,-212,.95],[44,55,1.1],[92,-18,.85],[196,-186,1.15],[242,-38,.95],[-245,196,.9],[-55,224,1.05],[166,215,.8],[-185,-12,.8],[28,148,.95],[248,138,.85],[ -7,-82,.9],[128,88,.8]];
+ for(const [x,z,s] of fireSpots)addApocalypseFire(x,z,s);
+ addStreetDetails();
+ addWorldEdges();
+}
 function updateMapPreview() {
   const cfg = mapConfig[currentMap] || mapConfig.city;
   $("mapPreview").className = "map-preview " + currentMap;
@@ -623,11 +919,14 @@ function loadMap(mapName, notify = false) {
   const cfg = mapConfig[selected];
   scene.background = new THREE.Color(cfg.sky);
   scene.fog = new THREE.Fog(cfg.fog, cfg.near, cfg.far);
+  apocalypseEffects = [];
   if (selected === "city") {
     createWorld();
     addMountains();
   } else if (selected === "coast") {
     addCoastalWorld();
+  } else if (selected === "kyiv") {
+    createKyivAftermathWorld();
   } else {
     addCanyonWorld();
   }
@@ -1423,17 +1722,24 @@ function updateHud(now) {
 function drawMinimap() {
   const w = mini.width, h = mini.height, c = miniCtx;
   c.clearRect(0, 0, w, h);
-  const mapBack = currentMap === "coast" ? "#246b80" : currentMap === "canyon" ? "#a5794e" : "#233d47";
+  const mapBack = currentMap === "kyiv" ? "#343a39" : currentMap === "coast" ? "#246b80" : currentMap === "canyon" ? "#a5794e" : "#233d47";
   c.fillStyle = mapBack; c.fillRect(0, 0, w, h);
   const scale = w / (mapLimit * 2 + 12);
   c.save(); c.translate(w / 2, h / 2); c.scale(scale, scale);
-  c.fillStyle = currentMap === "coast" ? "#dcc796" : currentMap === "canyon" ? "#c59b68" : "#5e8179";
+  c.fillStyle = currentMap === "kyiv" ? "#68675c" : currentMap === "coast" ? "#dcc796" : currentMap === "canyon" ? "#c59b68" : "#5e8179";
   c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
-  if (currentMap === "city") {
-    c.fillStyle = "#34414a";
+  if (currentMap === "city" || currentMap === "kyiv") {
+    c.fillStyle = currentMap === "kyiv" ? "#303536" : "#34414a";
     for (let g = -240; g <= 240; g += 48) {
       c.fillRect(g - 6, -mapLimit - 6, 12, mapLimit * 2 + 12);
       c.fillRect(-mapLimit - 6, g - 6, mapLimit * 2 + 12, 12);
+    }
+    if (currentMap === "kyiv") {
+      c.fillStyle = "#343b36";c.fillRect(82,70,188,198); // leafless woodland district
+      c.strokeStyle = "#927f68";c.lineWidth = 2;
+      for (const [x,z,r] of [[-196,-198,7],[-128,-42,5],[4,-52,8],[73,24,6],[222,-140,7],[-238,96,5],[-95,202,8],[46,237,6],[232,229,5]]) {
+        c.beginPath();c.arc(x,z,r,0,Math.PI*2);c.stroke();
+      }
     }
   } else if (currentMap === "coast") {
     c.fillStyle = "#246b80"; c.fillRect(-mapLimit - 6, -mapLimit - 6, mapLimit * 2 + 12, mapLimit * 2 + 12);
@@ -1510,6 +1816,7 @@ function animate(now) {
   for (const g of gateItems) {
     g.mesh.rotation.x = Math.sin(now * .0008 + g.position.x) * .035;
   }
+  if (currentMap === "kyiv") updateApocalypseEffects(now);
   if (active) updateHud(now);
   syncEngineSound();
   renderer.render(scene, camera);
