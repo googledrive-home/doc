@@ -735,7 +735,7 @@ function updatePhysics(dt){
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  const downforce=.5*airDensity*4.8*speed*speed;
  const normal=mass*9.81+downforce;
- const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.58/wheelbase;
+ const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.48/wheelbase;
  const frontLoad=clamp(normal*.46-weightTransfer,normal*.25,normal*.69);
  const rearLoad=Math.max(0,normal-frontLoad);
  const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR);
@@ -773,7 +773,7 @@ function updatePhysics(dt){
  car.u+=longitudinal/mass*dt;
  car.v+=latAccel*dt;
  car.r+=yawMoment/izz*dt;
- const stability=assistMode==="assisted"?2.2:assistMode==="sport"?1.05:.58;
+ const stability=assistMode==="assisted"?3.0:assistMode==="sport"?1.6:.92;
  car.v*=Math.exp(-stability*dt);
  car.r*=Math.exp(-(stability*.72)*dt);
  car.r=clamp(car.r,-2.5,2.5);car.v=clamp(car.v,-13,13);
@@ -840,17 +840,17 @@ function setCamera(frameDt=.016){
  if(!carRoot)return;
  let localPos,localLook;
  if(cameraMode===0){localPos=new THREE.Vector3(0,3.15,-9.2);localLook=new THREE.Vector3(0,.72,9.5);}
- else if(cameraMode===1){localPos=new THREE.Vector3(0,2.15,-.22);localLook=new THREE.Vector3(0,1.03,17);}
- else if(cameraMode===2){localPos=new THREE.Vector3(0,1.39,-.92);localLook=new THREE.Vector3(0,1.33,27);}
- else if(cameraMode===3){localPos=new THREE.Vector3(0,1.42,1.08);localLook=new THREE.Vector3(0,1.12,26);}
+ else if(cameraMode===1){localPos=new THREE.Vector3(0,2.2,-.48);localLook=new THREE.Vector3(0,1.12,22);}
+ else if(cameraMode===2){localPos=new THREE.Vector3(0,1.53,-.98);localLook=new THREE.Vector3(0,1.39,34);}
+ else if(cameraMode===3){localPos=new THREE.Vector3(0,1.17,1.72);localLook=new THREE.Vector3(0,.78,36);}
  else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
  const desired=carRoot.localToWorld(localPos.clone());
  const target=carRoot.localToWorld(localLook.clone());
  if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
- const cameraRate=cameraMode===2?17:cameraMode===3?14:6.5;
+ const cameraRate=cameraMode===2?20:cameraMode===3?17:cameraMode===1?11:6.5;
  const blend=1-Math.exp(-cameraRate*frameDt);
  camera.position.lerp(desired,blend);
- const targetFov=cameraMode===0?65+Math.min(9,Math.abs(car?.u||0)*.09):cameraMode===2?72:cameraMode===3?74:67;
+ const targetFov=cameraMode===0?65+Math.min(9,Math.abs(car?.u||0)*.09):cameraMode===2?76:cameraMode===3?78:cameraMode===1?70:67;
  camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3*frameDt));camera.updateProjectionMatrix();
  camera.lookAt(target);
  const names=["CHASE","HALO TOP","COCKPIT","HOOD","TV REAR"];
@@ -942,7 +942,9 @@ function startEngineLoops(){
  if(engineLoops.length===0){
   engineLoops=engineLoopUrls.map(url=>{
    const a=new Audio(url);a.loop=true;a.preload="auto";a.volume=0;
-   a.addEventListener("canplay",()=>{engineSamplesReady=true;},{once:true});
+   const updateReady=()=>{engineSamplesReady=engineLoops.length===6&&engineLoops.every(sample=>sample.readyState>=2);};
+   a.addEventListener("canplay",updateReady);
+   a.addEventListener("error",updateReady);
    return a;
   });
  }
