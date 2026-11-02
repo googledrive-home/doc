@@ -462,10 +462,12 @@ function updatePhysics(dt){
  if(keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=.16;playShiftSound(-1);keys._q=true;}}else keys._q=false;
  car.shiftTimer=Math.max(0,car.shiftTimer-dt);
  let wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
- car.rpm=Math.max(4300,wheelRPM*gearRatios[car.gear-1]*finalDrive);
- if(car.rpm>14900&&car.gear<8&&assistMode!=="simulation")car.gear++;
- if(car.rpm<7800&&car.gear>1&&assistMode!=="simulation")car.gear--;
- car.rpm=Math.min(15500,Math.max(4300,Math.min(car.rpm,14900)));
+ car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
+ if(car.shiftTimer<=0&&assistMode!=="simulation"){
+  if(car.rpm>14200&&car.gear<8){car.gear++;car.shiftTimer=.13;playShiftSound(1);}
+  else if(car.rpm<7300&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.15;playShiftSound(-1);}
+ }
+ car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  const downforce=.5*airDensity*4.8*speed*speed;
  const normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.58/wheelbase;
@@ -489,9 +491,9 @@ function updatePhysics(dt){
  const vDen=Math.max(2.2,speed);
  const alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer;
  const alphaR=Math.atan2(car.v-lr*car.r,vDen);
- const cF=98000*wetFactor,cR=112000*wetFactor;
- let fyF=-frontCap*pacejka(alphaF);
- let fyR=-rearCap*pacejka(alphaR);
+ const tyreStiffness=10.8*(1-.18*(weather.rain/100)*(tyreCompound==="wet"?.2:1));
+ let fyF=-frontCap*pacejka(alphaF,tyreStiffness);
+ let fyR=-rearCap*pacejka(alphaR,tyreStiffness);
  const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx));
  const rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
  fyF=clamp(fyF,-frontBudget,frontBudget);fyR=clamp(fyR,-rearBudget,rearBudget);
@@ -499,6 +501,7 @@ function updatePhysics(dt){
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u;
  const yawMoment=lf*fyF*Math.cos(car.steer)-lr*fyR;
  const latAccel=lateral/mass;
+ car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
  car.u+=longitudinal/mass*dt;
  car.v+=latAccel*dt;
  car.r+=yawMoment/izz*dt;
@@ -515,7 +518,7 @@ function updatePhysics(dt){
  car.y=lerp(car.y,nearestInfo.point.y+.02,Math.min(1,dt*7));
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*1.5+Math.abs(latAccel)/22,0,2);
- car.wear=clamp(car.wear-dt*(.000003+stress*.000012)*(tireSpecs[tyreCompound].wear),.18,1);
+ car.wear=clamp(car.wear-dt*(.0000018+stress*.000010)*(tireSpecs[tyreCompound].wear),.18,1);
  car.tempF=lerp(car.tempF,weather.temp+58+stress*25,Math.min(1,dt*.12));
  car.tempR=lerp(car.tempR,weather.temp+59+stress*27,Math.min(1,dt*.12));
  car.wheelSpin+=car.u*dt/wheelRadius;
@@ -601,6 +604,13 @@ function syncWeatherInputs(){
  $("rainValue").textContent=weather.rain+"%";$("tempValue").textContent=weather.temp+"°C";$("cloudValue").textContent=weather.cloud+"%";$("fogValue").textContent=weather.fog+"%";
  $("liveRainValue").textContent=weather.rain+"%";$("liveTempValue").textContent=weather.temp+"°C";$("liveCloudValue").textContent=weather.cloud+"%";$("liveFogValue").textContent=weather.fog+"%";
 }
+function playShiftSound(direction){
+ if(!audioCtx||!soundEnabled)return;
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+ osc.type="square";osc.frequency.setValueAtTime(direction>0?520:400,now);osc.frequency.exponentialRampToValueAtTime(direction>0?145:205,now+.075);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.065,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.12);
+ osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.13);
+}
 function initAudio(){
  if(audioCtx){audioCtx.resume();return;}
  const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
@@ -610,20 +620,24 @@ function initAudio(){
  engineFilter=audioCtx.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=1100;
  engineGain=audioCtx.createGain();engineGain.gain.value=0;
  const engine2Gain=audioCtx.createGain();engine2Gain.gain.value=.24;
- engineOsc.connect(engineFilter);engineOsc2.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(audioCtx.destination);
+ engineOsc.connect(engineFilter);engineOsc2.connect(engine2Gain);engine2Gain.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(audioCtx.destination);
  engineOsc2.start();engineOsc.start();
- skidOsc=audioCtx.createOscillator();skidOsc.type="sine";skidGain=audioCtx.createGain();skidGain.gain.value=0;skidOsc.connect(skidGain);skidGain.connect(audioCtx.destination);skidOsc.start();
+ const skidBuffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate),skidData=skidBuffer.getChannelData(0);
+ for(let i=0;i<skidData.length;i++)skidData[i]=Math.random()*2-1;
+ skidOsc=audioCtx.createBufferSource();skidOsc.buffer=skidBuffer;skidOsc.loop=true;
+ const skidFilter=audioCtx.createBiquadFilter();skidFilter.type="bandpass";skidFilter.frequency.value=1300;skidFilter.Q.value=.7;
+ skidGain=audioCtx.createGain();skidGain.gain.value=0;skidOsc.connect(skidFilter);skidFilter.connect(skidGain);skidGain.connect(audioCtx.destination);skidOsc.start();
  const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.12;
  windSource=audioCtx.createBufferSource();windSource.buffer=buffer;windSource.loop=true;const windFilter=audioCtx.createBiquadFilter();windFilter.type="lowpass";windFilter.frequency.value=500;windGain=audioCtx.createGain();windGain.gain.value=0;windSource.connect(windFilter);windFilter.connect(windGain);windGain.connect(audioCtx.destination);windSource.start();
 }
 function updateAudio(throttle,brake,slip){
  if(!audioCtx||!soundEnabled)return;
  const t=audioCtx.currentTime,rpm=car.rpm||4500;
- engineOsc.frequency.setTargetAtTime(28+rpm/60*2.0,t,.05);engineOsc2.frequency.setTargetAtTime(14+rpm/60,t,.05);
+ engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.045);engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.055);
  engineFilter.frequency.setTargetAtTime(500+rpm*.12,t,.08);
  engineGain.gain.setTargetAtTime(.07+throttle*.11,t,.08);
  const skid=clamp((slip-.11)*1.8,0,.24)*(Math.abs(car.u)>12?1:0);
- skidOsc.frequency.setTargetAtTime(260+slip*450,t,.05);skidGain.gain.setTargetAtTime(skid,t,.06);
+ skidGain.gain.setTargetAtTime(skid,t,.08);
  windGain.gain.setTargetAtTime(.015+Math.abs(car.u)/110*.08,t,.1);
 }
 function toggleSound(){
@@ -636,7 +650,7 @@ function startSession(){
  if(!car)positionCarAtStart();
  initAudio();if(audioCtx)audioCtx.resume();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
- running=true;paused=false;elapsed=0;lapStart=0;previousFrame=performance.now();camera.userData.ready=false;
+ running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
