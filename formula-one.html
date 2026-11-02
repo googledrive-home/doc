@@ -181,7 +181,7 @@ function initRenderer(){
  renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.8));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
- renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMappingExposure=1.28;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb7c2);scene.fog=new THREE.FogExp2(0x9eb7c2,.00034);
  camera=new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,.1,18000);
@@ -808,7 +808,7 @@ function buildCar(){
  const dashMaterial=new THREE.MeshStandardMaterial({map:dashTexture,emissive:0x7895a0,emissiveMap:dashTexture,emissiveIntensity:.55,roughness:.32,metalness:.12});
  const wheelDisplay=box(.32,.15,.038,dashMaterial,0,.08,.03,steeringPivot);
  for(const side of [-1,1]){const spoke=box(.045,.24,.045,rim,side*.12,-.01,0,steeringPivot);spoke.rotation.z=side*.46;}
- cockpitVisibleMeshes.push(wheelRim,wheelHub,wheelDisplay);
+ steeringPivot.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});
  handGroup=new THREE.Group();steeringPivot.add(handGroup);
  for(const side of [-1,1]){
   const arm=new THREE.Mesh(new THREE.CylinderGeometry(.075,.11,.48,8),makeMat(0x242a32,.8));arm.position.set(side*.28,-.25,-.02);arm.rotation.z=side*-.52;handGroup.add(arm);
@@ -1104,7 +1104,7 @@ function setCamera(frameDt=.016){
  const blend=1-Math.exp(-cameraRate*frameDt);
  camera.position.lerp(desired,blend);
  // Cockpit FOV is a fixed optical setting. Only exterior chase/replay views may change with speed.
- if(cameraMode===2)camera.fov=76;
+ if(cameraMode===2){camera.fov=76;camera.position.copy(desired);}
  else{
   const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===3?82:cameraMode===1?74:67;
   camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3.2*frameDt));
@@ -1267,7 +1267,7 @@ function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ratio));
- renderer.shadowMap.enabled=graphicsQuality!=="low";
+ renderer.shadowMap.enabled=false;
  renderer.setSize(window.innerWidth,window.innerHeight,false);
 }
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
