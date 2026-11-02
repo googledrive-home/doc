@@ -499,8 +499,7 @@ function updateOpponents(dt){
   bot.root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
   const heading=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
   bot.root.rotation.set(slope,heading,0,"YXZ");
- }
- });
+ }); 
 }
 
 function buildCar(){
