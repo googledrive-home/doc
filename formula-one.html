@@ -120,7 +120,7 @@ input[type=range]{accent-color:#ff765e}
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: CHASE</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
-  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div></div>
+  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Tyre telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div></div></div>
 </div>
 <div id="weatherPanel" class="panel">
@@ -1068,6 +1068,7 @@ function updateHud(grip,offGrip){
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
  $("transmissionValue").textContent=shiftMode==="automatic"?"AUTO":shiftMode==="manual"?"MAN":"SEQ";
+ $("damageValue").textContent=Math.round(vehicleDamage*100)+"%";
  drawDashboard();drawMiniMap();drawMiniCar();
 }
 function setCamera(frameDt=.016){
@@ -1242,7 +1243,7 @@ function startSession(){
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){clearCrashEffects();buildCar();positionCarAtStart();spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
