@@ -229,7 +229,7 @@ function sampleCurve(curve,count,def,minAltitude){
  return out;
 }
 function buildMonzaPoints(){
- const commands=[["s",1000],["a",30,55],["s",30],["a",30,-75],["s",140],["a",420,95],["s",330],["a",34,-55],["s",40],["a",34,25],["s",190],["a",90,90],["s",120],["a",100,85],["s",936],["a",48,-55],["a",52,95],["a",48,-80],["s",1296],["a",155,180],["s",340]];
+ const commands=[["s",1000],["a",30,55],["s",30],["a",30,-75],["s",140],["a",420,95],["s",330],["a",34,-55],["s",40],["a",34,25],["s",190],["a",90,90],["s",120],["a",100,85],["s",936],["a",48,-55],["a",52,95],["a",48,-80],["s",1296],["a",155,180],["s",340],["a",35,25],["s",2.7]];
  const totalLength=commands.reduce((sum,c)=>sum+(c[0]==="s"?c[1]:Math.abs(c[1]*c[2]*Math.PI/180)),0);
  let x=0,z=0,heading=0,distance=0;const pts=[[x,z,168]];
  for(const command of commands){
@@ -244,7 +244,7 @@ function buildMonzaPoints(){
    heading+=angle;
   }
  }
- pts.pop();return pts;
+ return pts;
 }
 function offsetPoint(s,side,distance,height){const right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();return s.p.clone().addScaledVector(right,side*distance).add(new THREE.Vector3(0,height||0,0));}
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
@@ -743,7 +743,8 @@ function updatePhysics(dt){
  const muRear=baseGrip*tempR*clamp(1-.12*(rearLoad/(mass*9.81*.54)-1),.72,1.08);
  const wetFactor=1-weather.rain/100*.35;
  const torque=torqueAt(car.rpm);
- let engineForce=throttle*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1);
+ const clutchFactor=shiftMode==="manual"&&clutchPressed?.015:1;
+ let engineForce=throttle*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor;
  const brakeForce=brake*Math.min(42000,600*mass);
  const drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;
  let rearFx=engineForce-brakeForce*.42*Math.sign(car.u||1)-drag*.55;
