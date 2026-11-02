@@ -473,10 +473,13 @@ function buildGrandstandsAndCrowd(){
   const stand=new THREE.Group();stand.position.set(centre.x,ground,centre.z);stand.rotation.y=heading;
   for(let row=0;row<6;row++){
    const cross=-6.1+row*2.35;
+   const rowDistance=roadWidth/2+41.9+row*2.35;
+   const rowPoint=offsetPoint(sample,side,rowDistance,0),rowGround=terrainHeightAt(rowPoint.x,rowPoint.z);
+   const rowY=rowGround-ground;
    const deck=new THREE.Mesh(new THREE.BoxGeometry(2.45,.28,46),seatMat);
-   deck.position.set(cross,.52+row*.47,0);deck.castShadow=true;stand.add(deck);
+   deck.position.set(cross,rowY+.52+row*.47,0);deck.castShadow=true;stand.add(deck);
    const beam=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,46),steel);
-   beam.position.set(cross,.23+row*.47,0);stand.add(beam);
+   beam.position.set(cross,rowY+.23+row*.47,0);stand.add(beam);
   }
   const canopy=new THREE.Mesh(new THREE.BoxGeometry(15,.38,49),roofMat);
   canopy.position.set(-side*1.1,4.35,0);canopy.castShadow=true;stand.add(canopy);
@@ -487,9 +490,9 @@ function buildGrandstandsAndCrowd(){
   environmentGroup.add(stand);
   // Every spectator is placed at the exact sampled terrain height below their row.
   for(let row=0;row<6;row++)for(let col=0;col<38;col++){
-   const along=(col-18.5)*1.12,lateral=roadWidth/2+38+row*2.35;
+   const along=(col-18.5)*1.12,lateral=roadWidth/2+41.9+row*2.35;
    const p=offsetPoint(sample,side,lateral,0),x=p.x+sample.tan.x*along,z=p.z+sample.tan.z*along;
-   const y=terrainHeightAt(x,z)+.95+row*.47;
+   const y=terrainHeightAt(x,z)+1.0+row*.47;
    dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
    dummy.rotation.set(0,heading+(col%5)*.04,0);dummy.updateMatrix();
    torsoMesh.setMatrixAt(people,dummy.matrix);
