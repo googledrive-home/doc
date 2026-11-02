@@ -151,7 +151,7 @@ const trackDefs = {
 };
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0;
-let activeTrack="spa",pathCurve,route=[],routeLength=0,roadWidth=13,car=null,nearestInfo=null;
+let activeTrack="spa",pathCurve,route=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let running=false,paused=false,previousFrame=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null;
@@ -203,13 +203,14 @@ function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
- const points=def.points.map(v=>new THREE.Vector3(v[0],v[2],v[1]));
+ const minAlt=Math.min(...def.points.map(v=>v[2]));
+ const points=def.points.map(v=>new THREE.Vector3(v[0],v[2]-minAlt,v[1]));
  pathCurve=new THREE.CatmullRomCurve3(points,true,"centripetal",.42);
- const scale=def.length/horizontalLength(pathCurve);
- pathCurve.points.forEach(p=>{p.x*=scale;p.z*=scale;});
+ trackScale=def.length/horizontalLength(pathCurve);
+ pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
  route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)));
- const minY=Math.min(...def.points.map(p=>p[2]))-18;
+ const minY=-18;
  const groundMat=makeMat(activeTrack==="laguna"?0x8d8560:0x284536,.98);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(14000,14000),groundMat);ground.rotation.x=-Math.PI/2;ground.position.y=minY;ground.receiveShadow=true;environmentGroup.add(ground);
  const asphalt=new THREE.MeshStandardMaterial({color:0x30343a,roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});
@@ -401,24 +402,21 @@ function updatePreview(){
  $("previewName").textContent=d.short;$("previewLength").textContent=fmtKm(d.length)+" · "+d.turns+" TURNS";
 }
 function drawMiniMap(){
- const d=trackDefs[activeTrack],ctx=miniCtx,w=miniCanvas.width,h=miniCanvas.height,pts=d.points;
+ const ctx=miniCtx,w=miniCanvas.width,h=miniCanvas.height,pts=route.map(s=>s.p);
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#192821";ctx.fillRect(0,0,w,h);
- let minX=Math.min(...pts.map(p=>p[0])),maxX=Math.max(...pts.map(p=>p[0])),minZ=Math.min(...pts.map(p=>p[1])),maxZ=Math.max(...pts.map(p=>p[1]));
+ const minX=Math.min(...pts.map(p=>p.x)),maxX=Math.max(...pts.map(p=>p.x)),minZ=Math.min(...pts.map(p=>p.z)),maxZ=Math.max(...pts.map(p=>p.z));
  const scale=Math.min((w-30)/(maxX-minX),(h-28)/(maxZ-minZ));
- const map=p=>({x:(p[0]-minX)*scale+(w-(maxX-minX)*scale)/2,y:(p[1]-minZ)*scale+(h-(maxZ-minZ)*scale)/2});
+ const map=p=>({x:(p.x-minX)*scale+(w-(maxX-minX)*scale)/2,y:(p.z-minZ)*scale+(h-(maxZ-minZ)*scale)/2});
  ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();pts.forEach((p,i)=>{const m=map(p);if(i===0)ctx.moveTo(m.x,m.y);else ctx.lineTo(m.x,m.y);});ctx.closePath();ctx.strokeStyle="#101619";ctx.lineWidth=12;ctx.stroke();ctx.strokeStyle="#c2c4bc";ctx.lineWidth=7;ctx.stroke();
  const m=map(pts[0]);ctx.fillStyle="#ff6047";ctx.beginPath();ctx.arc(m.x,m.y,4,0,Math.PI*2);ctx.fill();
 }
 function drawMiniCar(){
- const s=nearestInfo;if(!s)return;const d=trackDefs[activeTrack],pts=d.points,w=miniCanvas.width,h=miniCanvas.height,ctx=miniCtx;
- let minX=Math.min(...pts.map(p=>p[0])),maxX=Math.max(...pts.map(p=>p[0])),minZ=Math.min(...pts.map(p=>p[1])),maxZ=Math.max(...pts.map(p=>p[1]));
+ if(!nearestInfo||!route.length)return;
+ const ctx=miniCtx,w=miniCanvas.width,h=miniCanvas.height,pts=route.map(s=>s.p);
+ const minX=Math.min(...pts.map(p=>p.x)),maxX=Math.max(...pts.map(p=>p.x)),minZ=Math.min(...pts.map(p=>p.z)),maxZ=Math.max(...pts.map(p=>p.z));
  const scale=Math.min((w-30)/(maxX-minX),(h-28)/(maxZ-minZ));
- const x=(car.x/({x:1})["x"])*1;
- // use route-relative projection so the marker follows the same bounds as the preview outline
- const raw=route[Math.floor(s.progress*route.length)]?.p||route[0].p;
- const cx=(raw.x/((trackDefs[activeTrack].length/horizontalLength(pathCurve))))||0;
- const cz=(raw.z/((trackDefs[activeTrack].length/horizontalLength(pathCurve))))||0;
- const px=(cx-minX)*scale+(w-(maxX-minX)*scale)/2,py=(cz-minZ)*scale+(h-(maxZ-minZ)*scale)/2;
+ const p=route[Math.floor(nearestInfo.progress*route.length)%route.length].p;
+ const px=(p.x-minX)*scale+(w-(maxX-minX)*scale)/2,py=(p.z-minZ)*scale+(h-(maxZ-minZ)*scale)/2;
  ctx.fillStyle="#ff684e";ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
 }
 function getGrip(){
@@ -511,7 +509,7 @@ function updateHud(grip,offGrip){
  $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
- drawMiniMap();
+ drawMiniMap();drawMiniCar();
 }
 function setCamera(){
  if(!carRoot)return;
@@ -556,7 +554,8 @@ function updateRain(dt){
  rainPoints.position.set(car.x,0,car.z);rainGeometry.attributes.position.needsUpdate=true;
 }
 function setWeatherFromInputs(prefix){
- const get=id=>$(prefix+id);
+ const ids=prefix==="live"?{Weather:"liveWeather",Rain:"liveRain",Temp:"liveTemp",Cloud:"liveCloud",Fog:"liveFog"}:{Weather:"weatherSelect",Rain:"rainRange",Temp:"tempRange",Cloud:"cloudRange",Fog:"fogRange"};
+ const get=id=>$(ids[id]);
  weather.kind=get("Weather").value;weather.rain=Number(get("Rain").value);weather.temp=Number(get("Temp").value);weather.cloud=Number(get("Cloud").value);weather.fog=Number(get("Fog").value);
  $("rainValue").textContent=weather.rain+"%";$("tempValue").textContent=weather.temp+"°C";$("cloudValue").textContent=weather.cloud+"%";$("fogValue").textContent=weather.fog+"%";
  $("liveRainValue").textContent=weather.rain+"%";$("liveTempValue").textContent=weather.temp+"°C";$("liveCloudValue").textContent=weather.cloud+"%";$("liveFogValue").textContent=weather.fog+"%";
@@ -619,8 +618,8 @@ function animate(now){
  if(renderer&&scene&&camera)renderer.render(scene,camera);
 }
 function bindWeather(prefix){
- const ids=["Weather","Rain","Temp","Cloud","Fog"];
- for(const id of ids)$(prefix+id).addEventListener("input",()=>{setWeatherFromInputs(prefix);syncWeatherInputs();});
+ const ids=prefix==="live"?["liveWeather","liveRain","liveTemp","liveCloud","liveFog"]:["weatherSelect","rainRange","tempRange","cloudRange","fogRange"];
+ for(const id of ids)$(id).addEventListener("input",()=>{setWeatherFromInputs(prefix);syncWeatherInputs();});
 }
 function bindControls(){
  window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==="Escape"){if(running&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")cycleCamera();});
