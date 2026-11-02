@@ -287,7 +287,7 @@ function terrainNoise(x,z){
 }
 function terrainHeightFromSample(sample,x,z,distance){
  const blend=smoothStep(17,165,distance);
- return lerp(sample.p.y-.022,sample.p.y+terrainNoise(x,z),blend);
+ return lerp(sample.p.y+.008,sample.p.y+terrainNoise(x,z),blend);
 }
 function terrainTexture(){
  const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
@@ -554,7 +554,7 @@ function updateOpponents(dt){
 }
 
 function buildCar(){
- if(carRoot){scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
+ if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;cockpitHiddenMeshes=[];
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.62,roughness:.28});
  const carbon=makeMat(0x121820,.34,.38),rubber=makeMat(0x171a1e,.91),rim=makeMat(0xb8c0c6,.25,.85),glass= new THREE.MeshStandardMaterial({color:0x172e3c,metalness:.35,roughness:.18,transparent:true,opacity:.72});
@@ -1069,7 +1069,7 @@ function startSession(){
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){positionCarAtStart();resumeGame();}
-function returnToMenu(){running=false;paused=false;silenceAudio();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function returnToMenu(){running=false;paused=false;silenceAudio();clearOpponents();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
