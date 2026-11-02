@@ -204,7 +204,9 @@ function createTrack(){
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
  const minAlt=Math.min(...def.points.map(v=>v[2]));
- const points=def.points.map(v=>new THREE.Vector3(v[0],v[2]-minAlt,v[1]));
+ const rawPoints=def.points.slice();
+ if(rawPoints.length>2&&rawPoints[0][0]===rawPoints[rawPoints.length-1][0]&&rawPoints[0][1]===rawPoints[rawPoints.length-1][1])rawPoints.pop();
+ const points=rawPoints.map(v=>new THREE.Vector3(v[0],v[2]-minAlt,v[1]));
  pathCurve=new THREE.CatmullRomCurve3(points,true,"centripetal",.42);
  trackScale=def.length/horizontalLength(pathCurve);
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
