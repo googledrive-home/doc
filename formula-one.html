@@ -450,7 +450,8 @@ function buildScenery(){
  }
 }
 function clearOpponents(){
- opponents.forEach(bot=>{scene.remove(bot.root);bot.root.traverse(o=>{if(o.geometry)o.geometry.dispose();});});
+ // Opponents clone the player's geometry, so remove the clones without disposing shared meshes.
+ opponents.forEach(bot=>scene.remove(bot.root));
  opponents=[];
 }
 function spawnOpponents(){
@@ -499,6 +500,7 @@ function updateOpponents(dt){
   const heading=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
   bot.root.rotation.set(slope,heading,0,"YXZ");
  }
+ });
 }
 
 function buildCar(){
