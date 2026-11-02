@@ -160,7 +160,7 @@ const trackDefs = {
  }
 };
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0;
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
@@ -176,14 +176,32 @@ const worldCanvas=$("world"),previewCanvas=$("trackPreview"),previewCtx=previewC
 function setLoad(pct,step,desc){$("loadFill").style.width=pct+"%";$("loadPct").textContent=pct+"%";$("loadStep").textContent=step;if(desc)$("loadText").textContent=desc;}
 function showError(err){$("errorBox").style.display="block";$("errorBox").textContent="APEX INITIALISATION ERROR\n"+(err&&err.stack?err.stack:String(err));console.error(err);}
 function makeMat(color,roughness=.75,metalness=0){return new THREE.MeshStandardMaterial({color,roughness,metalness});}
+function createRacingEnvironment(){
+ const canvas=document.createElement("canvas");canvas.width=1024;canvas.height=512;
+ const ctx=canvas.getContext("2d");
+ const sky=ctx.createLinearGradient(0,0,0,512);
+ sky.addColorStop(0,"#dceaf4");sky.addColorStop(.34,"#a9c4d3");sky.addColorStop(.53,"#778b99");sky.addColorStop(1,"#202b37");
+ ctx.fillStyle=sky;ctx.fillRect(0,0,1024,512);
+ ctx.globalCompositeOperation="screen";
+ const glow=ctx.createRadialGradient(520,185,12,520,185,210);
+ glow.addColorStop(0,"rgba(255,244,218,.95)");glow.addColorStop(.25,"rgba(255,236,198,.34)");glow.addColorStop(1,"rgba(255,236,198,0)");
+ ctx.fillStyle=glow;ctx.fillRect(280,0,480,400);
+ for(const strip of [{x:70,y:80,w:78,h:230,a:.72},{x:280,y:54,w:28,h:280,a:.48},{x:760,y:94,w:102,h:205,a:.62},{x:930,y:65,w:24,h:260,a:.38}]){
+  ctx.fillStyle="rgba(255,255,255,"+strip.a+")";ctx.fillRect(strip.x,strip.y,strip.w,strip.h);
+ }
+ ctx.globalCompositeOperation="source-over";
+ const texture=new THREE.CanvasTexture(canvas);texture.mapping=THREE.EquirectangularReflectionMapping;texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;
+ return texture;
+}
 
 function initRenderer(){
  renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.8));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
- renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMappingExposure=1.28;
- renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
+ renderer.shadowMap.enabled=false;renderer.toneMappingExposure=1.32;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb7c2);scene.fog=new THREE.FogExp2(0x9eb7c2,.00034);
+ racingEnvironment=createRacingEnvironment();scene.environment=racingEnvironment;scene.environmentIntensity=1.0;
  camera=new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,.1,18000);
  camera.position.set(0,8,-18);clock=new THREE.Clock();
  skyMaterial=new THREE.ShaderMaterial({
@@ -202,9 +220,10 @@ function initRenderer(){
   for(let j=0;j<count;j++){const puff=new THREE.Mesh(cloudPuff,cloudMaterial);const size=13+(j*7+i%3*4);puff.position.set((j-(count-1)/2)*size*.62,(j%2)*3,Math.sin(j*2.2)*size*.28);puff.scale.set(size*1.6,size*.5,size*.8);cloud.add(puff);}
   cloudGroup.add(cloud);
  }
- const hemi=new THREE.HemisphereLight(0xe0efff,0x77705d,2.05);scene.add(hemi);
- const ambient=new THREE.AmbientLight(0xffffff,.48);scene.add(ambient);
- const sun=new THREE.DirectionalLight(0xffedcf,2.35);sun.position.set(-250,480,-180);sun.castShadow=false;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-1000;sun.shadow.camera.right=1000;sun.shadow.camera.top=1000;sun.shadow.camera.bottom=-1000;sun.shadow.bias=-.00012;scene.add(sun);scene.add(sun.target);
+ hemiLight=new THREE.HemisphereLight(0xe8f3ff,0x899486,2.35);scene.add(hemiLight);
+ ambientLight=new THREE.AmbientLight(0xffffff,.62);scene.add(ambientLight);
+ sunLight=new THREE.DirectionalLight(0xfff0d5,2.35);sunLight.position.set(-250,480,-180);sunLight.castShadow=false;scene.add(sunLight);scene.add(sunLight.target);
+ fillLight=new THREE.DirectionalLight(0xc7e0f5,.48);fillLight.position.set(330,170,260);fillLight.castShadow=false;scene.add(fillLight);
  window.addEventListener("resize",onResize);
 }
 
@@ -721,8 +740,8 @@ function clearCrashEffects(){
 function buildCar(){
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];damageParts=[];vehicleDamage=0;
- const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.62,roughness:.28});
- const carbon=makeMat(0x121820,.34,.38),rubber=makeMat(0x171a1e,.91),rim=makeMat(0xb8c0c6,.25,.85),glass= new THREE.MeshStandardMaterial({color:0x172e3c,metalness:.35,roughness:.18,transparent:true,opacity:.72});
+ const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
+ const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
  const yellow=makeMat(0xffd45e,.4,.2),white=makeMat(0xf4f1e8,.48,.18);
  const bodyMat=paint;
  const box=(w,h,d,mat,x,y,z,group=carRoot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
@@ -788,8 +807,8 @@ function buildCar(){
  const airboxLip=new THREE.Mesh(new THREE.TorusGeometry(.245,.035,8,20),rim);airboxLip.position.set(0,1.36,-.52);carRoot.add(airboxLip);
  const fin=box(.065,.54,1.55,carbon,0,1.23,-1.42);fin.rotation.x=-.08;
  // Cockpit tub and cockpit details.
- const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitHiddenMeshes.push(tub);
- const seat=box(.54,.5,.78,makeMat(0x1d242c,.9),0,.84,-.53);
+ const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitVisibleMeshes.push(tub);
+ const seat=box(.54,.5,.78,makeMat(0x1d242c,.9),0,.84,-.53);cockpitVisibleMeshes.push(seat);
  const driverTorso=box(.38,.58,.36,makeMat(0x292f36,.72),0,1.08,-.45);cockpitHiddenMeshes.push(driverTorso);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
@@ -798,7 +817,7 @@ function buildCar(){
  const haloTop=tube([[-.77,1.08,-.48],[-.72,1.32,-.28],[-.45,1.52,.03],[0,1.58,.17],[.45,1.52,.03],[.72,1.32,-.28],[.77,1.08,-.48]],.045,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,.96,.25],[0,.97,.42],[.52,.96,.25],[.77,1.08,-.48]],.04,haloMat);
  cockpitVisibleMeshes.push(haloTop,haloBase);
- const haloColumn=tube([[0,.98,.42],[0,1.56,.17]],.048,haloMat);cockpitHiddenMeshes.push(haloColumn);
+ const haloColumn=tube([[0,.98,.42],[0,1.56,.17]],.048,haloMat);cockpitVisibleMeshes.push(haloColumn);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,.94,.48);carRoot.add(steeringPivot);
  const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.265,.038,9,30),carbon);steeringPivot.add(wheelRim);
@@ -1091,31 +1110,45 @@ function updateHud(grip,offGrip){
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
- let localPos,localLook;
- if(cameraMode===0){localPos=new THREE.Vector3(0,3.05,-9.2);localLook=new THREE.Vector3(0,.78,9.5);}
- else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
- else if(cameraMode===2){localPos=new THREE.Vector3(0,1.36,-.52);localLook=new THREE.Vector3(0,1.18,42);}
- else if(cameraMode===3){localPos=new THREE.Vector3(0,1.12,2.12);localLook=new THREE.Vector3(0,.74,32);}
- else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
- const desired=carRoot.localToWorld(localPos.clone());
- const target=carRoot.localToWorld(localLook.clone());
- if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
- const cameraRate=cameraMode===2?30:cameraMode===3?18:cameraMode===1?11:6.5;
- const blend=1-Math.exp(-cameraRate*frameDt);
- camera.position.lerp(desired,blend);
- // Cockpit FOV is a fixed optical setting. Only exterior chase/replay views may change with speed.
- if(cameraMode===2){camera.fov=76;camera.position.copy(desired);}
- else{
+ const cockpitActive=cameraMode===2;
+ if(cockpitActive){
+  // The first-person optical camera is a child of the chassis, so it inherits every car movement.
+  if(camera.parent!==carRoot)carRoot.add(camera);
+  const speed=clamp(Math.abs(car?.u||0)/90,0,1),vibration=.002+speed*.006;
+  camera.position.set(Math.sin(elapsed*31)*vibration*.25,1.51+Math.sin(elapsed*47)*vibration,-.62);
+  camera.rotation.order="YXZ";
+  camera.rotation.set(0,Math.PI,clamp(-(car?.lateralAccel||0)*.00018,-.018,.018));
+  camera.fov=69;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
+  cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=false;});
+  cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
+ }else{
+  if(camera.parent!==scene)scene.attach(camera);
+  camera.rotation.order="XYZ";
+  let localPos,localLook;
+  if(cameraMode===0){localPos=new THREE.Vector3(0,3.05,-9.2);localLook=new THREE.Vector3(0,.78,9.5);}
+  else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
+  else if(cameraMode===3){localPos=new THREE.Vector3(0,1.12,2.12);localLook=new THREE.Vector3(0,.74,32);}
+  else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
+  const desired=carRoot.localToWorld(localPos.clone());
+  const target=carRoot.localToWorld(localLook.clone());
+  if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
+  const cameraRate=cameraMode===3?18:cameraMode===1?11:6.5;
+  const blend=1-Math.exp(-cameraRate*frameDt);
+  camera.position.lerp(desired,blend);
   const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===3?82:cameraMode===1?74:67;
   camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3.2*frameDt));
+  camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
+  cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=true;});
+  cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
  }
- camera.near=.025;camera.updateProjectionMatrix();camera.lookAt(target);
- const cockpitActive=cameraMode===2;
- cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=!cockpitActive;});
  const names=["CHASE","HALO TOP","COCKPIT","HOOD","TV REAR"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
 }
-function cycleCamera(){cameraMode=(cameraMode+1)%5;camera.userData.ready=false;setCamera();}
+function cycleCamera(){
+ const order=[0,2,1,3,4];
+ cameraMode=order[(order.indexOf(cameraMode)+1)%order.length];
+ camera.userData.ready=false;setCamera();
+}
 function updateWeather(){
  const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100;
  const palettes={clear:{sky:0x92b6c8,top:0x2f638b,horizon:0xc5dce4,bottom:0x748b98,ground:0x314f3b,sun:2.25},cloudy:{sky:0x71818b,top:0x465764,horizon:0x9ba9ac,bottom:0x69767a,ground:0x34463e,sun:1.05},rain:{sky:0x536572,top:0x293c4a,horizon:0x72818a,bottom:0x59646b,ground:0x293b38,sun:.58},fog:{sky:0x9ca9ac,top:0x7f9299,horizon:0xc0c9c8,bottom:0xa2adad,ground:0x45504b,sun:.7},heat:{sky:0x9bc3d5,top:0x4d82a7,horizon:0xd7e3dc,bottom:0x8d9a91,ground:0x665f42,sun:2.6}};
@@ -1123,8 +1156,10 @@ function updateWeather(){
  scene.background.setHex(p.sky);scene.fog.color.setHex(p.sky);scene.fog.density=.00018+fog*.00115+(weather.kind==="rain"?.00025:0);
  if(skyMaterial){skyMaterial.uniforms.topColor.value.setHex(p.top);skyMaterial.uniforms.horizonColor.value.setHex(p.horizon);skyMaterial.uniforms.bottomColor.value.setHex(p.bottom);}
  if(cloudMaterial){cloudMaterial.opacity=.035+cloud*.36;if(weather.kind==="rain")cloudMaterial.color.setHex(0xaebdc6);else cloudMaterial.color.setHex(0xe4e9eb);}
- const sun=scene.children.find(o=>o.isDirectionalLight);if(sun)sun.intensity=Math.max(.95,p.sun*(1-cloud*.38));
- const hemi=scene.children.find(o=>o.isHemisphereLight);if(hemi)hemi.intensity=weather.kind==="rain"?1.85:2.05;
+ if(sunLight)sunLight.intensity=Math.max(1.35,p.sun*(1-cloud*.24));
+ if(hemiLight)hemiLight.intensity=2.3;
+ if(ambientLight)ambientLight.intensity=.62;
+ if(fillLight)fillLight.intensity=weather.kind==="rain"?.72:.48;
  if(trackGroup){trackGroup.traverse(o=>{if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.isAsphalt){o.material.roughness=lerp(.87,.28,rain);o.material.metalness=rain*.08;}});}
  if(rain>0.03||weather.kind==="rain")ensureRain();
  else if(rainPoints)rainPoints.visible=false;
