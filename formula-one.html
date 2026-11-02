@@ -441,7 +441,10 @@ function buildCar(){
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,.94,.48);carRoot.add(steeringPivot);
  const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.265,.038,9,30),carbon);steeringPivot.add(wheelRim);
  const wheelHub=box(.17,.16,.08,carbon,0,0,0,steeringPivot);
- const wheelDisplay=box(.26,.12,.035,makeMat(0x132b31,.22,.25),0,.08,.03,steeringPivot);
+ dashCanvas=document.createElement("canvas");dashCanvas.width=512;dashCanvas.height=256;dashContext=dashCanvas.getContext("2d");
+ dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
+ const dashMaterial=new THREE.MeshStandardMaterial({map:dashTexture,emissive:0x173039,emissiveMap:dashTexture,emissiveIntensity:.55,roughness:.32,metalness:.12});
+ const wheelDisplay=box(.32,.15,.038,dashMaterial,0,.08,.03,steeringPivot);
  for(const side of [-1,1]){const spoke=box(.045,.24,.045,rim,side*.12,-.01,0,steeringPivot);spoke.rotation.z=side*.46;}
  handGroup=new THREE.Group();steeringPivot.add(handGroup);
  for(const side of [-1,1]){
@@ -475,6 +478,25 @@ function buildCar(){
 function applyLivery(color){
  selectedLivery=color;
  if(carRoot){carRoot.traverse(o=>{if(o.isMesh&&o.material&&o.material.color&&o.material.color.getHexString()==="e7473e")o.material.color.set(color);});}
+}
+function drawDashboard(){
+ if(!dashContext||!dashTexture||!car)return;
+ const c=dashContext,w=512,h=256;
+ c.clearRect(0,0,w,h);c.fillStyle="#071016";c.fillRect(0,0,w,h);
+ c.fillStyle="#ff604e";c.font="900 21px system-ui";c.fillText("APEX",18,31);
+ c.fillStyle="#8fa8b4";c.font="700 12px system-ui";c.fillText("FORMULA TELEMETRY",91,30);
+ c.strokeStyle="#ff684e";c.lineWidth=3;c.beginPath();c.moveTo(18,43);c.lineTo(494,43);c.stroke();
+ const rpm=clamp(car.rpm/15000,0,1);
+ for(let i=0;i<12;i++){c.fillStyle=i/12<rpm?(i>9?"#f15c47":"#e9c86b"):"#293944";c.fillRect(19+i*40,56,30,9);}
+ c.fillStyle="#f5f7f7";c.font="900 102px system-ui";c.fillText(String(car.gear),22,170);
+ c.fillStyle="#a5bac4";c.font="700 16px system-ui";c.fillText("GEAR",25,196);
+ c.fillStyle="#f5f7f7";c.font="900 54px system-ui";c.fillText(String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0"),160,145);
+ c.fillStyle="#93a8b4";c.font="800 15px system-ui";c.fillText("KM/H",388,142);
+ c.fillStyle="#ffcf72";c.font="800 18px ui-monospace,monospace";c.fillText(Math.round(car.rpm).toLocaleString()+" RPM",161,178);
+ c.fillStyle="#8297a4";c.font="700 12px system-ui";c.fillText("TYRE "+Math.round(car.tempF)+"°C",20,235);
+ c.fillText("LAP "+String(lap).padStart(2,"0"),205,235);
+ c.fillText(tyreSpecs[tyreCompound].label,397,235);
+ dashTexture.needsUpdate=true;
 }
 function positionCarAtStart(){
  if(!carRoot)buildCar();
@@ -624,7 +646,7 @@ function updatePhysics(dt){
  const tangent=nearestInfo.tangent;
  const slope=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
  const roll=clamp(-latAccel*.012,-.18,.18);
- carRoot.rotation.set(slope,car.yaw,roll,"YXZ");
+ carRoot.rotation.set(slope-car.longAccel*.0028,car.yaw,roll,"YXZ");
  steeringPivot.rotation.z=-car.steer*1.22;
  handGroup.rotation.z=-car.steer*.18;
  for(let i=0;i<frontWheelPivots.length;i++)frontWheelPivots[i].rotation.y=car.steer;
@@ -639,7 +661,7 @@ function updateHud(grip,offGrip){
  $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
- drawMiniMap();drawMiniCar();
+ drawDashboard();drawMiniMap();drawMiniCar();
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
