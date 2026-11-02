@@ -155,7 +155,7 @@ let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,stee
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
-let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null;
+let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,rainSource=null,rainGain=null;
 const keys={};
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
@@ -757,6 +757,11 @@ function initAudio(){
  skidGain=audioCtx.createGain();skidGain.gain.value=0;skidOsc.connect(skidFilter);skidFilter.connect(skidGain);skidGain.connect(audioCtx.destination);skidOsc.start();
  const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.12;
  windSource=audioCtx.createBufferSource();windSource.buffer=buffer;windSource.loop=true;const windFilter=audioCtx.createBiquadFilter();windFilter.type="lowpass";windFilter.frequency.value=500;windGain=audioCtx.createGain();windGain.gain.value=0;windSource.connect(windFilter);windFilter.connect(windGain);windGain.connect(audioCtx.destination);windSource.start();
+ const rainBuffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate),rainData=rainBuffer.getChannelData(0);
+ for(let i=0;i<rainData.length;i++)rainData[i]=(Math.random()*2-1)*.28;
+ rainSource=audioCtx.createBufferSource();rainSource.buffer=rainBuffer;rainSource.loop=true;
+ const rainFilter=audioCtx.createBiquadFilter();rainFilter.type="lowpass";rainFilter.frequency.value=3600;
+ rainGain=audioCtx.createGain();rainGain.gain.value=0;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainGain.connect(audioCtx.destination);rainSource.start();
 }
 function updateAudio(throttle,brake,slip){
  if(!audioCtx||!soundEnabled)return;
@@ -767,11 +772,13 @@ function updateAudio(throttle,brake,slip){
  const skid=clamp((slip-.11)*1.8,0,.24)*(Math.abs(car.u)>12?1:0);
  skidGain.gain.setTargetAtTime(skid,t,.08);
  windGain.gain.setTargetAtTime(.015+Math.abs(car.u)/110*.08,t,.1);
+ if(rainGain)rainGain.gain.setTargetAtTime(weather.rain/100*.07,t,.2);
 }
 function toggleSound(){
  soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";
  if(audioCtx&&engineGain)engineGain.gain.setTargetAtTime(soundEnabled?.1:0,audioCtx.currentTime,.08);
  if(audioCtx&&windGain)windGain.gain.setTargetAtTime(soundEnabled?.04:0,audioCtx.currentTime,.08);
+ if(audioCtx&&rainGain)rainGain.gain.setTargetAtTime(soundEnabled?weather.rain/100*.07:0,audioCtx.currentTime,.08);
 }
 function startSession(){
  if(!carRoot)buildCar();
