@@ -184,9 +184,9 @@ function sampleCurve(curve,count){const out=[];for(let i=0;i<count;i++){const t=
 function offsetPoint(s,side,distance,height){const right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();return s.p.clone().addScaledVector(right,side*distance).add(new THREE.Vector3(0,height||0,0));}
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
 function makeRibbon(samples,width,material,yOff=.025){
- const pos=[],idx=[];for(let i=0;i<samples.length;i++){const s=samples[i],a=offsetPoint(s,-1,width/2,yOff),b=offsetPoint(s,1,width/2,yOff);pos.push(a.x,a.y,a.z,b.x,b.y,b.z);}
+ const pos=[],uv=[],idx=[];for(let i=0;i<samples.length;i++){const s=samples[i],a=offsetPoint(s,-1,width/2,yOff),b=offsetPoint(s,1,width/2,yOff),v=(i/samples.length)*routeLength/12;pos.push(a.x,a.y,a.z,b.x,b.y,b.z);uv.push(0,v,1,v);}
  for(let i=0;i<samples.length;i++){const j=(i+1)%samples.length,a=i*2,b=a+1,c=j*2,d=c+1;idx.push(a,c,b,b,c,d);}
- const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;return mesh;
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;return mesh;
 }
 function makeCurb(samples,side,width){
  const pos=[],col=[],idx=[],red=new THREE.Color(0xd82f37),white=new THREE.Color(0xf3eee5);
@@ -198,6 +198,15 @@ function makeRail(samples,side,distance,height,material){
  const pts=samples.map(s=>offsetPoint(s,side,distance,height));
  const c=new THREE.CatmullRomCurve3(pts,true,"centripetal",.5);
  return new THREE.Mesh(new THREE.TubeGeometry(c,samples.length,material.userData.radius||.13,6,true),material);
+}
+function makeAsphaltTexture(){
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
+ const ctx=canvas.getContext("2d");ctx.fillStyle="#55595d";ctx.fillRect(0,0,512,512);
+ const pixels=ctx.createImageData(512,512);
+ for(let i=0;i<pixels.data.length;i+=4){const n=(Math.random()-.5)*34,v=clamp(76+n,42,108);pixels.data[i]=v;pixels.data[i+1]=v+1;pixels.data[i+2]=v+3;pixels.data[i+3]=255;}
+ ctx.putImageData(pixels,0,0);
+ for(let i=0;i<1900;i++){const shade=45+Math.floor(Math.random()*45);ctx.fillStyle="rgba("+shade+","+shade+","+ (shade+2)+","+(.06+Math.random()*.16)+")";ctx.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*3,1+Math.random()*2);}
+ const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
 }
 function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
@@ -215,7 +224,7 @@ function createTrack(){
  const minY=-18;
  const groundMat=makeMat(activeTrack==="laguna"?0x8d8560:0x284536,.98);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(14000,14000),groundMat);ground.rotation.x=-Math.PI/2;ground.position.y=minY;ground.receiveShadow=true;environmentGroup.add(ground);
- const asphalt=new THREE.MeshStandardMaterial({color:0x30343a,roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});
+ const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
  const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x626c69,.92);
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
@@ -535,7 +544,7 @@ function updateWeather(){
  const p=palettes[weather.kind]||palettes.clear;
  scene.background.setHex(p.sky);scene.fog.color.setHex(p.sky);scene.fog.density=.00018+fog*.00115+(weather.kind==="rain"?.00025:0);
  const sun=scene.children.find(o=>o.isDirectionalLight);if(sun)sun.intensity=p.sun*(1-cloud*.58);
- if(trackGroup){trackGroup.traverse(o=>{if(o.isMesh&&o.material&&o.material.color&&o.material.color.getHexString()==="30343a"){o.material.roughness=lerp(.87,.28,rain);o.material.metalness=rain*.08;}});}
+ if(trackGroup){trackGroup.traverse(o=>{if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.isAsphalt){o.material.roughness=lerp(.87,.28,rain);o.material.metalness=rain*.08;}});}
  if(rain>0.03||weather.kind==="rain")ensureRain();
  else if(rainPoints)rainPoints.visible=false;
  $("weatherName").textContent=weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
