@@ -152,7 +152,7 @@ const trackDefs = {
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0;
 let activeTrack="spa",pathCurve,route=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
-let running=false,paused=false,previousFrame=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null;
 const keys={};
@@ -385,9 +385,9 @@ function positionCarAtStart(){
  if(!carRoot)buildCar();
  const s=route[6]||route[0],yaw=Math.atan2(s.tan.x,s.tan.z);
  carRoot.position.set(s.p.x,s.p.y+.02,s.p.z);carRoot.rotation.set(0,yaw,0);
- car={x:s.p.x,z:s.p.z,y:s.p.y+.02,yaw,u:0,v:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:75,tempR:77,slip:0,wheelSpin:0};
+ car={x:s.p.x,z:s.p.z,y:s.p.y+.02,yaw,u:0,v:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1};
  nearestInfo=findNearest(car.x,car.z);
- elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;renderHud();
+ elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
 function findNearest(x,z){
  let best=Infinity,out={index:0,progress:0,point:route[0].p,tangent:route[0].tan,offset:0};
@@ -438,38 +438,60 @@ function getGrip(){
  if(assistMode==="sport")grip*=1.01;
  return grip*car.wear;
 }
-function torqueAt(rpm){const peak=10200,drop=Math.abs(rpm-peak)/7800;return 575*clamp(1-.72*drop,.2,1.03);}
+const torqueCurve=[[4300,405],[5500,475],[7000,535],[8500,570],[10000,582],[11200,565],[12500,515],[13800,435],[15000,345]];
+function torqueAt(rpm){
+ if(rpm<=torqueCurve[0][0])return torqueCurve[0][1];
+ for(let i=1;i<torqueCurve.length;i++){const a=torqueCurve[i-1],b=torqueCurve[i];if(rpm<=b[0]){const t=(rpm-a[0])/(b[0]-a[0]);return lerp(a[1],b[1],t);}}
+ return torqueCurve[torqueCurve.length-1][1];
+}
+function pacejka(slip,peakB=10.8,shapeC=1.32,curvatureE=.96){
+ const bx=peakB*slip;
+ return Math.sin(shapeC*Math.atan(bx-curvatureE*(bx-Math.atan(bx))));
+}
+function temperatureGrip(temp){
+ const d=temp-98;
+ if(Math.abs(d)<=12)return 1;
+ return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
+}
 function updatePhysics(dt){
  const throttle=(keys.KeyW||keys.ArrowUp)?1:0,brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
  const steerInput=(keys.KeyA||keys.ArrowLeft?-1:0)+(keys.KeyD||keys.ArrowRight?1:0);
- const speed=Math.abs(car.u),steerLimit=lerp(.43,.105,clamp(speed/95,0,1));
+ const speed=Math.hypot(car.u,car.v),steerLimit=lerp(.43,.105,clamp(speed/95,0,1));
  car.steer+=((steerInput*steerLimit)-car.steer)*Math.min(1,dt*(speed>50?4.8:7.5));
- if(keys.KeyE){if(!keys._e){car.gear=Math.min(8,car.gear+1);keys._e=true;}}else keys._e=false;
- if(keys.KeyQ){if(!keys._q){car.gear=Math.max(1,car.gear-1);keys._q=true;}}else keys._q=false;
+ if(keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=.13;playShiftSound(1);keys._e=true;}}else keys._e=false;
+ if(keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=.16;playShiftSound(-1);keys._q=true;}}else keys._q=false;
+ car.shiftTimer=Math.max(0,car.shiftTimer-dt);
  let wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
  car.rpm=Math.max(4300,wheelRPM*gearRatios[car.gear-1]*finalDrive);
  if(car.rpm>14900&&car.gear<8&&assistMode!=="simulation")car.gear++;
  if(car.rpm<7800&&car.gear>1&&assistMode!=="simulation")car.gear--;
  car.rpm=Math.min(15500,Math.max(4300,Math.min(car.rpm,14900)));
- const grip=getGrip(),downforce=.5*airDensity*4.8*speed*speed;
+ const downforce=.5*airDensity*4.8*speed*speed;
  const normal=mass*9.81+downforce;
- const frontLoad=normal*.46,rearLoad=normal*.54;
+ const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.58/wheelbase;
+ const frontLoad=clamp(normal*.46-weightTransfer,normal*.25,normal*.69);
+ const rearLoad=Math.max(0,normal-frontLoad);
+ const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR);
+ const baseGrip=getGrip(),muFront=baseGrip*tempF*clamp(1-.12*(frontLoad/(mass*9.81*.46)-1),.72,1.08);
+ const muRear=baseGrip*tempR*clamp(1-.12*(rearLoad/(mass*9.81*.54)-1),.72,1.08);
  const wetFactor=1-weather.rain/100*.35;
  const torque=torqueAt(car.rpm);
- let engineForce=throttle*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius;
+ let engineForce=throttle*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1);
  const brakeForce=brake*Math.min(42000,600*mass);
  const drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;
- let rearFx=engineForce-brakeForce*.46*Math.sign(car.u||1)-drag*.55;
- let frontFx=-brakeForce*.54*Math.sign(car.u||1)-drag*.45;
- const rearCap=grip*rearLoad,frontCap=grip*frontLoad;
+ let rearFx=engineForce-brakeForce*.42*Math.sign(car.u||1)-drag*.55;
+ let frontFx=-brakeForce*.58*Math.sign(car.u||1)-drag*.45;
+ const surfaceOffset=Math.abs(nearestInfo.offset),half=roadWidth*.5;
+ car.surfaceGrip=surfaceOffset<=half+.95?1:surfaceOffset<=half+5?.68:surfaceOffset<=half+12?.34:.20;
+ const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
  rearFx=clamp(rearFx,-rearCap,rearCap);
  frontFx=clamp(frontFx,-frontCap,frontCap);
  const vDen=Math.max(2.2,speed);
  const alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer;
  const alphaR=Math.atan2(car.v-lr*car.r,vDen);
  const cF=98000*wetFactor,cR=112000*wetFactor;
- let fyF=-frontCap*Math.tanh(cF*alphaF/Math.max(1,frontCap));
- let fyR=-rearCap*Math.tanh(cR*alphaR/Math.max(1,rearCap));
+ let fyF=-frontCap*pacejka(alphaF);
+ let fyR=-rearCap*pacejka(alphaR);
  const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx));
  const rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
  fyF=clamp(fyF,-frontBudget,frontBudget);fyR=clamp(fyR,-rearBudget,rearBudget);
@@ -494,8 +516,8 @@ function updatePhysics(dt){
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*1.5+Math.abs(latAccel)/22,0,2);
  car.wear=clamp(car.wear-dt*(.000003+stress*.000012)*(tireSpecs[tyreCompound].wear),.18,1);
- car.tempF=lerp(car.tempF,weather.temp+44+stress*18,Math.min(1,dt*.08));
- car.tempR=lerp(car.tempR,weather.temp+45+stress*20,Math.min(1,dt*.08));
+ car.tempF=lerp(car.tempF,weather.temp+58+stress*25,Math.min(1,dt*.12));
+ car.tempR=lerp(car.tempR,weather.temp+59+stress*27,Math.min(1,dt*.12));
  car.wheelSpin+=car.u*dt/wheelRadius;
  const progress=nearestInfo.progress;
  if(previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);lap++;lapStart=elapsed;}
@@ -509,8 +531,7 @@ function updatePhysics(dt){
  handGroup.rotation.z=-car.steer*.18;
  for(let i=0;i<frontWheelPivots.length;i++)frontWheelPivots[i].rotation.y=car.steer;
  for(const w of wheelMeshes)w.rotation.x=car.wheelSpin;
- updateHud(grip,offGrip);
- updateAudio(throttle,brake,car.slip);
+ car.throttle=throttle;car.brake=brake;
 }
 function updateHud(grip,offGrip){
  $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
@@ -522,7 +543,7 @@ function updateHud(grip,offGrip){
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  drawMiniMap();drawMiniCar();
 }
-function setCamera(){
+function setCamera(frameDt=.016){
  if(!carRoot)return;
  let localPos,localLook;
  if(cameraMode===0){localPos=new THREE.Vector3(0,3.9,-10.5);localLook=new THREE.Vector3(0,.85,4.2);}
@@ -532,7 +553,9 @@ function setCamera(){
  const desired=carRoot.localToWorld(localPos.clone());
  const target=carRoot.localToWorld(localLook.clone());
  if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
- camera.position.lerp(desired,cameraMode===2?.36:.10);
+ const blend=1-Math.exp(-(cameraMode===2?19:6.5)*frameDt);
+ camera.position.lerp(desired,blend);
+ if(cameraMode===0){camera.fov=lerp(camera.fov,65+Math.min(12,Math.abs(car?.u||0)*.12),1-Math.exp(-2.4*frameDt));camera.updateProjectionMatrix();}
  camera.lookAt(target);
  const names=["CHASE","HALO TOP","COCKPIT","TV REAR"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
@@ -623,9 +646,15 @@ function returnToMenu(){running=false;paused=false;$("pauseOverlay").style.displ
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
 function animate(now){
  requestAnimationFrame(animate);
- const dt=Math.min(.033,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
- if(running&&!paused){updatePhysics(dt);updateRain(dt);setCamera();}
- else if(carRoot){setCamera();}
+ const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
+ if(running&&!paused){
+  physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
+  const fixed=1/120;let steps=0;
+  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);physicsAccumulator-=fixed;steps++;}
+  updateRain(frameDt);hudAccumulator+=frameDt;
+  if(hudAccumulator>=.08){updateHud(getGrip(),car.surfaceGrip);hudAccumulator=0;updateAudio(car.throttle,car.brake,car.slip);}
+  setCamera(frameDt);
+ }else if(carRoot){physicsAccumulator=0;setCamera(frameDt);}
  if(renderer&&scene&&camera)renderer.render(scene,camera);
 }
 function bindWeather(prefix){
@@ -663,7 +692,7 @@ async function boot(){
   setLoad(100,"Ready to race","Your circuit and car are ready.");await new Promise(r=>setTimeout(r,220));
   $("loading").style.opacity="0";setTimeout(()=>$("loading").style.display="none",380);
   previousFrame=performance.now();requestAnimationFrame(animate);
- }catch(err){showError(err);$("loadText").textContent="The 3D scene could not start. Check the console or try a browser with WebGL enabled.";$("loadStep").textContent="Initialisation failed";}
+ }catch(err){showError(err);$("loadText").textContent="The 3D scene could not start: "+(err&&err.message?err.message:String(err));$("loadStep").textContent="Initialisation failed";$("loadPct").textContent="ERROR";}
 }
 boot();
 </script>
