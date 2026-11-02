@@ -339,6 +339,7 @@ function buildTerrain(def){
 }
 
 function createTrack(){
+ clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
@@ -448,6 +449,58 @@ function buildScenery(){
   environmentGroup.add(bushes);
  }
 }
+function clearOpponents(){
+ opponents.forEach(bot=>{scene.remove(bot.root);bot.root.traverse(o=>{if(o.geometry)o.geometry.dispose();});});
+ opponents=[];
+}
+function spawnOpponents(){
+ clearOpponents();
+ const colors=[0x1689e8,0xf1c446,0x39b875,0xd9dfe5,0x9b62d4,0xf07936,0x4eabb4,0xb7c0c9];
+ const base=aiSkill==="easy"?42:aiSkill==="fast"?62:53;
+ for(let i=0;i<opponentCount;i++){
+  const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);
+  const color=new THREE.Color(colors[i%colors.length]);
+  root.traverse(o=>{
+   if(!o.isMesh||!o.material)return;
+   const paintMaterial=mat=>{
+    if(!mat||!mat.color)return mat;
+    if(mat.color.getHexString()===selectedLivery.replace("#","").toLowerCase()){
+     const cloned=mat.clone();cloned.color.copy(color);return cloned;
+    }
+    return mat;
+   };
+   o.material=Array.isArray(o.material)?o.material.map(paintMaterial):paintMaterial(o.material);
+  });
+  const progress=(.035+i*.047)%1;
+  const bot={root,progress,speed:base+(i%3-1)*1.7,baseSpeed:base+(i%3-1)*1.7,offset:(i%2?1:-1)*(1.5+(i%3)*.45),number:i+1};
+  const sample=route[Math.floor(progress*route.length)%route.length];
+  const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.03,sample.p.z+right.z*bot.offset);
+  root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);
+  scene.add(root);opponents.push(bot);
+ }
+ $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
+}
+function updateOpponents(dt){
+ if(!opponents.length)return;
+ const count=route.length;
+ opponents.forEach(bot=>{
+  let index=Math.floor(bot.progress*count)%count;
+  const here=route[index],ahead=route[(index+36)%count];
+  const dot=clamp(here.tan.dot(ahead.tan),-1,1),angle=Math.acos(dot);
+  const curvature=angle/Math.max(12,36*4);
+  const gripSpeed=Math.sqrt(16.5/Math.max(.001,curvature));
+  const target=Math.min(bot.baseSpeed,gripSpeed);
+  bot.speed+=clamp(target-bot.speed,-5*dt,2.5*dt);
+  bot.progress=(bot.progress+bot.speed*dt/routeLength)%1;
+  index=Math.floor(bot.progress*count)%count;
+  const sample=route[index],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  bot.root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
+  const heading=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
+  bot.root.rotation.set(slope,heading,0,"YXZ");
+ }
+}
+
 function buildCar(){
  if(carRoot){scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;
@@ -662,17 +715,19 @@ function temperatureGrip(temp){
 }
 function updatePhysics(dt){
  const throttle=(keys.KeyW||keys.ArrowUp)?1:0,brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
- const steerInput=(keys.KeyA||keys.ArrowLeft?-1:0)+(keys.KeyD||keys.ArrowRight?1:0);
- const speed=Math.hypot(car.u,car.v),steerLimit=lerp(.43,.105,clamp(speed/95,0,1));
+ const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
+ const speed=Math.hypot(car.u,car.v),steerLimit=lerp(.32,.072,clamp(speed/95,0,1));
  car.steer+=((steerInput*steerLimit)-car.steer)*Math.min(1,dt*(speed>50?4.8:7.5));
- if(keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=.13;playShiftSound(1);keys._e=true;}}else keys._e=false;
- if(keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=.16;playShiftSound(-1);keys._q=true;}}else keys._q=false;
+ const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
+ const canManualShift=shiftMode==="sequential"||(shiftMode==="manual"&&clutchPressed);
+ if(canManualShift&&keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=shiftMode==="manual"?.22:.14;playShiftSound(1);keys._e=true;}}else if(!keys.KeyE)keys._e=false;
+ if(canManualShift&&keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=shiftMode==="manual"?.24:.16;playShiftSound(-1);keys._q=true;}}else if(!keys.KeyQ)keys._q=false;
  car.shiftTimer=Math.max(0,car.shiftTimer-dt);
  let wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- if(car.shiftTimer<=0&&assistMode!=="simulation"){
-  if(car.rpm>14200&&car.gear<8){car.gear++;car.shiftTimer=.13;playShiftSound(1);}
-  else if(car.rpm<7300&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.15;playShiftSound(-1);}
+ if(shiftMode==="automatic"&&car.shiftTimer<=0){
+  if(car.rpm>14100&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
+  else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  const downforce=.5*airDensity*4.8*speed*speed;
@@ -698,9 +753,11 @@ function updatePhysics(dt){
  const vDen=Math.max(2.2,speed);
  const alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer;
  const alphaR=Math.atan2(car.v-lr*car.r,vDen);
- const tyreStiffness=10.8*(1-.18*(weather.rain/100)*(tyreCompound==="wet"?.2:1));
- let fyF=-frontCap*pacejka(alphaF,tyreStiffness);
- let fyR=-rearCap*pacejka(alphaR,tyreStiffness);
+ const tyreStiffness=8.7*(1-.18*(weather.rain/100)*(tyreCompound==="wet"?.2:1));
+ const lowSpeedGrip=clamp(speed/7.5,0,1);
+ let fyF=-frontCap*pacejka(alphaF,tyreStiffness)*lowSpeedGrip;
+ let fyR=-rearCap*pacejka(alphaR,tyreStiffness)*lowSpeedGrip;
+ if(assistMode==="assisted"&&Math.abs(alphaR)>.19)rearFx*=clamp(.19/Math.abs(alphaR),.48,1);
  const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx));
  const rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
  fyF=clamp(fyF,-frontBudget,frontBudget);fyR=clamp(fyR,-rearBudget,rearBudget);
@@ -712,9 +769,11 @@ function updatePhysics(dt){
  car.u+=longitudinal/mass*dt;
  car.v+=latAccel*dt;
  car.r+=yawMoment/izz*dt;
- car.v*=Math.max(0,1-dt*(assistMode==="assisted"?1.6:.35));
- car.r*=Math.max(0,1-dt*.55);
- car.u=clamp(car.u,-32,105);
+ const stability=assistMode==="assisted"?2.2:assistMode==="sport"?1.05:.58;
+ car.v*=Math.exp(-stability*dt);
+ car.r*=Math.exp(-(stability*.72)*dt);
+ car.r=clamp(car.r,-2.5,2.5);car.v=clamp(car.v,-13,13);
+ car.u=clamp(car.u,-24,100);
  car.yaw+=car.r*dt;
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
@@ -760,26 +819,31 @@ function updateHud(grip,offGrip){
  $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
+ $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
+ $("transmissionValue").textContent=shiftMode==="automatic"?"AUTO":shiftMode==="manual"?"MAN":"SEQ";
  drawDashboard();drawMiniMap();drawMiniCar();
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
  let localPos,localLook;
- if(cameraMode===0){localPos=new THREE.Vector3(0,3.9,-10.5);localLook=new THREE.Vector3(0,.85,4.2);}
- else if(cameraMode===1){localPos=new THREE.Vector3(0,6.3,-1.3);localLook=new THREE.Vector3(0,.2,14);}
- else if(cameraMode===2){localPos=new THREE.Vector3(0,1.46,-.58);localLook=new THREE.Vector3(0,1.18,13);}
- else{localPos=new THREE.Vector3(0,2.9,-7);localLook=new THREE.Vector3(0,.2,9);}
+ if(cameraMode===0){localPos=new THREE.Vector3(0,3.15,-9.2);localLook=new THREE.Vector3(0,.72,9.5);}
+ else if(cameraMode===1){localPos=new THREE.Vector3(0,2.15,-.22);localLook=new THREE.Vector3(0,1.03,17);}
+ else if(cameraMode===2){localPos=new THREE.Vector3(0,1.39,-.92);localLook=new THREE.Vector3(0,1.33,27);}
+ else if(cameraMode===3){localPos=new THREE.Vector3(0,1.42,1.08);localLook=new THREE.Vector3(0,1.12,26);}
+ else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
  const desired=carRoot.localToWorld(localPos.clone());
  const target=carRoot.localToWorld(localLook.clone());
  if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
- const blend=1-Math.exp(-(cameraMode===2?19:6.5)*frameDt);
+ const cameraRate=cameraMode===2?17:cameraMode===3?14:6.5;
+ const blend=1-Math.exp(-cameraRate*frameDt);
  camera.position.lerp(desired,blend);
- if(cameraMode===0){camera.fov=lerp(camera.fov,65+Math.min(12,Math.abs(car?.u||0)*.12),1-Math.exp(-2.4*frameDt));camera.updateProjectionMatrix();}
+ const targetFov=cameraMode===0?65+Math.min(9,Math.abs(car?.u||0)*.09):cameraMode===2?72:cameraMode===3?74:67;
+ camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3*frameDt));camera.updateProjectionMatrix();
  camera.lookAt(target);
- const names=["CHASE","HALO TOP","COCKPIT","TV REAR"];
+ const names=["CHASE","HALO TOP","COCKPIT","HOOD","TV REAR"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
 }
-function cycleCamera(){cameraMode=(cameraMode+1)%4;camera.userData.ready=false;setCamera();}
+function cycleCamera(){cameraMode=(cameraMode+1)%5;camera.userData.ready=false;setCamera();}
 function updateWeather(){
  const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100;
  const palettes={clear:{sky:0x92b6c8,top:0x2f638b,horizon:0xc5dce4,bottom:0x748b98,ground:0x314f3b,sun:2.25},cloudy:{sky:0x71818b,top:0x465764,horizon:0x9ba9ac,bottom:0x69767a,ground:0x34463e,sun:1.05},rain:{sky:0x536572,top:0x293c4a,horizon:0x72818a,bottom:0x59646b,ground:0x293b38,sun:.58},fog:{sky:0x9ca9ac,top:0x7f9299,horizon:0xc0c9c8,bottom:0xa2adad,ground:0x45504b,sun:.7},heat:{sky:0x9bc3d5,top:0x4d82a7,horizon:0xd7e3dc,bottom:0x8d9a91,ground:0x665f42,sun:2.6}};
@@ -853,38 +917,80 @@ function initAudio(){
  const rainFilter=audioCtx.createBiquadFilter();rainFilter.type="lowpass";rainFilter.frequency.value=3600;
  rainGain=audioCtx.createGain();rainGain.gain.value=0;rainSource.connect(rainFilter);rainFilter.connect(rainGain);rainGain.connect(audioCtx.destination);rainSource.start();
 }
+const engineLoopUrls=[
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_0.wav",
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_1_0.wav",
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_2_0.wav",
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_3_0.wav",
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_4_0.wav",
+ "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_5_0.wav"
+];
+function startEngineLoops(){
+ if(engineLoops.length===0){
+  engineLoops=engineLoopUrls.map(url=>{const a=new Audio(url);a.loop=true;a.preload="auto";a.volume=0;return a;});
+ }
+ engineLoopsStarted=true;
+ engineLoops.forEach(a=>{if(a.paused)a.play().catch(()=>{});});
+}
+function stopEngineLoops(){
+ engineLoopsStarted=false;
+ engineLoops.forEach(a=>{a.volume=0;a.pause();});
+}
 function updateAudio(throttle,brake,slip){
- if(!audioCtx||!soundEnabled)return;
+ if(!audioCtx)return;
  const t=audioCtx.currentTime,rpm=car.rpm||4500;
  engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.045);engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.055);
- engineFilter.frequency.setTargetAtTime(500+rpm*.12,t,.08);
- engineGain.gain.setTargetAtTime(.07+throttle*.11,t,.08);
- const skid=clamp((slip-.11)*1.8,0,.24)*(Math.abs(car.u)>12?1:0);
- skidGain.gain.setTargetAtTime(skid,t,.08);
- windGain.gain.setTargetAtTime(.015+Math.abs(car.u)/110*.08,t,.1);
- if(rainGain)rainGain.gain.setTargetAtTime(weather.rain/100*.07,t,.2);
+ engineFilter.frequency.setTargetAtTime(460+rpm*.105,t,.08);
+ engineGain.gain.setTargetAtTime(soundEnabled?(engineLoops.length?.012:.12+throttle*.08):0,t,.08);
+ if(soundEnabled&&engineLoopsStarted&&engineLoops.length){
+  const rpmPosition=clamp((rpm-4300)/(14900-4300),0,1)*5;
+  const lower=Math.floor(rpmPosition),upper=Math.min(5,lower+1),mix=rpmPosition-lower;
+  const pitch=clamp(.9+((rpm-4300)/(14900-4300))*.46,.86,1.42);
+  const volume=.32+throttle*.48;
+  engineLoops.forEach((a,i)=>{
+   const weight=i===lower?1-mix:i===upper?mix:0;
+   a.playbackRate=pitch;
+   a.volume=volume*weight;
+   if(a.paused)a.play().catch(()=>{});
+  });
+ }else engineLoops.forEach(a=>{a.volume=0;});
+ const skid=clamp((slip-.11)*1.5,0,.2)*(Math.abs(car.u)>12?1:0);
+ if(skidGain)skidGain.gain.setTargetAtTime(soundEnabled?skid:0,t,.08);
+ if(windGain)windGain.gain.setTargetAtTime(soundEnabled?(.015+Math.abs(car.u)/110*.08):0,t,.1);
+ if(rainGain)rainGain.gain.setTargetAtTime(soundEnabled?weather.rain/100*.07:0,t,.2);
 }
 function silenceAudio(){
- if(!audioCtx)return;
- const now=audioCtx.currentTime;
- [engineGain,skidGain,windGain,rainGain].forEach(g=>{if(g)g.gain.setTargetAtTime(0,now,.05);});
+ if(audioCtx){
+  const now=audioCtx.currentTime;
+  [engineGain,skidGain,windGain,rainGain].forEach(g=>{if(g)g.gain.setTargetAtTime(0,now,.05);});
+ }
+ stopEngineLoops();
 }
 function toggleSound(){
  soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";
  if(!soundEnabled)silenceAudio();
+ else if(running&&!paused)startEngineLoops();
 }
 function startSession(){
  if(!carRoot)buildCar();
  if(!car)positionCarAtStart();
- initAudio();if(audioCtx)audioCtx.resume();
+ initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
+ spawnOpponents();
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
-function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();}
+function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){positionCarAtStart();resumeGame();}
 function returnToMenu(){running=false;paused=false;silenceAudio();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";}
+function applyGraphicsQuality(){
+ if(!renderer)return;
+ const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ratio));
+ renderer.shadowMap.enabled=graphicsQuality!=="low";
+ renderer.setSize(window.innerWidth,window.innerHeight,false);
+}
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
 function animate(now){
  requestAnimationFrame(animate);
@@ -892,7 +998,7 @@ function animate(now){
  if(running&&!paused){
   physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
   const fixed=1/120;let steps=0;
-  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);physicsAccumulator-=fixed;steps++;}
+  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
   updateRain(frameDt);hudAccumulator+=frameDt;
   if(hudAccumulator>=.08){updateHud(getGrip(),car.surfaceGrip);hudAccumulator=0;updateAudio(car.throttle,car.brake,car.slip);}
   setCamera(frameDt);
@@ -916,6 +1022,11 @@ function bindControls(){
  $("liveryPalette").addEventListener("click",e=>{const b=e.target.closest(".swatch");if(!b)return;document.querySelectorAll(".swatch").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedLivery=b.dataset.color;buildCar();if(car)positionCarAtStart();});
  $("tyreSelect").addEventListener("change",()=>{tyreCompound=$("tyreSelect").value;});
  $("assistSelect").addEventListener("change",()=>{assistMode=$("assistSelect").value;});
+ $("transmissionSelect").addEventListener("change",()=>{shiftMode=$("transmissionSelect").value;});
+ $("opponentCountSelect").addEventListener("change",()=>{opponentCount=Number($("opponentCountSelect").value);});
+ $("aiSkillSelect").addEventListener("change",()=>{aiSkill=$("aiSkillSelect").value;});
+ $("raceLapsSelect").addEventListener("change",()=>{raceLaps=Number($("raceLapsSelect").value);});
+ $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();});
  bindWeather("");bindWeather("live");
  $("startBtn").addEventListener("click",startSession);
  $("cameraBtn").addEventListener("click",cycleCamera);$("cameraPauseBtn").addEventListener("click",()=>{cycleCamera();});
@@ -929,7 +1040,7 @@ function bindControls(){
 async function boot(){
  try{
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
-  initRenderer();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
+  initRenderer();applyGraphicsQuality();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
   buildCar();positionCarAtStart();setLoad(88,"Applying race setup");updateWeather();syncWeatherInputs();
   bindControls();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";
