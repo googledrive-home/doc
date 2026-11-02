@@ -160,7 +160,7 @@ const trackDefs = {
  }
 };
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[];
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
@@ -386,7 +386,7 @@ function createTrack(){
  for(let i=0;i<route.length;i+=5){for(const side of [-1,1]){dummy.position.copy(offsetPoint(route[i],side,roadWidth/2+5.8,.52));dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);}}
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
- buildScenery();addTracksideProps();buildGrandstandsAndCrowd();
+ buildScenery();addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();
  positionCarAtStart();
  updatePreview();drawMiniMap();
 }
@@ -449,10 +449,49 @@ function addTracksideProps(){
  for(const side of [-1,1]){
   const fenceDistance=roadWidth/2+10.4;
   const fencePoints=[];
-  for(let i=0;i<route.length;i+=3)fencePoints.push(offsetPoint(route[i],side,fenceDistance,2.7));
+  for(let i=0;i<route.length;i+=3){
+   const point=offsetPoint(route[i],side,fenceDistance,0);
+   point.y=terrainHeightAt(point.x,point.z)+2.7;fencePoints.push(point);
+   if(i%18===0){
+    const baseY=terrainHeightAt(point.x,point.z);
+    const post=new THREE.Mesh(new THREE.BoxGeometry(.09,2.7,.09),fenceMat);
+    post.position.set(point.x,baseY+1.35,point.z);environmentGroup.add(post);
+   }
+  }
   const fenceCurve=new THREE.CatmullRomCurve3(fencePoints,true,"centripetal",.5);
   environmentGroup.add(new THREE.Mesh(new THREE.TubeGeometry(fenceCurve,fencePoints.length,.035,5,true),fenceMat));
  }
+}
+
+function addTracksideVehicles(){
+ const vehicleSpecs=[
+  {fraction:.11,side:1,type:"van",body:0xe9eceb,accent:0xd83d36},
+  {fraction:.28,side:-1,type:"suv",body:0xf0f0e9,accent:0xd83d36},
+  {fraction:.47,side:1,type:"van",body:0x263b4d,accent:0xe6c64b},
+  {fraction:.67,side:-1,type:"truck",body:0xe8e7df,accent:0x27805d},
+  {fraction:.86,side:1,type:"suv",body:0xe9eceb,accent:0xe6c64b}
+ ];
+ const rubber=makeMat(0x171a1d,.95),glass=new THREE.MeshStandardMaterial({color:0x29404c,metalness:.25,roughness:.25}),dark=makeMat(0x202b32,.6,.2);
+ vehicleSpecs.forEach((spec,index)=>{
+  const sample=route[Math.floor(spec.fraction*route.length)%route.length];
+  const dist=roadWidth/2+27+(index%2)*4,p=offsetPoint(sample,spec.side,dist,0);
+  const ground=terrainHeightAt(p.x,p.z),heading=Math.atan2(sample.tan.x,sample.tan.z)+(spec.side>0?Math.PI/2:-Math.PI/2);
+  const group=new THREE.Group();group.position.set(p.x,ground,p.z);group.rotation.y=heading;
+  const isVan=spec.type==="van",isTruck=spec.type==="truck";
+  const length=isTruck?6.7:isVan?4.7:4.1,width=isTruck?2.35:2.05,height=isTruck?2.5:isVan?2.25:1.65;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(width,height,length),makeMat(spec.body,.52,.15));body.position.y=height*.5+.38;body.castShadow=true;group.add(body);
+  const cab=new THREE.Mesh(new THREE.BoxGeometry(width*.94,isTruck?1.18:height*.68,length*.36),makeMat(spec.body,.5,.1));cab.position.set(0,height+(isTruck?.18:.05),length*.15);cab.castShadow=true;group.add(cab);
+  const windscreen=new THREE.Mesh(new THREE.BoxGeometry(width*.82,.64,.045),glass);windscreen.position.set(0,height+.1,length*.335);group.add(windscreen);
+  const stripe=new THREE.Mesh(new THREE.BoxGeometry(width+.018,.18,length*.8),makeMat(spec.accent,.48,.18));stripe.position.set(0,height*.55,0);group.add(stripe);
+  for(const side of [-1,1])for(const z of [-length*.31,length*.31]){
+   const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.22,16),rubber);wheel.rotation.z=Math.PI/2;wheel.position.set(side*(width*.51),.36,z);group.add(wheel);
+  }
+  for(const side of [-1,1]){
+   const lamp=new THREE.Mesh(new THREE.BoxGeometry(.22,.13,.05),makeMat(0xf4e7b6,.3,.2));lamp.position.set(side*width*.34,.72,length*.502);group.add(lamp);
+   const mirror=new THREE.Mesh(new THREE.BoxGeometry(.14,.12,.22),dark);mirror.position.set(side*width*.56,height*.76,length*.18);group.add(mirror);
+  }
+  environmentGroup.add(group);
+ });
 }
 
 function buildGrandstandsAndCrowd(){
@@ -612,9 +651,75 @@ function updateOpponents(dt){
  });
 }
 
+function registerDamagePart(mesh,name,threshold){
+ damageParts.push({mesh,name,threshold,detached:false});
+ return mesh;
+}
+function spawnCrashParticles(origin,side,severity){
+ const count=Math.round(6+severity*15);
+ const colors=[0xe8483f,0x222a31,0xc2c8cc,0xf0bd4c];
+ for(let i=0;i<count;i++){
+  const material=new THREE.MeshStandardMaterial({color:colors[i%colors.length],roughness:.82,metalness:.12});
+  const mesh=new THREE.Mesh(new THREE.TetrahedronGeometry(.055+Math.random()*.09,0),material);
+  mesh.position.copy(origin);mesh.position.x+=(Math.random()-.5)*.75;mesh.position.y+=Math.random()*.55;mesh.position.z+=(Math.random()-.5)*.75;
+  scene.add(mesh);
+  crashDebris.push({mesh,velocity:new THREE.Vector3((Math.random()-.5)*5+side*2,2+Math.random()*5,(Math.random()-.5)*5+car.u*.16),spin:new THREE.Vector3(Math.random()*8,Math.random()*8,Math.random()*8),life:3+Math.random()*3});
+ }
+}
+function applyCrashDamage(severity,side){
+ if(!carRoot||severity<.12)return;
+ vehicleDamage=clamp(vehicleDamage+severity*.22,0,.92);
+ const impactPoint=carRoot.position.clone();impactPoint.y+=.7;
+ const candidates=damageParts.filter(p=>!p.detached&&severity>=p.threshold).sort((a,b)=>a.threshold-b.threshold);
+ // One major part per impact, with smaller parts allowed to follow on severe impacts.
+ const broken=candidates.slice(0,severity>.78?3:severity>.48?2:1);
+ for(const part of broken){
+  part.mesh.updateWorldMatrix(true,true);
+  scene.attach(part.mesh);
+  part.detached=true;
+  looseDamageParts.push({
+   mesh:part.mesh,
+   velocity:new THREE.Vector3(car.u*Math.sin(car.yaw)+side*2,2.3+severity*2,car.u*Math.cos(car.yaw)),
+   angular:new THREE.Vector3((Math.random()-.5)*8,side*(3+Math.random()*5),(Math.random()-.5)*8),
+   age:0,life:8
+  });
+ }
+ spawnCrashParticles(impactPoint,side,severity);
+ if(audioCtx&&soundEnabled){
+  const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+  osc.type="triangle";osc.frequency.setValueAtTime(145,now);osc.frequency.exponentialRampToValueAtTime(38,now+.18);
+  gain.gain.setValueAtTime(.12*severity,now);gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+  osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.23);
+ }
+}
+function updateCrashDebris(dt){
+ for(let i=looseDamageParts.length-1;i>=0;i--){
+  const p=looseDamageParts[i];p.age+=dt;p.velocity.y-=9.81*dt;
+  p.mesh.position.addScaledVector(p.velocity,dt);
+  p.mesh.rotation.x+=p.angular.x*dt;p.mesh.rotation.y+=p.angular.y*dt;p.mesh.rotation.z+=p.angular.z*dt;
+  const floor=terrainHeightAt(p.mesh.position.x,p.mesh.position.z)+.12;
+  if(p.mesh.position.y<floor){p.mesh.position.y=floor;p.velocity.y=Math.abs(p.velocity.y)*.22;p.velocity.x*=.72;p.velocity.z*=.72;p.angular.multiplyScalar(.55);}
+  if(p.age>p.life){scene.remove(p.mesh);looseDamageParts.splice(i,1);}
+ }
+ for(let i=crashDebris.length-1;i>=0;i--){
+  const p=crashDebris[i];p.life-=dt;p.velocity.y-=9.81*dt;p.mesh.position.addScaledVector(p.velocity,dt);
+  p.mesh.rotation.x+=p.spin.x*dt;p.mesh.rotation.y+=p.spin.y*dt;p.mesh.rotation.z+=p.spin.z*dt;
+  const floor=terrainHeightAt(p.mesh.position.x,p.mesh.position.z)+.04;
+  if(p.mesh.position.y<floor){p.mesh.position.y=floor;p.velocity.y=Math.abs(p.velocity.y)*.18;p.velocity.x*=.65;p.velocity.z*=.65;}
+  if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();crashDebris.splice(i,1);}
+ }
+}
+function clearCrashEffects(){
+ for(const p of looseDamageParts)scene.remove(p.mesh);
+ looseDamageParts=[];
+ for(const p of crashDebris){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}
+ crashDebris=[];
+ vehicleDamage=0;
+}
+
 function buildCar(){
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
- carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;cockpitHiddenMeshes=[];
+ carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;cockpitHiddenMeshes=[];damageParts=[];vehicleDamage=0;
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.62,roughness:.28});
  const carbon=makeMat(0x121820,.34,.38),rubber=makeMat(0x171a1e,.91),rim=makeMat(0xb8c0c6,.25,.85),glass= new THREE.MeshStandardMaterial({color:0x172e3c,metalness:.35,roughness:.18,transparent:true,opacity:.72});
  const yellow=makeMat(0xffd45e,.4,.2),white=makeMat(0xf4f1e8,.48,.18);
@@ -662,20 +767,20 @@ function buildCar(){
  box(.065,.018,1.75,white,0,.78,1.2);
  box(1.45,.055,.18,carbon,0,.36,1.74);
  // Front and rear wing assemblies, with multiple elements and end plates.
- const wingA=box(2.8,.12,.62,carbon,0,.36,2.95);
- const wingB=box(2.65,.075,.35,bodyMat,0,.48,2.72);wingB.rotation.x=-.045;
- const wingC=box(2.45,.06,.28,carbon,0,.59,2.65);wingC.rotation.x=-.08;
+ const wingA=registerDamagePart(box(2.8,.12,.62,carbon,0,.36,2.95),"front wing lower",.22);
+ const wingB=registerDamagePart(box(2.65,.075,.35,bodyMat,0,.48,2.72),"front wing upper",.36);wingB.rotation.x=-.045;
+ const wingC=registerDamagePart(box(2.45,.06,.28,carbon,0,.59,2.65),"front wing flap",.52);wingC.rotation.x=-.08;
  for(const side of [-1,1]){
-  const endplate=box(.12,.54,.88,carbon,side*1.35,.48,2.88);endplate.rotation.x=.08;
+  const endplate=registerDamagePart(box(.12,.54,.88,carbon,side*1.35,.48,2.88),"front wing endplate",.20);endplate.rotation.x=.08;
   box(.105,.4,.68,bodyMat,side*1.32,.61,2.88);
   box(.05,.2,.48,yellow,side*1.28,.56,2.73);
  }
- const rearWing=box(2.12,.105,.34,bodyMat,0,1.30,-2.37);rearWing.rotation.x=.025;
- box(2.16,.065,.24,carbon,0,1.16,-2.35);
- box(1.94,.055,.19,carbon,0,1.46,-2.31);
+ const rearWing=registerDamagePart(box(1.48,.09,.27,bodyMat,0,1.27,-2.37),"rear wing mainplane",.72);rearWing.rotation.x=.025;
+ registerDamagePart(box(1.5,.055,.20,carbon,0,1.15,-2.35),"rear wing lower flap",.80);
+ registerDamagePart(box(1.35,.05,.16,carbon,0,1.40,-2.31),"rear wing upper flap",.86);
  for(const side of [-1,1]){
-  box(.10,.48,.43,carbon,side*.82,1.30,-2.36);
-  box(.03,.20,.30,yellow,side*.80,1.32,-2.38);
+  registerDamagePart(box(.075,.35,.31,carbon,side*.56,1.27,-2.36),"rear wing endplate",.76);
+  box(.025,.16,.22,yellow,side*.55,1.29,-2.38);
  }
  box(.78,.42,.6,carbon,0,.78,-1.95);
  const airbox=new THREE.Mesh(new THREE.CylinderGeometry(.25,.34,.55,18),carbon);airbox.position.set(0,1.25,-.52);carRoot.add(airbox);
@@ -868,7 +973,7 @@ function updatePhysics(dt){
   else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- const downforce=.5*airDensity*4.4*speed*speed,normal=mass*9.81+downforce;
+ const downforce=.5*airDensity*4.4*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
  const frontLoad=clamp(normal*.44-weightTransfer,normal*.29,normal*.65),rearLoad=Math.max(0,normal-frontLoad);
  const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR),baseGrip=getGrip();
@@ -878,7 +983,7 @@ function updatePhysics(dt){
  const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
  const torque=torqueAt(car.rpm),clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
  const launchMap=lerp(.48,1,clamp(speed/24,0,1));
- let engineForce=throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor;
+ let engineForce=throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20);
  const brakeForce=brake*Math.min(42000,600*mass),drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;
  let rearFx=engineForce-brakeForce*.42*Math.sign(car.u||1)-drag*.55;
  let frontFx=-brakeForce*.58*Math.sign(car.u||1)-drag*.45;
@@ -908,11 +1013,19 @@ function updatePhysics(dt){
  nearestInfo=findNearest(car.x,car.z);
  const off=Math.abs(nearestInfo.offset),barrierRail=roadWidth/2+5.8,bodyHalfWidth=1.1,barrierContact=barrierRail-bodyHalfWidth;
  if(off>barrierContact){
-  const side=Math.sign(nearestInfo.offset)||1,right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
+  const side=Math.sign(nearestInfo.offset)||1;
+  const wasOutside=(car.lastBarrierOffset||0)>barrierContact;
+  const impactSpeed=Math.hypot(car.u,car.v);
+  if(!wasOutside&&impactSpeed>18){
+   const severity=clamp((impactSpeed-14)/72,0,1);
+   applyCrashDamage(severity,side);
+  }
+  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
   const desired=nearestInfo.point.clone().addScaledVector(right,side*barrierContact),impact=clamp((off-barrierContact)*1.35,.35,.92);
   car.x=lerp(car.x,desired.x,impact);car.z=lerp(car.z,desired.z,impact);
   car.u*=.82;car.v*=-.08;car.r*=.55;car.wear=clamp(car.wear-.00014,.18,1);
  }
+ car.lastBarrierOffset=off;
  if(off>roadWidth*.5-.2){car.u*=1-dt*(off>roadWidth*.5+4?1.3:.10);car.v*=1-dt*1.1;}
  if(off>roadWidth/2+8){
   const desired=nearestInfo.point.clone().addScaledVector(new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize(),Math.sign(nearestInfo.offset)*(roadWidth/2+7));
@@ -1128,8 +1241,8 @@ function startSession(){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){positionCarAtStart();resumeGame();}
-function returnToMenu(){running=false;paused=false;silenceAudio();clearOpponents();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function restartLap(){clearCrashEffects();buildCar();positionCarAtStart();spawnOpponents();resumeGame();}
+function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
@@ -1151,6 +1264,7 @@ function animate(now){
  }else if(carRoot){physicsAccumulator=0;setCamera(frameDt);}
  if(skyDome)skyDome.position.copy(camera.position);
  if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
+ if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
  if(renderer&&scene&&camera)renderer.render(scene,camera);
 }
 function bindWeather(prefix){
