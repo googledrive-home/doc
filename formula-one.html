@@ -86,6 +86,15 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="wet">Full wet</option></select></div>
         <div class="field"><label for="assistSelect">Driving aids</label><select id="assistSelect"><option value="sport">Sport</option><option value="assisted" selected>Assisted</option><option value="simulation">Simulation</option></select></div>
       </div>
+      <div class="two">
+        <div class="field"><label for="transmissionSelect">Transmission</label><select id="transmissionSelect"><option value="automatic">Automatic</option><option value="sequential" selected>Sequential paddles</option><option value="manual">Manual + clutch</option></select></div>
+        <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="2">2 cars</option><option value="4" selected>4 cars</option><option value="6">6 cars</option><option value="8">8 cars</option></select></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="easy">Relaxed</option><option value="balanced" selected>Balanced</option><option value="fast">Fast</option></select></div>
+        <div class="field"><label for="raceLapsSelect">Session length</label><select id="raceLapsSelect"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option><option value="10">10 laps</option></select></div>
+      </div>
+      <div class="field"><label for="graphicsSelect">Graphics quality</label><select id="graphicsSelect"><option value="low">Performance</option><option value="medium" selected>Balanced</option><option value="high">High detail</option></select></div>
       <div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="clear">Clear / sunny</option><option value="cloudy">Cloudy</option><option value="rain">Rain</option><option value="fog">Mist and fog</option><option value="heat">Hot track</option></select></div>
       <div class="two">
         <div class="field"><div class="range-head"><label for="rainRange">Rain intensity</label><output id="rainValue">0%</output></div><input id="rainRange" type="range" min="0" max="100" value="0"></div>
@@ -96,7 +105,7 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><div class="range-head"><label for="fogRange">Mist density</label><output id="fogValue">0%</output></div><input id="fogRange" type="range" min="0" max="100" value="0"></div>
       </div>
       <button class="action" id="startBtn">START PRACTICE SESSION →</button>
-      <div class="note">Controls: W / ↑ throttle · S / ↓ brake · A / ← and D / → steer · E / Q shift · C change camera · Esc pause. Touch controls are available on smaller screens. This is a browser-based simulation, not a certified vehicle dynamics model.</div>
+      <div class="note">Controls: W / ↑ throttle · S / ↓ brake · A / ← and D / → steer · E / Q shift · Shift clutch in manual mode · C camera · Esc pause. Recorded engine loops: domasx2 / OpenGameArt (CC0). Browser racing simulation; not a certified vehicle dynamics model.</div>
     </div>
   </section>
 </div>
@@ -111,7 +120,7 @@ input[type=range]{accent-color:#ff765e}
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: CHASE</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
-  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div></div>
+  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Tyre telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div></div></div>
 </div>
 <div id="weatherPanel" class="panel">
@@ -153,9 +162,11 @@ const trackDefs = {
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
+let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,rainSource=null,rainGain=null;
+let engineLoops=[],engineLoopsStarted=false;
 const keys={};
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
@@ -262,6 +273,71 @@ function makeAsphaltTexture(){
  for(let i=0;i<1900;i++){const shade=45+Math.floor(Math.random()*45);ctx.fillStyle="rgba("+shade+","+shade+","+ (shade+2)+","+(.06+Math.random()*.16)+")";ctx.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*3,1+Math.random()*2);}
  const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
 }
+function smoothStep(a,b,x){
+ const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);
+}
+function terrainNoise(x,z){
+ if(activeTrack==="laguna"){
+  return Math.sin(x*.0018+z*.0012)*10+Math.cos(z*.0031-x*.0014)*5+Math.sin((x+z)*.006)*2.4;
+ }
+ if(activeTrack==="monza"){
+  return Math.sin(x*.0015+z*.002)*1.8+Math.cos(z*.0024-x*.0012)*1.2;
+ }
+ return Math.sin(x*.0011+z*.0014)*5.5+Math.cos(z*.0022-x*.0017)*3.2+Math.sin((x-z)*.004)*1.4;
+}
+function terrainHeightFromSample(sample,x,z,distance){
+ const blend=smoothStep(17,165,distance);
+ return lerp(sample.p.y-.17,sample.p.y+terrainNoise(x,z),blend);
+}
+function terrainTexture(){
+ const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
+ const c=canvas.getContext("2d");
+ const base=activeTrack==="laguna"?"#88774f":activeTrack==="monza"?"#284832":"#29442d";
+ c.fillStyle=base;c.fillRect(0,0,256,256);
+ for(let i=0;i<11000;i++){
+  const shade=Math.floor(Math.random()*52),alpha=.035+Math.random()*.16;
+  c.fillStyle=activeTrack==="laguna"?"rgba(224,196,133,"+alpha+")":"rgba("+(45+shade)+","+(72+shade)+","+(38+shade*.35)+","+alpha+")";
+  const size=1+Math.random()*3;c.fillRect(Math.random()*256,Math.random()*256,size,size);
+ }
+ const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+ tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
+}
+function buildTerrain(def){
+ const minX=Math.min(...route.map(s=>s.p.x))-230,maxX=Math.max(...route.map(s=>s.p.x))+230;
+ const minZ=Math.min(...route.map(s=>s.p.z))-230,maxZ=Math.max(...route.map(s=>s.p.z))+230;
+ const width=maxX-minX,depth=maxZ-minZ,nx=260,nz=Math.max(150,Math.round(nx*depth/width));
+ const coarseStep=Math.max(1,Math.floor(route.length/250));
+ const samples=[];for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
+ const positions=[],colors=[],uvs=[],indices=[];
+ const baseColor=new THREE.Color(activeTrack==="laguna"?0x9c875d:activeTrack==="monza"?0x31533a:0x315039);
+ for(let iz=0;iz<=nz;iz++){
+  const z=minZ+depth*iz/nz;
+  for(let ix=0;ix<=nx;ix++){
+   const x=minX+width*ix/nx;let best=Infinity,nearest=samples[0];
+   for(let j=0;j<samples.length;j++){
+    const p=samples[j].p,dx=x-p.x,dz=z-p.z,d=dx*dx+dz*dz;
+    if(d<best){best=d;nearest=samples[j];}
+   }
+   const distance=Math.sqrt(best),height=terrainHeightFromSample(nearest,x,z,distance);
+   positions.push(x,height,z);uvs.push(x/70,z/70);
+   const variation=.88+(.5+.5*Math.sin(x*.037+z*.029))*.16+(Math.random()-.5)*.055;
+   const color=baseColor.clone().multiplyScalar(variation);
+   colors.push(color.r,color.g,color.b);
+  }
+ }
+ for(let iz=0;iz<nz;iz++)for(let ix=0;ix<nx;ix++){
+  const a=iz*(nx+1)+ix,b=a+1,c=a+nx+1,d=c+1;
+  indices.push(a,c,b,b,c,d);
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
+ geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));
+ geometry.setIndex(indices);geometry.computeVertexNormals();
+ const material=new THREE.MeshStandardMaterial({map:terrainTexture(),vertexColors:true,roughness:.98,metalness:0,side:THREE.DoubleSide});
+ const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=true;environmentGroup.add(mesh);
+}
+
 function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
@@ -276,13 +352,13 @@ function createTrack(){
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
  route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)),def,minAlt);
- const minY=-18;
- const groundMat=makeMat(activeTrack==="laguna"?0x8d8560:0x284536,.98);
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(14000,14000),groundMat);ground.rotation.x=-Math.PI/2;ground.position.y=minY;ground.receiveShadow=true;environmentGroup.add(ground);
+ buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
- const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x626c69,.92);
+ const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x777f7b,.92);
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
+ const verge=makeMat(activeTrack==="laguna"?0x91815e:activeTrack==="monza"?0x34533a:0x34583d,1);
+ trackGroup.add(makeRibbon(route,roadWidth+30,verge,-.10));
  trackGroup.add(makeCurb(route,-1,.85));trackGroup.add(makeCurb(route,1,.85));
  const edgeMat=makeMat(0xf3f1e8,.76);
  for(const side of [-1,1]){
@@ -317,7 +393,7 @@ function addPitAndGrandstands(){
  const def=trackDefs[activeTrack];
  for(const t of [.015,.27,.52,.78]){
   const s=route[Math.floor(t*route.length)%route.length],yaw=Math.atan2(s.tan.x,s.tan.z),g=new THREE.Group();
-  g.position.copy(offsetPoint(s,-1,roadWidth/2+25,0));g.rotation.y=yaw;
+  const pitPoint=offsetPoint(s,-1,roadWidth/2+25,0);g.position.copy(pitPoint);g.position.y=terrainHeightFromSample(s,pitPoint.x,pitPoint.z,roadWidth/2+25);g.rotation.y=yaw;
   const count=1;const base=new THREE.Mesh(new THREE.BoxGeometry(56,3.4,15),makeMat(activeTrack==="laguna"?0x8b8f91:0x303d49,.82));base.position.y=2.1;g.add(base);
   const roof=new THREE.Mesh(new THREE.BoxGeometry(58,.7,17),makeMat(0x9ca8ad,.5,.35));roof.position.y=4.1;g.add(roof);
   const windows=new THREE.Mesh(new THREE.BoxGeometry(49,1.25,.1),makeMat(0x406074,.25,.5));windows.position.set(0,2.5,7.58);g.add(windows);
@@ -325,39 +401,53 @@ function addPitAndGrandstands(){
  }
  for(const t of [.045,.38,.68,.89]){
   const s=route[Math.floor(t*route.length)%route.length],yaw=Math.atan2(s.tan.x,s.tan.z),g=new THREE.Group();
-  g.position.copy(offsetPoint(s,1,roadWidth/2+24,0));g.rotation.y=yaw;
+  const standPoint=offsetPoint(s,1,roadWidth/2+24,0);g.position.copy(standPoint);g.position.y=terrainHeightFromSample(s,standPoint.x,standPoint.z,roadWidth/2+24);g.rotation.y=yaw;
   const stand=new THREE.Mesh(new THREE.BoxGeometry(48,6,10),makeMat(activeTrack==="laguna"?0x776d5b:0x555f67,.92));stand.position.y=3;g.add(stand);
   const seats=new THREE.Mesh(new THREE.BoxGeometry(44,1,8),makeMat(0xb6bcc0,.82));seats.position.set(0,6.3,0);g.add(seats);
   environmentGroup.add(g);
  }
 }
 function buildScenery(){
- const trunkMat=makeMat(activeTrack==="laguna"?0x766044:0x59483b,.95);
- const leafMat=makeMat(activeTrack==="laguna"?0x777448:(activeTrack==="monza"?0x284d38:0x244e39),.95);
- const trunkGeo=new THREE.CylinderGeometry(.35,.55,4,6),leafGeo=activeTrack==="laguna"?new THREE.SphereGeometry(3.8,7,5):new THREE.ConeGeometry(4.8,15,7);
- const max=260,trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,max),leaves=new THREE.InstancedMesh(leafGeo,leafMat,max),dummy=new THREE.Object3D();
- let n=0;
- for(let i=0;i<route.length&&n<max;i+=Math.max(1,Math.floor(route.length/(max/2)))){
-  const s=route[i];
+ const isDry=activeTrack==="laguna",isPark=activeTrack==="monza";
+ const trunkMat=makeMat(isDry?0x685038:0x59483b,.98);
+ const leafMat=makeMat(isDry?0x77764b:isPark?0x28513a:0x244a32,.98);
+ const trunkGeo=new THREE.CylinderGeometry(.28,.48,5,7);
+ const leafGeo=isDry?new THREE.SphereGeometry(1,9,7):new THREE.ConeGeometry(1,1,8);
+ const max=isPark?940:isDry?560:840;
+ const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,max);
+ const leaves=new THREE.InstancedMesh(leafGeo,leafMat,max);
+ trunks.castShadow=true;leaves.castShadow=true;
+ const dummy=new THREE.Object3D();let n=0;
+ const step=Math.max(1,Math.floor(route.length/(max/2)));
+ for(let i=0;i<route.length&&n<max;i+=step){
+  const sample=route[i];
   for(const side of [-1,1]){
    if(n>=max)break;
-   const dist=28+((i*13+n*7)%100),p=offsetPoint(s,side,roadWidth/2+dist,0);
-   const scale=.72+((i*19+n*11)%50)/85;
-   dummy.position.set(p.x,p.y+2*scale,p.z);dummy.scale.set(scale,scale,scale);dummy.rotation.y=(i*7+n)%6;dummy.updateMatrix();trunks.setMatrixAt(n,dummy.matrix);
-   dummy.position.set(p.x,p.y+9*scale,p.z);dummy.scale.set(scale,scale,scale);dummy.rotation.y=(i*5+n)%6;dummy.updateMatrix();leaves.setMatrixAt(n,dummy.matrix);
+   const dist=(isPark?32:isDry?38:25)+((i*17+n*11)% (isDry?160:220));
+   const p=offsetPoint(sample,side,roadWidth/2+dist,0);
+   const terrainY=terrainHeightFromSample(sample,p.x,p.z,roadWidth/2+dist);
+   const scale=.72+((i*19+n*11)%55)/90;
+   dummy.position.set(p.x,terrainY+2.4*scale,p.z);
+   dummy.scale.set(scale,scale,scale);dummy.rotation.y=(i*7+n)%6;dummy.updateMatrix();trunks.setMatrixAt(n,dummy.matrix);
+   dummy.position.set(p.x,terrainY+(isDry?5.6:9.0)*scale,p.z);
+   dummy.scale.set(isDry?3.4*scale:2.1*scale,isDry?1.55*scale:1.0*scale,isDry?2.8*scale:1.9*scale);
+   dummy.rotation.y=(i*5+n)%6;dummy.updateMatrix();leaves.setMatrixAt(n,dummy.matrix);
    n++;
   }
  }
  trunks.count=n;leaves.count=n;environmentGroup.add(trunks,leaves);
- const hillMat=makeMat(activeTrack==="laguna"?0x817d58:(activeTrack==="monza"?0x31523c:0x405c48),1);
- for(let i=0;i<12;i++){
-  const a=i*Math.PI/6,r=1900+(i%3)*200;
-  const hill=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),hillMat);
-  hill.position.set(Math.cos(a)*r,Math.min(...route.map(s=>s.p.y))-5,Math.sin(a)*r);
-  hill.scale.set(260+((i*37)%150),75+((i*17)%70),330+((i*29)%200));environmentGroup.add(hill);
+ // More numerous low scrub bushes make Laguna's dry hills read differently from the Belgian forest.
+ if(isDry){
+  const bushCount=360,bushGeo=new THREE.SphereGeometry(1,7,5),bushMat=makeMat(0x77724d,1);
+  const bushes=new THREE.InstancedMesh(bushGeo,bushMat,bushCount);
+  for(let i=0;i<bushCount;i++){
+   const sample=route[(i*37)%route.length],side=i%2?1:-1,dist=35+(i*23)%190;
+   const p=offsetPoint(sample,side,roadWidth/2+dist,0),y=terrainHeightFromSample(sample,p.x,p.z,roadWidth/2+dist);
+   dummy.position.set(p.x,y+.65,p.z);const size=.5+(i%7)*.1;dummy.scale.set(size*1.7,size*.55,size);dummy.rotation.y=i*.7;dummy.updateMatrix();bushes.setMatrixAt(i,dummy.matrix);
+  }
+  environmentGroup.add(bushes);
  }
 }
-
 function buildCar(){
  if(carRoot){scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.72;
