@@ -138,6 +138,7 @@ const fmtKm = n => (n/1000).toFixed(3)+" KM";
 const trackDefs = {
  spa:{
   name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:13.2,base:"forest",
+  elevationProfile:[[0,418],[220,424],[310,419],[690,403],[890,391],[1130,415],[1490,446],[2200,463],[2470,470],[2870,455],[3110,438],[3600,402],[4280,377],[4740,375],[5100,373],[5700,388],[6000,398],[6540,408],[7004,418]],
   points:[[0,0,418],[80,0,420],[145,2,419],[190,-8,416],[215,-35,411],[210,-65,404],[180,-86,397],[145,-85,391],[120,-55,390],[105,-20,397],[92,20,407],[110,65,420],[145,112,438],[205,150,460],[285,176,467],[390,190,467],[500,205,470],[555,228,465],[570,265,456],[548,300,449],[505,305,444],[470,285,442],[435,310,438],[400,350,432],[380,400,424],[405,438,414],[452,458,405],[490,485,397],[495,525,391],[470,558,385],[430,565,380],[398,540,377],[370,510,374],[330,505,373],[295,530,374],[275,565,377],[285,605,381],[320,635,385],[325,675,389],[295,700,388],[250,695,383],[205,680,379],[160,655,376],[120,630,373],[70,620,365],[25,635,370],[-20,660,378],[-65,665,386],[-105,640,392],[-125,605,398],[-115,565,405],[-80,540,411],[-35,535,416],[5,550,419],[30,580,421],[20,615,420],[-10,630,417],[-45,610,415],[-60,575,415],[-45,540,416],[-10,515,417],[25,505,418],[45,480,418],[35,440,416],[0,400,415],[-35,350,413],[-45,285,411],[-30,220,410],[0,160,411],[15,100,414],[10,50,416],[0,0,418]]
  },
  monza:{
@@ -146,12 +147,12 @@ const trackDefs = {
  },
  laguna:{
   name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:12.2,base:"dry",
-  points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,247],[76,270,232],[62,255,218],[38,244,211],[10,240,207],[-22,225,207],[-48,195,210],[-63,160,214],[-61,125,218],[-42,100,222],[-27,76,224],[-47,54,226],[-77,36,227],[-92,8,225],[-70,-15,223],[-35,-18,221],[0,0,220]]
+  points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,250],[76,270,244],[62,255,238],[38,244,230],[10,240,223],[-22,225,220],[-48,195,216],[-63,160,213],[-61,125,211],[-42,100,209],[-27,76,208],[-47,54,207],[-77,36,207],[-92,8,209],[-70,-15,213],[-35,-18,218],[0,0,220]]
  }
 };
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0;
-let activeTrack="spa",pathCurve,route=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
+let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null;
@@ -180,7 +181,43 @@ function initRenderer(){
 }
 
 function disposeGroup(group){if(!group)return;group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});scene.remove(group);}
-function sampleCurve(curve,count){const out=[];for(let i=0;i<count;i++){const t=i/count,p=curve.getPointAt(t),tan=curve.getTangentAt(t).normalize();out.push({t,p,tan});}return out;}
+function elevationAt(profile,distance){
+ if(distance<=profile[0][0])return profile[0][1];
+ for(let i=1;i<profile.length;i++){const a=profile[i-1],b=profile[i];if(distance<=b[0])return lerp(a[1],b[1],(distance-a[0])/(b[0]-a[0]));}
+ return profile[profile.length-1][1];
+}
+function sampleCurve(curve,count,def,minAltitude){
+ const out=[];
+ for(let i=0;i<count;i++){
+  const t=i/count,p=curve.getPointAt(t),tan=curve.getTangentAt(t).normalize();
+  if(def.elevationProfile){
+   const d=t*routeLength;
+   p.y=elevationAt(def.elevationProfile,d)-minAltitude;
+   const rise=elevationAt(def.elevationProfile,d+2)-elevationAt(def.elevationProfile,d-2);
+   const horizontal=Math.max(.0001,Math.hypot(tan.x,tan.z));
+   tan.set(tan.x/horizontal,rise/4,tan.z/horizontal).normalize();
+  }
+  out.push({t,p,tan});
+ }
+ return out;
+}
+function buildMonzaPoints(){
+ const commands=[["s",1000],["a",30,55],["s",30],["a",30,-75],["s",140],["a",420,95],["s",330],["a",34,-55],["s",40],["a",34,25],["s",190],["a",90,90],["s",120],["a",100,85],["s",936],["a",48,-55],["a",52,95],["a",48,-80],["s",1296],["a",155,180],["s",340]];
+ let x=0,z=0,heading=0,distance=0;const pts=[[x,z,168]];
+ for(const command of commands){
+  if(command[0]==="s"){
+   const length=command[1],steps=Math.max(1,Math.ceil(length/18));
+   for(let i=1;i<=steps;i++){const d=length/steps;x+=Math.sin(heading)*d;z+=Math.cos(heading)*d;distance+=d;const alt=162+6*(1+Math.sin(distance/5793*Math.PI*2));pts.push([x,z,alt]);}
+  }else{
+   const radius=command[1],angle=command[2]*Math.PI/180;
+   const sign=Math.sign(angle),cx=x+sign*Math.cos(heading)*radius,cz=z-sign*Math.sin(heading)*radius;
+   const start=Math.atan2(z-cz,x-cx),arcLength=Math.abs(radius*angle),steps=Math.max(2,Math.ceil(arcLength/8));
+   for(let i=1;i<=steps;i++){const a=start-angle*i/steps;x=cx+radius*Math.cos(a);z=cz+radius*Math.sin(a);distance+=arcLength/steps;const alt=162+6*(1+Math.sin(distance/5793*Math.PI*2));pts.push([x,z,alt]);}
+   heading+=angle;
+  }
+ }
+ pts.pop();return pts;
+}
 function offsetPoint(s,side,distance,height){const right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();return s.p.clone().addScaledVector(right,side*distance).add(new THREE.Vector3(0,height||0,0));}
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
 function makeRibbon(samples,width,material,yOff=.025){
@@ -212,15 +249,16 @@ function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
- const minAlt=Math.min(...def.points.map(v=>v[2]));
- const rawPoints=def.points.slice();
+ activeTrackPoints=activeTrack==="monza"?buildMonzaPoints():def.points.slice();
+ const minAlt=def.elevationProfile?Math.min(...def.elevationProfile.map(v=>v[1])):Math.min(...activeTrackPoints.map(v=>v[2]));
+ const rawPoints=activeTrackPoints.slice();
  if(rawPoints.length>2&&rawPoints[0][0]===rawPoints[rawPoints.length-1][0]&&rawPoints[0][1]===rawPoints[rawPoints.length-1][1])rawPoints.pop();
- const points=rawPoints.map(v=>new THREE.Vector3(v[0],v[2]-minAlt,v[1]));
+ const points=rawPoints.map(v=>new THREE.Vector3(v[0],def.elevationProfile?0:v[2]-minAlt,v[1]));
  pathCurve=new THREE.CatmullRomCurve3(points,true,"centripetal",.42);
  trackScale=def.length/horizontalLength(pathCurve);
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
- route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)));
+ route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)),def,minAlt);
  const minY=-18;
  const groundMat=makeMat(activeTrack==="laguna"?0x8d8560:0x284536,.98);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(14000,14000),groundMat);ground.rotation.x=-Math.PI/2;ground.position.y=minY;ground.receiveShadow=true;environmentGroup.add(ground);
@@ -439,7 +477,7 @@ function findNearest(x,z){
  return out;
 }
 function updatePreview(){
- const d=trackDefs[activeTrack],ctx=previewCtx,w=previewCanvas.width,h=previewCanvas.height,pts=d.points;
+ const d=trackDefs[activeTrack],ctx=previewCtx,w=previewCanvas.width,h=previewCanvas.height,pts=activeTrackPoints.length?activeTrackPoints:d.points;
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#17251f";ctx.fillRect(0,0,w,h);
  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
  for(const p of pts){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minZ=Math.min(minZ,p[1]);maxZ=Math.max(maxZ,p[1]);}
