@@ -359,8 +359,7 @@ function createTrack(){
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
  const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x777f7b,.92);
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
- const verge=makeMat(activeTrack==="laguna"?0x91815e:activeTrack==="monza"?0x34533a:0x34583d,1);
- trackGroup.add(makeRibbon(route,roadWidth+30,verge,-.10));
+ 
  trackGroup.add(makeCurb(route,-1,.85));trackGroup.add(makeCurb(route,1,.85));
  const edgeMat=makeMat(0xf3f1e8,.76);
  for(const side of [-1,1]){
@@ -547,7 +546,7 @@ function updateOpponents(dt){
   bot.root.rotation.set(slope,heading,0,"YXZ");
   const futureHeading=Math.atan2(look.tan.x,look.tan.z);
   const headingDelta=Math.atan2(Math.sin(futureHeading-heading),Math.cos(futureHeading-heading));
-  const aiSteer=clamp(headingDelta*.8,-.22,.22);
+  const aiSteer=clamp(headingDelta*.62,-.18,.18);
   bot.frontPivots.forEach(p=>p.rotation.y=aiSteer);
   bot.wheelSpin+=bot.speed*dt/wheelRadius;
   bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);
@@ -815,8 +814,9 @@ function updatePhysics(dt){
  const alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer;
  const alphaR=Math.atan2(car.v-lr*car.r,vDen);
  const tyreStiffness=7.1*(1-.14*(weather.rain/100)*(tyreCompound==="wet"?.2:1));
- let fyF=-frontCap*pacejka(alphaF,tyreStiffness);
- let fyR=-rearCap*pacejka(alphaR,tyreStiffness*1.10);
+ const rollingGrip=clamp(speed/6,0,1);
+ let fyF=-frontCap*pacejka(alphaF,tyreStiffness)*rollingGrip;
+ let fyR=-rearCap*pacejka(alphaR,tyreStiffness*1.10)*rollingGrip;
  // Combined tyre friction ellipse: straight-line traction must leave capacity for cornering.
  const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx));
  const rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
@@ -830,12 +830,12 @@ function updatePhysics(dt){
  car.u+=car.longAccel*dt;
  car.v+=latAccel*dt;
  car.r+=(yawMoment/(izz*1.22))*dt;
- const lateralDamping=assistMode==="assisted"?2.7:assistMode==="sport"?1.85:1.25;
+ const lateralDamping=assistMode==="assisted"?3.1:assistMode==="sport"?2.05:1.35;
  car.v*=Math.exp(-lateralDamping*dt);
  car.r*=Math.exp(-(assistMode==="assisted"?1.75:1.15)*dt);
  const maxSlipVelocity=Math.max(1.8,totalSpeed*.19);
  car.v=clamp(car.v,-maxSlipVelocity,maxSlipVelocity);
- const maxYawRate=.10+speed*.014;
+ const maxYawRate=.08+speed*.012;
  car.r=clamp(car.r,-maxYawRate,maxYawRate);
  car.u=clamp(car.u,-18,100);
  car.yaw+=car.r*dt;
@@ -915,7 +915,7 @@ function setCamera(frameDt=.016){
  const cameraRate=cameraMode===2?24:cameraMode===3?18:cameraMode===1?11:6.5;
  const blend=1-Math.exp(-cameraRate*frameDt);
  camera.position.lerp(desired,blend);
- const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===2?92:cameraMode===3?82:cameraMode===1?72:67;
+ const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===2?102:cameraMode===3?86:cameraMode===1?74:67;
  camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3.2*frameDt));
  camera.near=.035;camera.updateProjectionMatrix();camera.lookAt(target);
  const cockpitActive=cameraMode===2;
