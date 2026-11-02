@@ -774,11 +774,14 @@ function updateAudio(throttle,brake,slip){
  windGain.gain.setTargetAtTime(.015+Math.abs(car.u)/110*.08,t,.1);
  if(rainGain)rainGain.gain.setTargetAtTime(weather.rain/100*.07,t,.2);
 }
+function silenceAudio(){
+ if(!audioCtx)return;
+ const now=audioCtx.currentTime;
+ [engineGain,skidGain,windGain,rainGain].forEach(g=>{if(g)g.gain.setTargetAtTime(0,now,.05);});
+}
 function toggleSound(){
  soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";
- if(audioCtx&&engineGain)engineGain.gain.setTargetAtTime(soundEnabled?.1:0,audioCtx.currentTime,.08);
- if(audioCtx&&windGain)windGain.gain.setTargetAtTime(soundEnabled?.04:0,audioCtx.currentTime,.08);
- if(audioCtx&&rainGain)rainGain.gain.setTargetAtTime(soundEnabled?weather.rain/100*.07:0,audioCtx.currentTime,.08);
+ if(!soundEnabled)silenceAudio();
 }
 function startSession(){
  if(!carRoot)buildCar();
@@ -788,10 +791,10 @@ function startSession(){
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
-function pauseGame(){if(!running)return;paused=true;$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
+function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();}
 function restartLap(){positionCarAtStart();resumeGame();}
-function returnToMenu(){running=false;paused=false;$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";}
+function returnToMenu(){running=false;paused=false;silenceAudio();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";}
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
 function animate(now){
  requestAnimationFrame(animate);
