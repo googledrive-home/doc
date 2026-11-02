@@ -386,7 +386,7 @@ function createTrack(){
  for(let i=0;i<route.length;i+=5){for(const side of [-1,1]){dummy.position.copy(offsetPoint(route[i],side,roadWidth/2+5.8,.52));dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);}}
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
- buildScenery();addTracksideProps();
+ buildScenery();addTracksideProps();buildGrandstandsAndCrowd();
  positionCarAtStart();
  updatePreview();drawMiniMap();
 }
@@ -453,6 +453,53 @@ function addTracksideProps(){
   const fenceCurve=new THREE.CatmullRomCurve3(fencePoints,true,"centripetal",.5);
   environmentGroup.add(new THREE.Mesh(new THREE.TubeGeometry(fenceCurve,fencePoints.length,.035,5,true),fenceMat));
  }
+}
+
+function buildGrandstandsAndCrowd(){
+ const positions=activeTrack==="spa"?[.055,.31,.62,.84]:
+  activeTrack==="monza"?[.045,.25,.52,.79]:[.08,.33,.59,.86];
+ const palette=[0x263d8c,0xc83e37,0xe5e6dd,0x273b31,0xd3a23b,0x683d9c,0x1d91a8,0xededeb];
+ const torsoGeo=new THREE.CapsuleGeometry(.17,.34,3,6),headGeo=new THREE.SphereGeometry(.115,7,6);
+ const max=positions.length*6*38;
+ const torsoMesh=new THREE.InstancedMesh(torsoGeo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9}),max);
+ const headMesh=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:0xd8b28d,roughness:.96}),max);
+ const dummy=new THREE.Object3D();let people=0;
+ const seatMat=makeMat(0x53616a,.8,.1),steel=makeMat(0x34434b,.72,.3),roofMat=makeMat(0x202e38,.62,.15);
+ positions.forEach((fraction,standIndex)=>{
+  const sample=route[Math.floor(fraction*route.length)%route.length];
+  const side=standIndex%2===0?1:-1,heading=Math.atan2(sample.tan.x,sample.tan.z);
+  const centreDistance=roadWidth/2+48,centre=offsetPoint(sample,side,centreDistance,0);
+  const ground=terrainHeightAt(centre.x,centre.z);
+  const stand=new THREE.Group();stand.position.set(centre.x,ground,centre.z);stand.rotation.y=heading;
+  for(let row=0;row<6;row++){
+   const cross=-6.1+row*2.35;
+   const deck=new THREE.Mesh(new THREE.BoxGeometry(2.45,.28,46),seatMat);
+   deck.position.set(cross,.52+row*.47,0);deck.castShadow=true;stand.add(deck);
+   const beam=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,46),steel);
+   beam.position.set(cross,.23+row*.47,0);stand.add(beam);
+  }
+  const canopy=new THREE.Mesh(new THREE.BoxGeometry(15,.38,49),roofMat);
+  canopy.position.set(-side*1.1,4.35,0);canopy.castShadow=true;stand.add(canopy);
+  for(const z of [-22,0,22]){
+   const support=new THREE.Mesh(new THREE.BoxGeometry(.22,4.1,.22),steel);
+   support.position.set(-side*7,2.2,z);stand.add(support);
+  }
+  environmentGroup.add(stand);
+  // Every spectator is placed at the exact sampled terrain height below their row.
+  for(let row=0;row<6;row++)for(let col=0;col<38;col++){
+   const along=(col-18.5)*1.12,lateral=roadWidth/2+38+row*2.35;
+   const p=offsetPoint(sample,side,lateral,0),x=p.x+sample.tan.x*along,z=p.z+sample.tan.z*along;
+   const y=terrainHeightAt(x,z)+.95+row*.47;
+   dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
+   dummy.rotation.set(0,heading+(col%5)*.04,0);dummy.updateMatrix();
+   torsoMesh.setMatrixAt(people,dummy.matrix);
+   torsoMesh.setColorAt(people,new THREE.Color(palette[(col*7+row*3+standIndex)%palette.length]));
+   dummy.position.set(x,y+.31,z);dummy.scale.set(1,1,1);dummy.updateMatrix();headMesh.setMatrixAt(people,dummy.matrix);
+   people++;
+  }
+ });
+ torsoMesh.count=people;headMesh.count=people;
+ torsoMesh.castShadow=true;headMesh.castShadow=true;environmentGroup.add(torsoMesh,headMesh);
 }
 
 function buildScenery(){
@@ -796,103 +843,81 @@ function temperatureGrip(temp){
  return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
 }
 function updatePhysics(dt){
- const throttle=(keys.KeyW||keys.ArrowUp)?1:0;
+ const throttleRequest=(keys.KeyW||keys.ArrowUp)?1:0;
+ const throttle=lerp(car.throttle||0,throttleRequest,1-Math.exp(-dt*4.6));
  const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
- // Positive steer is right in the car's +Z forward coordinate system.
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.max(0,car.u),totalSpeed=Math.hypot(car.u,car.v);
- const steerLimit=lerp(.25,.060,clamp(speed/88,0,1));
- car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*(speed>55?5:7)));
+ const steerLimit=lerp(.235,.052,clamp(speed/92,0,1));
+ car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*(speed>55?5.2:7.2)));
  const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
  const canManualShift=shiftMode==="sequential"||(shiftMode==="manual"&&clutchPressed);
  if(canManualShift&&keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=shiftMode==="manual"?.22:.14;playShiftSound(1);keys._e=true;}}else if(!keys.KeyE)keys._e=false;
  if(canManualShift&&keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=shiftMode==="manual"?.24:.16;playShiftSound(-1);keys._q=true;}}else if(!keys.KeyQ)keys._q=false;
  car.shiftTimer=Math.max(0,car.shiftTimer-dt);
- let wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
+ const wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  if(shiftMode==="automatic"&&car.shiftTimer<=0){
   if(car.rpm>14100&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
   else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- const downforce=.5*airDensity*4.4*speed*speed;
- const normal=mass*9.81+downforce;
- const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.44/wheelbase;
- const frontLoad=clamp(normal*.44-weightTransfer,normal*.27,normal*.67);
- const rearLoad=Math.max(0,normal-frontLoad);
- const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR);
- const baseGrip=getGrip();
- // A slightly rear-biased grip balance creates predictable, progressive understeer at the limit.
- const muFront=baseGrip*.94*tempF,muRear=baseGrip*1.06*tempR;
+ const downforce=.5*airDensity*4.4*speed*speed,normal=mass*9.81+downforce;
+ const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
+ const frontLoad=clamp(normal*.44-weightTransfer,normal*.29,normal*.65),rearLoad=Math.max(0,normal-frontLoad);
+ const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR),baseGrip=getGrip();
+ const muFront=baseGrip*.97*tempF,muRear=baseGrip*1.10*tempR;
  const surfaceOffset=Math.abs(nearestInfo.offset),half=roadWidth*.5;
  car.surfaceGrip=surfaceOffset<=half+1?1:surfaceOffset<=half+5?.72:surfaceOffset<=half+12?.38:.20;
  const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
- const torque=torqueAt(car.rpm);
- const clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
- const launchMap=lerp(.62,1,clamp(speed/17,0,1));
+ const torque=torqueAt(car.rpm),clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
+ const launchMap=lerp(.48,1,clamp(speed/24,0,1));
  let engineForce=throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor;
- const brakeForce=brake*Math.min(42000,600*mass);
- const drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;
+ const brakeForce=brake*Math.min(42000,600*mass),drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;
  let rearFx=engineForce-brakeForce*.42*Math.sign(car.u||1)-drag*.55;
  let frontFx=-brakeForce*.58*Math.sign(car.u||1)-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
- const tractionReserve=assistMode==="assisted"?lerp(.78,.52,cornerDemand):assistMode==="sport"?lerp(.9,.66,cornerDemand):lerp(1,.82,cornerDemand);
- rearFx=clamp(rearFx,-rearCap*.88,rearCap*tractionReserve);
- frontFx=clamp(frontFx,-frontCap*.9,frontCap*.9);
- const vDen=Math.max(3.5,Math.abs(car.u));
- const alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer;
- const alphaR=Math.atan2(car.v-lr*car.r,vDen);
- const tyreStiffness=7.1*(1-.14*(weather.rain/100)*(tyreCompound==="wet"?.2:1));
- const rollingGrip=clamp(speed/6,0,1);
- let fyF=-frontCap*pacejka(alphaF,tyreStiffness)*rollingGrip;
- let fyR=-rearCap*pacejka(alphaR,tyreStiffness*1.10)*rollingGrip;
- // Combined tyre friction ellipse: straight-line traction must leave capacity for cornering.
- const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx));
- const rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
- fyF=clamp(fyF,-frontBudget,frontBudget);
- fyR=clamp(fyR,-rearBudget,rearBudget);
+ const tractionReserve=assistMode==="assisted"?lerp(.70,.30,cornerDemand):assistMode==="sport"?lerp(.82,.43,cornerDemand):lerp(.92,.58,cornerDemand);
+ rearFx=clamp(rearFx,-rearCap*.82,rearCap*tractionReserve);
+ frontFx=clamp(frontFx,-frontCap*.88,frontCap*.88);
+ const vDen=Math.max(4,Math.abs(car.u)),alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer,alphaR=Math.atan2(car.v-lr*car.r,vDen);
+ const tyreStiffness=6.4*(1-.14*(weather.rain/100)*(tyreCompound==="wet"?.2:1)),rollingGrip=clamp(speed/5,0,1);
+ let fyF=-frontCap*pacejka(alphaF,tyreStiffness)*rollingGrip,fyR=-rearCap*pacejka(alphaR,tyreStiffness*1.04)*rollingGrip;
+ const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx)),rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
+ fyF=clamp(fyF,-frontBudget,frontBudget);fyR=clamp(fyR,-rearBudget,rearBudget);
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
- const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u;
- const yawMoment=lf*fyF*Math.cos(car.steer)-lr*fyR;
- const latAccel=lateral/mass;
+ const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u+=car.longAccel*dt;
- car.v+=latAccel*dt;
- car.r+=(yawMoment/(izz*1.22))*dt;
- const lateralDamping=assistMode==="assisted"?3.1:assistMode==="sport"?2.05:1.35;
+ car.u=clamp(car.u+car.longAccel*dt,-18,100);car.v+=latAccel*dt;
+ const lateralDamping=assistMode==="assisted"?4.8:assistMode==="sport"?3.5:2.7;
  car.v*=Math.exp(-lateralDamping*dt);
- car.r*=Math.exp(-(assistMode==="assisted"?1.75:1.15)*dt);
- const maxSlipVelocity=Math.max(1.8,totalSpeed*.19);
- car.v=clamp(car.v,-maxSlipVelocity,maxSlipVelocity);
- const maxYawRate=.08+speed*.012;
- car.r=clamp(car.r,-maxYawRate,maxYawRate);
- car.u=clamp(car.u,-18,100);
- car.yaw+=car.r*dt;
+ const slipLimit=Math.max(1,totalSpeed*.105);car.v=clamp(car.v,-slipLimit,slipLimit);
+ const gripFactor=clamp((frontCap+rearCap)/(normal*2.05),.72,1.08);
+ const requestedYawRate=car.u*Math.tan(car.steer)/wheelbase*.78*gripFactor;
+ const yawLimit=.10+speed*.016,stableYaw=clamp(requestedYawRate,-yawLimit,yawLimit);
+ car.r=lerp(car.r,stableYaw,1-Math.exp(-dt*(assistMode==="assisted"?5.4:assistMode==="sport"?4.4:3.3)));
+ car.r=clamp(car.r,-yawLimit,yawLimit);car.yaw+=car.r*dt;
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z);
- const off=Math.abs(nearestInfo.offset);
- const barrierRail=roadWidth/2+5.8,bodyHalfWidth=1.1,barrierContact=barrierRail-bodyHalfWidth;
+ const off=Math.abs(nearestInfo.offset),barrierRail=roadWidth/2+5.8,bodyHalfWidth=1.1,barrierContact=barrierRail-bodyHalfWidth;
  if(off>barrierContact){
-  const side=Math.sign(nearestInfo.offset)||1;
-  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
-  const desired=nearestInfo.point.clone().addScaledVector(right,side*barrierContact);
-  const impact=clamp((off-barrierContact)*1.35,.35,.92);
+  const side=Math.sign(nearestInfo.offset)||1,right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
+  const desired=nearestInfo.point.clone().addScaledVector(right,side*barrierContact),impact=clamp((off-barrierContact)*1.35,.35,.92);
   car.x=lerp(car.x,desired.x,impact);car.z=lerp(car.z,desired.z,impact);
-  car.u*=.78;car.v*=-.12;car.r*=.55;
-  car.wear=clamp(car.wear-.00018,.18,1);
+  car.u*=.82;car.v*=-.08;car.r*=.55;car.wear=clamp(car.wear-.00014,.18,1);
  }
- if(off>roadWidth*.5-0.2){car.u*=1-dt*(off>roadWidth*.5+4?1.4:.12);car.v*=1-dt*1.25;}
+ if(off>roadWidth*.5-.2){car.u*=1-dt*(off>roadWidth*.5+4?1.3:.10);car.v*=1-dt*1.1;}
  if(off>roadWidth/2+8){
   const desired=nearestInfo.point.clone().addScaledVector(new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize(),Math.sign(nearestInfo.offset)*(roadWidth/2+7));
   car.x=lerp(car.x,desired.x,Math.min(1,dt*2));car.z=lerp(car.z,desired.z,Math.min(1,dt*2));
  }
  car.y=lerp(car.y,nearestInfo.point.y+.035,Math.min(1,dt*8));
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
- const stress=clamp(car.slip*1.1+Math.abs(latAccel)/28,0,1.6);
- car.wear=clamp(car.wear-dt*(.0000015+stress*.000008)*(tireSpecs[tyreCompound].wear),.18,1);
- car.tempF=lerp(car.tempF,weather.temp+58+stress*20,Math.min(1,dt*.12));
- car.tempR=lerp(car.tempR,weather.temp+59+stress*21,Math.min(1,dt*.12));
+ const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
+ car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear),.18,1);
+ car.tempF=lerp(car.tempF,weather.temp+58+stress*19,Math.min(1,dt*.12));
+ car.tempR=lerp(car.tempR,weather.temp+59+stress*20,Math.min(1,dt*.12));
  car.wheelSpin+=car.u*dt/wheelRadius;
  const progress=nearestInfo.progress;
  if(previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
@@ -906,14 +931,10 @@ function updatePhysics(dt){
    $("pauseOverlay").style.display="grid";
   }
  }
- previousProgress=progress;elapsed+=dt;
- carRoot.position.set(car.x,car.y,car.z);
- const tangent=nearestInfo.tangent;
- const slope=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
- // No artificial body roll: only the road's actual longitudinal gradient rotates the chassis.
+ previousProgress=progress;elapsed+=dt;carRoot.position.set(car.x,car.y,car.z);
+ const tangent=nearestInfo.tangent,slope=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
  carRoot.rotation.set(slope,car.yaw,0,"YXZ");
- steeringPivot.rotation.z=-car.steer*1.22;
- handGroup.rotation.z=-car.steer*.18;
+ steeringPivot.rotation.z=-car.steer*1.22;handGroup.rotation.z=-car.steer*.18;
  for(const pivot of frontWheelPivots)pivot.rotation.y=car.steer;
  for(const wheel of wheelMeshes)wheel.rotation.x=car.wheelSpin;
  car.throttle=throttle;car.brake=brake;
@@ -935,7 +956,7 @@ function setCamera(frameDt=.016){
  let localPos,localLook;
  if(cameraMode===0){localPos=new THREE.Vector3(0,3.05,-9.2);localLook=new THREE.Vector3(0,.78,9.5);}
  else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
- else if(cameraMode===2){localPos=new THREE.Vector3(0,1.68,-.015);localLook=new THREE.Vector3(0,1.30,34);}
+ else if(cameraMode===2){localPos=new THREE.Vector3(0,1.64,-.42);localLook=new THREE.Vector3(0,1.28,34);}
  else if(cameraMode===3){localPos=new THREE.Vector3(0,1.12,2.12);localLook=new THREE.Vector3(0,.74,32);}
  else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
  const desired=carRoot.localToWorld(localPos.clone());
@@ -944,8 +965,9 @@ function setCamera(frameDt=.016){
  const cameraRate=cameraMode===2?24:cameraMode===3?18:cameraMode===1?11:6.5;
  const blend=1-Math.exp(-cameraRate*frameDt);
  camera.position.lerp(desired,blend);
- const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===2?102:cameraMode===3?86:cameraMode===1?74:67;
- camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3.2*frameDt));
+ const targetFov=cameraMode===0?65+Math.min(8,Math.abs(car?.u||0)*.08):cameraMode===2?78:cameraMode===3?82:cameraMode===1?74:67;
+ if(cameraMode===2)camera.fov=78;
+ else camera.fov=lerp(camera.fov,targetFov,1-Math.exp(-3.2*frameDt));
  camera.near=.035;camera.updateProjectionMatrix();camera.lookAt(target);
  const cockpitActive=cameraMode===2;
  cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=!cockpitActive;});
