@@ -630,8 +630,17 @@ function updatePhysics(dt){
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z);
  const off=Math.abs(nearestInfo.offset),offGrip=off>roadWidth*.5?clamp(1-(off-roadWidth*.5)/9,.15,1):1;
+ const barrierRail=roadWidth/2+5.8,bodyHalfWidth=2.35,barrierContact=barrierRail-bodyHalfWidth;
+ if(off>barrierContact){
+  const side=Math.sign(nearestInfo.offset)||1;
+  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
+  const desired=nearestInfo.point.clone().addScaledVector(right,side*barrierContact);
+  const impact=clamp((off-barrierContact)*1.35,.35,.92);
+  car.x=lerp(car.x,desired.x,impact);car.z=lerp(car.z,desired.z,impact);
+  car.u*=.78;car.v*=-.18;car.r*=.58;
+  car.wear=clamp(car.wear-.00018,.18,1);
+ }
  if(off>roadWidth*.5-0.2){car.u*=1-dt*(off>roadWidth*.5+4?1.7:.18);car.v*=1-dt*1.6;}
- if(off>roadWidth/2+8){const desired=nearestInfo.point.clone().addScaledVector(new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize(),Math.sign(nearestInfo.offset)*(roadWidth/2+7));car.x=lerp(car.x,desired.x,Math.min(1,dt*2));car.z=lerp(car.z,desired.z,Math.min(1,dt*2));}
  car.y=lerp(car.y,nearestInfo.point.y+.02,Math.min(1,dt*7));
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*1.5+Math.abs(latAccel)/22,0,2);
