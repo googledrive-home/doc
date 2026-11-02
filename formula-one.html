@@ -166,7 +166,7 @@ let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphic
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineFilter=null,engineGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,rainSource=null,rainGain=null;
-let engineLoops=[],engineLoopsStarted=false;
+let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
@@ -303,9 +303,10 @@ function terrainTexture(){
  tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
 }
 function buildTerrain(def){
- const minX=Math.min(...route.map(s=>s.p.x))-230,maxX=Math.max(...route.map(s=>s.p.x))+230;
- const minZ=Math.min(...route.map(s=>s.p.z))-230,maxZ=Math.max(...route.map(s=>s.p.z))+230;
- const width=maxX-minX,depth=maxZ-minZ,nx=260,nz=Math.max(150,Math.round(nx*depth/width));
+ const terrainPad=activeTrack==="laguna"?900:1250;
+ const minX=Math.min(...route.map(s=>s.p.x))-terrainPad,maxX=Math.max(...route.map(s=>s.p.x))+terrainPad;
+ const minZ=Math.min(...route.map(s=>s.p.z))-terrainPad,maxZ=Math.max(...route.map(s=>s.p.z))+terrainPad;
+ const width=maxX-minX,depth=maxZ-minZ,nx=graphicsQuality==="low"?170:graphicsQuality==="high"?300:235,nz=Math.max(150,Math.round(nx*depth/width));
  const coarseStep=Math.max(1,Math.floor(route.length/250));
  const samples=[];for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
  const positions=[],colors=[],uvs=[],indices=[];
@@ -413,8 +414,9 @@ function buildScenery(){
  const trunkMat=makeMat(isDry?0x685038:0x59483b,.98);
  const leafMat=makeMat(isDry?0x77764b:isPark?0x28513a:0x244a32,.98);
  const trunkGeo=new THREE.CylinderGeometry(.28,.48,5,7);
- const leafGeo=isDry?new THREE.SphereGeometry(1,9,7):new THREE.ConeGeometry(1,1,8);
- const max=isPark?940:isDry?560:840;
+ const leafGeo=(isDry||isPark)?new THREE.SphereGeometry(1,10,7):new THREE.ConeGeometry(1,1,8);
+ const qualityFactor=graphicsQuality==="low"?.58:graphicsQuality==="high"?1.28:1;
+ const max=Math.round((isPark?940:isDry?560:840)*qualityFactor);
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,max);
  const leaves=new THREE.InstancedMesh(leafGeo,leafMat,max);
  trunks.castShadow=true;leaves.castShadow=true;
@@ -518,7 +520,7 @@ function buildCar(){
   });
   for(let i=0;i<sections.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
-   indices.push(a,c,b,b,c,d);
+   indices.push(a,b,c,b,d,c);
   }
   const start=vertices.length/3;vertices.push(xOffset,sections[0][2],sections[0][0]);uvs.push(.5,0);
   const end=vertices.length/3;vertices.push(xOffset,sections[sections.length-1][2],sections[sections.length-1][0]);uvs.push(.5,1);
@@ -799,7 +801,16 @@ function updatePhysics(dt){
  car.tempR=lerp(car.tempR,weather.temp+59+stress*27,Math.min(1,dt*.12));
  car.wheelSpin+=car.u*dt/wheelRadius;
  const progress=nearestInfo.progress;
- if(previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);lap++;lapStart=elapsed;}
+ if(previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
+  const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);lap++;lapStart=elapsed;
+  if(lap>raceLaps){
+   running=false;paused=true;silenceAudio();
+   document.querySelector(".pausecard .eyebrow").textContent="Chequered flag";
+   document.querySelector(".pausecard h2").textContent="FINISH";
+   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+".";
+   $("pauseOverlay").style.display="grid";
+  }
+ }
  previousProgress=progress;elapsed+=dt;
  carRoot.position.set(car.x,car.y,car.z);
  const tangent=nearestInfo.tangent;
@@ -928,7 +939,11 @@ const engineLoopUrls=[
 ];
 function startEngineLoops(){
  if(engineLoops.length===0){
-  engineLoops=engineLoopUrls.map(url=>{const a=new Audio(url);a.loop=true;a.preload="auto";a.volume=0;return a;});
+  engineLoops=engineLoopUrls.map(url=>{
+   const a=new Audio(url);a.loop=true;a.preload="auto";a.volume=0;
+   a.addEventListener("canplay",()=>{engineSamplesReady=true;},{once:true});
+   return a;
+  });
  }
  engineLoopsStarted=true;
  engineLoops.forEach(a=>{if(a.paused)a.play().catch(()=>{});});
@@ -942,8 +957,8 @@ function updateAudio(throttle,brake,slip){
  const t=audioCtx.currentTime,rpm=car.rpm||4500;
  engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.045);engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.055);
  engineFilter.frequency.setTargetAtTime(460+rpm*.105,t,.08);
- engineGain.gain.setTargetAtTime(soundEnabled?(engineLoops.length?.012:.12+throttle*.08):0,t,.08);
- if(soundEnabled&&engineLoopsStarted&&engineLoops.length){
+ engineGain.gain.setTargetAtTime(soundEnabled?(engineSamplesReady?.012:.12+throttle*.08):0,t,.08);
+ if(soundEnabled&&engineLoopsStarted&&engineSamplesReady&&engineLoops.length){
   const rpmPosition=clamp((rpm-4300)/(14900-4300),0,1)*5;
   const lower=Math.floor(rpmPosition),upper=Math.min(5,lower+1),mix=rpmPosition-lower;
   const pitch=clamp(.9+((rpm-4300)/(14900-4300))*.46,.86,1.42);
@@ -984,7 +999,7 @@ function startSession(){
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){positionCarAtStart();resumeGame();}
-function returnToMenu(){running=false;paused=false;silenceAudio();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";}
+function returnToMenu(){running=false;paused=false;silenceAudio();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
@@ -1027,7 +1042,7 @@ function bindControls(){
  $("opponentCountSelect").addEventListener("change",()=>{opponentCount=Number($("opponentCountSelect").value);});
  $("aiSkillSelect").addEventListener("change",()=>{aiSkill=$("aiSkillSelect").value;});
  $("raceLapsSelect").addEventListener("change",()=>{raceLaps=Number($("raceLapsSelect").value);});
- $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();});
+ $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();if(!running)createTrack();});
  bindWeather("");bindWeather("live");
  $("startBtn").addEventListener("click",startSession);
  $("cameraBtn").addEventListener("click",cycleCamera);$("cameraPauseBtn").addEventListener("click",()=>{cycleCamera();});
