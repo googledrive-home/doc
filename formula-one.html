@@ -495,7 +495,7 @@ function drawDashboard(){
  c.fillStyle="#ffcf72";c.font="800 18px ui-monospace,monospace";c.fillText(Math.round(car.rpm).toLocaleString()+" RPM",161,178);
  c.fillStyle="#8297a4";c.font="700 12px system-ui";c.fillText("TYRE "+Math.round(car.tempF)+"°C",20,235);
  c.fillText("LAP "+String(lap).padStart(2,"0"),205,235);
- c.fillText(tyreSpecs[tyreCompound].label,397,235);
+ c.fillText(tireSpecs[tyreCompound].label,397,235);
  dashTexture.needsUpdate=true;
 }
 function positionCarAtStart(){
