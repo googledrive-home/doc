@@ -80,7 +80,7 @@ input[type=range]{accent-color:#ff765e}
     </div>
     <div class="menuright">
       <h2>Race setup</h2>
-      <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option></select></div>
+      <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div>
       <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
       <div class="two">
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="wet">Full wet</option></select></div>
@@ -161,6 +161,14 @@ const trackDefs = {
  silverstone:{
   name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:14.8,base:"parkland",
   points:[[0,0,153],[0,140,153],[8,215,153],[42,273,154],[101,302,155],[165,292,156],[216,252,156],[249,190,155],[270,122,154],[331,103,153],[407,119,153],[465,166,153],[482,230,153],[455,287,154],[406,323,154],[354,320,154],[320,288,154],[326,250,154],[367,229,154],[427,238,153],[493,270,152],[565,286,151],[640,271,151],[693,222,151],[716,157,151],[696,99,150],[653,66,150],[605,80,151],[581,126,151],[592,182,152],[626,220,152],[678,240,152],[741,231,152],[799,195,152],[833,136,152],[825,72,153],[780,27,154],[716,1,154],[655,-7,154],[603,17,154],[575,61,154],[592,101,154],[637,113,154],[691,91,154],[748,55,154],[809,47,153],[861,10,152],[876,-51,152],[850,-101,152],[795,-125,152],[720,-116,152],[657,-91,152],[599,-72,151],[540,-89,150],[481,-122,149],[410,-145,149],[338,-136,150],[277,-102,151],[219,-62,152],[157,-36,152],[85,-35,152],[25,-52,152],[0,0,153]]
+ },
+ monaco:{
+  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:10.8,base:"city",
+  points:[[0,0,12],[0,55,12],[12,92,12],[45,116,12],[82,110,12],[112,82,12],[118,45,12],[102,12,12],[126,-13,12],[166,-18,12],[198,-42,12],[204,-83,12],[178,-111,12],[145,-103,12],[130,-72,12],[145,-42,12],[185,-19,12],[232,-22,12],[267,-48,12],[274,-83,12],[255,-115,12],[222,-139,12],[194,-165,12],[162,-176,12],[125,-164,12],[97,-139,12],[66,-129,12],[32,-139,12],[7,-117,12],[-22,-90,12],[-54,-73,12],[-80,-43,12],[-72,-10,12],[-43,11,12],[0,0,12]]
+ },
+ suzuka:{
+  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:13.5,base:"parkland",
+  points:[[0,0,42],[0,70,42],[8,123,42],[34,166,43],[76,181,43],[115,164,43],[129,127,42],[111,95,42],[78,77,42],[51,44,42],[53,6,42],[83,-19,42],[132,-26,41],[184,-10,41],[225,25,41],[242,70,41],[221,106,41],[184,124,41],[157,112,41],[143,82,41],[161,53,41],[202,43,41],[250,56,41],[291,87,41],[326,78,41],[351,44,41],[342,7,41],[309,-15,41],[274,-20,41],[253,-49,41],[263,-87,41],[299,-115,41],[342,-142,41],[386,-164,41],[431,-151,41],[466,-119,41],[472,-78,41],[449,-43,41],[413,-23,41],[387,7,41],[396,45,41],[427,68,41],[469,65,41],[501,37,41],[509,-5,41],[482,-42,41],[444,-61,41],[414,-83,41],[389,-117,41],[353,-145,41],[315,-158,41],[279,-145,41],[244,-122,41],[208,-105,41],[166,-110,41],[120,-132,41],[72,-157,41],[29,-139,41],[-4,-95,41],[-15,-48,41],[0,0,42]]
  }
 };
 
@@ -272,6 +280,20 @@ function buildMonzaPoints(){
  return pts;
 }
 function offsetPoint(s,side,distance,height){const right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();return s.p.clone().addScaledVector(right,side*distance).add(new THREE.Vector3(0,height||0,0));}
+function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
+ const p=point.clone(),minimum=roadWidth*.5+clearance;
+ for(let attempt=0;attempt<8;attempt++){
+  const near=findNearest(p.x,p.z,null),offset=Math.abs(near.offset);
+  if(offset>=minimum)return p;
+  const right=new THREE.Vector3(near.tangent.z,0,-near.tangent.x).normalize();
+  const side=Math.abs(near.offset)>.12?Math.sign(near.offset):preferredSide;
+  p.addScaledVector(right,side*(minimum-offset+1.8));
+ }
+ return p;
+}
+function safeTracksidePoint(sample,side,distance,clearance=5){
+ return ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance);
+}
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
 function makeRibbon(samples,width,material,yOff=.025){
  const pos=[],uv=[],idx=[];for(let i=0;i<samples.length;i++){const s=samples[i],a=offsetPoint(s,-1,width/2,yOff),b=offsetPoint(s,1,width/2,yOff),v=(i/samples.length)*routeLength/12;pos.push(a.x,a.y,a.z,b.x,b.y,b.z);uv.push(0,v,1,v);}
@@ -624,9 +646,9 @@ function buildGrandstandsAndCrowd(){
 }
 
 function buildScenery(){
- const dry=activeTrack==="laguna",park=activeTrack==="monza";
+ const dry=activeTrack==="laguna",park=["monza","silverstone","suzuka"].includes(activeTrack),city=activeTrack==="monaco";
  const quality=graphicsQuality==="low"?.72:graphicsQuality==="high"?1.32:1;
- const count=Math.round((park?620:dry?430:560)*quality);
+ const count=Math.round(city?95:(park?620:dry?430:560)*quality);
  const trunkMat=makeMat(dry?0x756047:0x56483a,.96);
  const broadMat=makeMat(dry?0x8a8558:park?0x426d3e:0x315d3a,.98);
  const pineMat=makeMat(dry?0x6f794c:0x264c36,.98);
@@ -662,12 +684,12 @@ function buildScenery(){
  trunks.count=treeN;broadCrownA.count=broadN;pineCrown.count=pineN;
  trunks.castShadow=true;broadCrownA.castShadow=true;pineCrown.castShadow=true;
  environmentGroup.add(trunks,broadCrownA,pineCrown);
- const shrubCount=Math.round((dry?520:park?760:680)*quality),shrubGeo=new THREE.SphereGeometry(1,10,8);
+ const shrubCount=Math.round((city?120:dry?520:park?760:680)*quality),shrubGeo=new THREE.SphereGeometry(1,10,8);
  const shrubs=new THREE.InstancedMesh(shrubGeo,shrubMat,shrubCount);
- const grassCount=Math.round(1500*quality),grassGeo=new THREE.ConeGeometry(1,1,5),grassMat=makeMat(dry?0x9a8651:0x527543,1);
+ const grassCount=Math.round((city?180:1500)*quality),grassGeo=new THREE.ConeGeometry(1,1,5),grassMat=makeMat(dry?0x9a8651:0x527543,1);
  const grasses=new THREE.InstancedMesh(grassGeo,grassMat,grassCount);
  const rockGeo=new THREE.IcosahedronGeometry(1,1),rockMat=makeMat(dry?0x89795e:0x6d756d,.98);
- const rockCount=dry?170:park?90:120,rocks=new THREE.InstancedMesh(rockGeo,rockMat,rockCount);
+ const rockCount=city?24:dry?170:park?90:120,rocks=new THREE.InstancedMesh(rockGeo,rockMat,rockCount);
  for(let i=0;i<shrubCount;i++){
   const sample=route[(i*43+Math.floor(i/7)*19)%route.length],side=i%2?1:-1;
   const dist=roadWidth/2+10+(i*29)%85,p=offsetPoint(sample,side,dist,0),ground=terrainHeightAt(p.x,p.z),scale=.35+(i%11)*.055;
