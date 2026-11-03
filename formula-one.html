@@ -1238,35 +1238,69 @@ function updatePhysics(dt){
   car.pitch+=car.pitchRate*dt;car.roll+=car.rollRate*dt;
  }
  const tangent=nearestInfo.tangent,slope=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
- carRoot.rotation.set(slope+car.pitch,car.yaw,car.roll,"YXZ");carRoot.updateMatrix();
- // Compute the lowest point of the chassis envelope at the current pitch/roll.
- const m=carRoot.matrix.elements;let minRelativeY=Infinity;
- // Tyre contact patches determine ride height; the chassis supports the car only after a rollover.
- for(const side of [-1,1])for(const z of [1.57,-1.48]){
-  const x=side*1.18,centreY=m[1]*x+m[5]*.39+m[9]*z;
-  const tyreVerticalRadius=.38*Math.hypot(m[5],m[9]);
-  minRelativeY=Math.min(minRelativeY,centreY-tyreVerticalRadius);
+ carRoot.position.set(car.x,car.y,car.z);
+ carRoot.rotation.set(slope+car.pitch,car.yaw,car.roll,"YXZ");
+ carRoot.updateMatrixWorld(true);
+ const wheelContacts=[],worldMatrix=carRoot.matrixWorld.elements;
+ const tyreVerticalRadius=.38*Math.hypot(worldMatrix[5],worldMatrix[9]);
+ for(const corner of wheelCornerPivots){
+  const centre=carRoot.localToWorld(new THREE.Vector3(corner.pivot.position.x,corner.pivot.position.y,corner.pivot.position.z));
+  const wheelInfo=findNearest(centre.x,centre.z,centre.y);
+  const ground=Math.abs(wheelInfo.offset)<=roadWidth*.5+1.2?wheelInfo.point.y+.045:terrainHeightAt(centre.x,centre.z);
+  wheelContacts.push({corner,gap:centre.y-tyreVerticalRadius-ground,ground});
  }
- // Include floor and engine-cover points so a flipped car rests on its shell instead of sinking.
- for(const x of [-.76,.76])for(const y of [.31,1.56])for(const z of [-2.25,1.9]){
-  const relY=m[1]*x+m[5]*y+m[9]*z;if(relY<minRelativeY)minRelativeY=relY;
- }
- const supportHeight=-minRelativeY+.006;
- car.vy=(car.vy||0)-9.81*dt;car.y+=car.vy*dt;
- const floorY=surfaceY+supportHeight;
- if(car.y<floorY){
-  const landingSpeed=Math.max(0,-car.vy);car.y=floorY;
-  if(landingSpeed>7&&car.landingCooldown<=0){
-   const severity=clamp((landingSpeed-5)/30,0,.85);
-   applyCrashDamage(severity,Math.sign(car.roll)||1,"underfloor");
-   car.landingCooldown=.5;
-   car.pitchRate+=clamp(car.pitch,-1,1)*landingSpeed*.07;
-   car.rollRate+=clamp(car.roll,-1,1)*landingSpeed*.08;
+ const groundedWheels=wheelContacts.filter(w=>w.gap<.18),wasAirborne=!!car.airborne;
+ let shellContact=false,shellCorrection=0;
+ // The upper chassis becomes a support only after the car has rolled over.
+ if(groundedWheels.length<2&&(Math.abs(car.roll)>1.0||Math.abs(car.pitch)>1.05)){
+  const roofPoints=[[-.65,1.55,-.30],[.65,1.55,-.30],[-.68,1.16,.18],[.68,1.16,.18],[0,1.55,-1.15]];
+  let deepest=0;
+  for(const p of roofPoints){
+   const world=carRoot.localToWorld(new THREE.Vector3(p[0],p[1],p[2]));
+   const info=findNearest(world.x,world.z,world.y);
+   const ground=Math.abs(info.offset)<=roadWidth*.5+1.2?info.point.y+.045:terrainHeightAt(world.x,world.z);
+   deepest=Math.max(deepest,ground-world.y);
   }
-  car.vy=landingSpeed>19?Math.min(3.4,landingSpeed*.095):0;
-  if(landingSpeed<2.2)car.airborne=false;
-  else car.airborne=car.vy>.25;
- }else car.airborne=true;
+  if(deepest>0){shellContact=true;shellCorrection=deepest+.012;}
+ }
+ const launching=wasAirborne&&car.vy>.12;
+ const fallingLanding=wasAirborne&&car.vy<=0&&groundedWheels.length>=2;
+ if(shellContact&&!launching){
+  car.y+=clamp(shellCorrection,0,.12);
+  if(car.vy<0)car.vy=0;
+  car.vy*=.5;car.airborne=false;
+  for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.12,1-Math.exp(-dt*12));
+ }else if(!wasAirborne||fallingLanding){
+  if(groundedWheels.length>=2){
+   const meanGap=groundedWheels.reduce((sum,w)=>sum+w.gap,0)/groundedWheels.length;
+   const bodyCorrection=clamp(-meanGap,-.085,.085);
+   car.y+=bodyCorrection*(1-Math.exp(-dt*45));
+   if(fallingLanding){
+    const landingSpeed=Math.max(0,-car.vy);
+    if(landingSpeed>7&&car.landingCooldown<=0){
+     const severity=clamp((landingSpeed-5)/30,0,.85);
+     applyCrashDamage(severity,Math.sign(car.roll)||1,"underfloor");
+     car.landingCooldown=.5;
+     car.pitchRate+=clamp(car.pitch,-1,1)*landingSpeed*.07;
+     car.rollRate+=clamp(car.roll,-1,1)*landingSpeed*.08;
+    }
+   }
+   car.vy=lerp(car.vy,0,1-Math.exp(-dt*20));car.airborne=false;
+   const byCorner=new Map(wheelContacts.map(w=>[w.corner,w.gap]));
+   for(const corner of wheelCornerPivots){
+    const gap=byCorner.get(corner)??.2,residual=gap+bodyCorrection;
+    const targetY=corner.restY-clamp(residual,-.13,.10);
+    corner.pivot.position.y=lerp(corner.pivot.position.y,targetY,1-Math.exp(-dt*20));
+   }
+  }else{
+   car.airborne=true;car.vy-=9.81*dt;car.y+=car.vy*dt;
+   for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.14,1-Math.exp(-dt*10));
+  }
+ }else{
+  car.airborne=true;car.vy-=9.81*dt;car.y+=car.vy*dt;
+  for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.14,1-Math.exp(-dt*10));
+ }
+ if(wasAirborne&&!car.airborne&&car.vy<0)car.vy=0;
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
  car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear),.18,1);
