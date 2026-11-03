@@ -1246,16 +1246,22 @@ function buildCar(){
  const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitHiddenMeshes.push(tub);
  const seat=box(.54,.5,.78,makeMat(0x1d242c,.9),0,.84,-.53);cockpitHiddenMeshes.push(seat);
  const driverTorso=box(.38,.58,.36,makeMat(0x292f36,.72),0,1.08,-.45);cockpitHiddenMeshes.push(driverTorso);
+ const cockpitSideL=box(.14,.29,1.15,carbon,-.47,.84,.24);cockpitVisibleMeshes.push(cockpitSideL);
+ const cockpitSideR=box(.14,.29,1.15,carbon,.47,.84,.24);cockpitVisibleMeshes.push(cockpitSideR);
+ const cockpitLipL=box(.09,.09,1.12,rim,-.48,1.005,.24);cockpitVisibleMeshes.push(cockpitLipL);
+ const cockpitLipR=box(.09,.09,1.12,rim,.48,1.005,.24);cockpitVisibleMeshes.push(cockpitLipR);
+ const frontDashCowl=box(1.0,.13,.48,carbon,0,1.02,1.20);cockpitVisibleMeshes.push(frontDashCowl);
+ const noseCowl=new THREE.Mesh(new THREE.ConeGeometry(.46,1.85,18),bodyMat);noseCowl.rotation.x=Math.PI/2;noseCowl.position.set(0,.72,2.06);noseCowl.scale.set(1,.42,1);noseCowl.castShadow=true;carRoot.add(noseCowl);cockpitVisibleMeshes.push(noseCowl);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
  const haloMat=makeMat(0x9aa4ad,.25,.88);
  function tube(points,r,mat,group=carRoot){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const m=new THREE.Mesh(new THREE.TubeGeometry(c,40,r,8,false),mat);m.castShadow=true;group.add(m);return m;}
- const haloTop=tube([[-.78,1.28,-.52],[-.73,1.48,-.30],[-.46,1.66,.00],[0,1.70,.18],[.46,1.66,.00],[.73,1.48,-.30],[.78,1.28,-.52]],.023,haloMat);
- const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.026,haloMat);
+ const haloTop=tube([[-.82,1.18,-.53],[-.78,1.43,-.30],[-.48,1.69,.03],[0,1.76,.22],[.48,1.69,.03],[.78,1.43,-.30],[.82,1.18,-.53]],.027,haloMat);
+ const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
  cockpitVisibleMeshes.push(haloTop);
- cockpitHaloColumn=tube([[0,1.34,.40],[0,1.69,.18]],.022,haloMat);
+ cockpitHaloColumn=tube([[0,1.36,.44],[0,1.73,.22]],.024,haloMat);
  // Steering wheel, screen and animated driver's hands.
- steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.08,.65);carRoot.add(steeringPivot);
+ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.86);carRoot.add(steeringPivot);
  // Flat-bottom racing wheel with the driver-facing LCD and physical button panel on the rear (-Z) face.
  const wheelFace=box(.64,.44,.075,carbon,0,0,-.055,steeringPivot);
  const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.292,.036,12,40),carbon);wheelRim.position.z=-.112;steeringPivot.add(wheelRim);
@@ -1723,18 +1729,22 @@ function updateHud(grip,offGrip){
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
- const cockpitActive=cameraMode===2;
- if(cockpitActive){
-  // The first-person optical camera is a child of the chassis, so it inherits every car movement.
+ const profile=cameraProfiles[cameraMode]||cameraProfiles[2];
+ const yaw=THREE.MathUtils.degToRad(profile.yaw+(lookToApex?(car?.steer||0)*lookToApex*38:0));
+ const pitch=THREE.MathUtils.degToRad(profile.pitch);
+ if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(0,1.49,-.12);
+  camera.position.set(profile.x,1.78+profile.y,-1.18+profile.z);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.43,Math.PI,0);
-  camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
+  camera.rotation.set(-.31+pitch,Math.PI+yaw,0);
+  camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
+  camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   const cockpitSet=new Set(cockpitVisibleMeshes);
   carRoot.traverse(mesh=>{if(mesh.isMesh){mesh.visible=cockpitSet.has(mesh);mesh.frustumCulled=false;}});
   cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
   if(cockpitHaloColumn){cockpitHaloColumn.visible=showHaloColumn;cockpitHaloColumn.frustumCulled=false;}
+  if(steeringPivot)steeringPivot.visible=showSteeringWheel;
+  if(handGroup)handGroup.visible=showDriverHands&&showSteeringWheel;
  }else{
   if(camera.parent!==scene)scene.attach(camera);
   camera.rotation.order="XYZ";
@@ -1743,20 +1753,22 @@ function setCamera(frameDt=.016){
   else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
   else if(cameraMode===3){localPos=new THREE.Vector3(0,1.55,3.45);localLook=new THREE.Vector3(0,1.12,38);}
   else{localPos=new THREE.Vector3(0,3.25,8.4);localLook=new THREE.Vector3(0,.88,0);}
+  localPos.add(new THREE.Vector3(profile.x,profile.y,profile.z));
   const desired=carRoot.localToWorld(localPos.clone());
   const target=carRoot.localToWorld(localLook.clone());
-  camera.position.copy(desired);
-  camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
-  camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
+  camera.position.copy(desired);camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();
+  camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
+  camera.rotateY(yaw);camera.rotateX(pitch);
   carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=true;});
  }
  const names=["CHASE","HALO TOP","COCKPIT","HOOD","TV REAR"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
 }
+
 function cycleCamera(){
  const order=[0,1,2,3,4];
  cameraMode=order[(order.indexOf(cameraMode)+1)%order.length];
- camera.zoom=1;camera.fov=66;camera.clearViewOffset();camera.userData.ready=false;setCamera(0);
+ camera.zoom=1;camera.clearViewOffset();camera.userData.ready=false;setCamera(0);
 }
 function updateWeather(){
  const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100;
@@ -1975,7 +1987,7 @@ function bindWeather(prefix){
  for(const id of ids)$(id).addEventListener("input",()=>{setWeatherFromInputs(prefix);syncWeatherInputs();});
 }
 function handleWheelControlClick(event){
- if(!running||paused||cameraMode!==2||!car||!wheelControlMeshes.length)return;
+ if(event.button!==0||!running||paused||cameraMode!==2||!car||!wheelControlMeshes.length)return;
  const rect=worldCanvas.getBoundingClientRect(),pointer=new THREE.Vector2(
   ((event.clientX-rect.left)/rect.width)*2-1,
   -((event.clientY-rect.top)/rect.height)*2+1
