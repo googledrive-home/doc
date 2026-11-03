@@ -159,7 +159,7 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><div class="range-head"><label for="fogRange">Mist density</label><output id="fogValue">0%</output></div><input id="fogRange" type="range" min="0" max="100" value="0"></div>
       </div>
       <button class="action" id="startBtn">START PRACTICE SESSION →</button>
-      <div class="note">Controls: W / ↑ throttle · S / ↓ brake · A / ← and D / → steer · E / Q shift · Shift clutch in manual mode · C camera · Esc pause. Recorded engine loops: domasx2 / OpenGameArt (CC0). Browser racing simulation; not a certified vehicle dynamics model.</div>
+      <div class="note">Controls: W throttle · S brake · A/D steer · E/Q shift · R reverse · C camera · H halo · Esc pause. Right-mouse drag or I/J/K/L to look around in every camera. Layered high-rev hybrid V6 sound is synthesised in-game. Browser racing simulation; not a certified vehicle dynamics model.</div>
     </div>
   </section>
 </div>
@@ -188,7 +188,7 @@ input[type=range]{accent-color:#ff765e}
   </div>
 </div>
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
-<div id="settingsOverlay" class="overlay">
+<div id="settingsOverlay" class="overlay settings-overlay">
  <section class="settings-card">
   <header class="settings-head"><div><div class="eyebrow">APEX MOTORSPORTS · PERSONALISATION</div><h2>GAME SETTINGS</h2><p>Configure the cockpit, camera, interface and driving feel.</p></div><button class="secondary" id="settingsCloseBtn">CLOSE ✕</button></header>
   <div class="settings-body">
@@ -1734,7 +1734,7 @@ function setCamera(frameDt=.016){
  const pitch=THREE.MathUtils.degToRad(profile.pitch);
  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(profile.x,1.78+profile.y,-1.18+profile.z);
+  camera.position.set(profile.x,1.78+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),-1.18+profile.z);
   camera.rotation.order="YXZ";
   camera.rotation.set(-.31+pitch,Math.PI+yaw,0);
   camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
@@ -1753,7 +1753,7 @@ function setCamera(frameDt=.016){
   else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
   else if(cameraMode===3){localPos=new THREE.Vector3(0,1.55,3.45);localLook=new THREE.Vector3(0,1.12,38);}
   else{localPos=new THREE.Vector3(0,3.25,8.4);localLook=new THREE.Vector3(0,.88,0);}
-  localPos.add(new THREE.Vector3(profile.x,profile.y,profile.z));
+  localPos.add(new THREE.Vector3(profile.x,profile.y+(cameraShake?Math.sin(elapsed*20)*.012*Math.min(1,Math.abs(car?.u||0)/40):0),profile.z));
   const desired=carRoot.localToWorld(localPos.clone());
   const target=carRoot.localToWorld(localLook.clone());
   camera.position.copy(desired);camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();
