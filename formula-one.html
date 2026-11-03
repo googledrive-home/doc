@@ -220,7 +220,7 @@ input[type=range]{accent-color:#ff765e}
      <div class="field"><div class="range-head"><label for="lookApexRange">Look to apex</label><output id="lookApexValue">0%</output></div><input id="lookApexRange" type="range" min="0" max="100" step="5" value="0"></div>
     </div>
     <div class="settings-options compact">
-     <label><input type="checkbox" id="showHaloColumnSetting"><span><b>Show halo centre column</b><small>Toggle the central safety pillar in cockpit view.</small></span></label>
+     <label><input type="checkbox" id="showHaloColumnSetting" checked><span><b>Show halo centre column</b><small>Toggle the central safety pillar in cockpit view.</small></span></label>
      <label><input type="checkbox" id="showSteeringWheelSetting" checked><span><b>Show steering wheel</b><small>Display the wheel, controls and shift lights.</small></span></label>
      <label><input type="checkbox" id="showDriverHandsSetting" checked><span><b>Show driver gloves</b><small>Show the driver's hands at the wheel.</small></span></label>
     </div><p class="settings-hint">In any camera view, hold the right mouse button and drag to look around. Use I / J / K / L for keyboard camera look. Settings are separate for each camera.</p>
@@ -285,7 +285,7 @@ const trackDefs = {
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
-let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=false;
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
@@ -1200,9 +1200,9 @@ function buildCar(){
  box(1.8,.1,3.15,carbon,0,.33,-.18);
  for(const side of [-1,1]){
   const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);
-  cockpitVisibleMeshes.push(pod);
   const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);
-  cockpitVisibleMeshes.push(podTop);
+  // Keep full sidepod volumes for external views; show narrow shoulders from the driver's eye.
+  const cockpitShoulder=box(.20,.12,1.04,bodyMat,side*.59,.77,-.02);cockpitVisibleMeshes.push(cockpitShoulder);
   // Sidepod cooling inlet and louvred radiator outlet.
   box(.32,.19,.045,carbon,side*.91,.84,.44);
   box(.23,.105,.018,makeMat(0x070d13,.55,.2),side*.91,.84,.47);
@@ -1211,9 +1211,9 @@ function buildCar(){
   const floorFence=registerDamagePart(box(.08,.27,2.35,carbon,side*1.02,.42,-.3),side<0?"left floor edge fence":"right floor edge fence",.50);floorFence.rotation.z=side*.04;
   const mirrorArm=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.43,7),carbon),side<0?"left mirror stalk":"right mirror stalk",.31);mirrorArm.position.set(side*.66,1.07,.47);mirrorArm.rotation.z=side*.72;carRoot.add(mirrorArm);cockpitVisibleMeshes.push(mirrorArm);
   const mirrorHousing=registerDamagePart(box(.25,.12,.22,carbon,side*.72,1.27,.58),side<0?"left mirror housing":"right mirror housing",.24);cockpitVisibleMeshes.push(mirrorHousing);
-  registerDamagePart(box(.18,.035,.14,glass,side*.72,1.33,.6),side<0?"left mirror glass":"right mirror glass",.32);
-  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.3,7),rim),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);
-  const suspension2=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,1.3,7),rim),side<0?"left rear wishbone":"right rear wishbone",.52);suspension2.position.set(side*.95,.58,-1.17);suspension2.rotation.z=side*.5;carRoot.add(suspension2);
+  cockpitVisibleMeshes.push(registerDamagePart(box(.18,.035,.14,glass,side*.72,1.33,.6),side<0?"left mirror glass":"right mirror glass",.32));
+  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);cockpitVisibleMeshes.push(suspension1);
+  const suspension2=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left rear wishbone":"right rear wishbone",.52);suspension2.position.set(side*.95,.58,-1.17);suspension2.rotation.z=side*.5;carRoot.add(suspension2);
  }
  // Subtle nose spine and carbon front splitter.
  const noseSpine=registerDamagePart(box(.065,.018,1.75,white,0,.78,1.2),"nose centre trim",.74);cockpitVisibleMeshes.push(noseSpine);
@@ -1242,7 +1242,7 @@ function buildCar(){
  registerDamagePart(box(.82,.10,.44,carbon,0,.40,-2.30),"rear diffuser lower tray",.66);
  for(const side of [-1,1]){
   registerDamagePart(box(.09,.26,.82,carbon,side*.78,.48,-2.08),side<0?"left diffuser strake":"right diffuser strake",.60);
-  const duct=registerDamagePart(new THREE.Mesh(new THREE.TorusGeometry(.15,.035,7,14),carbon),side<0?"left front brake duct":"right front brake duct",.48);duct.position.set(side*1.18,.43,1.55);carRoot.add(duct);
+  const duct=registerDamagePart(new THREE.Mesh(new THREE.TorusGeometry(.15,.035,7,14),carbon),side<0?"left front brake duct":"right front brake duct",.48);duct.position.set(side*1.18,.43,1.55);carRoot.add(duct);cockpitVisibleMeshes.push(duct);
  }
  // Cockpit tub and cockpit details.
  const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitHiddenMeshes.push(tub);
@@ -1250,6 +1250,7 @@ function buildCar(){
  const driverTorso=box(.38,.58,.36,makeMat(0x292f36,.72),0,1.08,-.45);cockpitHiddenMeshes.push(driverTorso);
  const cockpitSideL=box(.14,.29,1.15,carbon,-.47,.84,.24);cockpitVisibleMeshes.push(cockpitSideL);
  const cockpitSideR=box(.14,.29,1.15,carbon,.47,.84,.24);cockpitVisibleMeshes.push(cockpitSideR);
+ const cockpitRearRim=box(1.05,.075,.16,carbon,0,.91,-.46);cockpitVisibleMeshes.push(cockpitRearRim);
  const cockpitLipL=box(.09,.09,1.12,rim,-.48,1.005,.24);cockpitVisibleMeshes.push(cockpitLipL);
  const cockpitLipR=box(.09,.09,1.12,rim,.48,1.005,.24);cockpitVisibleMeshes.push(cockpitLipR);
  const frontDashCowl=box(1.0,.13,.48,carbon,0,1.02,1.20);cockpitVisibleMeshes.push(frontDashCowl);
@@ -1259,12 +1260,12 @@ function buildCar(){
  cockpitVisibleMeshes.push(cockpitNoseDeck);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
- const haloMat=makeMat(0x9aa4ad,.25,.88);
+ const haloMat=makeMat(0x737f89,.32,.78);
  function tube(points,r,mat,group=carRoot){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const m=new THREE.Mesh(new THREE.TubeGeometry(c,40,r,8,false),mat);m.castShadow=true;group.add(m);return m;}
  const haloTop=tube([[-.82,1.18,-.53],[-.78,1.43,-.30],[-.48,1.69,.03],[0,1.76,.22],[.48,1.69,.03],[.78,1.43,-.30],[.82,1.18,-.53]],.027,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
  cockpitVisibleMeshes.push(haloTop);
- cockpitHaloColumn=tube([[0,1.36,.44],[0,1.73,.22]],.024,haloMat);
+ cockpitHaloColumn=tube([[.30,1.36,.44],[.30,1.73,.22]],.024,haloMat);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.74);carRoot.add(steeringPivot);
  // Flat-bottom racing wheel with the driver-facing LCD and physical button panel on the rear (-Z) face.
@@ -1365,7 +1366,9 @@ function buildCar(){
    registerDamagePart(rollGroup,axle+" "+(side<0?"left":"right")+" wheel and tyre assembly",.94);
    if(axle==="front")frontWheelPivots.push(steerPivot);
   }
- } // Antenna, brake ducts and small aero details.
+ }
+ for(const frontPivot of frontWheelPivots)frontPivot.traverse(part=>{if(part.isMesh)cockpitVisibleMeshes.push(part);});
+ // Antenna, brake ducts and small aero details.
  const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.012,.02,.55,6),carbon);antenna.position.set(0,1.68,-.6);antenna.rotation.z=-.12;carRoot.add(antenna);
  for(const side of [-1,1]){
   const duct=new THREE.Mesh(new THREE.TorusGeometry(.15,.035,7,14),carbon);duct.position.set(side*1.18,.43,1.55);duct.rotation.y=Math.PI/2;carRoot.add(duct);
@@ -1746,9 +1749,9 @@ function setCamera(frameDt=.016){
  const pitch=THREE.MathUtils.degToRad(profile.pitch);
  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(profile.x,1.74+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),-1.62+profile.z);
+  camera.position.set(profile.x,1.53+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),-.34+profile.z);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.27+pitch,Math.PI+yaw,0);
+  camera.rotation.set(-.25+pitch,Math.PI+yaw,0);
   camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
   camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   const cockpitSet=new Set(cockpitVisibleMeshes);
