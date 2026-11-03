@@ -1372,7 +1372,7 @@ function updatePhysics(dt){
      const rollImpulse=clamp((impactSpeed-17)/24,0,2.8)*clamp(tangentSpeed/24,.35,1);
      car.rollRate+=(side*(zone==="side"?1:-.55))*rollImpulse;
      car.pitchRate+=(zone==="front"?1:zone==="rear"?-1:0)*rollImpulse*.55;
-     car.vy=Math.max(car.vy||0,1.5+severity*3.4);
+     car.vy=Math.max(car.vy||0,1.5+severity*3.4);car.airborne=true;
     }
    }
   }
@@ -1594,10 +1594,15 @@ function syncWeatherInputs(){
 }
 function playShiftSound(direction){
  if(!audioCtx||!soundEnabled)return;
- const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
- osc.type="square";osc.frequency.setValueAtTime(direction>0?520:400,now);osc.frequency.exponentialRampToValueAtTime(direction>0?145:205,now+.075);
- gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.065,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+.12);
- osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.13);
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),sub=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+ osc.type="sawtooth";sub.type="sine";
+ const start=direction>0?620:760,end=direction>0?175:290;
+ osc.frequency.setValueAtTime(start,now);osc.frequency.exponentialRampToValueAtTime(end,now+.095);
+ sub.frequency.setValueAtTime(direction>0?105:145,now);sub.frequency.exponentialRampToValueAtTime(62,now+.12);
+ filter.type="lowpass";filter.frequency.setValueAtTime(1800,now);filter.frequency.exponentialRampToValueAtTime(520,now+.11);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.085,now+.006);gain.gain.exponentialRampToValueAtTime(.0001,now+.145);
+ osc.connect(filter);sub.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
+ osc.start(now);sub.start(now);osc.stop(now+.15);sub.stop(now+.15);
 }
 function initAudio(){
  if(audioCtx){audioCtx.resume();return;}
@@ -1681,6 +1686,8 @@ function updateAudio(throttle,brake,slip){
  if(engineLowGain)engineLowGain.gain.setTargetAtTime(.18+load*.13,t,.08);
  if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.035+rpmNorm*.055,t,.08);
  if(intakeGain)intakeGain.gain.setTargetAtTime(soundEnabled?(throttle*.11+.006):0,t,.08);
+ // Brief, restrained lift-off intake flutter; fades naturally as throttle comes back in.
+ if(intakeGain&&throttle<.045&&rpm>9000)intakeGain.gain.setTargetAtTime(soundEnabled?.024:0,t,.035);
  engineGain.gain.setTargetAtTime(soundEnabled?(engineSamplesReady?.055:.20+load*.12):0,t,.08);
  if(soundEnabled&&engineLoopsStarted&&engineSamplesReady&&engineLoops.length){
   const rpmPosition=clamp((rpm-4300)/(14900-4300),0,1)*5;
