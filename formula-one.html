@@ -1005,7 +1005,7 @@ function buildCar(){
  function tube(points,r,mat,group=carRoot){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const m=new THREE.Mesh(new THREE.TubeGeometry(c,40,r,8,false),mat);m.castShadow=true;group.add(m);return m;}
  const haloTop=tube([[-.77,1.08,-.48],[-.72,1.32,-.28],[-.45,1.52,.03],[0,1.58,.17],[.45,1.52,.03],[.72,1.32,-.28],[.77,1.08,-.48]],.032,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
- cockpitVisibleMeshes.push(haloTop,haloBase);
+ cockpitVisibleMeshes.push(haloTop);
  const haloColumn=tube([[0,.98,.42],[0,1.56,.17]],.034,haloMat);cockpitVisibleMeshes.push(haloColumn);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.48);carRoot.add(steeringPivot);
@@ -1069,7 +1069,7 @@ function buildCar(){
    const steerPivot=new THREE.Group();
    steerPivot.name=axle==="front"?"front-wheel-pivot":"rear-wheel-pivot";
    steerPivot.position.set(side*1.18,.39,axle==="front"?1.57:-1.48);
-   carRoot.add(steerPivot);wheelCornerPivots.push({pivot:steerPivot,side,z:axle==="front"?1.57:-1.48,restY:.39});
+   carRoot.add(steerPivot);wheelCornerPivots.push({pivot:steerPivot,side,z:axle==="front"?1.57:-1.48,restY:.39,springVelocity:0});
    const rollGroup=new THREE.Group();rollGroup.name="wheel-roll";steerPivot.add(rollGroup);
    const tireWidth=axle==="front"?.43:.51;
    const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,40,1,false),rubber);
@@ -1352,62 +1352,73 @@ function updatePhysics(dt){
  const tyreVerticalRadius=.38*Math.hypot(worldMatrix[5],worldMatrix[9]);
  for(const corner of wheelCornerPivots){
   const centre=carRoot.localToWorld(new THREE.Vector3(corner.pivot.position.x,corner.pivot.position.y,corner.pivot.position.z));
-  const wheelInfo=findNearest(centre.x,centre.z,centre.y);
   const ground=surfaceHeightAt(centre.x,centre.z,centre.y);
-  wheelContacts.push({corner,gap:centre.y-tyreVerticalRadius-ground,ground});
+  const correction=ground+tyreVerticalRadius-centre.y;
+  wheelContacts.push({corner,correction,ground});
  }
- const groundedWheels=wheelContacts.filter(w=>w.gap<.34),wasAirborne=!!car.airborne;
+ const wasAirborne=!!car.airborne;
+ const touching=wheelContacts.filter(w=>w.correction>-.035);
+ const landingNow=wasAirborne&&car.vy<=0&&touching.length>0;
  let shellContact=false,shellCorrection=0;
- // The upper chassis becomes a support only after the car has rolled over.
- if(groundedWheels.length<2&&(Math.abs(car.roll)>1.0||Math.abs(car.pitch)>1.05)){
+ if(wheelContacts.filter(w=>w.correction>-.08).length<2&&(Math.abs(car.roll)>1.0||Math.abs(car.pitch)>1.05)){
   const roofPoints=[[-.65,1.55,-.30],[.65,1.55,-.30],[-.68,1.16,.18],[.68,1.16,.18],[0,1.55,-1.15]];
   let deepest=0;
   for(const p of roofPoints){
    const world=carRoot.localToWorld(new THREE.Vector3(p[0],p[1],p[2]));
-   const info=findNearest(world.x,world.z,world.y);
    const ground=surfaceHeightAt(world.x,world.z,world.y);
    deepest=Math.max(deepest,ground-world.y);
   }
   if(deepest>0){shellContact=true;shellCorrection=deepest+.012;}
  }
- const launching=wasAirborne&&car.vy>.12;
- const fallingLanding=wasAirborne&&car.vy<=0&&groundedWheels.length>=2;
- if(shellContact&&!launching){
+ if(shellContact&&!wasAirborne){
   car.y+=clamp(shellCorrection,0,.12);
-  if(car.vy<0)car.vy=0;
-  car.vy*=.5;car.airborne=false;
-  for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.12,1-Math.exp(-dt*12));
- }else if(!wasAirborne||fallingLanding){
-  if(groundedWheels.length>=2){
-   const meanGap=groundedWheels.reduce((sum,w)=>sum+w.gap,0)/groundedWheels.length;
-   const bodyCorrection=clamp(-meanGap,-.16,.16);
-   car.y+=bodyCorrection*Math.min(1,dt*34);
-   if(fallingLanding){
-    const landingSpeed=Math.max(0,-car.vy);
-    if(landingSpeed>7&&car.landingCooldown<=0){
-     const severity=clamp((landingSpeed-5)/30,0,.85);
-     applyCrashDamage(severity,Math.sign(car.roll)||1,"underfloor");
-     car.landingCooldown=.5;
-     car.pitchRate+=clamp(car.pitch,-1,1)*landingSpeed*.07;
-     car.rollRate+=clamp(car.roll,-1,1)*landingSpeed*.08;
-    }
+  car.vy=0;car.airborne=false;
+  for(const corner of wheelCornerPivots){
+   corner.springVelocity=0;
+   corner.pivot.position.y=corner.restY-.10;
+  }
+ }else if(!wasAirborne||landingNow){
+  const supported=landingNow?touching:wheelContacts.filter(w=>w.correction>-.28);
+  const supportSamples=supported.length?supported:wheelContacts;
+  const meanCorrection=supportSamples.reduce((sum,w)=>sum+w.correction,0)/supportSamples.length;
+  const rootCorrection=clamp(meanCorrection,-.18,.18);
+  const rootAlpha=1-Math.exp(-dt*26),bodyDelta=rootCorrection*rootAlpha;
+  car.y+=bodyDelta;
+  if(landingNow){
+   const landingSpeed=Math.max(0,-car.vy);
+   if(landingSpeed>7&&car.landingCooldown<=0){
+    const severity=clamp((landingSpeed-5)/30,0,.9);
+    applyCrashDamage(severity,Math.sign(car.roll)||1,"underfloor");
+    car.landingCooldown=.5;
+    car.pitchRate+=clamp(car.pitch,-1,1)*landingSpeed*.07;
+    car.rollRate+=clamp(car.roll,-1,1)*landingSpeed*.08;
    }
-   car.vy=lerp(car.vy,0,1-Math.exp(-dt*20));car.airborne=false;
-   const byCorner=new Map(wheelContacts.map(w=>[w.corner,w.gap]));
-   for(const corner of wheelCornerPivots){
-    const gap=byCorner.get(corner)??.2,residual=gap+bodyCorrection;
-    const targetY=corner.restY-clamp(residual,-.22,.24);
-    corner.pivot.position.y=lerp(corner.pivot.position.y,targetY,1-Math.exp(-dt*34));
-   }
+   car.airborne=false;car.vy=0;
   }else{
-   car.airborne=true;car.vy-=9.81*dt;car.y+=car.vy*dt;
-   for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.14,1-Math.exp(-dt*10));
+   car.airborne=false;
+   car.vy*=Math.exp(-dt*18);
+  }
+  // Critically damped individual springs: apply the remaining contact error relative to the current wheel position.
+  const springOmega=20,springLimitLow=-.16,springLimitHigh=.18;
+  for(const item of wheelContacts){
+   const corner=item.corner;
+   const remaining=item.correction-bodyDelta;
+   const target=clamp(corner.pivot.position.y+remaining,corner.restY+springLimitLow,corner.restY+springLimitHigh);
+   const error=target-corner.pivot.position.y;
+   corner.springVelocity+=(springOmega*springOmega*error-2*springOmega*corner.springVelocity)*dt;
+   corner.pivot.position.y=clamp(corner.pivot.position.y+corner.springVelocity*dt,corner.restY+springLimitLow,corner.restY+springLimitHigh);
   }
  }else{
-  car.airborne=true;car.vy-=9.81*dt;car.y+=car.vy*dt;
-  for(const corner of wheelCornerPivots)corner.pivot.position.y=lerp(corner.pivot.position.y,corner.restY-.14,1-Math.exp(-dt*10));
+  car.airborne=true;
+  car.vy-=9.81*dt;car.y+=car.vy*dt;
+  // Let the suspension hang at static droop while the car is genuinely airborne.
+  for(const corner of wheelCornerPivots){
+   const target=corner.restY-.055;
+   const error=target-corner.pivot.position.y;
+   corner.springVelocity+=(190*error-26*corner.springVelocity)*dt;
+   corner.pivot.position.y+=corner.springVelocity*dt;
+  }
  }
- if(wasAirborne&&!car.airborne&&car.vy<0)car.vy=0;
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
  car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear),.18,1);
@@ -1457,12 +1468,13 @@ function setCamera(frameDt=.016){
  if(cockpitActive){
   // The first-person optical camera is a child of the chassis, so it inherits every car movement.
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(.12,1.55,-1.18);
+  camera.position.set(.10,1.36,-.56);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.29,Math.PI-.07,0);
+  camera.rotation.set(-.31,Math.PI-.02,0);
   camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   const cockpitSet=new Set(cockpitVisibleMeshes);
-  carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=cockpitSet.has(mesh);});
+  carRoot.traverse(mesh=>{if(mesh.isMesh){mesh.visible=cockpitSet.has(mesh);mesh.frustumCulled=false;}});
+  cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
  }else{
   if(camera.parent!==scene)scene.attach(camera);
   camera.rotation.order="XYZ";
