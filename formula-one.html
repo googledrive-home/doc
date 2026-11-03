@@ -80,7 +80,7 @@ input[type=range]{accent-color:#ff765e}
     </div>
     <div class="menuright">
       <h2>Race setup</h2>
-      <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option></select></div>
+      <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option></select></div>
       <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
       <div class="two">
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="wet">Full wet</option></select></div>
@@ -157,10 +157,14 @@ const trackDefs = {
  laguna:{
   name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:12.2,base:"dry",
   points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,250],[76,270,244],[62,255,238],[38,244,230],[10,240,223],[-22,225,220],[-48,195,216],[-63,160,213],[-61,125,211],[-42,100,209],[-27,76,208],[-47,54,207],[-77,36,207],[-92,8,209],[-70,-15,213],[-35,-18,218],[0,0,220]]
+ },
+ silverstone:{
+  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:14.8,base:"parkland",
+  points:[[0,0,153],[0,140,153],[8,215,153],[42,273,154],[101,302,155],[165,292,156],[216,252,156],[249,190,155],[270,122,154],[331,103,153],[407,119,153],[465,166,153],[482,230,153],[455,287,154],[406,323,154],[354,320,154],[320,288,154],[326,250,154],[367,229,154],[427,238,153],[493,270,152],[565,286,151],[640,271,151],[693,222,151],[716,157,151],[696,99,150],[653,66,150],[605,80,151],[581,126,151],[592,182,152],[626,220,152],[678,240,152],[741,231,152],[799,195,152],[833,136,152],[825,72,153],[780,27,154],[716,1,154],[655,-7,154],[603,17,154],[575,61,154],[592,101,154],[637,113,154],[691,91,154],[748,55,154],[809,47,153],[861,10,152],[876,-51,152],[850,-101,152],[795,-125,152],[720,-116,152],[657,-91,152],[599,-72,151],[540,-89,150],[481,-122,149],[410,-145,149],[338,-136,150],[277,-102,151],[219,-62,152],[157,-36,152],[85,-35,152],[25,-52,152],[0,0,153]]
  }
 };
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2;
@@ -961,7 +965,7 @@ function buildCar(){
  const haloTop=tube([[-.77,1.08,-.48],[-.72,1.32,-.28],[-.45,1.52,.03],[0,1.58,.17],[.45,1.52,.03],[.72,1.32,-.28],[.77,1.08,-.48]],.032,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
  cockpitVisibleMeshes.push(haloTop,haloBase);
- const haloColumn=tube([[.34,.98,.42],[.34,1.56,.17]],.035,haloMat);cockpitVisibleMeshes.push(haloColumn);
+ const haloColumn=tube([[.58,.98,.42],[.58,1.56,.17]],.032,haloMat);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.48);carRoot.add(steeringPivot);
  const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.265,.038,9,30),carbon);steeringPivot.add(wheelRim);
@@ -979,13 +983,13 @@ function buildCar(){
  }
  handGroup.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});
  // Complete wheel assemblies: outer group steers, inner group spins with tyre, rim, spokes and brake disc.
- frontWheelPivots=[];wheelMeshes=[];
+ frontWheelPivots=[];wheelMeshes=[];wheelCornerPivots=[];
  for(const axle of ["front","rear"]){
   for(const side of [-1,1]){
    const steerPivot=new THREE.Group();
    steerPivot.name=axle==="front"?"front-wheel-pivot":"rear-wheel-pivot";
    steerPivot.position.set(side*1.18,.39,axle==="front"?1.57:-1.48);
-   carRoot.add(steerPivot);
+   carRoot.add(steerPivot);wheelCornerPivots.push({pivot:steerPivot,side,z:axle==="front"?1.57:-1.48,restY:.39});
    const rollGroup=new THREE.Group();rollGroup.name="wheel-roll";steerPivot.add(rollGroup);
    const tireWidth=axle==="front"?.43:.51;
    const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,40,1,false),rubber);
@@ -1055,8 +1059,8 @@ function drawDashboard(){
 function positionCarAtStart(){
  if(!carRoot)buildCar();
  const s=route[6]||route[0],yaw=Math.atan2(s.tan.x,s.tan.z);
- carRoot.position.set(s.p.x,s.p.y+.09,s.p.z);carRoot.rotation.set(0,yaw,0);
- car={x:s.p.x,z:s.p.z,y:s.p.y+.09,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0};
+ carRoot.position.set(s.p.x,s.p.y+.045,s.p.z);carRoot.rotation.set(0,yaw,0);
+ car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0};
  nearestInfo=findNearest(car.x,car.z,car.y);
  elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
@@ -1310,9 +1314,9 @@ function setCamera(frameDt=.016){
  if(cockpitActive){
   // The first-person optical camera is a child of the chassis, so it inherits every car movement.
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(-.22,1.28,-.78);
+  camera.position.set(0,1.36,-.84);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.245,Math.PI,0);
+  camera.rotation.set(-.19,Math.PI,0);
   camera.fov=66;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=false;});
   cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
