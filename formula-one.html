@@ -846,17 +846,24 @@ function applyCrashDamage(severity,side,zone="side"){
  const impactPoint=carRoot.position.clone();impactPoint.y+=.7;
  const candidates=damageParts.filter(p=>!p.detached&&severity>=p.threshold).sort((a,b)=>a.threshold-b.threshold);
  // One major part per impact, with smaller parts allowed to follow on severe impacts.
- const broken=candidates.slice(0,severity>.78?3:severity>.48?2:1);
+ const broken=candidates.slice(0,severity>.78?6:severity>.48?3:1);
+ const forward=new THREE.Vector3(Math.sin(car.yaw),0,Math.cos(car.yaw));
+ const right=new THREE.Vector3(Math.cos(car.yaw),0,-Math.sin(car.yaw));
+ const inherited=new THREE.Vector3(car.u*forward.x+car.v*right.x,0,car.u*forward.z+car.v*right.z);
+ const impulse=zone==="front"?forward.clone().negate():zone==="rear"?forward.clone():right.clone().multiplyScalar(side||1);
  for(const part of broken){
   part.mesh.updateWorldMatrix(true,true);
   scene.attach(part.mesh);
   softBodyShells=softBodyShells.filter(shell=>shell!==part.mesh);
   part.detached=true;
+  const spread=(Math.random()-.5)*5;
+  const velocity=inherited.clone().addScaledVector(impulse,2.5+severity*13);
+  velocity.x+=right.x*spread;velocity.z+=right.z*spread;
+  velocity.y=1.8+severity*4+Math.random()*1.7;
   looseDamageParts.push({
-   mesh:part.mesh,
-   velocity:new THREE.Vector3(car.u*Math.sin(car.yaw)+side*2,2.3+severity*2,car.u*Math.cos(car.yaw)),
-   angular:new THREE.Vector3((Math.random()-.5)*8,side*(3+Math.random()*5),(Math.random()-.5)*8),
-   age:0,life:8
+   mesh:part.mesh,velocity,
+   angular:new THREE.Vector3((Math.random()-.5)*12,side*(4+Math.random()*7),(Math.random()-.5)*12),
+   age:0,life:10
   });
  }
  spawnCrashParticles(impactPoint,side,severity);
@@ -1308,7 +1315,7 @@ function updatePhysics(dt){
  if(car.airborne){
   car.pitch+=car.pitchRate*dt;car.roll+=car.rollRate*dt;car.pitchRate*=Math.exp(-.42*dt);car.rollRate*=Math.exp(-.34*dt);
  }else{
-  const targetPitch=clamp(-car.longAccel*.0015,-.055,.055);
+  const targetPitch=clamp(-car.longAccel*.00075,-.028,.028);
   car.pitchRate+=((targetPitch-car.pitch)*22-car.pitchRate*8)*dt;
   // No artificial chassis roll during normal cornering. Roll is reserved for collision/airborne dynamics.
   car.rollRate+=(0-car.rollRate)*Math.min(1,dt*8);
