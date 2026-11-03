@@ -63,23 +63,77 @@ input[type=range]{accent-color:#ff765e}
 #errorBox{display:none;position:fixed;z-index:100;inset:auto 12px 12px 12px;max-height:35vh;overflow:auto;padding:12px;background:#2b1010;color:#ffe3dc;border:1px solid #ff5b4e;border-radius:10px;font:11px monospace;white-space:pre-wrap}
 @media(max-width:760px){.menu{grid-template-columns:1fr;max-height:96dvh}.menuleft,.menuright{padding:19px}.menuleft h1{font-size:55px}#trackPreview{height:155px}.menuright{border-top:1px solid #ffffff1b;gap:11px}.two{gap:7px}.field select{padding:9px}#topHud{top:5px;left:5px;right:5px;gap:4px;align-items:flex-start}.hudbrand{display:none}#telemetry{gap:4px}.statbox{min-width:58px;padding:6px 7px}.statbox strong{font-size:16px}.statbox label{font-size:7px}.statbox small{font-size:7px}#hudActions{gap:3px}.hudbtn{padding:7px 7px;font-size:8px}#leftHud{left:6px;top:62px;width:130px;padding:8px}#trackName{font-size:13px}#trackMeta{font-size:8px}#rightHud{right:6px;top:62px;width:140px;padding:8px}#minimap{height:84px}#bottomHud{left:6px;right:6px;bottom:68px}#controlsLegend{display:none}#tireHud{min-width:145px;padding:8px}#touchControls{display:flex}.statbox small{display:none}}
 @media(max-width:430px){#rightHud{display:none}#leftHud{width:112px}.statbox{min-width:51px}.hudbtn{padding:7px 5px;font-size:7px}.touchbtn{width:48px;height:48px}}
+/* APEX 26.11 presentation layer */
+#loading{background:radial-gradient(ellipse at 52% 38%,#1d3444 0%,#101a26 42%,#060a10 100%)}
+#loading:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 0 42%,#ff654c08 42.1% 42.5%,transparent 42.6%),repeating-linear-gradient(0deg,transparent 0 63px,#ffffff06 64px,#ffffff06 65px);pointer-events:none}
+.loadcard{position:relative;width:min(570px,92vw);padding:30px 34px 25px;border:1px solid #ffffff26;border-radius:18px;background:linear-gradient(145deg,#152330f5,#0a111bf5);box-shadow:0 35px 110px #000c;overflow:hidden}
+.loadcard:after{content:"";position:absolute;right:-95px;top:90px;width:310px;height:150px;border:18px solid #ff765e12;border-left:0;border-bottom:0;transform:skewX(-28deg);pointer-events:none}
+.load-topline{display:flex;justify-content:space-between;gap:12px;color:#8fa1b0;font-size:8px;font-weight:900;letter-spacing:.16em}
+.load-topline i{color:#ff765e;font-style:normal}
+.load-emblem{margin:25px 0 12px;color:#fff;font-size:36px;font-weight:1000;letter-spacing:-.12em}
+.load-emblem span{color:#ff694f}
+.loadcard h1{position:relative;margin:10px 0 14px;font-size:clamp(40px,7vw,57px);line-height:.9;letter-spacing:-.07em}
+.loadcard h1 span{color:#ff6b53}
+.loadcard p{min-height:20px}
+.loadbar{height:7px;background:#ffffff12;border:1px solid #ffffff12}
+.loadbar i{background:linear-gradient(90deg,#ee5647,#ffb65b,#fff0b3);box-shadow:0 0 18px #ff785b80}
+.loadmeta{font-variant-numeric:tabular-nums}
+.load-bottom{display:flex;justify-content:space-between;gap:8px;margin-top:22px;padding-top:14px;border-top:1px solid #ffffff16;color:#657b8b;font-size:8px;font-weight:900;letter-spacing:.13em}
+.menu{width:min(1180px,97vw);grid-template-columns:1.06fr .94fr;border-color:#ffffff30;background:linear-gradient(140deg,#111e2a,#080e16);box-shadow:0 40px 140px #000c}
+.menuleft{position:relative;overflow:hidden;background:radial-gradient(ellipse at 65% 6%,#294456,#111c29 58%,#0b111a)}
+.menuleft:after{content:"";position:absolute;right:-110px;top:145px;width:400px;height:230px;border:26px solid #ff694f0d;border-left:0;border-radius:50%;pointer-events:none}
+.menuright{background:linear-gradient(180deg,#0d151e,#0a1018)}
+.menu-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.menu-section-head h2{margin-top:4px}
+.menu-section-head .secondary{flex:0 0 auto}
+.chip{background:#ffffff0a}
+.settings-overlay{display:none;z-index:35;padding:12px;background:#03070bd9;backdrop-filter:blur(10px)}
+.settings-overlay.open{display:grid}
+.settings-card{width:min(940px,97vw);max-height:94dvh;display:flex;flex-direction:column;background:linear-gradient(145deg,#152230,#0a111a);border:1px solid #ffffff2c;border-radius:18px;box-shadow:0 28px 100px #000c;overflow:hidden}
+.settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 24px;border-bottom:1px solid #ffffff18}
+.settings-head h2{margin:5px 0 4px;font-size:25px;letter-spacing:.04em}
+.settings-head p{margin:0;color:#92a2b0;font-size:11px}
+.settings-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px;overflow:auto}
+.settings-group{min-width:0;padding:15px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff06}
+.settings-group h3{margin:0 0 13px;color:#ff8a71;font-size:10px;font-weight:950;letter-spacing:.16em;text-transform:uppercase}
+.settings-options{display:grid;gap:8px}
+.settings-options label{display:flex;align-items:flex-start;gap:9px;padding:8px;border:1px solid #ffffff12;border-radius:8px;background:#ffffff04;cursor:pointer}
+.settings-options input{flex:0 0 auto;margin-top:2px;accent-color:#ff765e}
+.settings-options b{display:block;color:#e8edf1;font-size:10px}
+.settings-options small{display:block;margin-top:3px;color:#8495a4;font-size:9px;line-height:1.4}
+.settings-options.compact{margin-top:12px}
+.settings-hint{margin:12px 0 0;color:#8fa0ae;font-size:9px;line-height:1.6}
+.settings-group .field{margin-top:11px}
+.settings-group .field select{padding:9px 10px}
+.settings-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-top:1px solid #ffffff18}
+.settings-footer span{color:#8092a2;font-size:9px}
+#settingsOverlay input[type=range]{width:100%}
+#pauseOverlay .pausecard{border-color:#ffffff35;background:linear-gradient(145deg,#162433,#080e16)}
+#pauseOverlay .pausecard h2{letter-spacing:.04em}
+@media(max-width:760px){.loadcard{padding:23px 20px}.load-bottom{font-size:7px}.settings-body{grid-template-columns:1fr;padding:10px}.settings-head{padding:15px}.settings-head h2{font-size:19px}.settings-footer{align-items:flex-start;flex-direction:column}.settings-footer .action{width:100%}.menu-section-head .secondary{padding:8px}}
 </style>
 </head>
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
-<div id="loading"><div class="loadcard"><div class="brandmark">APEX MOTORSPORTS</div><h1>FORMULA<br>RACING</h1><p id="loadText">Preparing the circuit and car...</p><div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div></div></div>
+<div id="loading"><div class="loadcard">
+ <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11</span></div>
+ <div class="load-emblem">A<span>P</span>X</div><div class="brandmark">FORMULA RACING · WORLD TOUR</div>
+ <h1>PREPARE<br><span>FOR THE GRID.</span></h1><p id="loadText">Preparing the circuit and car...</p>
+ <div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div>
+ <div class="load-bottom"><span>6 CIRCUITS</span><span>HYBRID V6 POWER</span><span>LIVE TELEMETRY</span></div>
+</div></div>
 <div id="menu" class="overlay">
   <section class="menu">
     <div class="menuleft">
-      <div class="eyebrow">Open-wheel racing simulator</div>
+      <div class="eyebrow">APEX MOTORSPORTS · WORLD TOUR</div>
       <h1>APEX<br><span>FORMULA</span></h1>
-      <p>Three iconic circuits, a detailed open-wheel car, multiple cockpit and chase cameras, configurable weather and a physics-led driving model. Pick your circuit and build your race setup.</p>
+      <p>Take the wheel of an open-wheel hybrid racer. Six circuits, five camera views, live vehicle telemetry, evolving weather and adjustable race engineering settings.</p>
       <canvas id="trackPreview" width="760" height="380"></canvas>
       <div class="previewcaption"><strong id="previewName">CIRCUIT DE SPA-FRANCORCHAMPS</strong><span id="previewLength">7.004 KM · 19 TURNS</span></div>
-      <div class="chips"><span class="chip"><b>3D</b> SMOOTH TRACK MESH</span><span class="chip"><b>4</b> CAMERA ANGLES</span><span class="chip"><b>8</b> GEARS</span><span class="chip"><b>LIVE</b> WEATHER</span></div>
+      <div class="chips"><span class="chip"><b>06</b> CIRCUITS</span><span class="chip"><b>05</b> CAMERA VIEWS</span><span class="chip"><b>V6</b> HYBRID SOUND</span><span class="chip"><b>LIVE</b> TELEMETRY</span></div>
     </div>
     <div class="menuright">
-      <h2>Race setup</h2>
+      <div class="menu-section-head"><div><div class="eyebrow">RACE ENGINEERING</div><h2>Race setup</h2></div><button class="secondary" id="menuSettingsBtn">⚙ SETTINGS</button></div>
       <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div>
       <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
       <div class="two">
@@ -111,13 +165,13 @@ input[type=range]{accent-color:#ff765e}
 </div>
 <div id="hud">
   <div id="topHud">
-    <div class="hudbrand panel"><b>APEX MOTORSPORTS</b><small>FORMULA RACING · PRACTICE</small></div>
+    <div id="brandHud" class="hudbrand panel"><b>APEX MOTORSPORTS</b><small>FORMULA RACING · PRACTICE</small></div>
     <div id="telemetry">
       <div class="statbox panel"><label>SPEED</label><strong id="speedValue">000</strong><small>KM/H</small></div>
       <div class="statbox panel"><label>GEAR</label><strong id="gearValue">N</strong><small id="rpmValue">4,500 RPM</small></div>
       <div class="statbox panel"><label>LAP</label><strong id="lapValue">01</strong><small id="lapTime">00:00.000</small></div>
     </div>
-    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
+    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
@@ -133,8 +187,64 @@ input[type=range]{accent-color:#ff765e}
     <div class="field"><div class="range-head"><label for="liveFog">Mist density</label><output id="liveFogValue">0%</output></div><input id="liveFog" type="range" min="0" max="100" value="0"></div>
   </div>
 </div>
-<div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
-<div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
+<div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
+<div id="settingsOverlay" class="overlay">
+ <section class="settings-card">
+  <header class="settings-head"><div><div class="eyebrow">APEX MOTORSPORTS · PERSONALISATION</div><h2>GAME SETTINGS</h2><p>Configure the cockpit, camera, interface and driving feel.</p></div><button class="secondary" id="settingsCloseBtn">CLOSE ✕</button></header>
+  <div class="settings-body">
+   <section class="settings-group"><h3>Race interface</h3><div class="settings-options">
+    <label><input type="checkbox" id="uiMaster" checked><span><b>On-screen interface</b><small>Master HUD visibility. Press Esc to pause when hidden.</small></span></label>
+    <label><input type="checkbox" id="uiTelemetry" checked><span><b>Speed, gear and lap</b><small>Top-centre live telemetry.</small></span></label>
+    <label><input type="checkbox" id="uiBrand" checked><span><b>APEX branding</b><small>Top-left game branding.</small></span></label>
+    <label><input type="checkbox" id="uiCircuitPanel" checked><span><b>Circuit information</b><small>Lap, grip and tyre wear panel.</small></span></label>
+    <label><input type="checkbox" id="uiMapPanel" checked><span><b>Track map and session data</b><small>Map, weather, opponents and damage.</small></span></label>
+    <label><input type="checkbox" id="uiTyrePanel" checked><span><b>Tyre telemetry</b><small>Tyre temperatures and slip angle.</small></span></label>
+    <label><input type="checkbox" id="uiControls" checked><span><b>Keyboard legend</b><small>On-screen driving controls.</small></span></label>
+   </div></section>
+   <section class="settings-group"><h3>Camera customisation</h3>
+    <div class="field"><label for="cameraProfileSelect">Edit camera view</label><select id="cameraProfileSelect"><option value="0">Chase</option><option value="1">Halo top / TV pod</option><option value="2" selected>Cockpit</option><option value="3">Hood</option><option value="4">TV rear</option></select></div>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="camXRange">Lateral offset</label><output id="camXValue">0.00 m</output></div><input id="camXRange" type="range" min="-2" max="2" step=".05" value="0"></div>
+     <div class="field"><div class="range-head"><label for="camYRange">Camera height</label><output id="camYValue">0.00 m</output></div><input id="camYRange" type="range" min="-1" max="2" step=".05" value="0"></div>
+    </div>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="camZRange">Forward / rear offset</label><output id="camZValue">0.00 m</output></div><input id="camZRange" type="range" min="-4" max="4" step=".05" value="0"></div>
+     <div class="field"><div class="range-head"><label for="camFovRange">Field of view</label><output id="camFovValue">66°</output></div><input id="camFovRange" type="range" min="48" max="88" step="1" value="66"></div>
+    </div>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="camPitchRange">Look up / down</label><output id="camPitchValue">0°</output></div><input id="camPitchRange" type="range" min="-25" max="25" step="1" value="0"></div>
+     <div class="field"><div class="range-head"><label for="camYawRange">Look left / right</label><output id="camYawValue">0°</output></div><input id="camYawRange" type="range" min="-45" max="45" step="1" value="0"></div>
+    </div>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="cameraSensitivityRange">Mouse look sensitivity</label><output id="cameraSensitivityValue">0.18</output></div><input id="cameraSensitivityRange" type="range" min=".05" max=".5" step=".01" value=".18"></div>
+     <div class="field"><div class="range-head"><label for="lookApexRange">Look to apex</label><output id="lookApexValue">0%</output></div><input id="lookApexRange" type="range" min="0" max="100" step="5" value="0"></div>
+    </div>
+    <div class="settings-options compact">
+     <label><input type="checkbox" id="showHaloColumnSetting" checked><span><b>Show halo centre column</b><small>Toggle the central safety pillar in cockpit view.</small></span></label>
+     <label><input type="checkbox" id="showSteeringWheelSetting" checked><span><b>Show steering wheel</b><small>Display the wheel, controls and shift lights.</small></span></label>
+     <label><input type="checkbox" id="showDriverHandsSetting" checked><span><b>Show driver gloves</b><small>Show the driver's hands at the wheel.</small></span></label>
+    </div><p class="settings-hint">In any camera view, hold the right mouse button and drag to look around. Use I / J / K / L for keyboard camera look. Settings are separate for each camera.</p>
+   </section>
+   <section class="settings-group"><h3>Audio mix</h3>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="masterVolumeRange">Master volume</label><output id="masterVolumeValue">85%</output></div><input id="masterVolumeRange" type="range" min="0" max="100" step="5" value="85"></div>
+     <div class="field"><div class="range-head"><label for="engineVolumeRange">Engine volume</label><output id="engineVolumeValue">95%</output></div><input id="engineVolumeRange" type="range" min="0" max="100" step="5" value="95"></div>
+    </div><div class="field"><div class="range-head"><label for="effectsVolumeRange">Tyres, wind and weather</label><output id="effectsVolumeValue">75%</output></div><input id="effectsVolumeRange" type="range" min="0" max="100" step="5" value="75"></div>
+   </section>
+   <section class="settings-group"><h3>Driving preferences</h3>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="steeringResponseRange">Steering response</label><output id="steeringResponseValue">65%</output></div><input id="steeringResponseRange" type="range" min="25" max="100" step="5" value="65"></div>
+     <div class="field"><div class="range-head"><label for="brakeStrengthRange">Brake strength</label><output id="brakeStrengthValue">100%</output></div><input id="brakeStrengthRange" type="range" min="70" max="120" step="5" value="100"></div>
+    </div>
+    <div class="settings-options compact">
+     <label><input type="checkbox" id="cameraShakeSetting"><span><b>Subtle camera movement</b><small>Small chassis movement over kerbs; off by default.</small></span></label>
+     <label><input type="checkbox" id="autoLookSetting"><span><b>Head look to apex</b><small>Camera turns slightly into corners.</small></span></label>
+    </div>
+   </section>
+  </div>
+  <footer class="settings-footer"><span>Changes apply immediately · Each camera keeps its own profile</span><button class="action" id="settingsDoneBtn">APPLY & CLOSE</button></footer>
+ </section>
+</div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
 <pre id="errorBox"></pre>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
@@ -172,14 +282,18 @@ const trackDefs = {
  }
 };
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,showHaloColumn=false,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
-let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2;
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
+const cameraProfiles=Array.from({length:5},()=>({x:0,y:0,z:0,pitch:0,yaw:0,fov:66}));
+let cameraSensitivity=.18,lookToApex=0,steeringResponse=.65,brakeStrength=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
+let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,tyres:true,controls:true};
+let showSteeringWheel=true,showDriverHands=true;
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
 const finalDrive=4.15,wheelRadius=.36,mass=800,lf=1.85,lr=1.35,izz=1350,airDensity=1.18;
