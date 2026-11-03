@@ -121,7 +121,7 @@ input[type=range]{accent-color:#ff765e}
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
-  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Tyre telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div></div></div>
+  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Tyre telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div></div></div>
 </div>
 <div id="weatherPanel" class="panel">
   <h3>LIVE WEATHER SETTINGS</h3>
@@ -134,7 +134,7 @@ input[type=range]{accent-color:#ff765e}
   </div>
 </div>
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
-<div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button></div></div>
+<div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
 <pre id="errorBox"></pre>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
@@ -146,34 +146,34 @@ const fmtTime = s => { const m=Math.floor(s/60), r=s-m*60; return String(m).padS
 const fmtKm = n => (n/1000).toFixed(3)+" KM";
 const trackDefs = {
  spa:{
-  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:13.2,base:"forest",
+  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:11.4,base:"forest",
   elevationProfile:[[0,418],[220,424],[310,419],[690,403],[890,391],[1130,415],[1490,446],[2200,463],[2470,470],[2870,455],[3110,438],[3600,402],[4280,377],[4740,375],[5100,373],[5700,388],[6000,398],[6540,408],[7004,418]],
   points:[[0,0,418],[80,0,420],[145,2,419],[190,-8,416],[215,-35,411],[210,-65,404],[180,-86,397],[145,-85,391],[120,-55,390],[105,-20,397],[92,20,407],[110,65,420],[145,112,438],[205,150,460],[285,176,467],[390,190,467],[500,205,470],[555,228,465],[570,265,456],[548,300,449],[505,305,444],[470,285,442],[435,310,438],[400,350,432],[380,400,424],[405,438,414],[452,458,405],[490,485,397],[495,525,391],[470,558,385],[430,565,380],[398,540,377],[370,510,374],[330,505,373],[295,530,374],[275,565,377],[285,605,381],[320,635,385],[325,675,389],[295,700,388],[250,695,383],[205,680,379],[160,655,376],[120,630,373],[70,620,365],[25,635,370],[-20,660,378],[-65,665,386],[-105,640,392],[-125,605,398],[-115,565,405],[-80,540,411],[-35,535,416],[5,550,419],[30,580,421],[20,615,420],[-10,630,417],[-45,610,415],[-60,575,415],[-45,540,416],[-10,515,417],[25,505,418],[45,480,418],[35,440,416],[0,400,415],[-35,350,413],[-45,285,411],[-30,220,410],[0,160,411],[15,100,414],[10,50,416],[0,0,418]]
  },
  monza:{
-  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:12,base:"park",
+  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:10.6,base:"park",
   points:[[0,0,162],[105,0,162.5],[220,0,163],[335,0,164],[440,0,165],[485,12,165],[490,42,164],[470,59,164],[437,50,164],[415,30,165],[400,60,165],[378,105,166],[340,145,167],[285,166,168],[235,162,168],[205,145,167],[195,122,166],[215,106,165],[190,93,165],[160,110,166],[135,143,167],[102,158,168],[72,143,169],[50,115,169],[22,110,168],[-12,128,168],[-45,158,167],[-85,168,166],[-120,148,164],[-153,120,163],[-195,95,161],[-245,80,159],[-300,85,158],[-350,70,159],[-378,40,160],[-362,10,161],[-330,3,162],[-305,22,162],[-285,50,163],[-255,65,164],[-225,55,164],[-205,35,164],[-185,48,164],[-165,75,164],[-140,85,163],[-118,65,162],[-100,33,161],[-73,0,160],[-35,-28,159],[10,-58,158],[65,-75,158],[120,-75,159],[165,-55,160],[185,-28,161],[175,-8,162],[130,-1,162],[75,0,162],[0,0,162]]
  },
  laguna:{
-  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:12.2,base:"dry",
+  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:10.8,base:"dry",
   points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,250],[76,270,244],[62,255,238],[38,244,230],[10,240,223],[-22,225,220],[-48,195,216],[-63,160,213],[-61,125,211],[-42,100,209],[-27,76,208],[-47,54,207],[-77,36,207],[-92,8,209],[-70,-15,213],[-35,-18,218],[0,0,220]]
  },
  silverstone:{
-  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:14.8,base:"parkland",
+  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:12.3,base:"parkland",
   points:[[0,0,153],[0,140,153],[8,215,153],[42,273,154],[101,302,155],[165,292,156],[216,252,156],[249,190,155],[270,122,154],[331,103,153],[407,119,153],[465,166,153],[482,230,153],[455,287,154],[406,323,154],[354,320,154],[320,288,154],[326,250,154],[367,229,154],[427,238,153],[493,270,152],[565,286,151],[640,271,151],[693,222,151],[716,157,151],[696,99,150],[653,66,150],[605,80,151],[581,126,151],[592,182,152],[626,220,152],[678,240,152],[741,231,152],[799,195,152],[833,136,152],[825,72,153],[780,27,154],[716,1,154],[655,-7,154],[603,17,154],[575,61,154],[592,101,154],[637,113,154],[691,91,154],[748,55,154],[809,47,153],[861,10,152],[876,-51,152],[850,-101,152],[795,-125,152],[720,-116,152],[657,-91,152],[599,-72,151],[540,-89,150],[481,-122,149],[410,-145,149],[338,-136,150],[277,-102,151],[219,-62,152],[157,-36,152],[85,-35,152],[25,-52,152],[0,0,153]]
  },
  monaco:{
-  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:10.8,base:"city",
+  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:9.3,base:"city",
   points:[[0,0,12],[0,55,12],[12,92,12],[45,116,12],[82,110,12],[112,82,12],[118,45,12],[102,12,12],[126,-13,12],[166,-18,12],[198,-42,12],[204,-83,12],[178,-111,12],[145,-103,12],[130,-72,12],[145,-42,12],[185,-19,12],[232,-22,12],[267,-48,12],[274,-83,12],[255,-115,12],[222,-139,12],[194,-165,12],[162,-176,12],[125,-164,12],[97,-139,12],[66,-129,12],[32,-139,12],[7,-117,12],[-22,-90,12],[-54,-73,12],[-80,-43,12],[-72,-10,12],[-43,11,12],[0,0,12]]
  },
  suzuka:{
-  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:13.5,base:"parkland",
+  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:11.5,base:"parkland",
   points:[[0,0,42],[0,70,42],[8,123,42],[34,166,43],[76,181,43],[115,164,43],[129,127,42],[111,95,42],[78,77,42],[51,44,42],[53,6,42],[83,-19,42],[132,-26,41],[184,-10,41],[225,25,41],[242,70,41],[221,106,41],[184,124,41],[157,112,41],[143,82,41],[161,53,41],[202,43,41],[250,56,41],[291,87,41],[326,78,41],[351,44,41],[342,7,41],[309,-15,41],[274,-20,41],[253,-49,41],[263,-87,41],[299,-115,41],[342,-142,41],[386,-164,41],[431,-151,41],[466,-119,41],[472,-78,41],[449,-43,41],[413,-23,41],[387,7,41],[396,45,41],[427,68,41],[469,65,41],[501,37,41],[509,-5,41],[482,-42,41],[444,-61,41],[414,-83,41],[389,-117,41],[353,-145,41],[315,-158,41],[279,-145,41],[244,-122,41],[208,-105,41],[166,-110,41],[120,-132,41],[72,-157,41],[29,-139,41],[-4,-95,41],[-15,-48,41],[0,0,42]]
  }
 };
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
-let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,car=null,nearestInfo=null;
+let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
@@ -332,9 +332,9 @@ function terrainNoise(x,z){
  return Math.sin(x*.0010+z*.0012)*1.0+Math.cos(z*.0018-x*.0014)*.55+Math.sin((x-z)*.003)*.25;
 }
 function terrainHeightFromSample(sample,x,z,distance){
- // Keep a wide, smooth corridor beneath the road, kerbs and runoff. Hills begin well away from the circuit edge.
- const blend=smoothStep(44,210,distance);
- return lerp(sample.p.y-.16,sample.p.y+terrainNoise(x,z),blend);
+ // Blend track elevation into a shared terrain datum away from the asphalt to avoid steep walls between nearby laps.
+ const blend=smoothStep(52,260,distance);
+ return lerp(sample.p.y-.16,terrainBaseY+terrainNoise(x,z),blend);
 }
 function terrainHeightAt(x,z){
  let best=Infinity,nearest=terrainSamples[0]||route[0];
@@ -418,6 +418,7 @@ function createTrack(){
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
  route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)),def,minAlt);
+ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
@@ -504,22 +505,64 @@ function addCircuitFacilities(){
 }
 
 
+function addMonacoHarbour(){
+ const sample=route[Math.floor(.31*route.length)]||route[0],side=-1;
+ const centre=safeTracksidePoint(sample,side,roadWidth/2+205,58),ground=terrainHeightAt(centre.x,centre.z);
+ const harbour=new THREE.Group();
+ harbour.position.set(centre.x,ground-.9,centre.z);
+ harbour.rotation.y=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
+ const waterMat=new THREE.MeshStandardMaterial({color:0x277f9c,roughness:.28,metalness:.22,transparent:true,opacity:.94});
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(220,178),waterMat);water.rotation.x=-Math.PI/2;harbour.add(water);
+ const quayMat=makeMat(0xb6b5aa,.84,.06),dockMat=makeMat(0x756c5c,.88,.02),bollardMat=makeMat(0x525d62,.55,.48);
+ for(const x of [-112,112]){const wall=new THREE.Mesh(new THREE.BoxGeometry(5,2.2,185),quayMat);wall.position.set(x,.1,0);harbour.add(wall);}
+ for(const z of [-57,0,57]){
+  const pier=new THREE.Mesh(new THREE.BoxGeometry(7,.75,57),dockMat);pier.position.set(-14,.15,z);harbour.add(pier);
+  for(let j=0;j<5;j++){const post=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.7,8),bollardMat);post.position.set(-17,.58,z-25+j*12);harbour.add(post);}
+ }
+ const hullMats=[0xf0eee7,0xd8dfe1,0xe7e8e4,0xe8e0d3].map(c=>makeMat(c,.34,.12));
+ const trimMat=makeMat(0x243c4b,.42,.22),glassMat=new THREE.MeshStandardMaterial({color:0x507c91,metalness:.28,roughness:.19});
+ const wakeMat=new THREE.MeshBasicMaterial({color:0xd5edf0,transparent:true,opacity:.17,side:THREE.DoubleSide,depthWrite:false});
+ for(let i=0;i<14;i++){
+  const col=i%4,row=Math.floor(i/4),x=-83+col*54+(row%2)*9,z=-70+row*43,boat=new THREE.Group();
+  boat.position.set(x,.12,z);boat.rotation.y=(i%5-2)*.09;
+  const hull=new THREE.Mesh(new THREE.CapsuleGeometry(.78,6.3,4,12),hullMats[i%hullMats.length]);hull.rotation.x=Math.PI/2;hull.scale.set(1.1,.48,1.1);hull.position.y=.28;boat.add(hull);
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(1.75,.18,7.4),hullMats[i%hullMats.length]);deck.position.set(0,.56,0);boat.add(deck);
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.52,1.0,2.35),hullMats[(i+1)%hullMats.length]);cabin.position.set(0,1.05,-.85);boat.add(cabin);
+  const windows=new THREE.Mesh(new THREE.BoxGeometry(1.57,.54,1.78),glassMat);windows.position.set(0,1.16,-.75);boat.add(windows);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(1.68,.14,2.5),trimMat);roof.position.set(0,1.62,-.85);boat.add(roof);
+  const mast=new THREE.Mesh(new THREE.CylinderGeometry(.025,.04,3.5,6),trimMat);mast.position.set(0,2.05,-2.2);boat.add(mast);
+  const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.012,.018,.9,6),trimMat);antenna.position.set(.18,2.2,-.75);boat.add(antenna);
+  for(const sign of [-1,1]){const rail=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,6.1,5),trimMat);rail.rotation.x=Math.PI/2;rail.position.set(sign*.72,.84,.25);boat.add(rail);}
+  const wake=new THREE.Mesh(new THREE.PlaneGeometry(3.1,12),wakeMat);wake.rotation.x=-Math.PI/2;wake.position.set(0,-.005,7.5);boat.add(wake);
+  harbour.add(boat);
+ }
+ const club=new THREE.Group();club.position.set(84,0,55);
+ const clubBase=new THREE.Mesh(new THREE.BoxGeometry(24,8,17),makeMat(0xe9e5d9,.78,.02));clubBase.position.y=4;club.add(clubBase);
+ const clubGlass=new THREE.Mesh(new THREE.BoxGeometry(24.2,3.1,17.2),glassMat);clubGlass.position.y=5.3;club.add(clubGlass);
+ const clubRoof=new THREE.Mesh(new THREE.BoxGeometry(26,.7,19),makeMat(0x303e48,.42,.22));clubRoof.position.y=8.2;club.add(clubRoof);
+ harbour.add(club);environmentGroup.add(harbour);
+}
 function addCircuitLandmarks(){
  if(activeTrack==="monaco"){
   const facadeMats=[0xe5d8c5,0xc8b29d,0xe7e2d8,0xc1c9c9,0xe0d1b9,0xb9c5c8].map(c=>makeMat(c,.86,.02));
   const glass= new THREE.MeshStandardMaterial({color:0x527487,metalness:.18,roughness:.25});
   const roofMats=[0x9e4e42,0x485460,0x6d8585,0x343c47].map(c=>makeMat(c,.82,.02));
-  for(let i=0;i<36;i++){
-   const sample=route[Math.floor((i+.5)/36*route.length)%route.length],side=i%2?1:-1;
-   const distance=roadWidth/2+48+(i%5)*17,p=safeTracksidePoint(sample,side,distance,22),ground=terrainHeightAt(p.x,p.z);
+  for(let i=0;i<72;i++){
+   const sample=route[Math.floor((i+.5)/72*route.length)%route.length],side=i%2?1:-1;
+   const distance=roadWidth/2+34+(i%7)*18,p=safeTracksidePoint(sample,side,distance,24),ground=terrainHeightAt(p.x,p.z);
    const g=new THREE.Group();g.position.set(p.x,ground,p.z);g.rotation.y=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
-   const width=10+(i%4)*2.2,depth=9+(i%3)*3,height=13+(i%7)*4.2;
+   const width=11+(i%5)*2.4,depth=10+(i%4)*3.2,height=18+(i%9)*4.6;
    const body=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),facadeMats[i%facadeMats.length]);body.position.y=height/2;body.castShadow=true;g.add(body);
    const roof=new THREE.Mesh(new THREE.BoxGeometry(width+1,.5,depth+1),roofMats[i%roofMats.length]);roof.position.y=height+.25;roof.castShadow=true;g.add(roof);
    const rows=Math.floor(height/2.4);
-   for(let row=0;row<rows;row++)for(let col=0;col<3;col++){
+   for(let row=0;row<rows;row++)for(let col=0;col<4;col++){
     const window=new THREE.Mesh(new THREE.BoxGeometry(1.05,1.25,.055),glass);
-    window.position.set((col-1)*width*.28,2+row*2.4,depth/2+.035);g.add(window);
+    window.position.set((col-1.5)*width*.22,2+row*2.4,depth/2+.035);g.add(window);
+   }
+   const awningMat=makeMat(i%2?0xb8a28d:0xe4d8c9,.82,.02);
+   for(let col=0;col<3;col++){
+    const awning=new THREE.Mesh(new THREE.BoxGeometry(width*.19,.12,.78),awningMat);
+    awning.position.set((col-1)*width*.28,2.85,depth/2+.36);g.add(awning);
    }
    const balconyMat=makeMat(0xd0d1ca,.7,.25);
    for(let row=1;row<rows;row+=2){
@@ -528,6 +571,7 @@ function addCircuitLandmarks(){
    }
    environmentGroup.add(g);
   }
+  addMonacoHarbour();
  }else if(activeTrack==="suzuka"){
   // A distant Ferris wheel landmark inspired by the park setting, safely beyond the runoff.
   const sample=route[Math.floor(.72*route.length)],p=safeTracksidePoint(sample,1,roadWidth/2+190,45),ground=terrainHeightAt(p.x,p.z);
@@ -1044,8 +1088,8 @@ function buildCar(){
   const duct=registerDamagePart(new THREE.Mesh(new THREE.TorusGeometry(.15,.035,7,14),carbon),side<0?"left front brake duct":"right front brake duct",.48);duct.position.set(side*1.18,.43,1.55);carRoot.add(duct);
  }
  // Cockpit tub and cockpit details.
- const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitVisibleMeshes.push(tub);
- const seat=box(.54,.5,.78,makeMat(0x1d242c,.9),0,.84,-.53);cockpitVisibleMeshes.push(seat);
+ const tub=new THREE.Mesh(new THREE.CylinderGeometry(.38,.53,1.9,12,1,true),carbon);tub.rotation.x=Math.PI/2;tub.position.set(0,.83,-.05);carRoot.add(tub);cockpitHiddenMeshes.push(tub);
+ const seat=box(.54,.5,.78,makeMat(0x1d242c,.9),0,.84,-.53);cockpitHiddenMeshes.push(seat);
  const driverTorso=box(.38,.58,.36,makeMat(0x292f36,.72),0,1.08,-.45);cockpitHiddenMeshes.push(driverTorso);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
@@ -1054,7 +1098,7 @@ function buildCar(){
  const haloTop=tube([[-.77,1.08,-.48],[-.72,1.32,-.28],[-.45,1.52,.03],[0,1.58,.17],[.45,1.52,.03],[.72,1.32,-.28],[.77,1.08,-.48]],.032,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
  cockpitVisibleMeshes.push(haloTop);
- const haloColumn=tube([[0,.98,.42],[0,1.56,.17]],.034,haloMat);cockpitVisibleMeshes.push(haloColumn);
+ const haloColumn=tube([[.46,.98,.42],[.46,1.56,.17]],.034,haloMat);cockpitVisibleMeshes.push(haloColumn);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.48);carRoot.add(steeringPivot);
  // A deep, flat-bottom F1-style wheel body with textured grip and a real-time LCD.
@@ -1178,7 +1222,7 @@ function drawDashboard(){
   const active=i/12<rpm,col=i>9?"#ef5548":i>6?"#efc35b":"#50d68a";
   c.fillStyle=active?col:"#253843";c.fillRect(18+i*40,47,29,8);
  }
- c.fillStyle="#f6f8f8";c.font="900 93px system-ui";c.fillText(String(car.gear),22,151);
+ c.fillStyle="#f6f8f8";c.font="900 93px system-ui";c.fillText(car.reverse?"R":String(car.gear),22,151);
  c.fillStyle="#9ab0bd";c.font="700 13px system-ui";c.fillText("GEAR",25,170);
  c.fillStyle="#f6f8f8";c.font="900 52px ui-monospace,monospace";c.fillText(String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0"),155,124);
  c.fillStyle="#9ab0bd";c.font="800 13px system-ui";c.fillText("KM/H",372,123);
@@ -1209,7 +1253,7 @@ function positionCarAtStart(){
  if(!carRoot)buildCar();
  const s=route[6]||route[0],yaw=Math.atan2(s.tan.x,s.tan.z);
  carRoot.position.set(s.p.x,s.p.y+.045,s.p.z);carRoot.rotation.set(0,yaw,0);
- car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:.58,powerMode:1,diffMode:1,radioMessage:0};
+ car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:.58,powerMode:1,diffMode:1,radioMessage:0,reverse:false};
  nearestInfo=findNearest(car.x,car.z,car.y);
  elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
@@ -1282,22 +1326,26 @@ function temperatureGrip(temp){
 function updatePhysics(dt){
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
+ if(keys.KeyR&&!keys._r){
+  if(Math.abs(car.u)<1.25){car.reverse=!car.reverse;car.gear=1;car.shiftTimer=.18;playShiftSound(car.reverse?-1:1);}
+  keys._r=true;
+ }else if(!keys.KeyR)keys._r=false;
  const throttleRequest=(keys.KeyW||keys.ArrowUp)?1:0;
  const throttle=lerp(car.throttle||0,throttleRequest,1-Math.exp(-dt*4.6));
  const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
- const speed=Math.max(0,car.u),totalSpeed=Math.hypot(car.u,car.v);
- car.drsActive=!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.055;
- const steerLimit=lerp(.235,.052,clamp(speed/92,0,1));
- car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*(speed>55?5.2:7.2)));
+ const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
+ car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
+ const steerLimit=lerp(.205,.036,clamp(speed/70,0,1));
+ car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*(speed>45?4.3:6.5)));
  const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
  const canManualShift=shiftMode==="sequential"||(shiftMode==="manual"&&clutchPressed);
- if(canManualShift&&keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=shiftMode==="manual"?.22:.14;playShiftSound(1);keys._e=true;}}else if(!keys.KeyE)keys._e=false;
- if(canManualShift&&keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=shiftMode==="manual"?.24:.16;playShiftSound(-1);keys._q=true;}}else if(!keys.KeyQ)keys._q=false;
+ if(!car.reverse&&canManualShift&&keys.KeyE){if(!keys._e&&car.gear<8){car.gear++;car.shiftTimer=shiftMode==="manual"?.22:.14;playShiftSound(1);keys._e=true;}}else if(!keys.KeyE)keys._e=false;
+ if(!car.reverse&&canManualShift&&keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=shiftMode==="manual"?.24:.16;playShiftSound(-1);keys._q=true;}}else if(!keys.KeyQ)keys._q=false;
  car.shiftTimer=Math.max(0,car.shiftTimer-dt);
  const wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- if(shiftMode==="automatic"&&car.shiftTimer<=0){
+ if(!car.reverse&&shiftMode==="automatic"&&car.shiftTimer<=0){
   if(car.rpm>14100&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
   else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
@@ -1314,11 +1362,12 @@ function updatePhysics(dt){
  const launchMap=lerp(.48,1,clamp(speed/24,0,1));
  const powerMap=car.powerMode===2?1.045:car.powerMode===3?.94:1;
  const ersBoost=car.ersDeploy&&car.ersEnergy>0?1.12:1;
- let engineForce=throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
+ let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
  const brakeForce=brake*Math.min(42000,600*mass),frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
+ const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
  let drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
- let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*Math.sign(car.u||1)-drag*.55;
- let frontFx=-brakeForce*frontBrakeShare*Math.sign(car.u||1)-drag*.45;
+ let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*brakeDirection-drag*.55;
+ let frontFx=-brakeForce*frontBrakeShare*brakeDirection-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
  const diffFactor=car.diffMode===2?.92:car.diffMode===3?1.06:1;
  const tractionReserve=(assistMode==="assisted"?lerp(.70,.30,cornerDemand):assistMode==="sport"?lerp(.82,.43,cornerDemand):lerp(.92,.58,cornerDemand))*diffFactor;
@@ -1337,8 +1386,10 @@ function updatePhysics(dt){
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
  const gripFactor=clamp((frontCap+rearCap)/(normal*2.05),.42,1.08);
- const requestedYawRate=car.u*Math.tan(car.steer)/wheelbase*.78*gripFactor;
- const yawLimit=.10+speed*.016,stableYaw=clamp(requestedYawRate,-yawLimit,yawLimit);
+ const requestedYawRate=car.u*Math.tan(car.steer)/wheelbase*.56*gripFactor;
+ const availableCornerG=clamp((frontCap+rearCap)/mass/9.81*.72,.75,2.8);
+ const yawLimit=availableCornerG*9.81/Math.max(8,speed);
+ const stableYaw=clamp(requestedYawRate,-yawLimit,yawLimit);
  car.r=lerp(car.r,stableYaw,1-Math.exp(-dt*(assistMode==="assisted"?5.4:assistMode==="sport"?4.4:3.3)));
  car.r=clamp(car.r,-yawLimit,yawLimit);car.yaw+=car.r*dt;
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
@@ -1499,7 +1550,7 @@ function updatePhysics(dt){
 }
 
 function updateHud(grip,offGrip){
- $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
+ $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=car.reverse?"R":String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
  $("gripValue").textContent=Math.round(grip*45)+"%";$("gripBar").style.width=clamp(grip/2.2*100,0,100)+"%";
  $("wearValue").textContent=Math.round(car.wear*100)+"%";$("wearBar").style.width=(car.wear*100)+"%";
@@ -1517,9 +1568,9 @@ function setCamera(frameDt=.016){
  if(cockpitActive){
   // The first-person optical camera is a child of the chassis, so it inherits every car movement.
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(.10,1.36,-.56);
+  camera.position.set(0,1.68,-.95);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.31,Math.PI-.02,0);
+  camera.rotation.set(-.47,Math.PI,0);
   camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   const cockpitSet=new Set(cockpitVisibleMeshes);
   carRoot.traverse(mesh=>{if(mesh.isMesh){mesh.visible=cockpitSet.has(mesh);mesh.frustumCulled=false;}});
@@ -1530,8 +1581,8 @@ function setCamera(frameDt=.016){
   let localPos,localLook;
   if(cameraMode===0){localPos=new THREE.Vector3(0,2.75,-7.4);localLook=new THREE.Vector3(0,.78,10.5);}
   else if(cameraMode===1){localPos=new THREE.Vector3(0,2.1,-.52);localLook=new THREE.Vector3(0,1.15,22);}
-  else if(cameraMode===3){localPos=new THREE.Vector3(0,1.12,2.12);localLook=new THREE.Vector3(0,.74,32);}
-  else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
+  else if(cameraMode===3){localPos=new THREE.Vector3(0,1.55,3.45);localLook=new THREE.Vector3(0,1.12,38);}
+  else{localPos=new THREE.Vector3(0,3.25,8.4);localLook=new THREE.Vector3(0,.88,0);}
   const desired=carRoot.localToWorld(localPos.clone());
   const target=carRoot.localToWorld(localLook.clone());
   camera.position.copy(desired);
