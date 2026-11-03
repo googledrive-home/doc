@@ -302,17 +302,15 @@ function smoothStep(a,b,x){
  const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);
 }
 function terrainNoise(x,z){
- if(activeTrack==="laguna"){
-  return Math.sin(x*.0018+z*.0012)*10+Math.cos(z*.0031-x*.0014)*5+Math.sin((x+z)*.006)*2.4;
- }
- if(activeTrack==="monza"){
-  return Math.sin(x*.0015+z*.002)*1.8+Math.cos(z*.0024-x*.0012)*1.2;
- }
- return Math.sin(x*.0011+z*.0014)*5.5+Math.cos(z*.0022-x*.0017)*3.2+Math.sin((x-z)*.004)*1.4;
+ if(activeTrack==="laguna")return Math.sin(x*.0014+z*.0011)*2.0+Math.cos(z*.0022-x*.0011)*1.0+Math.sin((x+z)*.004)*.35;
+ if(activeTrack==="monza")return Math.sin(x*.0012+z*.0015)*.55+Math.cos(z*.0018-x*.0011)*.28;
+ if(activeTrack==="silverstone")return Math.sin(x*.0012+z*.0014)*.8+Math.cos(z*.0019-x*.0011)*.35;
+ return Math.sin(x*.0010+z*.0012)*1.0+Math.cos(z*.0018-x*.0014)*.55+Math.sin((x-z)*.003)*.25;
 }
 function terrainHeightFromSample(sample,x,z,distance){
- const blend=smoothStep(17,165,distance);
- return lerp(sample.p.y+.008,sample.p.y+terrainNoise(x,z),blend);
+ // Keep a wide, smooth corridor beneath the road, kerbs and runoff. Hills begin well away from the circuit edge.
+ const blend=smoothStep(44,210,distance);
+ return lerp(sample.p.y-.16,sample.p.y+terrainNoise(x,z),blend);
 }
 function terrainHeightAt(x,z){
  let best=Infinity,nearest=terrainSamples[0]||route[0];
@@ -355,7 +353,7 @@ function buildTerrain(def){
    }
    const distance=Math.sqrt(best),height=terrainHeightFromSample(nearest,x,z,distance);
    positions.push(x,height,z);uvs.push(x/70,z/70);
-   const variation=.88+(.5+.5*Math.sin(x*.037+z*.029))*.16+(Math.random()-.5)*.055;
+   const variation=.94+(.5+.5*Math.sin(x*.018+z*.013))*.075;
    const color=baseColor.clone().multiplyScalar(variation);
    colors.push(color.r,color.g,color.b);
   }
@@ -971,7 +969,7 @@ function buildCar(){
  const haloTop=tube([[-.77,1.08,-.48],[-.72,1.32,-.28],[-.45,1.52,.03],[0,1.58,.17],[.45,1.52,.03],[.72,1.32,-.28],[.77,1.08,-.48]],.032,haloMat);
  const haloBase=tube([[-.77,1.08,-.48],[-.52,1.00,.25],[0,1.01,.42],[.52,1.00,.25],[.77,1.08,-.48]],.028,haloMat);
  cockpitVisibleMeshes.push(haloTop,haloBase);
- const haloColumn=tube([[.58,.98,.42],[.58,1.56,.17]],.032,haloMat);
+ const haloColumn=tube([[0,.98,.42],[0,1.56,.17]],.034,haloMat);cockpitVisibleMeshes.push(haloColumn);
  // Steering wheel, screen and animated driver's hands.
  steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.48);carRoot.add(steeringPivot);
  const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.265,.038,9,30),carbon);steeringPivot.add(wheelRim);
@@ -1238,10 +1236,12 @@ function updatePhysics(dt){
  if(car.airborne){
   car.pitch+=car.pitchRate*dt;car.roll+=car.rollRate*dt;car.pitchRate*=Math.exp(-.42*dt);car.rollRate*=Math.exp(-.34*dt);
  }else{
-  const targetPitch=clamp(-car.longAccel*.006,-.15,.15),targetRoll=clamp(-latAccel*.008,-.17,.17);
-  car.pitchRate+=((targetPitch-car.pitch)*23-car.pitchRate*7.5)*dt;
-  car.rollRate+=((targetRoll-car.roll)*20-car.rollRate*7)*dt;
-  car.pitch+=car.pitchRate*dt;car.roll+=car.rollRate*dt;
+  const targetPitch=clamp(-car.longAccel*.0015,-.055,.055);
+  car.pitchRate+=((targetPitch-car.pitch)*22-car.pitchRate*8)*dt;
+  // No artificial chassis roll during normal cornering. Roll is reserved for collision/airborne dynamics.
+  car.rollRate+=(0-car.rollRate)*Math.min(1,dt*8);
+  car.roll+=(0-car.roll)*Math.min(1,dt*18);
+  car.pitch+=car.pitchRate*dt;
  }
  const tangent=nearestInfo.tangent,slope=Math.atan2(tangent.y,Math.hypot(tangent.x,tangent.z));
  carRoot.position.set(car.x,car.y,car.z);
@@ -1255,7 +1255,7 @@ function updatePhysics(dt){
   const ground=Math.abs(wheelInfo.offset)<=roadWidth*.5+1.2?wheelInfo.point.y+.045:terrainHeightAt(centre.x,centre.z);
   wheelContacts.push({corner,gap:centre.y-tyreVerticalRadius-ground,ground});
  }
- const groundedWheels=wheelContacts.filter(w=>w.gap<.18),wasAirborne=!!car.airborne;
+ const groundedWheels=wheelContacts.filter(w=>w.gap<.34),wasAirborne=!!car.airborne;
  let shellContact=false,shellCorrection=0;
  // The upper chassis becomes a support only after the car has rolled over.
  if(groundedWheels.length<2&&(Math.abs(car.roll)>1.0||Math.abs(car.pitch)>1.05)){
@@ -1279,8 +1279,8 @@ function updatePhysics(dt){
  }else if(!wasAirborne||fallingLanding){
   if(groundedWheels.length>=2){
    const meanGap=groundedWheels.reduce((sum,w)=>sum+w.gap,0)/groundedWheels.length;
-   const bodyCorrection=clamp(-meanGap,-.085,.085);
-   car.y+=bodyCorrection*(1-Math.exp(-dt*45));
+   const bodyCorrection=clamp(-meanGap,-.16,.16);
+   car.y+=bodyCorrection*Math.min(1,dt*34);
    if(fallingLanding){
     const landingSpeed=Math.max(0,-car.vy);
     if(landingSpeed>7&&car.landingCooldown<=0){
@@ -1295,8 +1295,8 @@ function updatePhysics(dt){
    const byCorner=new Map(wheelContacts.map(w=>[w.corner,w.gap]));
    for(const corner of wheelCornerPivots){
     const gap=byCorner.get(corner)??.2,residual=gap+bodyCorrection;
-    const targetY=corner.restY-clamp(residual,-.13,.10);
-    corner.pivot.position.y=lerp(corner.pivot.position.y,targetY,1-Math.exp(-dt*20));
+    const targetY=corner.restY-clamp(residual,-.22,.24);
+    corner.pivot.position.y=lerp(corner.pivot.position.y,targetY,1-Math.exp(-dt*34));
    }
   }else{
    car.airborne=true;car.vy-=9.81*dt;car.y+=car.vy*dt;
@@ -1354,12 +1354,12 @@ function setCamera(frameDt=.016){
  if(cockpitActive){
   // The first-person optical camera is a child of the chassis, so it inherits every car movement.
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(0,1.36,-.84);
+  camera.position.set(.12,1.55,-1.18);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.19,Math.PI,0);
-  camera.fov=66;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
-  cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=false;});
-  cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
+  camera.rotation.set(-.29,Math.PI-.07,0);
+  camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
+  const cockpitSet=new Set(cockpitVisibleMeshes);
+  carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=cockpitSet.has(mesh);});
  }else{
   if(camera.parent!==scene)scene.attach(camera);
   camera.rotation.order="XYZ";
@@ -1370,14 +1370,10 @@ function setCamera(frameDt=.016){
   else{localPos=new THREE.Vector3(0,2.55,-5.7);localLook=new THREE.Vector3(0,.72,3.3);}
   const desired=carRoot.localToWorld(localPos.clone());
   const target=carRoot.localToWorld(localLook.clone());
-  if(!camera.userData.ready){camera.position.copy(desired);camera.userData.ready=true;}
-  const cameraRate=cameraMode===3?18:cameraMode===1?11:6.5;
-  const blend=1-Math.exp(-cameraRate*frameDt);
-  camera.position.lerp(desired,blend);
-  camera.fov=66;
+  camera.position.copy(desired);
+  camera.fov=66;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
   camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
-  cockpitHiddenMeshes.forEach(mesh=>{mesh.visible=true;});
-  cockpitVisibleMeshes.forEach(mesh=>{mesh.visible=true;});
+  carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=true;});
  }
  const names=["CHASE","HALO TOP","COCKPIT","HOOD","TV REAR"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
@@ -1385,7 +1381,7 @@ function setCamera(frameDt=.016){
 function cycleCamera(){
  const order=[0,1,2,3,4];
  cameraMode=order[(order.indexOf(cameraMode)+1)%order.length];
- camera.userData.ready=false;setCamera();
+ camera.zoom=1;camera.fov=66;camera.clearViewOffset();camera.userData.ready=false;setCamera(0);
 }
 function updateWeather(){
  const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100;
@@ -1568,7 +1564,7 @@ function applyGraphicsQuality(){
  if(sunLight){const mapSize=graphicsQuality==="low"?1024:graphicsQuality==="high"?3072:2048;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
  renderer.setSize(window.innerWidth,window.innerHeight,false);
 }
-function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();}
+function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.zoom=1;camera.fov=66;camera.updateProjectionMatrix();}
 function animate(now){
  requestAnimationFrame(animate);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
