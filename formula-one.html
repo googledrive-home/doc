@@ -1501,7 +1501,7 @@ function updatePhysics(dt){
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
- const steerLimit=lerp(.205,.036,clamp(speed/70,0,1));
+ const steerLimit=lerp(.205,.036,clamp(speed/70,0,1))*steeringResponse;
  car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*(speed>45?4.3:6.5)));
  const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
  const canManualShift=shiftMode==="sequential"||(shiftMode==="manual"&&clutchPressed);
@@ -1528,7 +1528,7 @@ function updatePhysics(dt){
  const powerMap=car.powerMode===2?1.045:car.powerMode===3?.94:1;
  const ersBoost=car.ersDeploy&&car.ersEnergy>0?1.12:1;
  let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
- const brakeForce=brake*Math.min(42000,600*mass),frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
+ const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
  let drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
  let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*brakeDirection-drag*.55;
@@ -1823,7 +1823,7 @@ function playShiftSound(direction){
  osc.frequency.setValueAtTime(start,now);osc.frequency.exponentialRampToValueAtTime(end,now+.095);
  sub.frequency.setValueAtTime(direction>0?105:145,now);sub.frequency.exponentialRampToValueAtTime(62,now+.12);
  filter.type="lowpass";filter.frequency.setValueAtTime(1800,now);filter.frequency.exponentialRampToValueAtTime(520,now+.11);
- gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.085,now+.006);gain.gain.exponentialRampToValueAtTime(.0001,now+.145);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.085*masterVolume*engineVolume,now+.006);gain.gain.exponentialRampToValueAtTime(.0001,now+.145);
  osc.connect(filter);sub.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
  osc.start(now);sub.start(now);osc.stop(now+.15);sub.stop(now+.15);
 }
@@ -1878,18 +1878,10 @@ const engineLoopUrls=[
  "https://raw.githubusercontent.com/yashimosh/border-run/main/public/sfx/engine/loop_5_0.wav"
 ];
 function startEngineLoops(){
- if(engineLoops.length===0){
-  engineLoops=engineLoopUrls.map(url=>{
-   const a=new Audio(url);a.loop=true;a.preload="auto";a.volume=0;
-   const updateReady=()=>{engineSamplesReady=engineLoops.length===6&&engineLoops.every(sample=>sample.readyState>=2);};
-   a.addEventListener("canplay",updateReady);
-   a.addEventListener("error",updateReady);
-   return a;
-  });
- }
- engineLoopsStarted=true;
- engineLoops.forEach(a=>{if(a.paused)a.play().catch(()=>{});});
+ // Use the layered synthesized power-unit model below; generic arcade engine samples are intentionally not mixed in.
+ engineLoopsStarted=true;engineSamplesReady=false;
 }
+
 function stopEngineLoops(){
  engineLoopsStarted=false;
  engineLoops.forEach(a=>{a.volume=0;a.pause();});
@@ -1898,20 +1890,21 @@ function updateAudio(throttle,brake,slip){
  if(!audioCtx)return;
  const t=audioCtx.currentTime,rpm=car.rpm||4500;
  const rpmNorm=clamp((rpm-4300)/(14900-4300),0,1),load=clamp(throttle+brake*.12,.08,1);
- engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.035);
- engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.045);
- engineLowOsc.frequency.setTargetAtTime(Math.max(38,rpm/40),t,.06);
- engineWhineOsc.frequency.setTargetAtTime(180+rpm*.16+car.gear*24,t,.055);
- engineFilter.frequency.setTargetAtTime(520+rpm*.12+load*480,t,.07);
- engineWhineFilter.frequency.setTargetAtTime(780+rpm*.20,t,.08);
- if(intakeFilter)intakeFilter.frequency.setTargetAtTime(520+rpm*.07+load*1050,t,.10);
- if(engine2Gain)engine2Gain.gain.setTargetAtTime(.16+load*.10,t,.08);
- if(engineLowGain)engineLowGain.gain.setTargetAtTime(.18+load*.13,t,.08);
- if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.035+rpmNorm*.055,t,.08);
- if(intakeGain)intakeGain.gain.setTargetAtTime(soundEnabled?(throttle*.11+.006):0,t,.08);
- // Brief, restrained lift-off intake flutter; fades naturally as throttle comes back in.
- if(intakeGain&&throttle<.045&&rpm>9000)intakeGain.gain.setTargetAtTime(soundEnabled?.024:0,t,.035);
- engineGain.gain.setTargetAtTime(soundEnabled?(engineSamplesReady?.055:.20+load*.12):0,t,.08);
+ const limiterGate=rpm>14800?(Math.sin(t*46)>0?1:.28):1;
+ engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.028);
+ engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.038);
+ engineLowOsc.frequency.setTargetAtTime(Math.max(38,rpm/40),t,.055);
+ engineWhineOsc.frequency.setTargetAtTime(360+rpm*.31+car.gear*36,t,.045);
+ engineFilter.frequency.setTargetAtTime(760+rpm*.075+load*1250,t,.06);
+ engineWhineFilter.frequency.setTargetAtTime(1800+rpm*.22,t,.07);
+ if(intakeFilter)intakeFilter.frequency.setTargetAtTime(620+rpm*.055+throttle*1450,t,.085);
+ if(engine2Gain)engine2Gain.gain.setTargetAtTime(.17+load*.15,t,.07);
+ if(engineLowGain)engineLowGain.gain.setTargetAtTime(.11+load*.12,t,.07);
+ if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.025+rpmNorm*.085,t,.07);
+ if(intakeGain)intakeGain.gain.setTargetAtTime(soundEnabled?(.012+throttle*(.11+rpmNorm*.065))*(masterVolume*engineVolume):0,t,.07);
+ if(intakeGain&&throttle<.045&&rpm>9000)intakeGain.gain.setTargetAtTime(soundEnabled?.026*masterVolume*engineVolume:0,t,.035);
+ const shiftCut=car.shiftTimer>0?.48:1;
+ engineGain.gain.setTargetAtTime(soundEnabled?(masterVolume*engineVolume*(.12+load*.23+rpmNorm*.07)*limiterGate*shiftCut):0,t,.065);
  if(soundEnabled&&engineLoopsStarted&&engineSamplesReady&&engineLoops.length){
   const rpmPosition=clamp((rpm-4300)/(14900-4300),0,1)*5;
   const lower=Math.floor(rpmPosition),upper=Math.min(5,lower+1),mix=rpmPosition-lower;
@@ -1925,12 +1918,13 @@ function updateAudio(throttle,brake,slip){
    if(a.paused)a.play().catch(()=>{});
   });
  }else engineLoops.forEach(a=>{a.volume=0;});
+ const fx=masterVolume*effectsVolume;
  const skid=clamp((slip-.11)*1.5,0,.2)*(Math.abs(car.u)>12?1:0);
- if(skidGain)skidGain.gain.setTargetAtTime(soundEnabled?skid:0,t,.08);
- if(windGain)windGain.gain.setTargetAtTime(soundEnabled?(.012+Math.pow(Math.abs(car.u)/115,1.35)*.075):0,t,.1);
+ if(skidGain)skidGain.gain.setTargetAtTime(soundEnabled?skid*fx:0,t,.08);
+ if(windGain)windGain.gain.setTargetAtTime(soundEnabled?(.012+Math.pow(Math.abs(car.u)/115,1.35)*.075)*fx:0,t,.1);
  if(roadNoiseFilter)roadNoiseFilter.frequency.setTargetAtTime(115+Math.abs(car.u)*4.2,t,.12);
- if(roadNoiseGain)roadNoiseGain.gain.setTargetAtTime(soundEnabled?clamp(Math.abs(car.u)/110,0,1)*(.018+slip*.025):0,t,.12);
- if(rainGain)rainGain.gain.setTargetAtTime(soundEnabled?weather.rain/100*.07:0,t,.2);
+ if(roadNoiseGain)roadNoiseGain.gain.setTargetAtTime(soundEnabled?clamp(Math.abs(car.u)/110,0,1)*(.018+slip*.025)*fx:0,t,.12);
+ if(rainGain)rainGain.gain.setTargetAtTime(soundEnabled?weather.rain/100*.07*fx:0,t,.2);
 }
 function silenceAudio(){
  if(audioCtx){
@@ -1950,7 +1944,7 @@ function startSession(){
  initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
  spawnOpponents();
- running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
+ running=true;paused=false;applyUISettings();elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
@@ -1970,6 +1964,11 @@ function animate(now){
  requestAnimationFrame(animate);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(running&&!paused){
+  const lookStep=frameDt*48*cameraSensitivity/.18,profile=cameraProfiles[cameraMode];
+  if(keys.KeyJ)profile.yaw=clamp(profile.yaw-lookStep,-65,65);
+  if(keys.KeyL)profile.yaw=clamp(profile.yaw+lookStep,-65,65);
+  if(keys.KeyI)profile.pitch=clamp(profile.pitch-lookStep,-35,35);
+  if(keys.KeyK)profile.pitch=clamp(profile.pitch+lookStep,-35,35);
   physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
   const fixed=1/120;let steps=0;
   while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
@@ -1981,6 +1980,111 @@ function animate(now){
  if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
  if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
  if(renderer&&scene&&camera)renderer.render(scene,camera);
+}
+
+let settingsResumeAfterClose=false;
+function applyUISettings(){
+ if(!$("hud"))return;
+ $("hud").style.display=running&&displayOptions.master?"block":"none";
+ $("telemetry").style.display=displayOptions.telemetry?"flex":"none";
+ $("brandHud").style.display=displayOptions.brand?"block":"none";
+ $("leftHud").style.display=displayOptions.circuit?"block":"none";
+ $("rightHud").style.display=displayOptions.map?"block":"none";
+ $("tireHud").style.display=displayOptions.tyres?"block":"none";
+ $("controlsLegend").style.display=displayOptions.controls?"block":"none";
+}
+function syncCameraProfileSettings(){
+ const index=Number($("cameraProfileSelect").value),p=cameraProfiles[index];
+ const fields=[["camXRange","camXValue",p.x,"m"],["camYRange","camYValue",p.y,"m"],["camZRange","camZValue",p.z,"m"],["camPitchRange","camPitchValue",p.pitch,"°"],["camYawRange","camYawValue",p.yaw,"°"],["camFovRange","camFovValue",p.fov,"°"]];
+ for(const [input,label,value,unit] of fields){
+  $(input).value=value;
+  $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
+ }
+}
+function syncSettingsUI(){
+ $("uiMaster").checked=displayOptions.master;$("uiTelemetry").checked=displayOptions.telemetry;
+ $("uiBrand").checked=displayOptions.brand;$("uiCircuitPanel").checked=displayOptions.circuit;
+ $("uiMapPanel").checked=displayOptions.map;$("uiTyrePanel").checked=displayOptions.tyres;
+ $("uiControls").checked=displayOptions.controls;
+ $("showHaloColumnSetting").checked=showHaloColumn;$("showSteeringWheelSetting").checked=showSteeringWheel;
+ $("showDriverHandsSetting").checked=showDriverHands;$("cameraShakeSetting").checked=cameraShake>0;
+ $("autoLookSetting").checked=lookToApex>0;
+ $("cameraSensitivityRange").value=cameraSensitivity;$("cameraSensitivityValue").textContent=cameraSensitivity.toFixed(2);
+ $("lookApexRange").value=Math.round(lookToApex*100);$("lookApexValue").textContent=Math.round(lookToApex*100)+"%";
+ $("masterVolumeRange").value=Math.round(masterVolume*100);$("masterVolumeValue").textContent=Math.round(masterVolume*100)+"%";
+ $("engineVolumeRange").value=Math.round(engineVolume*100);$("engineVolumeValue").textContent=Math.round(engineVolume*100)+"%";
+ $("effectsVolumeRange").value=Math.round(effectsVolume*100);$("effectsVolumeValue").textContent=Math.round(effectsVolume*100)+"%";
+ $("steeringResponseRange").value=Math.round(steeringResponse*100);$("steeringResponseValue").textContent=Math.round(steeringResponse*100)+"%";
+ $("brakeStrengthRange").value=Math.round(brakeStrength*100);$("brakeStrengthValue").textContent=Math.round(brakeStrength*100)+"%";
+ syncCameraProfileSettings();
+}
+function applyCockpitPreferences(){
+ if(steeringPivot)steeringPivot.visible=showSteeringWheel;
+ if(handGroup)handGroup.visible=showDriverHands&&showSteeringWheel;
+ if(cockpitHaloColumn)cockpitHaloColumn.visible=showHaloColumn;
+}
+function openSettings(){
+ settingsResumeAfterClose=running&&!paused;
+ if(settingsResumeAfterClose){paused=true;silenceAudio();}
+ syncSettingsUI();$("settingsOverlay").classList.add("open");
+}
+function closeSettings(){
+ $("settingsOverlay").classList.remove("open");
+ applyUISettings();applyCockpitPreferences();
+ if(settingsResumeAfterClose){paused=false;previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
+ settingsResumeAfterClose=false;
+}
+function bindSettings(){
+ $("menuSettingsBtn").addEventListener("click",openSettings);
+ $("settingsHudBtn").addEventListener("click",openSettings);
+ $("settingsPauseBtn").addEventListener("click",openSettings);
+ $("settingsCloseBtn").addEventListener("click",closeSettings);
+ $("settingsDoneBtn").addEventListener("click",closeSettings);
+ $("cameraProfileSelect").addEventListener("change",syncCameraProfileSettings);
+ const uiBindings=[
+  ["uiMaster","master"],["uiTelemetry","telemetry"],["uiBrand","brand"],
+  ["uiCircuitPanel","circuit"],["uiMapPanel","map"],["uiTyrePanel","tyres"],["uiControls","controls"]
+ ];
+ uiBindings.forEach(([id,key])=>$(id).addEventListener("change",e=>{displayOptions[key]=e.target.checked;applyUISettings();}));
+ $("showHaloColumnSetting").addEventListener("change",e=>{showHaloColumn=e.target.checked;applyCockpitPreferences();setCamera(0);});
+ $("showSteeringWheelSetting").addEventListener("change",e=>{showSteeringWheel=e.target.checked;applyCockpitPreferences();});
+ $("showDriverHandsSetting").addEventListener("change",e=>{showDriverHands=e.target.checked;applyCockpitPreferences();});
+ $("cameraShakeSetting").addEventListener("change",e=>{cameraShake=e.target.checked?1:0;});
+ $("autoLookSetting").addEventListener("change",e=>{lookToApex=e.target.checked?.25:0;$("lookApexRange").value=Math.round(lookToApex*100);$("lookApexValue").textContent=Math.round(lookToApex*100)+"%";});
+ const cameraRanges=[["camXRange","x","camXValue","m"],["camYRange","y","camYValue","m"],["camZRange","z","camZValue","m"],["camPitchRange","pitch","camPitchValue","°"],["camYawRange","yaw","camYawValue","°"],["camFovRange","fov","camFovValue","°"]];
+ cameraRanges.forEach(([id,key,out,unit])=>$(id).addEventListener("input",e=>{
+  const index=Number($("cameraProfileSelect").value),p=cameraProfiles[index];p[key]=Number(e.target.value);
+  $(out).textContent=(unit==="m"?p[key].toFixed(2):Math.round(p[key]))+unit;
+  if(index===cameraMode)setCamera(0);
+ }));
+ $("cameraSensitivityRange").addEventListener("input",e=>{cameraSensitivity=Number(e.target.value);$("cameraSensitivityValue").textContent=cameraSensitivity.toFixed(2);});
+ $("lookApexRange").addEventListener("input",e=>{lookToApex=Number(e.target.value)/100;$("lookApexValue").textContent=e.target.value+"%";$("autoLookSetting").checked=lookToApex>0;});
+ $("masterVolumeRange").addEventListener("input",e=>{masterVolume=Number(e.target.value)/100;$("masterVolumeValue").textContent=e.target.value+"%";});
+ $("engineVolumeRange").addEventListener("input",e=>{engineVolume=Number(e.target.value)/100;$("engineVolumeValue").textContent=e.target.value+"%";});
+ $("effectsVolumeRange").addEventListener("input",e=>{effectsVolume=Number(e.target.value)/100;$("effectsVolumeValue").textContent=e.target.value+"%";});
+ $("steeringResponseRange").addEventListener("input",e=>{steeringResponse=Number(e.target.value)/100;$("steeringResponseValue").textContent=e.target.value+"%";});
+ $("brakeStrengthRange").addEventListener("input",e=>{brakeStrength=Number(e.target.value)/100;$("brakeStrengthValue").textContent=e.target.value+"%";});
+}
+function bindCameraLook(){
+ worldCanvas.addEventListener("contextmenu",e=>e.preventDefault());
+ worldCanvas.addEventListener("pointerdown",e=>{
+  if(e.button!==2)return;
+  cameraDragState={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
+  try{worldCanvas.setPointerCapture(e.pointerId);}catch(_){}
+  e.preventDefault();
+ });
+ window.addEventListener("pointermove",e=>{
+  if(!cameraDragState)return;
+  const dx=e.clientX-cameraDragState.x,dy=e.clientY-cameraDragState.y;
+  cameraDragState.x=e.clientX;cameraDragState.y=e.clientY;
+  const profile=cameraProfiles[cameraMode];
+  profile.yaw=clamp(profile.yaw+dx*cameraSensitivity,-65,65);
+  profile.pitch=clamp(profile.pitch+dy*cameraSensitivity*.7,-35,35);
+  if($("settingsOverlay").classList.contains("open")&&Number($("cameraProfileSelect").value)===cameraMode)syncCameraProfileSettings();
+  setCamera(0);
+ });
+ const stop=()=>{cameraDragState=null;};
+ window.addEventListener("pointerup",stop);window.addEventListener("pointercancel",stop);
 }
 function bindWeather(prefix){
  const ids=prefix==="live"?["liveWeather","liveRain","liveTemp","liveCloud","liveFog"]:["weatherSelect","rainRange","tempRange","cloudRange","fogRange"];
@@ -2006,7 +2110,16 @@ function handleWheelControlClick(event){
 }
 function bindControls(){
  worldCanvas.addEventListener("pointerdown",handleWheelControlClick);
- window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==="Escape"){if(running&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")cycleCamera();if(e.code==="KeyH"){showHaloColumn=!showHaloColumn;setCamera(0);}});
+ window.addEventListener("keydown",e=>{
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
+  keys[e.code]=true;
+  if(e.code==="Escape"){
+   if($("settingsOverlay").classList.contains("open"))closeSettings();
+   else if(running&&!paused)pauseGame();else if(paused)resumeGame();
+  }
+  if(e.code==="KeyC")cycleCamera();
+  if(e.code==="KeyH"){showHaloColumn=!showHaloColumn;applyCockpitPreferences();setCamera(0);}
+ });
  window.addEventListener("keyup",e=>{keys[e.code]=false;});
  document.querySelectorAll(".touchbtn").forEach(btn=>{
   const key=btn.dataset.key;const down=e=>{e.preventDefault();keys[key]=true;btn.classList.add("down");},up=e=>{e.preventDefault();keys[key]=false;btn.classList.remove("down");};
@@ -2021,7 +2134,7 @@ function bindControls(){
  $("aiSkillSelect").addEventListener("change",()=>{aiSkill=$("aiSkillSelect").value;});
  $("raceLapsSelect").addEventListener("change",()=>{raceLaps=Number($("raceLapsSelect").value);});
  $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();if(!running)createTrack();});
- bindWeather("");bindWeather("live");
+ bindWeather("");bindWeather("live");bindSettings();bindCameraLook();
  $("startBtn").addEventListener("click",startSession);
  $("cameraBtn").addEventListener("click",cycleCamera);$("cameraPauseBtn").addEventListener("click",()=>{cycleCamera();});
  $("weatherBtn").addEventListener("click",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
