@@ -140,7 +140,12 @@ input[type=range]{accent-color:#ff765e}
 #desktopDrivePads button{min-width:116px;height:42px;padding:0 14px;border:1px solid #ffffff30;border-radius:10px;background:#0b1722eF;color:#eaf0f5;font-size:10px;font-weight:950;letter-spacing:.09em;box-shadow:0 8px 25px #0007;touch-action:none;user-select:none}
 #desktopDrivePads #driveGo{background:linear-gradient(120deg,#ff684e,#ffad56);color:#1c1210;border-color:#ffb17c}
 #desktopDrivePads button.down{filter:brightness(1.25);transform:translateY(1px)}
-@media(max-width:760px){#desktopDrivePads{display:none}}
+.menu-model-state{width:100%;margin-top:-4px;padding:8px 10px}
+.menu-model-state b{font-size:9px}
+.menu-model-state button{display:none;flex:0 0 auto;padding:7px 9px}
+#menuModelStatusRow[data-state="error"] button{display:block}
+#menuModelStatusRow[data-state="active"] button{display:none}
+@media(max-width:760px){#desktopDrivePads{display:none}.menu-model-state{gap:6px}.menu-model-state b{font-size:8px}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
@@ -192,6 +197,7 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><div class="range-head"><label for="fogRange">Mist density</label><output id="fogValue">0%</output></div><input id="fogRange" type="range" min="0" max="100" value="0"></div>
       </div>
       <button class="action" id="startBtn">START PRACTICE SESSION →</button>
+      <div class="model-state menu-model-state" id="menuModelStatusRow" data-state="loading"><span>VEHICLE MODEL</span><b id="menuModelStatus" data-state="loading">LOADING RED BULL 2022…</b><button class="secondary" id="retryModelBtn" type="button">RETRY MODEL</button></div>
       <div class="note">Controls: W throttle · S brake · A/D steer · E/Q shift · R reverse · C camera · H halo · Esc pause. Right-mouse drag or I/J/K/L to look around in every camera. Layered high-rev hybrid V6 sound is synthesised in-game. Browser racing simulation; not a certified vehicle dynamics model.</div>
     </div>
   </section>
@@ -3190,7 +3196,7 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 });
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
-let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,carBuildGeneration=0,importedCarActive=false;
+let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false;
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[];
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
@@ -4247,38 +4253,46 @@ function clearCrashEffects(){
  vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
 }
 
-const REDBULL_ASSET_PACK_URL="assets/RedBull2022-GameAssetPack.zip";
+const REDBULL_ASSET_VERSION="redbull-20261104-controls-fix";
+const REDBULL_ASSET_PART_SIZES=[2500000,2500000,2500000,2500000,2500000,2500000,858187];
+const REDBULL_ASSET_CHECKSUM="8e9ab217019053c3437f01eb722f0e3cf9bf58b47b8a89fb5387bb7199d40c97";
+async function fetchRedBullAssetPart(path,expectedSize){
+ const localUrl=new URL(path,document.baseURI).href;
+ const rawUrl="https://raw.githubusercontent.com/googledrive-home/doc/main/"+path.split("/").map(encodeURIComponent).join("/");
+ const failures=[];
+ for(const baseUrl of [localUrl,rawUrl]){
+  try{
+   const url=new URL(baseUrl);url.searchParams.set("v",REDBULL_ASSET_VERSION);
+   const response=await fetch(url.href,{cache:"no-store",mode:"cors",credentials:"omit"});
+   if(!response.ok){failures.push(baseUrl+" returned HTTP "+response.status);continue;}
+   const bytes=await response.arrayBuffer();
+   if(bytes.byteLength!==expectedSize){failures.push(baseUrl+" returned "+bytes.byteLength+" bytes; expected "+expectedSize);continue;}
+   return bytes;
+  }catch(error){failures.push(baseUrl+": "+(error?.message||String(error)));}
+ }
+ throw new Error("Could not download "+path+". "+failures.join("; "));
+}
 async function getRedBullAssetPack(){
  if(!redBullAssetPackPromise){
   redBullAssetPackPromise=(async()=>{
-   let archiveBuffer=null;
-   // Prefer the one-piece ZIP when present. If Chromebook users uploaded the seven
-   // smaller chunks instead, fetch them and reconstruct the same ZIP in memory.
-   updateVehicleModelStatus("loading","Checking uploaded Red Bull files…");
-   const whole=await fetch(REDBULL_ASSET_PACK_URL+"?v=redbull-asset-7", {cache:"no-store"});
-   if(whole.ok){
-    archiveBuffer=await whole.arrayBuffer();
-   }else{
-    const partNames=Array.from({length:7},(_,i)=>"assets/APEX-RedBull-Part-"+String(i+1).padStart(2,"0")+"-of-07.bin");
-    const responses=await Promise.all(partNames.map(url=>fetch(url+"?v=redbull-asset-7",{cache:"no-store"})));
-    const failed=responses.map((r,i)=>!r.ok?{name:partNames[i],status:r.status}:null).filter(Boolean);
-    if(failed.length)throw new Error("Red Bull model files are not uploaded yet. Missing part(s): "+failed.map(x=>x.name+" (HTTP "+x.status+")").join(", "));
-    const chunks=await Promise.all(responses.map(r=>r.arrayBuffer()));
-    const total=chunks.reduce((n,b)=>n+b.byteLength,0);
-    if(total!==15858187)throw new Error("Asset chunks total "+total+" bytes; expected 15858187. Re-upload the seven original part files.");
-    const combined=new Uint8Array(total);let offset=0;
-    for(const chunk of chunks){combined.set(new Uint8Array(chunk),offset);offset+=chunk.byteLength;}
-    archiveBuffer=combined.buffer;
-    if(combined[0]!==0x50||combined[1]!==0x4b)throw new Error("The seven Red Bull asset chunks did not reconstruct a valid ZIP archive.");
-    updateVehicleModelStatus("loading","Checking asset integrity…");
+   updateVehicleModelStatus("loading","Downloading Red Bull 2022 model files…");
+   const partNames=Array.from({length:7},(_,i)=>"assets/APEX-RedBull-Part-"+String(i+1).padStart(2,"0")+"-of-07.bin");
+   const chunks=await Promise.all(partNames.map((path,i)=>fetchRedBullAssetPart(path,REDBULL_ASSET_PART_SIZES[i])));
+   const total=chunks.reduce((n,b)=>n+b.byteLength,0);
+   if(total!==15858187)throw new Error("Red Bull asset chunks total "+total+" bytes; expected 15858187.");
+   const combined=new Uint8Array(total);let offset=0;
+   for(const chunk of chunks){combined.set(new Uint8Array(chunk),offset);offset+=chunk.byteLength;}
+   if(combined[0]!==0x50||combined[1]!==0x4b)throw new Error("The seven Red Bull asset chunks did not reconstruct a valid ZIP archive.");
+   updateVehicleModelStatus("loading","Verifying Red Bull model files…");
+   if(globalThis.crypto?.subtle){
     const digest=await crypto.subtle.digest("SHA-256",combined);
     const checksum=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
-    if(checksum!=="8e9ab217019053c3437f01eb722f0e3cf9bf58b47b8a89fb5387bb7199d40c97")throw new Error("Red Bull asset checksum does not match. One or more uploaded pieces may be incomplete.");
+    if(checksum!==REDBULL_ASSET_CHECKSUM)throw new Error("Red Bull asset checksum does not match. The uploaded model files may be incomplete.");
    }
-   updateVehicleModelStatus("loading","Extracting FBX and textures…");
-   const zip=await JSZip.loadAsync(archiveBuffer);
+   updateVehicleModelStatus("loading","Extracting Red Bull model and textures…");
+   const zip=await JSZip.loadAsync(combined.buffer);
    const fbxEntry=zip.file("RedBull-2022-optimized.fbx");
-   if(!fbxEntry)throw new Error("RedBull-2022-optimized.fbx is missing from the asset pack");
+   if(!fbxEntry)throw new Error("RedBull-2022-optimized.fbx is missing from the uploaded asset pack.");
    const textureURLs=new Map(),entries=Object.values(zip.files).filter(f=>!f.dir&&/\/textures\/.*\.webp$/i.test("/"+f.name));
    for(const entry of entries){
     const bytes=await entry.async("arraybuffer"),blob=new Blob([bytes],{type:"image/webp"});
@@ -4291,8 +4305,13 @@ async function getRedBullAssetPack(){
  return redBullAssetPackPromise;
 }
 function updateVehicleModelStatus(state,message){
- const element=$("vehicleModelState");if(!element)return;
- element.dataset.state=state;element.textContent=message;element.title=message;
+ const element=$("vehicleModelState");
+ if(element){element.dataset.state=state;element.textContent=message;element.title=message;}
+ const menuRow=$("menuModelStatusRow"),menuStatus=$("menuModelStatus");
+ if(menuRow)menuRow.dataset.state=state;
+ if(menuStatus){menuStatus.dataset.state=state;menuStatus.textContent=message;menuStatus.title=message;}
+ const loading=$("loading"),loadText=$("loadText");
+ if(state==="loading"&&loading&&loading.style.display!=="none"&&loadText)loadText.textContent=message;
 }
 function sourcePartInfo(name){
  const n=String(name||"").toLowerCase();
@@ -4770,7 +4789,8 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  const fallback=new THREE.Group();fallback.name="procedural-fallback-car";fallback.scale.x=.78;
  for(const child of [...carRoot.children])fallback.add(child);
  carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;
- loadRedBullCarModel(carRoot,modelGeneration);
+ redBullModelLoadPromise=loadRedBullCarModel(carRoot,modelGeneration);
+ return redBullModelLoadPromise;
 }
 function applyLivery(color){
  selectedLivery=color;
@@ -5497,11 +5517,12 @@ function toggleSound(){
 function startSession(){
  if(!carRoot)buildCar();
  if(!car)positionCarAtStart();
- initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();
+ try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
- spawnOpponents();
- running=true;paused=false;applyUISettings();elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
- worldCanvas.focus({preventScroll:true});
+ running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
+ try{spawnOpponents();}catch(error){console.error("Opponent setup failed; continuing in solo practice.",error);try{clearOpponents();}catch(_){}}
+ try{applyUISettings();}catch(error){console.warn("HUD settings could not be applied.",error);}
+ try{worldCanvas.focus({preventScroll:true});}catch(_){}
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
@@ -5739,14 +5760,19 @@ function bindControls(){
  $("aiSkillSelect").addEventListener("change",()=>{aiSkill=$("aiSkillSelect").value;});
  $("raceLapsSelect").addEventListener("change",()=>{raceLaps=Number($("raceLapsSelect").value);});
  $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();if(!running)createTrack();});
- bindWeather("");bindWeather("live");bindSettings();bindCameraLook();
- $("startBtn").addEventListener("click",startSession);
- $("cameraBtn").addEventListener("click",cycleCamera);$("cameraPauseBtn").addEventListener("click",()=>{cycleCamera();});
- $("weatherBtn").addEventListener("click",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
- $("pauseBtn").addEventListener("click",pauseGame);$("resumeBtn").addEventListener("click",resumeGame);
- $("pauseWeatherBtn").addEventListener("click",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
- $("restartBtn").addEventListener("click",restartLap);$("menuBtn").addEventListener("click",returnToMenu);
- $("soundBtn").addEventListener("click",toggleSound);
+ const safeBind=(label,fn)=>{try{fn();}catch(error){console.error("Could not bind "+label+".",error);showError(error);}};
+ safeBind("weather settings",()=>{bindWeather("");bindWeather("live");});
+ safeBind("race settings",bindSettings);
+ safeBind("camera look",bindCameraLook);
+ const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
+ safeClick("startBtn",startSession);
+ safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
+ safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
+ safeClick("pauseBtn",pauseGame);safeClick("resumeBtn",resumeGame);
+ safeClick("pauseWeatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
+ safeClick("restartBtn",restartLap);safeClick("menuBtn",returnToMenu);
+ safeClick("soundBtn",toggleSound);
+ safeClick("retryModelBtn",()=>{if(importedCarActive)return;buildCar();if(car)positionCarAtStart();});
  document.addEventListener("pointerdown",e=>{if(!e.target.closest("#weatherPanel")&&!e.target.closest("#weatherBtn")&&!e.target.closest("#pauseWeatherBtn"))$("weatherPanel").classList.remove("open");});
 }
 async function boot(){
@@ -5755,7 +5781,13 @@ async function boot(){
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
   initRenderer();applyGraphicsQuality();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
-  if(!carRoot)buildCar();positionCarAtStart();setLoad(88,"Applying race setup");updateWeather();syncWeatherInputs();
+  if(!carRoot)buildCar();
+  positionCarAtStart();
+  if(redBullModelLoadPromise){
+   setLoad(76,"Installing Red Bull 2022 model");
+   await Promise.race([redBullModelLoadPromise,new Promise(resolve=>setTimeout(resolve,25000))]);
+  }
+  setLoad(88,"Applying race setup");updateWeather();syncWeatherInputs();
   bindControls();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";
   setLoad(100,"Ready to race","Your circuit and car are ready.");await new Promise(r=>setTimeout(r,220));
   $("loading").style.opacity="0";setTimeout(()=>$("loading").style.display="none",380);
