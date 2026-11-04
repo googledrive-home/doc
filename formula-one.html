@@ -305,6 +305,8 @@ input[type=range]{accent-color:#ff765e}
 <pre id="errorBox"></pre>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
+import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/FBXLoader.js";
+import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
@@ -3169,6 +3171,8 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 });
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
+let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,carBuildGeneration=0,importedCarActive=false;
+let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[];
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
@@ -4225,9 +4229,216 @@ function clearCrashEffects(){
  vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
 }
 
+const REDBULL_ASSET_PACK_URL="assets/RedBull2022-GameAssetPack.zip";
+async function getRedBullAssetPack(){
+ if(!redBullAssetPackPromise){
+  redBullAssetPackPromise=(async()=>{
+   const response=await fetch(REDBULL_ASSET_PACK_URL,{cache:"force-cache"});
+   if(!response.ok)throw new Error("Asset pack not found at "+REDBULL_ASSET_PACK_URL+" (HTTP "+response.status+")");
+   const zip=await JSZip.loadAsync(await response.arrayBuffer());
+   const fbxEntry=zip.file("RedBull-2022-optimized.fbx");
+   if(!fbxEntry)throw new Error("RedBull-2022-optimized.fbx is missing from the asset pack");
+   const textureURLs=new Map(),entries=Object.values(zip.files).filter(f=>!f.dir&&/\/textures\/.*\.webp$/i.test("/"+f.name));
+   for(const entry of entries){
+    const bytes=await entry.async("arraybuffer"),blob=new Blob([bytes],{type:"image/webp"});
+    const url=URL.createObjectURL(blob),base=entry.name.split(/[\\/]/).pop().replace(/\.[^.]+$/,"").toLowerCase();
+    textureURLs.set(base,url);
+   }
+   return {fbxBuffer:await fbxEntry.async("arraybuffer"),textureURLs};
+  })().catch(error=>{redBullAssetPackPromise=null;throw error;});
+ }
+ return redBullAssetPackPromise;
+}
+function sourcePartInfo(name){
+ const n=String(name||"").toLowerCase();
+ if(/front tires?|front disk|rim front|bujon front|tires lid front|inside rim front/.test(n))return {zone:"front",threshold:/front tires?/.test(n)?.58:.72};
+ if(/back tires?|rim bck|rim back|bujon back|tires lid back|inside rim back/.test(n))return {zone:"rear",threshold:/back tires?/.test(n)?.60:.74};
+ if(/front wing|spoiler front|front spoiler|canard|front.*endplate/.test(n))return {zone:"front",threshold:.30};
+ if(/rear wing|body back wing|spoiler drs|spoiler small|spoiler big|swan.?neck|radar wing|vertical radar/.test(n))return {zone:"rear",threshold:.42};
+ if(/diffuser|floor|underfloor|grid/.test(n))return {zone:"underfloor",threshold:.48};
+ if(/engine|exhaust|differential|gearbox|power unit/.test(n))return {zone:"rear",threshold:.68};
+ if(/mirror|fender|wishbone|suspension|front spoiler holder/.test(n))return {zone:"side",threshold:.30};
+ if(/cabin|seat|belt|clip|control|switch|shifter|control shaft/.test(n))return {zone:"side",threshold:.82};
+ return {zone:"side",threshold:/body|chassis/.test(n)?.82:.66};
+}
+function setMeshMaterialClone(mesh){
+ if(Array.isArray(mesh.material))mesh.material=mesh.material.map(m=>m?.clone?.()||m);
+ else if(mesh.material?.clone)mesh.material=mesh.material.clone();
+}
+function createImportedWheelAssemblies(modelRoot,parts){
+ const tyreParts=parts.filter(m=>/^(front tires?|back tires?)(\.001)?$/i.test(m.userData.sourceName||m.name));
+ if(tyreParts.length<4)throw new Error("The imported car needs four named tyre meshes; found "+tyreParts.length);
+ const wheelPartPattern=/tires?|tyres?|rim|bujon|disk|wheel/i,assigned=new Set();
+ importedWheelAssemblies=[];importedBrakeDiscs=[];frontWheelPivots=[];wheelMeshes=[];wheelCornerPivots=[];
+ const boxFor=mesh=>{if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();return mesh.geometry.boundingBox.clone();};
+ for(const tyre of tyreParts){
+  const tyreBox=boxFor(tyre),centre=tyreBox.getCenter(new THREE.Vector3()),dims=tyreBox.getSize(new THREE.Vector3());
+  const axle=/front/i.test(tyre.userData.sourceName||tyre.name)?"front":"rear";
+  const side=centre.x<0?-1:1,id=(axle==="front"?"F":"R")+(side<0?"L":"R");
+  const pivot=new THREE.Group();pivot.name=id+"-steering-pivot";pivot.position.copy(centre);pivot.rotation.order="YXZ";modelRoot.add(pivot);
+  const roll=new THREE.Group();roll.name=id+"-wheel-spin";roll.scale.set(1,.90,.90);pivot.add(roll);
+  const nearParts=parts.filter(part=>{
+   if(assigned.has(part)||!wheelPartPattern.test(part.userData.sourceName||part.name))return false;
+   const c=boxFor(part).getCenter(new THREE.Vector3());
+   return Math.abs(c.x-centre.x)<.34&&Math.abs(c.y-centre.y)<.18&&Math.abs(c.z-centre.z)<.34;
+  });
+  if(!nearParts.includes(tyre))nearParts.push(tyre);
+  let brakeDisk=null;
+  for(const part of nearParts){
+   const sourceName=part.userData.sourceName||part.name;
+   const partBox=boxFor(part);
+   part.geometry.translate(-centre.x,-centre.y,-centre.z);
+   part.position.set(0,0,0);part.rotation.set(0,0,0);part.scale.set(1,1,1);
+   roll.add(part);assigned.add(part);part.userData.wheelId=id;
+   const threshold=/tires?|tyres?/i.test(sourceName)?.52:/disk/i.test(sourceName)?.82:.76;
+   registerDamagePart(part,axle+" wheel "+sourceName,threshold,axle);
+   if(part===tyre){
+    part.userData.isTyreMesh=true;
+    setMeshMaterialClone(part);
+   }
+   if(/disk/i.test(sourceName)){brakeDisk=part;setMeshMaterialClone(part);importedBrakeDiscs.push({mesh:part,id});}
+  }
+  const radius=Math.max(dims.y,dims.z)*.5*.90;
+  const wheel={id,axle,side,pivot,roll,tyreMesh:tyre,brakeDisk,radius,baseRadius:radius,health:100,detached:false};
+  importedWheelAssemblies.push(wheel);
+  wheelMeshes.push(roll);
+  wheelCornerPivots.push({pivot,side,z:centre.z,restY:centre.y,springVelocity:0,radius,wheelId:id});
+  if(axle==="front")frontWheelPivots.push(pivot);
+ }
+ return assigned;
+}
+function createImportedSteeringWheel(modelRoot,parts){
+ const control=parts.find(m=>/^control$/i.test(m.userData.sourceName||m.name));
+ if(!control)throw new Error("The imported model has no Control steering-wheel component");
+ const bounds=control.geometry.boundingBox||control.geometry.computeBoundingBox();
+ const centre=bounds.getCenter(new THREE.Vector3());
+ const pivot=new THREE.Group();pivot.name="Red Bull steering wheel pivot";pivot.position.copy(centre);pivot.rotation.order="YXZ";modelRoot.add(pivot);
+ const wheelParts=parts.filter(m=>/^(control|switch|shifter|control shaft)$/i.test(m.userData.sourceName||m.name));
+ for(const part of wheelParts){
+  part.geometry.translate(-centre.x,-centre.y,-centre.z);
+  part.position.set(0,0,0);part.rotation.set(0,0,0);part.scale.set(1,1,1);
+  pivot.add(part);registerDamagePart(part,"cockpit steering "+(part.userData.sourceName||part.name),.84,"side");
+ }
+ steeringPivot=pivot;wheelControlMeshes=[];wheelShiftLedMeshes=[];
+ const carbon=new THREE.MeshStandardMaterial({color:0x121922,roughness:.48,metalness:.32});
+ const grip=new THREE.MeshStandardMaterial({color:0x202a32,roughness:.88,metalness:.02});
+ const box=(w,h,d,x,y,z,material=carbon)=>{
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+  mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;pivot.add(mesh);cockpitVisibleMeshes.push(mesh);return mesh;
+ };
+ // Compact flat-bottom Formula wheel surround sized to the imported control housing.
+ box(.405,.026,.034,carbon,0,.158,.006);
+ box(.030,.245,.034,carbon,-.188,.015,.006);box(.030,.245,.034,carbon,.188,.015,.006);
+ box(.255,.027,.034,carbon,0,-.112,.006);
+ box(.052,.235,.041,-.178,.005,-.004,grip);box(.052,.235,.041,.178,.005,-.004,grip);
+ const bezel=new THREE.Mesh(new THREE.BoxGeometry(.162,.098,.014),carbon);bezel.position.set(0,0,-.024);pivot.add(bezel);cockpitVisibleMeshes.push(bezel);
+ if(!dashCanvas){dashCanvas=document.createElement("canvas");dashCanvas.width=1024;dashCanvas.height=600;dashContext=dashCanvas.getContext("2d");dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;}
+ const display=new THREE.Mesh(new THREE.PlaneGeometry(.151,.088),new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false}));
+ display.position.set(0,0,-.033);display.rotation.y=Math.PI;display.name="Red Bull wheel telemetry display";pivot.add(display);cockpitVisibleMeshes.push(display);
+ const labelMaterial=(label)=>{
+  const canvas=document.createElement("canvas");canvas.width=96;canvas.height=48;
+  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(6,13,19,.94)";ctx.fillRect(0,0,96,48);
+  ctx.fillStyle="#f4f7f8";ctx.font="900 18px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,48,25);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,toneMapped:false});
+ };
+ const addButton=(label,x,y,color,controlName)=>{
+  const button=new THREE.Mesh(new THREE.CylinderGeometry(.012,.014,.017,16),new THREE.MeshStandardMaterial({color,roughness:.34,metalness:.18}));
+  button.rotation.x=Math.PI/2;button.position.set(x,y,-.046);button.userData.wheelControl=controlName;button.userData.baseColor=color;
+  pivot.add(button);cockpitVisibleMeshes.push(button);wheelControlMeshes.push(button);
+  const legend=new THREE.Mesh(new THREE.PlaneGeometry(.030,.013),labelMaterial(label));
+  legend.position.set(x,y,-.057);legend.rotation.y=Math.PI;pivot.add(legend);cockpitVisibleMeshes.push(legend);
+ };
+ addButton("ERS",-.126,.063,0xe04b43,"ERS");addButton("RAD",-.126,0,0x397bb9,"RADIO");addButton("BB+",-.126,-.063,0xe3bf42,"BBAL");
+ addButton("DRS",.126,.063,0x35a879,"DRS");addButton("MODE",.126,0,0x9b67bd,"MODE");addButton("DIFF",.126,-.063,0xe07c38,"DIFF");
+ for(let i=0;i<16;i++){
+  const color=i<9?0x39d78c:i<12?0xe9c34f:0xe95144,led=new THREE.Mesh(new THREE.BoxGeometry(.014,.012,.012),new THREE.MeshStandardMaterial({color:0x26343a,emissive:0x000000,roughness:.42}));
+  led.position.set((i-7.5)*.023,.187,-.012);pivot.add(led);cockpitVisibleMeshes.push(led);wheelShiftLedMeshes.push(led);
+ }
+ handGroup=new THREE.Group();pivot.add(handGroup);
+ for(const side of [-1,1]){
+  const glove=new THREE.Mesh(new THREE.SphereGeometry(.044,12,9),grip);
+  glove.scale.set(1.15,.78,1);glove.position.set(side*.17,-.028,.027);handGroup.add(glove);cockpitVisibleMeshes.push(glove);
+ }
+ return pivot;
+}
+function addImportedHalo(root){
+ const haloMat=new THREE.MeshStandardMaterial({color:0x8796a1,metalness:.88,roughness:.25});
+ const makeTube=(points,r,name)=>{
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)),false,"centripetal",.5);
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,88,r,12,false),haloMat);
+  mesh.name=name;mesh.castShadow=true;mesh.receiveShadow=true;root.add(mesh);cockpitVisibleMeshes.push(mesh);return mesh;
+ };
+ const hoop=makeTube([[-.39,.67,-.32],[-.46,.91,-.18],[-.45,1.13,.05],[-.31,1.22,.34],[0,1.245,.41],[.31,1.22,.34],[.45,1.13,.05],[.46,.91,-.18],[.39,.67,-.32]],.024,"Halo main hoop");
+ registerDamagePart(hoop,"cockpit halo main hoop",.96,"side");
+ cockpitHaloColumn=makeTube([[0,1.245,.41],[0,1.12,.57],[0,.91,.76],[0,.68,.92]],.024,"Halo front pillar");
+ registerDamagePart(cockpitHaloColumn,"cockpit halo front pillar",.96,"front");
+ for(const side of [-1,1]){
+  const brace=makeTube([[side*.39,.68,-.32],[side*.36,.59,-.46],[side*.29,.55,-.54]],.017,"Halo mounting brace");
+  registerDamagePart(brace,"cockpit halo mounting brace",.92,"side");
+ }
+}
+async function loadRedBullCarModel(targetRoot,generation){
+ try{
+  const pack=await getRedBullAssetPack();
+  if(targetRoot!==carRoot||generation!==carBuildGeneration)return;
+  const manager=new THREE.LoadingManager();
+  manager.setURLModifier(url=>{
+   const basename=decodeURIComponent(String(url).split(/[\\/]/).pop().split(/[?#]/)[0]).replace(/\.[^.]+$/,"").toLowerCase();
+   return pack.textureURLs.get(basename)||url;
+  });
+  const textureReady=new Promise(resolve=>{manager.onLoad=resolve;});
+  manager.onError=url=>console.warn("Car texture failed to load:",url);
+  const loader=new FBXLoader(manager),source=loader.parse(pack.fbxBuffer,"");
+  source.updateMatrixWorld(true);
+  const remove=[];source.traverse(o=>{if(o.isCamera||o.isLight||/^plane$/i.test(o.name||""))remove.push(o);});
+  for(const o of remove)if(o.parent)o.parent.remove(o);
+  source.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(source),size=bounds.getSize(new THREE.Vector3());
+  if(!Number.isFinite(size.z)||size.z<100)throw new Error("Imported FBX has invalid dimensions");
+  const centre=new THREE.Vector3((bounds.min.x+bounds.max.x)*.5,bounds.min.y,(bounds.min.z+bounds.max.z)*.5);
+  const scale=5.45/size.z,parts=[],modelRoot=new THREE.Group();modelRoot.name="Red Bull 2022 imported car";
+  source.traverse(o=>{
+   if(!o.isMesh||!o.geometry)return;
+   const geometry=o.geometry.clone();geometry.applyMatrix4(o.matrixWorld);
+   geometry.translate(-centre.x,-centre.y,-centre.z);geometry.scale(scale*.90,scale,scale);
+   geometry.computeBoundingBox();geometry.computeBoundingSphere();
+   const material=Array.isArray(o.material)?o.material.map(m=>m?.clone?.()||m):o.material?.clone?.()||o.material;
+   const mesh=new THREE.Mesh(geometry,material);mesh.name=o.name||"Unlabelled car part";mesh.userData.sourceName=o.name||mesh.name;
+   mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=false;modelRoot.add(mesh);parts.push(mesh);
+  });
+  if(parts.length<35)throw new Error("Imported FBX contained too few car parts: "+parts.length);
+  if(manager.itemsTotal>0&&manager.itemsLoaded<manager.itemsTotal)await Promise.race([textureReady,new Promise(resolve=>setTimeout(resolve,10000))]);
+  if(targetRoot!==carRoot||generation!==carBuildGeneration)return;
+  const assignedWheels=createImportedWheelAssemblies(modelRoot,parts);
+  for(const mesh of parts){
+   if(mesh.userData.wheelId)continue;
+   const name=mesh.userData.sourceName||mesh.name,info=sourcePartInfo(name);
+   const zoneName=info.zone==="front"?"front":info.zone==="rear"?"rear":info.zone==="underfloor"?"underfloor":"side";
+   registerDamagePart(mesh,zoneName+" "+name,info.threshold,info.zone);
+   const n=name.toLowerCase();
+   if(/engine|exhaust|differential|grid|chassis/.test(n))importedEngineMeshes.push(mesh);
+   if(/cabin|seat|belt|clip|control|switch|shifter|front wing|spoiler front|canard|mirror glass/.test(n))cockpitVisibleMeshes.push(mesh);
+   if(/^(control|switch|shifter|control shaft)$/i.test(name)){} 
+  }
+  createImportedSteeringWheel(modelRoot,parts);
+  addImportedHalo(targetRoot);
+  targetRoot.add(modelRoot);
+  if(proceduralFallbackRoot)proceduralFallbackRoot.visible=false;
+  targetRoot.scale.set(1,1,1);
+  importedCarModelRoot=modelRoot;importedCarActive=true;
+  console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
+  targetRoot.updateMatrixWorld(true);
+  setCamera(0);
+ }catch(error){
+  if(generation===carBuildGeneration)console.warn("Red Bull 2022 asset pack is not active; using the procedural fallback. Upload "+REDBULL_ASSET_PACK_URL+" to the repository to enable the imported car.",error);
+ }
+}
+
 function buildCar(){
+ const modelGeneration=++carBuildGeneration;
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
- carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
+ carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
  const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
  const yellow=makeMat(0xffd45e,.4,.2),white=makeMat(0xf4f1e8,.48,.18);
@@ -4490,6 +4701,10 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  });
  scene.add(carRoot);
  applyLivery(selectedLivery);
+ const fallback=new THREE.Group();fallback.name="procedural-fallback-car";fallback.scale.x=.78;
+ for(const child of [...carRoot.children])fallback.add(child);
+ carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;
+ loadRedBullCarModel(carRoot,modelGeneration);
 }
 function applyLivery(color){
  selectedLivery=color;
