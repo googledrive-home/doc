@@ -1996,8 +1996,8 @@ function buildCar(){
  // Ground-effect floor, sculpted venturi tunnels and edge fences.
  box(1.8,.1,3.15,carbon,0,.33,-.18);
  for(const side of [-1,1]){
-  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);
-  const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);
+  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
+  const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);cockpitVisibleMeshes.push(podTop);
   // Keep full sidepod volumes for external views; show narrow shoulders from the driver's eye.
   const cockpitShoulder=box(.20,.12,1.04,bodyMat,side*.59,.77,-.02);cockpitVisibleMeshes.push(cockpitShoulder);
   // Sidepod cooling inlet and louvred radiator outlet.
@@ -2005,11 +2005,11 @@ function buildCar(){
   box(.23,.105,.018,makeMat(0x070d13,.55,.2),side*.91,.84,.47);
   for(let vent=0;vent<5;vent++){const slat=box(.27,.018,.025,rim,side*.91,.775+vent*.027,-.62);slat.rotation.z=side*.04;}
   const podLine=box(.028,.025,1.38,white,side*1.14,.58,-.52);
-  const floorFence=registerDamagePart(box(.08,.27,2.35,carbon,side*1.02,.42,-.3),side<0?"left floor edge fence":"right floor edge fence",.50);floorFence.rotation.z=side*.04;
+  const floorFence=registerDamagePart(box(.08,.27,2.35,carbon,side*1.02,.42,-.3),side<0?"left floor edge fence":"right floor edge fence",.50);floorFence.rotation.z=side*.04;cockpitVisibleMeshes.push(floorFence);
   const mirrorArm=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.43,7),carbon),side<0?"left mirror stalk":"right mirror stalk",.31);mirrorArm.position.set(side*.66,1.07,.47);mirrorArm.rotation.z=side*.72;carRoot.add(mirrorArm);cockpitVisibleMeshes.push(mirrorArm);
   const mirrorHousing=registerDamagePart(box(.25,.12,.22,carbon,side*.72,1.27,.58),side<0?"left mirror housing":"right mirror housing",.24);cockpitVisibleMeshes.push(mirrorHousing);
   cockpitVisibleMeshes.push(registerDamagePart(box(.18,.035,.14,glass,side*.72,1.33,.6),side<0?"left mirror glass":"right mirror glass",.32));
-  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);
+  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);cockpitVisibleMeshes.push(suspension1);
   const suspension2=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left rear wishbone":"right rear wishbone",.52);suspension2.position.set(side*.95,.58,-1.17);suspension2.rotation.z=side*.5;carRoot.add(suspension2);
  }
  // Subtle nose spine and carbon front splitter.
@@ -2085,18 +2085,27 @@ function buildCar(){
  cockpitVisibleMeshes.push(haloTop,haloBase);
  cockpitHaloColumn=tube([[0,1.20,1.24],[0,1.88,.70]],.021,makeMat(0x242d36,.26,.82));
  // Steering wheel, screen and animated driver's hands.
- steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.74);carRoot.add(steeringPivot);
- // Flat-bottom racing wheel with the driver-facing LCD and physical button panel on the rear (-Z) face.
- const wheelFace=box(.64,.44,.075,carbon,0,0,-.055,steeringPivot);
- const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.292,.036,12,40),carbon);wheelRim.position.z=-.112;steeringPivot.add(wheelRim);
- const wheelGripL=box(.13,.30,.085,rubber,-.265,-.025,-.105,steeringPivot);
- const wheelGripR=box(.13,.30,.085,rubber,.265,-.025,-.105,steeringPivot);
- const wheelHub=box(.13,.12,.065,carbon,0,-.005,-.112,steeringPivot);
+steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.88);carRoot.add(steeringPivot);
+  // Broad flat-bottom multifunction wheel with a sculpted open frame, grippy side pods and driver-facing LCD.
+  const wheelShape=new THREE.Shape();
+  wheelShape.moveTo(-.39,.24);wheelShape.lineTo(.39,.24);wheelShape.quadraticCurveTo(.43,.24,.42,.18);
+  wheelShape.lineTo(.35,-.19);wheelShape.quadraticCurveTo(.34,-.25,.28,-.25);wheelShape.lineTo(.16,-.25);
+  wheelShape.lineTo(.11,-.17);wheelShape.lineTo(-.11,-.17);wheelShape.lineTo(-.16,-.25);wheelShape.lineTo(-.28,-.25);
+  wheelShape.quadraticCurveTo(-.34,-.25,-.35,-.19);wheelShape.lineTo(-.42,.18);wheelShape.quadraticCurveTo(-.43,.24,-.39,.24);wheelShape.closePath();
+  const wheelWindow=new THREE.Path();wheelWindow.moveTo(-.21,.14);wheelWindow.lineTo(-.21,-.08);
+  wheelWindow.quadraticCurveTo(-.21,-.12,-.17,-.12);wheelWindow.lineTo(.17,-.12);
+  wheelWindow.quadraticCurveTo(.21,-.12,.21,-.08);wheelWindow.lineTo(.21,.14);wheelWindow.closePath();wheelShape.holes.push(wheelWindow);
+  const wheelFrameGeometry=new THREE.ExtrudeGeometry(wheelShape,{depth:.075,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.014,bevelThickness:.012});wheelFrameGeometry.translate(0,0,-.14);
+  const wheelFrame=new THREE.Mesh(wheelFrameGeometry,new THREE.MeshStandardMaterial({color:0x101821,metalness:.42,roughness:.46,side:THREE.DoubleSide}));wheelFrame.castShadow=true;wheelFrame.receiveShadow=true;steeringPivot.add(wheelFrame);
+  const wheelFace=box(.47,.30,.05,carbon,0,0,-.132,steeringPivot);
+  const wheelGripL=box(.13,.33,.105,rubber,-.315,-.018,-.135,steeringPivot);
+  const wheelGripR=box(.13,.33,.105,rubber,.315,-.018,-.135,steeringPivot);
+  const wheelHub=box(.14,.12,.065,carbon,0,-.005,-.17,steeringPivot);
  dashCanvas=document.createElement("canvas");dashCanvas.width=512;dashCanvas.height=256;dashContext=dashCanvas.getContext("2d");
  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
  const dashMaterial=new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false});
  const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.405,.215),dashMaterial);
- wheelDisplay.position.set(0,.045,-.101);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
+ wheelDisplay.position.set(0,.045,-.178);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
  const makeWheelLabel=(label)=>{
   const canvas=document.createElement("canvas");canvas.width=128;canvas.height=64;
   const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(7,13,19,.92)";ctx.fillRect(0,0,128,64);
@@ -2106,11 +2115,11 @@ function buildCar(){
  };
  const addWheelButton=(label,x,y,color,control)=>{
   const button=new THREE.Mesh(new THREE.CylinderGeometry(.034,.038,.045,16),makeMat(color,.34,.12));
-  button.rotation.x=-Math.PI/2;button.position.set(x,y,-.145);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
+  button.rotation.x=-Math.PI/2;button.position.set(x,y,-.17);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
   const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.068,.028),makeWheelLabel(label));labelMesh.position.set(x,y,-.174);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
   wheelControlMeshes.push(button);
  };
- addWheelButton("ERS",-.205,.115,0xe04b43,"ERS");
+ addWheelButton("ERS",-.315,.12,0xe04b43,"ERS");
  addWheelButton("RAD",-.205,-.005,0x397bb9,"RADIO");
  addWheelButton("BB+",-.205,-.125,0xe3bf42,"BBAL");
  addWheelButton("DRS",.205,.115,0x35a879,"DRS");
@@ -2119,13 +2128,13 @@ function buildCar(){
  // Two multi-position rotary encoders and a 12-LED shift-light strip.
  for(const side of [-1,1]){
   const dial=new THREE.Mesh(new THREE.CylinderGeometry(.055,.062,.055,20),makeMat(0x333f49,.3,.55));
-  dial.rotation.x=-Math.PI/2;dial.position.set(side*.105,-.205,-.135);steeringPivot.add(dial);
+  dial.rotation.x=-Math.PI/2;dial.position.set(side*.13,-.205,-.17);steeringPivot.add(dial);
   const marker=box(.014,.036,.018,white,side*.105,-.205,-.17,steeringPivot);marker.rotation.z=side*.35;
  }
  for(let i=0;i<12;i++){
   const color=i<7?0x36d17c:i<10?0xf2bf43:0xef5146;
   const led=new THREE.Mesh(new THREE.BoxGeometry(.019,.018,.018),makeMat(0x25333a,.35,.12));
-  led.position.set((i-5.5)*.031,.198,-.145);steeringPivot.add(led);wheelShiftLedMeshes.push(led);
+  led.position.set((i-5.5)*.031,.215,-.17);steeringPivot.add(led);wheelShiftLedMeshes.push(led);
  }
  // Carbon shift paddles sit behind the wheel; the keyboard E/Q controls drive them.
  for(const side of [-1,1]){
@@ -2133,7 +2142,7 @@ function buildCar(){
   const paddleTip=box(.04,.06,.045,carbon,side*.255,-.125,.12,steeringPivot);paddleTip.rotation.z=side*.08;
  }
  for(const side of [-1,1]){
-  const spoke=box(.028,.145,.026,carbon,side*.105,-.018,-.109,steeringPivot);
+  const spoke=box(.028,.145,.026,carbon,side*.105,-.018,-.16,steeringPivot);
   spoke.rotation.z=side*.40;
  }
  steeringPivot.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});
@@ -2182,7 +2191,7 @@ function buildCar(){
    }
    wheelMeshes.push(rollGroup);
    registerDamagePart(rollGroup,axle+" "+(side<0?"left":"right")+" wheel and tyre assembly",.94);
-   if(axle==="front")frontWheelPivots.push(steerPivot);
+   if(axle==="front"){frontWheelPivots.push(steerPivot);rollGroup.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});}
   }
  }
  // Front wheels and external wishbones stay visible in chase views, not inside the driver's survival cell.
@@ -2538,7 +2547,8 @@ function updatePhysics(dt){
  previousProgress=progress;elapsed+=dt;
  carRoot.position.set(car.x,car.y,car.z);
  carRoot.rotation.set(slope+car.pitch,car.yaw,car.roll,"YXZ");
- steeringPivot.rotation.z=-car.steer*1.22;handGroup.rotation.z=-car.steer*.18;
+ const roadWheelLock=(.045+.38)*steeringResponse,wheelLockRadians=THREE.MathUtils.degToRad(steeringWheelLock/2);
+  steeringPivot.rotation.z=-clamp(car.steer/Math.max(.001,roadWheelLock)*wheelLockRadians,-wheelLockRadians,wheelLockRadians);handGroup.rotation.z=0;
  for(const pivot of frontWheelPivots)pivot.rotation.y=car.steer;
  for(const wheel of wheelMeshes)wheel.rotation.x=car.wheelSpin;
  updateSoftBody(dt);
