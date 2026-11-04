@@ -3246,7 +3246,7 @@ function nearestTerrainSample(x,z){
  return {sample:nearest,distance:Math.sqrt(best)};
 }
 let shiftMode="automatic",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
-let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=0,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
@@ -4330,50 +4330,84 @@ function setMeshMaterialClone(mesh){
  else if(mesh.material?.clone)mesh.material=mesh.material.clone();
 }
 function createImportedWheelAssemblies(modelRoot,parts){
- const tyreParts=parts.filter(m=>/^(front tires?|back tires?)(\.001)?$/i.test(m.userData.sourceName||m.name));
- if(tyreParts.length<4)throw new Error("The imported car needs four named tyre meshes; found "+tyreParts.length);
- const wheelPartPattern=/tires?|tyres?|rim|bujon|disk|wheel/i,assigned=new Set();
+ const wheelPartPattern=/tire|tyre|reifen|rueda|gomma|pneu|wheel|rim|bujon|disk/i;
+ const tyreNamePattern=/tire|tyre|reifen|rueda|gomma|pneu/i;
+ const assigned=new Set();
  importedWheelAssemblies=[];importedBrakeDiscs=[];frontWheelPivots=[];wheelMeshes=[];wheelCornerPivots=[];
  const boxFor=mesh=>{if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();return mesh.geometry.boundingBox.clone();};
- for(const tyre of tyreParts){
-  const tyreBox=boxFor(tyre),centre=tyreBox.getCenter(new THREE.Vector3()),dims=tyreBox.getSize(new THREE.Vector3());
-  const axle=/front/i.test(tyre.userData.sourceName||tyre.name)?"front":"rear";
-  const side=centre.x<0?-1:1,id=(axle==="front"?"F":"R")+(side<0?"L":"R");
+ const infos=parts.map(mesh=>{
+  const box=boxFor(mesh),centre=box.getCenter(new THREE.Vector3()),dims=box.getSize(new THREE.Vector3());
+  const sourceName=String(mesh.userData.sourceName||mesh.name||"");
+  const radial=Math.max(dims.y,dims.z),roundness=Math.min(dims.y,dims.z)/Math.max(.0001,radial);
+  const namedTyre=tyreNamePattern.test(sourceName),namedWheel=wheelPartPattern.test(sourceName);
+  const plausible=roundness>.38&&radial>.16&&radial<1.5&&dims.x>.035&&dims.x<radial*.95&&
+   Math.abs(centre.x)>.22&&Math.abs(centre.z)>.45&&centre.y<1.05;
+  const score=(namedTyre?8:namedWheel?3:0)+roundness*2+
+   Math.min(radial,.8)*.25-Math.abs(dims.x-radial*.34)*.35;
+  return {mesh,box,centre,dims,sourceName,radial,roundness,namedTyre,namedWheel,plausible,score};
+ });
+ const carBox=new THREE.Box3();
+ for(const info of infos)carBox.union(info.box);
+ const carSize=carBox.getSize(new THREE.Vector3());
+ const corners=[];
+ for(const zSign of [1,-1])for(const xSign of [-1,1]){
+  const group=infos.filter(info=>{
+   if(Math.sign(info.centre.x||xSign)!==xSign||Math.sign(info.centre.z||zSign)!==zSign)return false;
+   return info.namedTyre||info.plausible;
+  }).sort((a,b)=>b.score-a.score);
+  const seed=group[0]||null;
+  const centre=seed?seed.centre.clone():new THREE.Vector3(
+   xSign*Math.max(.45,carSize.x*.34),
+   carBox.min.y+Math.max(.25,carSize.y*.20),
+   zSign*Math.max(.7,carSize.z*.255)
+  );
+  corners.push({xSign,zSign,seed,centre});
+ }
+ for(const corner of corners){
+  const {xSign,zSign,seed}=corner,centre=corner.centre;
+  const axle=zSign>0?"front":"rear",side=xSign<0?-1:1,id=(axle==="front"?"F":"R")+(side<0?"L":"R");
   const pivot=new THREE.Group();pivot.name=id+"-steering-pivot";pivot.position.copy(centre);pivot.rotation.order="YXZ";modelRoot.add(pivot);
   const roll=new THREE.Group();roll.name=id+"-wheel-spin";roll.scale.set(1,.90,.90);pivot.add(roll);
-  const nearParts=parts.filter(part=>{
-   if(assigned.has(part)||!wheelPartPattern.test(part.userData.sourceName||part.name))return false;
-   const c=boxFor(part).getCenter(new THREE.Vector3());
-   return Math.abs(c.x-centre.x)<.34&&Math.abs(c.y-centre.y)<.18&&Math.abs(c.z-centre.z)<.34;
+  const nearParts=infos.filter(info=>{
+   if(assigned.has(info.mesh))return false;
+   const dx=Math.abs(info.centre.x-centre.x),dy=Math.abs(info.centre.y-centre.y),dz=Math.abs(info.centre.z-centre.z);
+   const close=dx<Math.max(.34,carSize.x*.11)&&dy<.25&&dz<Math.max(.38,carSize.z*.09);
+   return close&&(info.namedWheel||info.plausible||info.mesh===seed?.mesh);
   });
-  if(!nearParts.includes(tyre))nearParts.push(tyre);
-  let brakeDisk=null;
-  for(const part of nearParts){
-   const sourceName=part.userData.sourceName||part.name;
-   const partBox=boxFor(part);
+  if(seed&&!nearParts.some(info=>info.mesh===seed.mesh))nearParts.push(seed);
+  let tyreMesh=null,brakeDisk=null,radius=seed?Math.max(seed.dims.y,seed.dims.z)*.45:.34;
+  for(const info of nearParts){
+   const part=info.mesh,sourceName=info.sourceName;
+   if(assigned.has(part))continue;
    part.geometry.translate(-centre.x,-centre.y,-centre.z);
    part.position.set(0,0,0);part.rotation.set(0,0,0);part.scale.set(1,1,1);
    roll.add(part);assigned.add(part);part.userData.wheelId=id;
-   const threshold=/tires?|tyres?/i.test(sourceName)?.52:/disk/i.test(sourceName)?.82:.76;
-   registerDamagePart(part,axle+" wheel "+sourceName,threshold,axle);
-   if(part===tyre){
-    part.userData.isTyreMesh=true;
-    setMeshMaterialClone(part);
-   }
+   const isTyre=info.namedTyre||(part===seed?.mesh&&info.plausible);
+   registerDamagePart(part,axle+" wheel "+(sourceName||"mesh"),isTyre ? .52 : /disk/i.test(sourceName) ? .82 : .76,axle);
+   if(isTyre&&!tyreMesh){tyreMesh=part;part.userData.isTyreMesh=true;setMeshMaterialClone(part);}
    if(/disk/i.test(sourceName)){brakeDisk=part;setMeshMaterialClone(part);importedBrakeDiscs.push({mesh:part,id});}
   }
-  const radius=Math.max(dims.y,dims.z)*.5*.90;
-  const wheel={id,axle,side,pivot,roll,tyreMesh:tyre,brakeDisk,radius,baseRadius:radius,health:100,detached:false};
-  importedWheelAssemblies.push(wheel);
-  wheelMeshes.push(roll);
+  const wheel={id,axle,side,pivot,roll,tyreMesh,brakeDisk,radius,baseRadius:radius,health:100,detached:false};
+  importedWheelAssemblies.push(wheel);wheelMeshes.push(roll);
   wheelCornerPivots.push({pivot,side,z:centre.z,restY:centre.y,springVelocity:0,radius,wheelId:id});
   if(axle==="front")frontWheelPivots.push(pivot);
  }
+ console.info("Red Bull wheel rig:",{corners:corners.map(c=>({x:c.centre.x,y:c.centre.y,z:c.centre.z,seed:c.seed?.sourceName||null})),parts:assigned.size});
  return assigned;
 }
 function createImportedSteeringWheel(modelRoot,parts){
- const control=parts.find(m=>/^control$/i.test(m.userData.sourceName||m.name));
- if(!control)throw new Error("The imported model has no Control steering-wheel component");
+ const control=parts.find(m=>/^(control|steering.?wheel|volante)$/i.test(m.userData.sourceName||m.name))||
+  parts.find(m=>/steering.?wheel|volante/i.test(m.userData.sourceName||m.name));
+ if(!control){
+  const pivot=new THREE.Group();pivot.name="Red Bull steering wheel pivot";pivot.position.set(0,.72,.22);pivot.rotation.order="YXZ";modelRoot.add(pivot);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.17,.022,10,36),new THREE.MeshStandardMaterial({color:0x151d25,roughness:.55,metalness:.22}));
+  rim.castShadow=true;pivot.add(rim);cockpitVisibleMeshes.push(rim);
+  const hub=new THREE.Mesh(new THREE.BoxGeometry(.16,.10,.045),new THREE.MeshStandardMaterial({color:0x263441,roughness:.45,metalness:.25}));
+  hub.position.z=.018;pivot.add(hub);cockpitVisibleMeshes.push(hub);
+  steeringPivot=pivot;handGroup=null;wheelControlMeshes=[];wheelShiftLedMeshes=[];
+  console.warn("Red Bull FBX has no named steering-wheel control; a cockpit wheel placeholder was fitted.");
+  return pivot;
+ }
  const bounds=control.geometry.boundingBox||control.geometry.computeBoundingBox();
  const centre=bounds.getCenter(new THREE.Vector3()),nativeSize=bounds.getSize(new THREE.Vector3());
  const wheelWidth=clamp(nativeSize.x,.15,.24),wheelHeight=clamp(nativeSize.y,.09,.15),wheelDepth=Math.max(.018,nativeSize.z);
@@ -4473,8 +4507,6 @@ async function loadRedBullCarModel(targetRoot,generation){
    mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=false;modelRoot.add(mesh);parts.push(mesh);
   });
   if(parts.length<35)throw new Error("Imported FBX contained too few car parts: "+parts.length);
-  const tyreNameCount=parts.filter(m=>/^(front tires?|back tires?)(\.001)?$/i.test(m.userData.sourceName||m.name)).length;
-  if(tyreNameCount!==4)throw new Error("Expected four named wheel tyres but found "+tyreNameCount+".");
   if(manager.itemsTotal>0&&manager.itemsLoaded<manager.itemsTotal)await Promise.race([textureReady,new Promise(resolve=>setTimeout(resolve,10000))]);
   if(targetRoot!==carRoot||generation!==carBuildGeneration)return;
   // The fallback stays hidden as a whole; its meshes must not remain in the imported car's
