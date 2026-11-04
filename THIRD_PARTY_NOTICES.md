@@ -56,3 +56,22 @@ The Spa GP centre-line in `formula-one.html` is derived from the `gp` outline in
 - Data licence: Open Database Licence (ODbL) 1.0 — https://opendatacommons.org/licenses/odbl/1-0/
 
 The mapped centre-line is projected into a local metre-based coordinate frame and scaled to the 7,004 m game lap length. The existing in-game Spa elevation profile is retained.
+
+
+## OpenStreetMap-derived racing circuit geometry (ODbL 1.0)
+
+The circuit point arrays in `formula-one.html` for Spa-Francorchamps, Monza, Laguna Seca, Silverstone, Monaco and Suzuka are adapted from the corresponding GP layout outline GeoJSON files in the `tobi/track-atlas` project. Its README documents circuit geometry and named-corner coordinates as derived from OpenStreetMap and licensed under the Open Database Licence (ODbL).
+
+Source project: https://github.com/tobi/track-atlas
+
+Source GeoJSON files:
+- https://github.com/tobi/track-atlas/blob/main/tracks/spa-francorchamps/raw/layers/gp.geojson
+- https://github.com/tobi/track-atlas/blob/main/tracks/monza/raw/layers/gp.geojson
+- https://github.com/tobi/track-atlas/blob/main/tracks/laguna-seca/raw/layers/gp.geojson
+- https://github.com/tobi/track-atlas/blob/main/tracks/silverstone/raw/layers/gp.geojson
+- https://github.com/tobi/track-atlas/blob/main/tracks/monaco/raw/layers/gp.geojson
+- https://github.com/tobi/track-atlas/blob/main/tracks/suzuka/raw/layers/gp.geojson
+
+Attribution: © OpenStreetMap contributors. Data licence: Open Database Licence (ODbL) 1.0 — https://opendatacommons.org/licenses/odbl/1-0/
+
+The WGS84 outline coordinates are projected into a local metre-based rendering frame and normalised to each circuit's published lap length. The Suzuka bridge deck and vertical separation are an in-game elevation interpretation of the published figure-eight crossover, not a survey-grade 3D scan.
