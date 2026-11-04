@@ -234,14 +234,26 @@ input[type=range]{accent-color:#ff765e}
    <section class="settings-group"><h3>Driving preferences</h3>
     <div class="two">
      <div class="field"><div class="range-head"><label for="steeringResponseRange">Steering response</label><output id="steeringResponseValue">65%</output></div><input id="steeringResponseRange" type="range" min="25" max="100" step="5" value="65"></div>
-     <div class="field"><div class="range-head"><label for="brakeStrengthRange">Brake strength</label><output id="brakeStrengthValue">100%</output></div><input id="brakeStrengthRange" type="range" min="70" max="120" step="5" value="100"></div>
+     <div class="field"><div class="range-head"><label for="steeringWheelLockRange">Wheel rotation · lock</label><output id="steeringWheelLockValue">300°</output></div><input id="steeringWheelLockRange" type="range" min="180" max="540" step="15" value="300"></div>
     </div>
+    <div class="field"><div class="range-head"><label for="brakeStrengthRange">Brake strength</label><output id="brakeStrengthValue">100%</output></div><input id="brakeStrengthRange" type="range" min="70" max="120" step="5" value="100"></div>
     <div class="settings-options compact">
      <label><input type="checkbox" id="cameraShakeSetting"><span><b>Subtle camera movement</b><small>Small chassis movement over kerbs; off by default.</small></span></label>
      <label><input type="checkbox" id="autoLookSetting"><span><b>Head look to apex</b><small>Camera turns slightly into corners.</small></span></label>
     </div>
    </section>
   </div>
+  <section class="settings-group"><h3>Vehicle engineering</h3>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="brakeBiasRange">Front brake bias</label><output id="brakeBiasValue">58%</output></div><input id="brakeBiasRange" type="range" min="52" max="68" step="1" value="58"></div>
+     <div class="field"><div class="range-head"><label for="downforceRange">Aerodynamic load</label><output id="downforceValue">100%</output></div><input id="downforceRange" type="range" min="80" max="125" step="5" value="100"></div>
+    </div>
+    <div class="two">
+     <div class="field"><label for="diffModeSelect">Differential map</label><select id="diffModeSelect"><option value="1">Open · rotation</option><option value="2" selected>Balanced</option><option value="3">Locked · traction</option></select></div>
+     <div class="field"><label for="powerModeSelect">Power unit deployment</label><select id="powerModeSelect"><option value="1">Balanced</option><option value="2">Attack</option><option value="3">Harvest</option></select></div>
+    </div>
+    <p class="settings-hint">Engineering values feed into the vehicle model. Wheel lock sets the maximum visual steering rotation (default 300° total).</p>
+   </section>
   <footer class="settings-footer"><span>Changes apply immediately · Each camera keeps its own profile</span><button class="action" id="settingsDoneBtn">APPLY & CLOSE</button></footer>
  </section>
 </div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
@@ -282,16 +294,775 @@ const trackDefs = {
  }
 };
 
+// GPS-derived circuit centrelines adapted from bacinger/f1-circuits (MIT); see THIRD_PARTY_NOTICES.md.
+const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
+ spa: Object.freeze([
+  [-252.48,807.33],
+  [-366,1004.31],
+  [-367.21,1013.15],
+  [-362.17,1021],
+  [-351.68,1024.65],
+  [-339.98,1021.44],
+  [-302.61,1002.76],
+  [-211.93,959.54],
+  [-168.32,932.9],
+  [-122.95,899.52],
+  [-82.25,865.69],
+  [-49.99,830.76],
+  [123.37,625.49],
+  [135.57,613.99],
+  [156.48,601.06],
+  [193.85,577.07],
+  [210.23,560.94],
+  [224.05,539.05],
+  [232.92,519.15],
+  [238.8,496.82],
+  [243.83,455.59],
+  [246.74,441],
+  [251.78,427.51],
+  [261.42,409.83],
+  [347.07,273.75],
+  [401.59,187.31],
+  [416.7,155.03],
+  [426.34,131.05],
+  [437.68,92.47],
+  [506.1,-144.64],
+  [611.04,-504.67],
+  [635.36,-591.22],
+  [636.64,-605.26],
+  [634.08,-620.85],
+  [625.72,-633.34],
+  [613.52,-643.84],
+  [597.99,-652.13],
+  [588.78,-660.97],
+  [582.47,-671.36],
+  [577.43,-687.06],
+  [578.28,-702.65],
+  [599.27,-795.94],
+  [598.84,-812.08],
+  [595.51,-826.67],
+  [584.17,-842.81],
+  [570.7,-853.76],
+  [331.54,-1017.91],
+  [316.44,-1024.21],
+  [301.34,-1024.65],
+  [285.38,-1020.01],
+  [272.34,-1010.61],
+  [263.12,-997.13],
+  [259.36,-983.53],
+  [258.51,-968.94],
+  [263.12,-955.34],
+  [271.49,-941.3],
+  [283.68,-931.47],
+  [388.19,-867.35],
+  [399.54,-855.86],
+  [405.78,-844.36],
+  [408.33,-830.87],
+  [407.05,-814.18],
+  [363.8,-688.06],
+  [350.4,-636.54],
+  [319.77,-477.59],
+  [304.67,-386.39],
+  [301.34,-370.81],
+  [293.75,-354.11],
+  [283.68,-340.52],
+  [268.58,-325.93],
+  [251.78,-314.98],
+  [233.34,-307.69],
+  [213.98,-304.59],
+  [151.45,-300.39],
+  [127.55,-303.05],
+  [105.72,-309.24],
+  [83.52,-318.63],
+  [65.44,-330.68],
+  [44.46,-349.91],
+  [31.06,-369.15],
+  [16.38,-396.78],
+  [-42.83,-543.8],
+  [-95.72,-674.57],
+  [-107.06,-694.91],
+  [-120.46,-708.95],
+  [-138.9,-719.34],
+  [-157.4,-724.53],
+  [-174.56,-725.09],
+  [-191.79,-721.44],
+  [-206.47,-714.7],
+  [-230.86,-699],
+  [-246.81,-692.26],
+  [-266.1,-689.16],
+  [-285.38,-691.26],
+  [-303.04,-696.9],
+  [-318.14,-707.4],
+  [-327.78,-719.34],
+  [-339.55,-735.48],
+  [-436.48,-886.59],
+  [-446.12,-895.43],
+  [-457.89,-901.73],
+  [-472.14,-904.83],
+  [-488.09,-903.83],
+  [-501.92,-897.53],
+  [-567.43,-850.11],
+  [-606.01,-822.03],
+  [-615.65,-809.54],
+  [-625.72,-794.4],
+  [-631.6,-779.8],
+  [-635.78,-762.56],
+  [-636.64,-744.87],
+  [-633.73,-723.54],
+  [-626.99,-705.3],
+  [-618.2,-681.87],
+  [-605.15,-646.38],
+  [-582.54,-606.26],
+  [-557.72,-571.33],
+  [-520,-529.21],
+  [-457.04,-468.19],
+  [-420.1,-439.56],
+  [-388.62,-421.32],
+  [-226.61,-337.42],
+  [-203.14,-322.83],
+  [-180.87,-305.59],
+  [-160.31,-286.35],
+  [-142.73,-265.46],
+  [-126.35,-243.57],
+  [-104.51,-203.56],
+  [-86.86,-164.98],
+  [-46.58,-75.89],
+  [-39.49,-56.54],
+  [-35.24,-35.76],
+  [-34.46,-9.67],
+  [-38.64,13.76],
+  [-62.54,74.78],
+  [-88.56,141.99],
+  [-120.04,225.89],
+  [-128.05,257.06],
+  [-135.57,294.09],
+  [-140.17,328.47],
+  [-143.15,357.65],
+  [-152.37,492.62],
+  [-150.67,501.46],
+  [-145.21,507.77],
+  [-136.84,509.87],
+  [-122.59,507.77],
+  [-107.84,507.77],
+  [-97.77,509.87],
+  [-91.11,517.16],
+  [-89.41,525.45],
+  [-93.59,536.4],
+  [-145.21,620.3],
+  [-252.48,807.33]
+ ]),
+ monza: Object.freeze([
+  [-588.09,-291.38],
+  [-551.57,134.97],
+  [-534.99,313.71],
+  [-533.2,321.01],
+  [-528.06,325.21],
+  [-521.68,326.2],
+  [-513.81,325.21],
+  [-506.42,324.66],
+  [-499.57,325.21],
+  [-494.89,328.86],
+  [-491.24,334.05],
+  [-490.3,338.69],
+  [-490.3,343.89],
+  [-516.15,441.39],
+  [-519.81,467.92],
+  [-521.21,491.9],
+  [-519.34,517.99],
+  [-509.69,645.11],
+  [-505.95,665.89],
+  [-501.36,685.24],
+  [-494.43,706.02],
+  [-485.24,728.46],
+  [-474.65,750.35],
+  [-459,774.89],
+  [-442.89,795.11],
+  [-421.16,818.11],
+  [-397.65,838.45],
+  [-371.41,857.13],
+  [-343.31,873.27],
+  [-311.54,888.96],
+  [-279.7,899.91],
+  [-244.66,909.74],
+  [-205.04,916.6],
+  [-164.47,920.25],
+  [-6.42,933.73],
+  [187.13,945.23],
+  [198.65,946.22],
+  [204.65,949.43],
+  [209.71,954.62],
+  [216.09,977.06],
+  [218.89,983.25],
+  [223.49,987.45],
+  [231.35,990],
+  [257.59,994.75],
+  [286.16,1000.94],
+  [326.72,1013.98],
+  [507.82,1074.45],
+  [523.47,1078.1],
+  [538.26,1078.1],
+  [552.51,1075.44],
+  [562.63,1071.35],
+  [572.36,1065.61],
+  [581.55,1059.3],
+  [593.07,1046.81],
+  [599.53,1036.98],
+  [604.13,1024.93],
+  [606.46,1011.44],
+  [614.25,925.99],
+  [629.04,780.08],
+  [628.57,767.04],
+  [626.24,758.64],
+  [622.58,751.34],
+  [616.58,746.14],
+  [605.53,738.85],
+  [487.11,675.29],
+  [390.8,621.68],
+  [330.85,588.85],
+  [301.81,572.16],
+  [269.11,549.27],
+  [245.6,531.48],
+  [225.36,513.79],
+  [120.25,424.14],
+  [45.66,356.93],
+  [-112,219.42],
+  [-206.9,136.52],
+  [-219.83,123.47],
+  [-224.89,115.18],
+  [-225.82,106.89],
+  [-225.82,96.94],
+  [-222.55,75.06],
+  [-221.62,63.12],
+  [-221.62,45.87],
+  [-223.02,36.48],
+  [-226.76,24.54],
+  [-232.28,10.5],
+  [-241.47,-3.65],
+  [-253.93,-18.24],
+  [-268.18,-30.18],
+  [-279.7,-39.02],
+  [-285.69,-45.87],
+  [-290.29,-55.16],
+  [-294.49,-72.4],
+  [-304.15,-151.11],
+  [-314.27,-235.01],
+  [-392.59,-987.34],
+  [-395.86,-1014.43],
+  [-399.05,-1027.03],
+  [-405.52,-1039.96],
+  [-414.31,-1050.46],
+  [-424.43,-1059.86],
+  [-438.68,-1069.14],
+  [-454.33,-1074.89],
+  [-472.32,-1078.1],
+  [-487.58,-1076.99],
+  [-501.82,-1073.9],
+  [-518.41,-1067.6],
+  [-534.52,-1060.3],
+  [-546.51,-1052.01],
+  [-560.84,-1041.07],
+  [-576.96,-1023.82],
+  [-588.01,-1008.24],
+  [-597.67,-991.54],
+  [-606,-971.76],
+  [-613.78,-949.87],
+  [-619.78,-927.43],
+  [-622.58,-908.2],
+  [-625.77,-879.01],
+  [-626.24,-849.83],
+  [-626.71,-822.2],
+  [-628.11,-767.48],
+  [-629.04,-719.5],
+  [-628.11,-667.44],
+  [-622.11,-599.24],
+  [-599.53,-383.46],
+  [-588.09,-291.38]
+ ]),
+ silverstone: Object.freeze([
+  [97.58,836.29],
+  [284.31,852.43],
+  [317.5,850.44],
+  [343.02,842.04],
+  [359.65,831.09],
+  [379.49,808.21],
+  [392.01,782.13],
+  [402.14,749.3],
+  [416.37,693.58],
+  [430.95,638.87],
+  [439.43,578.4],
+  [443.06,540.37],
+  [447.92,448.18],
+  [449.97,369.48],
+  [453.19,338.75],
+  [464.96,310.01],
+  [487.2,269.88],
+  [496.57,247],
+  [496.16,229.76],
+  [492.05,209.53],
+  [460.51,126.62],
+  [458.46,93.24],
+  [463.31,69.36],
+  [474.67,49.02],
+  [505.88,5.8],
+  [513.13,-14.09],
+  [513.95,-37.53],
+  [508.68,-58.86],
+  [489.66,-82.3],
+  [465.37,-99.54],
+  [432.11,-118.78],
+  [406.25,-133.92],
+  [387.98,-151.61],
+  [366.97,-186.54],
+  [325.64,-263.58],
+  [98.4,-678.88],
+  [23.88,-794.06],
+  [2.81,-822.25],
+  [-14.16,-837.29],
+  [-34.01,-847.23],
+  [-54.67,-852.43],
+  [-73.7,-850.88],
+  [-94.77,-846.13],
+  [-112.56,-838.39],
+  [-128.37,-825.9],
+  [-141.78,-806],
+  [-145.82,-798.26],
+  [-166.07,-754.49],
+  [-188.72,-715.36],
+  [-213.01,-683.08],
+  [-229.64,-663.3],
+  [-248.25,-642.96],
+  [-281.1,-609.57],
+  [-354.38,-522.58],
+  [-361.7,-517.94],
+  [-371.83,-516.83],
+  [-381.89,-521.58],
+  [-412.68,-549.22],
+  [-423.22,-552.87],
+  [-433.75,-551.76],
+  [-442.65,-548.11],
+  [-455.24,-536.17],
+  [-468.58,-522.58],
+  [-485.21,-500.69],
+  [-497.32,-477.26],
+  [-505.88,-453.27],
+  [-513.13,-426.19],
+  [-513.95,-415.24],
+  [-511.9,-404.3],
+  [-505.88,-393.91],
+  [-491.3,-370.92],
+  [-267.68,-81.3],
+  [-217.46,-17.19],
+  [-206.99,-5.14],
+  [-188.72,6.8],
+  [-166.89,11.99],
+  [-149.03,12.55],
+  [-124.33,10.45],
+  [-55.49,0.06],
+  [-32.78,-2.6],
+  [-9.31,-3.59],
+  [17.45,0.06],
+  [41.74,6.25],
+  [63.57,18.29],
+  [206.17,130.82],
+  [215.47,137.01],
+  [226.83,142.76],
+  [238.53,143.87],
+  [247.43,140.66],
+  [255.57,133.37],
+  [260.43,125.08],
+  [284.72,40.62],
+  [292.04,28.69],
+  [302.1,21.39],
+  [313.87,20.84],
+  [326.87,26.58],
+  [334.95,36.98],
+  [340.22,47.92],
+  [350.34,75.55],
+  [358.42,98.99],
+  [364.51,121.98],
+  [367.72,144.31],
+  [369.78,167.85],
+  [368.13,192.28],
+  [363.28,203.23],
+  [350.75,217.27],
+  [-111.4,636.21],
+  [-123.92,644.06],
+  [-141.37,652.9],
+  [-162.79,656],
+  [-185.09,653.46],
+  [-207.74,642.51],
+  [-215.89,632.57],
+  [-221.56,617.97],
+  [-230.87,541.92],
+  [-236.14,526.34],
+  [-247.43,513.73],
+  [-264.47,505.44],
+  [-283.08,502.79],
+  [-303.74,508.1],
+  [-318.32,517.94],
+  [-327.21,529.43],
+  [-334.13,542.92],
+  [-335.36,557.51],
+  [-332.48,573.21],
+  [-321.19,598.74],
+  [-261.66,715.91],
+  [-242.57,738.35],
+  [-223.96,757.14],
+  [-197.2,780.03],
+  [-175.38,795.17],
+  [-147.8,806.67],
+  [-123.92,814.4],
+  [-73.28,820.7],
+  [97.58,836.29]
+ ]),
+ suzuka: Object.freeze([
+  [695.08,-35.48],
+  [816.23,-180.29],
+  [957.93,-352.73],
+  [970.9,-370.97],
+  [978.12,-389.99],
+  [981.87,-407.12],
+  [981.59,-423.92],
+  [979.49,-436.85],
+  [962.95,-487.59],
+  [955.1,-500.86],
+  [943.68,-510.92],
+  [934.08,-516.33],
+  [916.82,-520.53],
+  [901.1,-519.98],
+  [883.83,-514.23],
+  [867.76,-501.63],
+  [851.4,-477.09],
+  [767.81,-349.64],
+  [752,-336.26],
+  [738.39,-331.95],
+  [717.83,-328.41],
+  [674.62,-328.08],
+  [652.87,-321.89],
+  [637.52,-311.17],
+  [625.92,-297.13],
+  [620.44,-283.42],
+  [600.98,-210.03],
+  [592.85,-191.23],
+  [579.87,-175.1],
+  [564.8,-164.15],
+  [545.8,-155.31],
+  [526.34,-151.66],
+  [476.09,-150.89],
+  [452.88,-146.47],
+  [436.98,-138.95],
+  [420.54,-126.35],
+  [408.48,-108.77],
+  [401.08,-90.86],
+  [397.7,-73.95],
+  [397.88,-57.81],
+  [400.99,-44.11],
+  [425.66,22.88],
+  [429.4,36.48],
+  [430.04,54.39],
+  [427.39,66.21],
+  [420.9,83.35],
+  [411.22,97.94],
+  [392.67,110.98],
+  [370.11,123.14],
+  [343.34,136.52],
+  [319.77,145.91],
+  [302.23,150.78],
+  [277.56,154.87],
+  [249.6,155.31],
+  [227.58,154.42],
+  [209.22,149.56],
+  [194.33,143.26],
+  [171.12,133.42],
+  [146.73,119.83],
+  [118.68,97.05],
+  [96.75,73.95],
+  [4.57,-37.03],
+  [-0.18,-43.44],
+  [-14.89,-46.87],
+  [-149.56,-58.92],
+  [-158.24,-57.81],
+  [-167.47,-51.62],
+  [-171.21,-41.12],
+  [-172.86,-32.28],
+  [-193.32,51.29],
+  [-220.64,208.26],
+  [-225.85,237.11],
+  [-227.13,251.7],
+  [-225.66,266.73],
+  [-222.74,282.32],
+  [-216.53,298.46],
+  [-209.49,314.49],
+  [-187.75,364.01],
+  [-185.46,371.64],
+  [-187.11,378.6],
+  [-191.22,385.01],
+  [-198.26,389.76],
+  [-206.39,392.31],
+  [-214.24,391.75],
+  [-223.2,385.78],
+  [-230.6,375.17],
+  [-262.3,320.79],
+  [-288.06,279.78],
+  [-304.87,255.46],
+  [-318.76,239.43],
+  [-330.73,229.26],
+  [-351.29,213.12],
+  [-372.94,201.62],
+  [-395.6,194.88],
+  [-435.07,189.13],
+  [-472.43,187.59],
+  [-500.57,189.69],
+  [-534.1,196.98],
+  [-570.83,207.26],
+  [-611.94,222.52],
+  [-637.89,234.46],
+  [-660.64,248.05],
+  [-681.65,263.64],
+  [-703.85,283.42],
+  [-726.78,308.63],
+  [-741.95,330.63],
+  [-755.56,354.72],
+  [-789.18,443.6],
+  [-807.18,482.51],
+  [-816.32,498.09],
+  [-828.74,509.59],
+  [-845.01,516.89],
+  [-864.47,520.53],
+  [-887.76,519.98],
+  [-909.32,516.89],
+  [-930.43,512.24],
+  [-950.99,503.84],
+  [-967.8,491.13],
+  [-977.94,474.99],
+  [-981.87,459.18],
+  [-980.68,439.29],
+  [-976.11,424.47],
+  [-969.44,409.55],
+  [-958.02,397.06],
+  [-935.45,376.06],
+  [-907.22,352.73],
+  [-879.63,328.75],
+  [-844.64,302.44],
+  [-804.62,275.36],
+  [-763.69,249.93],
+  [-717.92,228.27],
+  [-676.99,207.48],
+  [-634.97,191.57],
+  [-566.72,168.13],
+  [-491.62,139.06],
+  [-400.71,107.44],
+  [-310.54,79.15],
+  [-248.14,57.7],
+  [-167.47,27.08],
+  [-149.01,22.44],
+  [-130.65,21.89],
+  [-111.19,25.53],
+  [-92.28,30.73],
+  [-58.2,43.77],
+  [-26.86,59.36],
+  [-0.55,75.5],
+  [26.68,96.5],
+  [77.57,143.81],
+  [147.28,208.37],
+  [166.64,224.29],
+  [180.44,233.9],
+  [193.05,242.19],
+  [202,247.5],
+  [206.84,247.94],
+  [213.24,245.29],
+  [228.95,231.36],
+  [240.28,221.96],
+  [249.51,219.31],
+  [258.19,220.97],
+  [268.42,227.71],
+  [285.23,242.86],
+  [304.14,256.34],
+  [325.25,265.19],
+  [351.01,267.4],
+  [375.04,266.07],
+  [400.44,260.87],
+  [425.84,251.04],
+  [447.4,240.76],
+  [474.44,222.52],
+  [498.74,200.08],
+  [523.69,172.44],
+  [695.08,-35.48]
+ ]),
+ monaco: Object.freeze([
+  [112.72,294.7],
+  [111.12,304.65],
+  [113.37,313.6],
+  [119.16,325.87],
+  [124.63,334.49],
+  [141.68,355.94],
+  [228.3,472.78],
+  [234.34,481.18],
+  [243.26,483.72],
+  [254.12,480.63],
+  [261.68,474.44],
+  [267.15,464.71],
+  [268.28,453.77],
+  [268.52,444.7],
+  [269.4,437.3],
+  [273.91,428.45],
+  [279.14,421.71],
+  [288.87,408.11],
+  [295.46,396.06],
+  [298.04,388.77],
+  [301.34,384.46],
+  [306.56,383.02],
+  [312.6,384.79],
+  [317.1,389.43],
+  [318.47,396.06],
+  [315.49,401.7],
+  [307.85,407.23],
+  [285.25,435.75],
+  [282.03,442.6],
+  [281.95,449.23],
+  [283.72,454.32],
+  [286.13,459.07],
+  [296.75,464.49],
+  [313.16,468.69],
+  [322.09,472.01],
+  [331.26,475.65],
+  [343.96,480.08],
+  [357.8,481.07],
+  [365.12,477.42],
+  [367.85,466.15],
+  [365.28,400.27],
+  [355.06,332.5],
+  [344.45,289.39],
+  [332.62,258.66],
+  [312.36,223.51],
+  [289.03,193.78],
+  [255.25,157.19],
+  [206.91,127.78],
+  [178.12,113.75],
+  [122.62,87.99],
+  [85.3,75.17],
+  [30.2,62.23],
+  [-5.27,56.71],
+  [-24.09,53.17],
+  [-27.31,47.75],
+  [-27.55,43],
+  [-28.67,37.47],
+  [-31.09,32.06],
+  [-39.05,29.29],
+  [-50.31,27.41],
+  [-62.78,34.49],
+  [-69.61,34.93],
+  [-168.87,22],
+  [-218.17,14.92],
+  [-263.53,7.85],
+  [-276.08,5.97],
+  [-284.45,4.53],
+  [-290.48,-1.66],
+  [-299.97,-20.23],
+  [-308.01,-38.25],
+  [-314.45,-56.26],
+  [-317.26,-69.09],
+  [-320.24,-91.42],
+  [-320.48,-129.66],
+  [-320.08,-139.17],
+  [-317.26,-145.69],
+  [-311.63,-151.99],
+  [-299.16,-161.06],
+  [-290.8,-168.68],
+  [-287.18,-176.86],
+  [-285.73,-188.69],
+  [-271.58,-270.05],
+  [-267.96,-284.31],
+  [-266.83,-288.84],
+  [-267.15,-294.92],
+  [-270.77,-299.78],
+  [-278.73,-305.31],
+  [-286.7,-309.18],
+  [-288.55,-314.71],
+  [-287.02,-326.31],
+  [-277.93,-352.73],
+  [-269.65,-372.63],
+  [-261.2,-388.33],
+  [-246.72,-408.89],
+  [-228.55,-427.13],
+  [-215.19,-434.75],
+  [-200.23,-441.72],
+  [-192.75,-445.03],
+  [-188.97,-449.23],
+  [-184.63,-462.17],
+  [-186.72,-469.02],
+  [-193.48,-473],
+  [-223.48,-480.85],
+  [-240.21,-483.5],
+  [-251.23,-483.72],
+  [-261.04,-482.29],
+  [-267.23,-477.64],
+  [-271.01,-473.77],
+  [-271.17,-464.71],
+  [-272.62,-457.41],
+  [-275.52,-448.46],
+  [-292.41,-427.79],
+  [-304.79,-408],
+  [-314.45,-393.19],
+  [-324.66,-365.11],
+  [-347.26,-286.96],
+  [-353.46,-261.76],
+  [-357.8,-234.79],
+  [-363.43,-195.43],
+  [-367.85,-144.25],
+  [-367.85,-110.87],
+  [-366.41,-85.34],
+  [-363.59,-58.81],
+  [-358.6,-40.35],
+  [-352.97,-23.77],
+  [-350.24,-13.6],
+  [-348.87,-4.64],
+  [-349.51,8.95],
+  [-349.76,17.35],
+  [-347.02,22.33],
+  [-340.02,25.65],
+  [-322.97,29.74],
+  [-307.77,30.4],
+  [-286.94,32.94],
+  [-257.9,36.59],
+  [-232.17,41.12],
+  [-166.69,60.24],
+  [-130.1,70.19],
+  [-96.56,75.61],
+  [-73.55,77.49],
+  [-55.62,83.9],
+  [-3.74,108.33],
+  [19.02,117.61],
+  [52.24,125.02],
+  [79.99,128.89],
+  [106.45,133.31],
+  [121.33,138.51],
+  [139.43,149.78],
+  [155.11,166.03],
+  [163.96,179.74],
+  [167.9,194.11],
+  [167.26,209.14],
+  [164.68,223.29],
+  [159.05,238.88],
+  [151.57,253.69],
+  [139.83,262.75],
+  [128.57,273.25],
+  [123.1,278.01],
+  [118.03,283.09],
+  [112.72,294.7]
+ ])
+});
+
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
-let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
+let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
 const cameraProfiles=Array.from({length:5},()=>({x:0,y:0,z:0,pitch:0,yaw:0,fov:66}));
-let cameraSensitivity=.18,lookToApex=0,steeringResponse=.65,brakeStrength=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
+let cameraSensitivity=.18,lookToApex=0,steeringResponse=.65,steeringWheelLock=300,brakeStrength=1,downforceScale=1,brakeBiasSetting=.58,differentialSetting=2,powerModeSetting=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
 let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,tyres:true,controls:true};
 let showSteeringWheel=true,showDriverHands=true;
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
@@ -430,7 +1201,9 @@ function validateTrackLayout(points,minClearance){
   const a=sampled[i],b=sampled[(i+1)%m];
   for(let j=i+1;j<m;j++){
    const gap=Math.min(j-i,m-(j-i));if(gap<3)continue;
-   const distance=trackSegmentDistance2D(a,b,sampled[j],sampled[(j+1)%m]);
+   const c=sampled[j],d=sampled[(j+1)%m];
+   if(Math.abs((a.y+b.y-c.y-d.y)*.5)>2.25)continue;
+   const distance=trackSegmentDistance2D(a,b,c,d);
    if(distance<minClearance)issues.push({a:i,b:j,distance});
   }
  }
@@ -549,7 +1322,8 @@ function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
- activeTrackPoints=activeTrack==="monza"?buildMonzaPoints():def.points.slice();
+ const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
+ activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
  const minAlt=def.elevationProfile?Math.min(...def.elevationProfile.map(v=>v[1])):Math.min(...activeTrackPoints.map(v=>v[2]));
  const rawPoints=activeTrackPoints.slice();
  if(rawPoints.length>2&&Math.hypot(rawPoints[0][0]-rawPoints[rawPoints.length-1][0],rawPoints[0][1]-rawPoints[rawPoints.length-1][1])<2)rawPoints.pop();
@@ -559,8 +1333,14 @@ function createTrack(){
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
  route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)),def,minAlt);
- const layoutIssues=validateTrackLayout(route,roadWidth+.65);
- if(layoutIssues.length)console.error("APEX TRACK VALIDATION: overlapping road sections on "+def.name,layoutIssues.slice(0,8));
+ let layoutIssues=validateTrackLayout(route,roadWidth+.65);
+ if(layoutIssues.length){
+  const closest=Math.min(...layoutIssues.map(issue=>issue.distance));
+  const safeWidth=Math.max(7.5,closest-.9);
+  if(safeWidth<roadWidth){console.warn("APEX reduced track width to prevent self-overlap on "+def.name,roadWidth.toFixed(2)+"m -> "+safeWidth.toFixed(2)+"m");roadWidth=safeWidth;}
+  layoutIssues=validateTrackLayout(route,roadWidth+.65);
+  if(layoutIssues.length)console.error("APEX TRACK VALIDATION: remaining close track sections on "+def.name,layoutIssues.slice(0,8));
+ }
  terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
@@ -1139,6 +1919,7 @@ function updateSoftBody(dt){
 }
 function applyCrashDamage(severity,side,zone="side"){
  if(!carRoot||severity<.12)return;
+ playImpactSound(severity);
  applySoftBodyImpact(severity,side,zone);
  vehicleDamage=clamp(vehicleDamage+severity*.22,0,.92);
  const impactPoint=carRoot.position.clone();impactPoint.y+=.7;
@@ -1228,8 +2009,8 @@ function buildCar(){
  // Ground-effect floor, sculpted venturi tunnels and edge fences.
  box(1.8,.1,3.15,carbon,0,.33,-.18);
  for(const side of [-1,1]){
-  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);
-  const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);
+  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
+  const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);cockpitVisibleMeshes.push(podTop);
   // Keep full sidepod volumes for external views; show narrow shoulders from the driver's eye.
   const cockpitShoulder=box(.20,.12,1.04,bodyMat,side*.59,.77,-.02);cockpitVisibleMeshes.push(cockpitShoulder);
   // Sidepod cooling inlet and louvred radiator outlet.
@@ -1237,11 +2018,11 @@ function buildCar(){
   box(.23,.105,.018,makeMat(0x070d13,.55,.2),side*.91,.84,.47);
   for(let vent=0;vent<5;vent++){const slat=box(.27,.018,.025,rim,side*.91,.775+vent*.027,-.62);slat.rotation.z=side*.04;}
   const podLine=box(.028,.025,1.38,white,side*1.14,.58,-.52);
-  const floorFence=registerDamagePart(box(.08,.27,2.35,carbon,side*1.02,.42,-.3),side<0?"left floor edge fence":"right floor edge fence",.50);floorFence.rotation.z=side*.04;
+  const floorFence=registerDamagePart(box(.08,.27,2.35,carbon,side*1.02,.42,-.3),side<0?"left floor edge fence":"right floor edge fence",.50);floorFence.rotation.z=side*.04;cockpitVisibleMeshes.push(floorFence);
   const mirrorArm=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.43,7),carbon),side<0?"left mirror stalk":"right mirror stalk",.31);mirrorArm.position.set(side*.66,1.07,.47);mirrorArm.rotation.z=side*.72;carRoot.add(mirrorArm);cockpitVisibleMeshes.push(mirrorArm);
   const mirrorHousing=registerDamagePart(box(.25,.12,.22,carbon,side*.72,1.27,.58),side<0?"left mirror housing":"right mirror housing",.24);cockpitVisibleMeshes.push(mirrorHousing);
   cockpitVisibleMeshes.push(registerDamagePart(box(.18,.035,.14,glass,side*.72,1.33,.6),side<0?"left mirror glass":"right mirror glass",.32));
-  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);
+  const suspension1=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left front wishbone":"right front wishbone",.42);suspension1.position.set(side*.91,.58,1.17);suspension1.rotation.z=side*.48;carRoot.add(suspension1);cockpitVisibleMeshes.push(suspension1);
   const suspension2=registerDamagePart(new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.3,7),carbon),side<0?"left rear wishbone":"right rear wishbone",.52);suspension2.position.set(side*.95,.58,-1.17);suspension2.rotation.z=side*.5;carRoot.add(suspension2);
  }
  // Subtle nose spine and carbon front splitter.
@@ -1317,18 +2098,27 @@ function buildCar(){
  cockpitVisibleMeshes.push(haloTop,haloBase);
  cockpitHaloColumn=tube([[0,1.20,1.24],[0,1.88,.70]],.021,makeMat(0x242d36,.26,.82));
  // Steering wheel, screen and animated driver's hands.
- steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.74);carRoot.add(steeringPivot);
- // Flat-bottom racing wheel with the driver-facing LCD and physical button panel on the rear (-Z) face.
- const wheelFace=box(.64,.44,.075,carbon,0,0,-.055,steeringPivot);
- const wheelRim=new THREE.Mesh(new THREE.TorusGeometry(.292,.036,12,40),carbon);wheelRim.position.z=-.112;steeringPivot.add(wheelRim);
- const wheelGripL=box(.13,.30,.085,rubber,-.265,-.025,-.105,steeringPivot);
- const wheelGripR=box(.13,.30,.085,rubber,.265,-.025,-.105,steeringPivot);
- const wheelHub=box(.13,.12,.065,carbon,0,-.005,-.112,steeringPivot);
+steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(.88);carRoot.add(steeringPivot);
+  // Broad flat-bottom multifunction wheel with a sculpted open frame, grippy side pods and driver-facing LCD.
+  const wheelShape=new THREE.Shape();
+  wheelShape.moveTo(-.39,.24);wheelShape.lineTo(.39,.24);wheelShape.quadraticCurveTo(.43,.24,.42,.18);
+  wheelShape.lineTo(.35,-.19);wheelShape.quadraticCurveTo(.34,-.25,.28,-.25);wheelShape.lineTo(.16,-.25);
+  wheelShape.lineTo(.11,-.17);wheelShape.lineTo(-.11,-.17);wheelShape.lineTo(-.16,-.25);wheelShape.lineTo(-.28,-.25);
+  wheelShape.quadraticCurveTo(-.34,-.25,-.35,-.19);wheelShape.lineTo(-.42,.18);wheelShape.quadraticCurveTo(-.43,.24,-.39,.24);wheelShape.closePath();
+  const wheelWindow=new THREE.Path();wheelWindow.moveTo(-.21,.14);wheelWindow.lineTo(-.21,-.08);
+  wheelWindow.quadraticCurveTo(-.21,-.12,-.17,-.12);wheelWindow.lineTo(.17,-.12);
+  wheelWindow.quadraticCurveTo(.21,-.12,.21,-.08);wheelWindow.lineTo(.21,.14);wheelWindow.closePath();wheelShape.holes.push(wheelWindow);
+  const wheelFrameGeometry=new THREE.ExtrudeGeometry(wheelShape,{depth:.075,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.014,bevelThickness:.012});wheelFrameGeometry.translate(0,0,-.14);
+  const wheelFrame=new THREE.Mesh(wheelFrameGeometry,new THREE.MeshStandardMaterial({color:0x101821,metalness:.42,roughness:.46,side:THREE.DoubleSide}));wheelFrame.castShadow=true;wheelFrame.receiveShadow=true;steeringPivot.add(wheelFrame);
+  const wheelFace=box(.47,.30,.05,carbon,0,0,-.132,steeringPivot);
+  const wheelGripL=box(.13,.33,.105,rubber,-.315,-.018,-.135,steeringPivot);
+  const wheelGripR=box(.13,.33,.105,rubber,.315,-.018,-.135,steeringPivot);
+  const wheelHub=box(.14,.12,.065,carbon,0,-.005,-.17,steeringPivot);
  dashCanvas=document.createElement("canvas");dashCanvas.width=512;dashCanvas.height=256;dashContext=dashCanvas.getContext("2d");
  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
  const dashMaterial=new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false});
  const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.405,.215),dashMaterial);
- wheelDisplay.position.set(0,.045,-.101);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
+ wheelDisplay.position.set(0,.045,-.178);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
  const makeWheelLabel=(label)=>{
   const canvas=document.createElement("canvas");canvas.width=128;canvas.height=64;
   const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(7,13,19,.92)";ctx.fillRect(0,0,128,64);
@@ -1338,11 +2128,11 @@ function buildCar(){
  };
  const addWheelButton=(label,x,y,color,control)=>{
   const button=new THREE.Mesh(new THREE.CylinderGeometry(.034,.038,.045,16),makeMat(color,.34,.12));
-  button.rotation.x=-Math.PI/2;button.position.set(x,y,-.145);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
+  button.rotation.x=-Math.PI/2;button.position.set(x,y,-.17);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
   const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.068,.028),makeWheelLabel(label));labelMesh.position.set(x,y,-.174);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
   wheelControlMeshes.push(button);
  };
- addWheelButton("ERS",-.205,.115,0xe04b43,"ERS");
+ addWheelButton("ERS",-.315,.12,0xe04b43,"ERS");
  addWheelButton("RAD",-.205,-.005,0x397bb9,"RADIO");
  addWheelButton("BB+",-.205,-.125,0xe3bf42,"BBAL");
  addWheelButton("DRS",.205,.115,0x35a879,"DRS");
@@ -1351,13 +2141,13 @@ function buildCar(){
  // Two multi-position rotary encoders and a 12-LED shift-light strip.
  for(const side of [-1,1]){
   const dial=new THREE.Mesh(new THREE.CylinderGeometry(.055,.062,.055,20),makeMat(0x333f49,.3,.55));
-  dial.rotation.x=-Math.PI/2;dial.position.set(side*.105,-.205,-.135);steeringPivot.add(dial);
+  dial.rotation.x=-Math.PI/2;dial.position.set(side*.13,-.205,-.17);steeringPivot.add(dial);
   const marker=box(.014,.036,.018,white,side*.105,-.205,-.17,steeringPivot);marker.rotation.z=side*.35;
  }
  for(let i=0;i<12;i++){
   const color=i<7?0x36d17c:i<10?0xf2bf43:0xef5146;
   const led=new THREE.Mesh(new THREE.BoxGeometry(.019,.018,.018),makeMat(0x25333a,.35,.12));
-  led.position.set((i-5.5)*.031,.198,-.145);steeringPivot.add(led);wheelShiftLedMeshes.push(led);
+  led.position.set((i-5.5)*.031,.215,-.17);steeringPivot.add(led);wheelShiftLedMeshes.push(led);
  }
  // Carbon shift paddles sit behind the wheel; the keyboard E/Q controls drive them.
  for(const side of [-1,1]){
@@ -1365,7 +2155,7 @@ function buildCar(){
   const paddleTip=box(.04,.06,.045,carbon,side*.255,-.125,.12,steeringPivot);paddleTip.rotation.z=side*.08;
  }
  for(const side of [-1,1]){
-  const spoke=box(.028,.145,.026,carbon,side*.105,-.018,-.109,steeringPivot);
+  const spoke=box(.028,.145,.026,carbon,side*.105,-.018,-.16,steeringPivot);
   spoke.rotation.z=side*.40;
  }
  steeringPivot.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});
@@ -1414,7 +2204,7 @@ function buildCar(){
    }
    wheelMeshes.push(rollGroup);
    registerDamagePart(rollGroup,axle+" "+(side<0?"left":"right")+" wheel and tyre assembly",.94);
-   if(axle==="front")frontWheelPivots.push(steerPivot);
+   if(axle==="front"){frontWheelPivots.push(steerPivot);rollGroup.traverse(o=>{if(o.isMesh)cockpitVisibleMeshes.push(o);});}
   }
  }
  // Front wheels and external wishbones stay visible in chase views, not inside the driver's survival cell.
@@ -1480,7 +2270,7 @@ function positionCarAtStart(){
  if(!carRoot)buildCar();
  const s=route[6]||route[0],yaw=Math.atan2(s.tan.x,s.tan.z);
  carRoot.position.set(s.p.x,s.p.y+.045,s.p.z);carRoot.rotation.set(0,yaw,0);
- car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:.58,powerMode:1,diffMode:1,radioMessage:0,reverse:false};
+ car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false};
  nearestInfo=findNearest(car.x,car.z,car.y);
  elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
@@ -1562,7 +2352,9 @@ function updatePhysics(dt){
  const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
+ const previousDrsState=!!car.drsActive;
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
+ if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
  const speedFraction=clamp(speed/70,0,1);
  const steerLimit=(.045+.38/(1+Math.pow(speed/17,1.7)))*steeringResponse;
  const steeringRate=lerp(8.5,2.7,smoothStep(4,66,speed));
@@ -1579,7 +2371,7 @@ function updatePhysics(dt){
   else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- const downforce=.5*airDensity*4.4*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
+ const downforce=.5*airDensity*4.4*downforceScale*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
  const frontLoad=clamp(normal*.44-weightTransfer,normal*.29,normal*.65),rearLoad=Math.max(0,normal-frontLoad);
  const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR),baseGrip=getGrip();
@@ -1594,7 +2386,7 @@ function updatePhysics(dt){
  let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
  const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
- let drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
+ let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
  let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*brakeDirection-drag*.55;
  let frontFx=-brakeForce*frontBrakeShare*brakeDirection-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
@@ -1770,7 +2562,8 @@ function updatePhysics(dt){
  previousProgress=progress;elapsed+=dt;
  carRoot.position.set(car.x,car.y,car.z);
  carRoot.rotation.set(slope+car.pitch,car.yaw,car.roll,"YXZ");
- steeringPivot.rotation.z=-car.steer*1.22;handGroup.rotation.z=-car.steer*.18;
+ const roadWheelLock=(.045+.38)*steeringResponse,wheelLockRadians=THREE.MathUtils.degToRad(steeringWheelLock/2);
+  steeringPivot.rotation.z=-clamp(car.steer/Math.max(.001,roadWheelLock)*wheelLockRadians,-wheelLockRadians,wheelLockRadians);handGroup.rotation.z=0;
  for(const pivot of frontWheelPivots)pivot.rotation.y=car.steer;
  for(const wheel of wheelMeshes)wheel.rotation.x=car.wheelSpin;
  updateSoftBody(dt);
@@ -1884,13 +2677,29 @@ function playShiftSound(direction){
  if(!audioCtx||!soundEnabled)return;
  const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),sub=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
  osc.type="sawtooth";sub.type="sine";
- const start=direction>0?620:760,end=direction>0?175:290;
+ const start=direction>0?780:240,end=direction>0?175:980;
  osc.frequency.setValueAtTime(start,now);osc.frequency.exponentialRampToValueAtTime(end,now+.095);
- sub.frequency.setValueAtTime(direction>0?105:145,now);sub.frequency.exponentialRampToValueAtTime(62,now+.12);
+ sub.frequency.setValueAtTime(direction>0?125:72,now);sub.frequency.exponentialRampToValueAtTime(direction>0?58:190,now+.12);
  filter.type="lowpass";filter.frequency.setValueAtTime(1800,now);filter.frequency.exponentialRampToValueAtTime(520,now+.11);
  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.085*masterVolume*engineVolume,now+.006);gain.gain.exponentialRampToValueAtTime(.0001,now+.145);
  osc.connect(filter);sub.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
  osc.start(now);sub.start(now);osc.stop(now+.15);sub.stop(now+.15);
+}
+function playDrsSound(engaging){
+ if(!audioCtx||!soundEnabled)return;
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+ osc.type="sawtooth";filter.type="bandpass";filter.frequency.value=engaging?1850:1100;filter.Q.value=2;
+ osc.frequency.setValueAtTime(engaging?520:980,now);osc.frequency.exponentialRampToValueAtTime(engaging?1120:360,now+.12);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.035*masterVolume*effectsVolume,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.16);
+ osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.17);
+}
+function playImpactSound(severity=.3){
+ if(!audioCtx||!soundEnabled)return;
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+ osc.type="triangle";osc.frequency.setValueAtTime(105+severity*90,now);osc.frequency.exponentialRampToValueAtTime(38,now+.19);
+ filter.type="lowpass";filter.frequency.setValueAtTime(850+severity*900,now);filter.frequency.exponentialRampToValueAtTime(125,now+.2);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime((.035+severity*.13)*masterVolume*effectsVolume,now+.004);gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+ osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.23);
 }
 function initAudio(){
  if(audioCtx){audioCtx.resume();return;}
@@ -1903,6 +2712,7 @@ function initAudio(){
  engineFilter=audioCtx.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=1150;engineFilter.Q.value=.8;
  engineWhineFilter=audioCtx.createBiquadFilter();engineWhineFilter.type="bandpass";engineWhineFilter.frequency.value=1500;engineWhineFilter.Q.value=1.5;
  engineGain=audioCtx.createGain();engineGain.gain.value=0;
+ enginePulseOsc=audioCtx.createOscillator();enginePulseOsc.type="sine";enginePulseOsc.frequency.value=100;enginePulseGain=audioCtx.createGain();enginePulseGain.gain.value=.012;enginePulseOsc.connect(enginePulseGain);enginePulseGain.connect(engineGain);enginePulseOsc.start();
  engine2Gain=audioCtx.createGain();engine2Gain.gain.value=.22;
  engineLowGain=audioCtx.createGain();engineLowGain.gain.value=.30;
  engineWhineGain=audioCtx.createGain();engineWhineGain.gain.value=.10;
@@ -1959,13 +2769,15 @@ function updateAudio(throttle,brake,slip){
  engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.028);
  engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.038);
  engineLowOsc.frequency.setTargetAtTime(Math.max(38,rpm/40),t,.055);
- engineWhineOsc.frequency.setTargetAtTime(360+rpm*.31+car.gear*36,t,.045);
+ engineWhineOsc.frequency.setTargetAtTime(360+rpm*.31+car.gear*36+(car.ersDeploy?420:0),t,.045);
+ if(enginePulseOsc)enginePulseOsc.frequency.setTargetAtTime(Math.max(48,rpm/45),t,.075);
+ if(enginePulseGain)enginePulseGain.gain.setTargetAtTime(.008+rpmNorm*.016,t,.09);
  engineFilter.frequency.setTargetAtTime(760+rpm*.075+load*1250,t,.06);
  engineWhineFilter.frequency.setTargetAtTime(1800+rpm*.22,t,.07);
  if(intakeFilter)intakeFilter.frequency.setTargetAtTime(620+rpm*.055+throttle*1450,t,.085);
  if(engine2Gain)engine2Gain.gain.setTargetAtTime(.17+load*.15,t,.07);
  if(engineLowGain)engineLowGain.gain.setTargetAtTime(.11+load*.12,t,.07);
- if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.025+rpmNorm*.085,t,.07);
+ if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.025+rpmNorm*.085+(car.ersDeploy?.055:0),t,.07);
  if(intakeGain)intakeGain.gain.setTargetAtTime(soundEnabled?(.012+throttle*(.11+rpmNorm*.065))*(masterVolume*engineVolume):0,t,.07);
  if(intakeGain&&throttle<.045&&rpm>9000)intakeGain.gain.setTargetAtTime(soundEnabled?.026*masterVolume*engineVolume:0,t,.035);
  const shiftCut=car.shiftTimer>0?.48:1;
@@ -1999,7 +2811,7 @@ function silenceAudio(){
  stopEngineLoops();
 }
 function toggleSound(){
- soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";
+ soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";saveGameSettings();
  if(!soundEnabled)silenceAudio();
  else if(running&&!paused)startEngineLoops();
 }
@@ -2066,6 +2878,31 @@ function syncCameraProfileSettings(){
   $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
  }
 }
+const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV1";
+function saveGameSettings(){
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({
+  displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
+  cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
+  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
+ }));}catch(_){}
+}
+function loadGameSettings(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||"null");if(!saved)return;
+  if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
+  if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
+  const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
+  showHaloColumn=saved.showHaloColumn!==false;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
+  cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
+  cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);steeringResponse=num(saved.steeringResponse,.65,.25,1);
+  steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
+  downforceScale=num(saved.downforceScale,1,.8,1.25);brakeBiasSetting=num(saved.brakeBiasSetting,.58,.52,.68);
+  differentialSetting=Math.round(num(saved.differentialSetting,2,1,3));powerModeSetting=Math.round(num(saved.powerModeSetting,1,1,3));
+  masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
+  soundEnabled=saved.soundEnabled!==false;
+  if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
+ }catch(_){}
+}
 function syncSettingsUI(){
  $("uiMaster").checked=displayOptions.master;$("uiTelemetry").checked=displayOptions.telemetry;
  $("uiBrand").checked=displayOptions.brand;$("uiCircuitPanel").checked=displayOptions.circuit;
@@ -2080,7 +2917,11 @@ function syncSettingsUI(){
  $("engineVolumeRange").value=Math.round(engineVolume*100);$("engineVolumeValue").textContent=Math.round(engineVolume*100)+"%";
  $("effectsVolumeRange").value=Math.round(effectsVolume*100);$("effectsVolumeValue").textContent=Math.round(effectsVolume*100)+"%";
  $("steeringResponseRange").value=Math.round(steeringResponse*100);$("steeringResponseValue").textContent=Math.round(steeringResponse*100)+"%";
+ $("steeringWheelLockRange").value=Math.round(steeringWheelLock);$("steeringWheelLockValue").textContent=Math.round(steeringWheelLock)+"°";
  $("brakeStrengthRange").value=Math.round(brakeStrength*100);$("brakeStrengthValue").textContent=Math.round(brakeStrength*100)+"%";
+ $("brakeBiasRange").value=Math.round(brakeBiasSetting*100);$("brakeBiasValue").textContent=Math.round(brakeBiasSetting*100)+"%";
+ $("downforceRange").value=Math.round(downforceScale*100);$("downforceValue").textContent=Math.round(downforceScale*100)+"%";
+ $("diffModeSelect").value=String(differentialSetting);$("powerModeSelect").value=String(powerModeSetting);
  syncCameraProfileSettings();
 }
 function applyCockpitPreferences(){
@@ -2095,7 +2936,7 @@ function openSettings(){
 }
 function closeSettings(){
  $("settingsOverlay").classList.remove("open");
- applyUISettings();applyCockpitPreferences();
+ applyUISettings();applyCockpitPreferences();saveGameSettings();
  if(settingsResumeAfterClose){paused=false;previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
  settingsResumeAfterClose=false;
 }
@@ -2129,6 +2970,11 @@ function bindSettings(){
  $("effectsVolumeRange").addEventListener("input",e=>{effectsVolume=Number(e.target.value)/100;$("effectsVolumeValue").textContent=e.target.value+"%";});
  $("steeringResponseRange").addEventListener("input",e=>{steeringResponse=Number(e.target.value)/100;$("steeringResponseValue").textContent=e.target.value+"%";});
  $("brakeStrengthRange").addEventListener("input",e=>{brakeStrength=Number(e.target.value)/100;$("brakeStrengthValue").textContent=e.target.value+"%";});
+ $("steeringWheelLockRange").addEventListener("input",e=>{steeringWheelLock=Number(e.target.value);$("steeringWheelLockValue").textContent=e.target.value+"°";saveGameSettings();});
+ $("brakeBiasRange").addEventListener("input",e=>{brakeBiasSetting=Number(e.target.value)/100;if(car)car.brakeBias=brakeBiasSetting;$("brakeBiasValue").textContent=e.target.value+"%";saveGameSettings();});
+ $("downforceRange").addEventListener("input",e=>{downforceScale=Number(e.target.value)/100;$("downforceValue").textContent=e.target.value+"%";saveGameSettings();});
+ $("diffModeSelect").addEventListener("change",e=>{differentialSetting=Number(e.target.value);if(car)car.diffMode=differentialSetting;saveGameSettings();});
+ $("powerModeSelect").addEventListener("change",e=>{powerModeSetting=Number(e.target.value);if(car)car.powerMode=powerModeSetting;saveGameSettings();});
 }
 function bindCameraLook(){
  worldCanvas.addEventListener("contextmenu",e=>e.preventDefault());
@@ -2211,6 +3057,7 @@ function bindControls(){
 }
 async function boot(){
  try{
+  loadGameSettings();
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
   initRenderer();applyGraphicsQuality();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
