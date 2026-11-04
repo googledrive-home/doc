@@ -234,14 +234,26 @@ input[type=range]{accent-color:#ff765e}
    <section class="settings-group"><h3>Driving preferences</h3>
     <div class="two">
      <div class="field"><div class="range-head"><label for="steeringResponseRange">Steering response</label><output id="steeringResponseValue">65%</output></div><input id="steeringResponseRange" type="range" min="25" max="100" step="5" value="65"></div>
-     <div class="field"><div class="range-head"><label for="brakeStrengthRange">Brake strength</label><output id="brakeStrengthValue">100%</output></div><input id="brakeStrengthRange" type="range" min="70" max="120" step="5" value="100"></div>
+     <div class="field"><div class="range-head"><label for="steeringWheelLockRange">Wheel rotation · lock</label><output id="steeringWheelLockValue">300°</output></div><input id="steeringWheelLockRange" type="range" min="180" max="540" step="15" value="300"></div>
     </div>
+    <div class="field"><div class="range-head"><label for="brakeStrengthRange">Brake strength</label><output id="brakeStrengthValue">100%</output></div><input id="brakeStrengthRange" type="range" min="70" max="120" step="5" value="100"></div>
     <div class="settings-options compact">
      <label><input type="checkbox" id="cameraShakeSetting"><span><b>Subtle camera movement</b><small>Small chassis movement over kerbs; off by default.</small></span></label>
      <label><input type="checkbox" id="autoLookSetting"><span><b>Head look to apex</b><small>Camera turns slightly into corners.</small></span></label>
     </div>
    </section>
   </div>
+  <section class="settings-group"><h3>Vehicle engineering</h3>
+    <div class="two">
+     <div class="field"><div class="range-head"><label for="brakeBiasRange">Front brake bias</label><output id="brakeBiasValue">58%</output></div><input id="brakeBiasRange" type="range" min="52" max="68" step="1" value="58"></div>
+     <div class="field"><div class="range-head"><label for="downforceRange">Aerodynamic load</label><output id="downforceValue">100%</output></div><input id="downforceRange" type="range" min="80" max="125" step="5" value="100"></div>
+    </div>
+    <div class="two">
+     <div class="field"><label for="diffModeSelect">Differential map</label><select id="diffModeSelect"><option value="1">Open · rotation</option><option value="2" selected>Balanced</option><option value="3">Locked · traction</option></select></div>
+     <div class="field"><label for="powerModeSelect">Power unit deployment</label><select id="powerModeSelect"><option value="1">Balanced</option><option value="2">Attack</option><option value="3">Harvest</option></select></div>
+    </div>
+    <p class="settings-hint">Engineering values feed into the vehicle model. Wheel lock sets the maximum visual steering rotation (default 300° total).</p>
+   </section>
   <footer class="settings-footer"><span>Changes apply immediately · Each camera keeps its own profile</span><button class="action" id="settingsDoneBtn">APPLY & CLOSE</button></footer>
  </section>
 </div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
@@ -1050,7 +1062,7 @@ let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
 const cameraProfiles=Array.from({length:5},()=>({x:0,y:0,z:0,pitch:0,yaw:0,fov:66}));
-let cameraSensitivity=.18,lookToApex=0,steeringResponse=.65,steeringWheelLock=300,brakeStrength=1,downforceScale=1,brakeBiasSetting=.58,differentialSetting=2,powerModeSetting=2,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
+let cameraSensitivity=.18,lookToApex=0,steeringResponse=.65,steeringWheelLock=300,brakeStrength=1,downforceScale=1,brakeBiasSetting=.58,differentialSetting=2,powerModeSetting=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
 let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,tyres:true,controls:true};
 let showSteeringWheel=true,showDriverHands=true;
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
@@ -2257,7 +2269,7 @@ function positionCarAtStart(){
  if(!carRoot)buildCar();
  const s=route[6]||route[0],yaw=Math.atan2(s.tan.x,s.tan.z);
  carRoot.position.set(s.p.x,s.p.y+.045,s.p.z);carRoot.rotation.set(0,yaw,0);
- car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:.58,powerMode:1,diffMode:1,radioMessage:0,reverse:false};
+ car={x:s.p.x,z:s.p.z,y:s.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false};
  nearestInfo=findNearest(car.x,car.z,car.y);
  elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
@@ -2356,7 +2368,7 @@ function updatePhysics(dt){
   else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- const downforce=.5*airDensity*4.4*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
+ const downforce=.5*airDensity*4.4*downforceScale*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
  const frontLoad=clamp(normal*.44-weightTransfer,normal*.29,normal*.65),rearLoad=Math.max(0,normal-frontLoad);
  const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR),baseGrip=getGrip();
@@ -2371,7 +2383,7 @@ function updatePhysics(dt){
  let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
  const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
- let drag=.5*airDensity*1.08*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
+ let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
  let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*brakeDirection-drag*.55;
  let frontFx=-brakeForce*frontBrakeShare*brakeDirection-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
@@ -2777,7 +2789,7 @@ function silenceAudio(){
  stopEngineLoops();
 }
 function toggleSound(){
- soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";
+ soundEnabled=!soundEnabled;$("soundBtn").textContent=soundEnabled?"SOUND ON":"SOUND OFF";saveGameSettings();
  if(!soundEnabled)silenceAudio();
  else if(running&&!paused)startEngineLoops();
 }
@@ -2844,6 +2856,31 @@ function syncCameraProfileSettings(){
   $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
  }
 }
+const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV1";
+function saveGameSettings(){
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({
+  displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
+  cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
+  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
+ }));}catch(_){}
+}
+function loadGameSettings(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||"null");if(!saved)return;
+  if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
+  if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
+  const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
+  showHaloColumn=saved.showHaloColumn!==false;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
+  cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
+  cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);steeringResponse=num(saved.steeringResponse,.65,.25,1);
+  steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
+  downforceScale=num(saved.downforceScale,1,.8,1.25);brakeBiasSetting=num(saved.brakeBiasSetting,.58,.52,.68);
+  differentialSetting=Math.round(num(saved.differentialSetting,2,1,3));powerModeSetting=Math.round(num(saved.powerModeSetting,1,1,3));
+  masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
+  soundEnabled=saved.soundEnabled!==false;
+  if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
+ }catch(_){}
+}
 function syncSettingsUI(){
  $("uiMaster").checked=displayOptions.master;$("uiTelemetry").checked=displayOptions.telemetry;
  $("uiBrand").checked=displayOptions.brand;$("uiCircuitPanel").checked=displayOptions.circuit;
@@ -2858,7 +2895,11 @@ function syncSettingsUI(){
  $("engineVolumeRange").value=Math.round(engineVolume*100);$("engineVolumeValue").textContent=Math.round(engineVolume*100)+"%";
  $("effectsVolumeRange").value=Math.round(effectsVolume*100);$("effectsVolumeValue").textContent=Math.round(effectsVolume*100)+"%";
  $("steeringResponseRange").value=Math.round(steeringResponse*100);$("steeringResponseValue").textContent=Math.round(steeringResponse*100)+"%";
+ $("steeringWheelLockRange").value=Math.round(steeringWheelLock);$("steeringWheelLockValue").textContent=Math.round(steeringWheelLock)+"°";
  $("brakeStrengthRange").value=Math.round(brakeStrength*100);$("brakeStrengthValue").textContent=Math.round(brakeStrength*100)+"%";
+ $("brakeBiasRange").value=Math.round(brakeBiasSetting*100);$("brakeBiasValue").textContent=Math.round(brakeBiasSetting*100)+"%";
+ $("downforceRange").value=Math.round(downforceScale*100);$("downforceValue").textContent=Math.round(downforceScale*100)+"%";
+ $("diffModeSelect").value=String(differentialSetting);$("powerModeSelect").value=String(powerModeSetting);
  syncCameraProfileSettings();
 }
 function applyCockpitPreferences(){
@@ -2873,7 +2914,7 @@ function openSettings(){
 }
 function closeSettings(){
  $("settingsOverlay").classList.remove("open");
- applyUISettings();applyCockpitPreferences();
+ applyUISettings();applyCockpitPreferences();saveGameSettings();
  if(settingsResumeAfterClose){paused=false;previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
  settingsResumeAfterClose=false;
 }
@@ -2907,6 +2948,11 @@ function bindSettings(){
  $("effectsVolumeRange").addEventListener("input",e=>{effectsVolume=Number(e.target.value)/100;$("effectsVolumeValue").textContent=e.target.value+"%";});
  $("steeringResponseRange").addEventListener("input",e=>{steeringResponse=Number(e.target.value)/100;$("steeringResponseValue").textContent=e.target.value+"%";});
  $("brakeStrengthRange").addEventListener("input",e=>{brakeStrength=Number(e.target.value)/100;$("brakeStrengthValue").textContent=e.target.value+"%";});
+ $("steeringWheelLockRange").addEventListener("input",e=>{steeringWheelLock=Number(e.target.value);$("steeringWheelLockValue").textContent=e.target.value+"°";});
+ $("brakeBiasRange").addEventListener("input",e=>{brakeBiasSetting=Number(e.target.value)/100;if(car)car.brakeBias=brakeBiasSetting;$("brakeBiasValue").textContent=e.target.value+"%";});
+ $("downforceRange").addEventListener("input",e=>{downforceScale=Number(e.target.value)/100;$("downforceValue").textContent=e.target.value+"%";});
+ $("diffModeSelect").addEventListener("change",e=>{differentialSetting=Number(e.target.value);if(car)car.diffMode=differentialSetting;});
+ $("powerModeSelect").addEventListener("change",e=>{powerModeSetting=Number(e.target.value);if(car)car.powerMode=powerModeSetting;});
 }
 function bindCameraLook(){
  worldCanvas.addEventListener("contextmenu",e=>e.preventDefault());
@@ -2989,6 +3035,7 @@ function bindControls(){
 }
 async function boot(){
  try{
+  loadGameSettings();
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
   initRenderer();applyGraphicsQuality();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
