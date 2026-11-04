@@ -1950,12 +1950,15 @@ function terrainHeightFromSample(sample,x,z,distance){
 }
 function terrainVisualHeightFromSample(sample,x,z,distance){
  const natural=terrainHeightFromSample(sample,x,z,distance);
- if(!route.length)return natural;
- const near=findNearest(x,z),local=route[near.index]||sample;
+ if(!route.length||distance>85)return natural;
+ // The coarse terrain sampler supplies a nearby track elevation. Re-select the local
+ // ribbon with that elevation as a hint so bridges/overpasses do not lower the wrong lane.
+ const near=findNearest(x,z,sample.p.y),local=route[near.index]||sample;
  const edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
- // Lower render-only ground beneath asphalt, kerbs and run-off so terrain triangles cannot intersect the car.
- const shoulderBlend=smoothStep(edge+10,edge+40,lateral);
- const clearance=near.point.y-.58;
+ // Keep the render-only terrain comfortably below the road, kerbs and runoff.
+ // The wide falloff prevents coarse terrain triangles from bridging over the racing surface.
+ const shoulderBlend=smoothStep(edge+18,edge+115,lateral);
+ const clearance=near.point.y-1.55;
  return Math.min(natural,lerp(clearance,natural,shoulderBlend));
 }
 function terrainHeightAt(x,z){
@@ -2802,7 +2805,7 @@ function buildCar(){
  const haloTop=tube([[-.96,1.48,.08],[-.89,1.68,.38],[-.54,1.84,.62],[0,1.91,.70],[.54,1.84,.62],[.89,1.68,.38],[.96,1.48,.08]],.021,makeMat(0x242d36,.26,.82));
  const haloBase=tube([[-.86,1.22,-.18],[-.56,1.18,.56],[0,1.16,.88],[.56,1.18,.56],[.86,1.22,-.18]],.022,makeMat(0x242d36,.26,.82));
  cockpitVisibleMeshes.push(haloTop,haloBase);
- cockpitHaloColumn=tube([[0,1.20,1.24],[0,1.88,.70]],.021,makeMat(0x242d36,.26,.82));
+ cockpitHaloColumn=tube([[0,1.20,1.24],[0,1.88,.70]],.032,makeMat(0x56616b,.26,.82));cockpitHaloColumn.frustumCulled=false;cockpitVisibleMeshes.push(cockpitHaloColumn);
  // Steering wheel, screen and animated driver's hands.
 steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(1.04);carRoot.add(steeringPivot);
   // Defined open-frame flat-bottom steering wheel with real grips and a large central display.
@@ -2987,14 +2990,16 @@ function findNearest(x,z,yHint=null){
  if(!n)return out;
  const cx=Math.floor(x/ROUTE_GRID_CELL),cz=Math.floor(z/ROUTE_GRID_CELL);
  const scoreIndex=i=>{
-  const s=route[i],dx=x-s.p.x,dz=z-s.p.z,dy=yHint==null?0:yHint-s.p.y,score=dx*dx+dz*dz+dy*dy*4.5;
+  const s=route[i],dx=x-s.p.x,dz=z-s.p.z,dy=yHint==null?0:yHint-s.p.y;
+  const score=dx*dx+dz*dz+dy*dy*4.5;
   if(score<best){
    best=score;const rx=s.tan.z,rz=-s.tan.x,len=Math.hypot(rx,rz)||1;
    out={index:i,progress:i/n,point:s.p,tangent:s.tan,offset:dx*rx/len+dz*rz/len,distance:Math.hypot(dx,dz)};
   }
  };
  if(routeSpatialGrid.size){
-  for(let ring=0;ring<=6;ring++){
+  const maxRing=yHint==null?6:3;
+  for(let ring=0;ring<=maxRing;ring++){
    for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
     if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
     const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));
@@ -3002,7 +3007,10 @@ function findNearest(x,z,yHint=null){
    }
   }
  }
- if(!Number.isFinite(best)||best>ROUTE_GRID_CELL*ROUTE_GRID_CELL*36)for(let i=0;i<n;i+=2)scoreIndex(i);
+ // Full scan is only a recovery path when the query cell has no indexed samples.
+ if(!Number.isFinite(best)){
+  for(let i=0;i<n;i+=2)scoreIndex(i);
+ }
  return out;
 }
 function updatePreview(){
