@@ -1055,6 +1055,52 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
+const ROUTE_GRID_CELL=40;
+let routeSpatialGrid=new Map(),terrainNearestLookup=null;
+function routeGridKey(x,z){return x+","+z;}
+function buildRouteSpatialGrid(){
+ routeSpatialGrid=new Map();
+ for(let i=0;i<route.length;i+=2){
+  const sample=route[i],gx=Math.floor(sample.p.x/ROUTE_GRID_CELL),gz=Math.floor(sample.p.z/ROUTE_GRID_CELL),key=routeGridKey(gx,gz);
+  let bucket=routeSpatialGrid.get(key);if(!bucket){bucket=[];routeSpatialGrid.set(key,bucket);}
+  bucket.push(i);
+ }
+}
+function buildTerrainNearestLookup(samples,minX,minZ,width,depth,cellSize=64){
+ const cols=Math.max(2,Math.ceil(width/cellSize)+1),rows=Math.max(2,Math.ceil(depth/cellSize)+1),indices=new Int32Array(cols*rows);
+ for(let gz=0;gz<rows;gz++){
+  const z=minZ+Math.min(depth,(gz+.5)*cellSize);
+  for(let gx=0;gx<cols;gx++){
+   const x=minX+Math.min(width,(gx+.5)*cellSize);let best=Infinity,nearest=0;
+   for(let i=0;i<samples.length;i++){
+    const p=samples[i].p,dx=x-p.x,dz=z-p.z,d=dx*dx+dz*dz;
+    if(d<best){best=d;nearest=i;}
+   }
+   indices[gz*cols+gx]=nearest;
+  }
+ }
+ terrainNearestLookup={samples,minX,minZ,cellSize,cols,rows,indices};
+}
+function nearestTerrainSample(x,z){
+ const lookup=terrainNearestLookup;
+ if(lookup&&lookup.samples.length){
+  const gx=clamp(Math.floor((x-lookup.minX)/lookup.cellSize),0,lookup.cols-1);
+  const gz=clamp(Math.floor((z-lookup.minZ)/lookup.cellSize),0,lookup.rows-1);
+  let best=Infinity,nearest=lookup.samples[0];
+  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+   const ix=gx+dx,iz=gz+dz;if(ix<0||iz<0||ix>=lookup.cols||iz>=lookup.rows)continue;
+   const candidate=lookup.samples[lookup.indices[iz*lookup.cols+ix]],p=candidate.p,ox=x-p.x,oz=z-p.z,d=ox*ox+oz*oz;
+   if(d<best){best=d;nearest=candidate;}
+  }
+  return {sample:nearest,distance:Math.sqrt(best)};
+ }
+ let best=Infinity,nearest=terrainSamples[0]||route[0];
+ for(const sample of terrainSamples.length?terrainSamples:route){
+  const dx=x-sample.p.x,dz=z-sample.p.z,d=dx*dx+dz*dz;
+  if(d<best){best=d;nearest=sample;}
+ }
+ return {sample:nearest,distance:Math.sqrt(best)};
+}
 let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=false;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
@@ -1095,7 +1141,7 @@ function initRenderer(){
  renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.8));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMappingExposure=1.22;
+ renderer.shadowMap.enabled=graphicsQuality!=='low';renderer.shadowMap.type=THREE.PCFShadowMap;renderer.toneMappingExposure=1.22;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb7c2);scene.fog=new THREE.FogExp2(0x9eb7c2,.00034);
  racingEnvironment=createRacingEnvironment();scene.environment=racingEnvironment;scene.environmentIntensity=1.0;
@@ -1259,7 +1305,7 @@ function makeCurb(samples,side,width){
 function makeRail(samples,side,distance,height,material){
  const extra=Math.max(0,distance-roadWidth*.5),pts=samples.map((s,i)=>stableTrackOffset(samples,i,side,roadHalfWidthAt(s)+extra,height));
  const c=new THREE.CatmullRomCurve3(pts,true,"centripetal",.5);
- return new THREE.Mesh(new THREE.TubeGeometry(c,samples.length,material.userData.radius||.13,6,true),material);
+ return new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(360,Math.floor(samples.length*.55)),material.userData.radius||.13,6,true),material);
 }
 function makeAsphaltTexture(){
  const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
@@ -1287,12 +1333,8 @@ function terrainHeightFromSample(sample,x,z,distance){
  return lerp(sample.p.y-.16,terrainBaseY+terrainNoise(x,z),blend);
 }
 function terrainHeightAt(x,z){
- let best=Infinity,nearest=terrainSamples[0]||route[0];
- for(const sample of terrainSamples.length?terrainSamples:route){
-  const dx=x-sample.p.x,dz=z-sample.p.z,d=dx*dx+dz*dz;
-  if(d<best){best=d;nearest=sample;}
- }
- return terrainHeightFromSample(nearest,x,z,Math.sqrt(best));
+ const nearest=nearestTerrainSample(x,z);
+ return terrainHeightFromSample(nearest.sample,x,z,nearest.distance);
 }
 function surfaceHeightAt(x,z,yHint=null){
  if(!route.length)return terrainHeightAt(x,z);
@@ -1316,28 +1358,27 @@ function terrainTexture(){
  tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
 }
 function buildTerrain(def){
- const terrainPad=activeTrack==="laguna"?900:1250;
- const minX=Math.min(...route.map(s=>s.p.x))-terrainPad,maxX=Math.max(...route.map(s=>s.p.x))+terrainPad;
- const minZ=Math.min(...route.map(s=>s.p.z))-terrainPad,maxZ=Math.max(...route.map(s=>s.p.z))+terrainPad;
- const width=maxX-minX,depth=maxZ-minZ,nx=graphicsQuality==="low"?180:graphicsQuality==="high"?380:280,nz=Math.max(170,Math.round(nx*depth/width));
- const coarseStep=Math.max(1,Math.floor(route.length/360));
- const samples=[];for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
+ const terrainPad=activeTrack==="laguna"?850:1100;
+ let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+ for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
+ minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
+ const width=maxX-minX,depth=maxZ-minZ;
+ const nx=graphicsQuality==="low"?112:graphicsQuality==="high"?252:176;
+ const nz=Math.max(112,Math.round(nx*depth/width));
+ const coarseStep=Math.max(1,Math.floor(route.length/180)),samples=[];
+ for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
  terrainSamples=samples;
+ buildTerrainNearestLookup(samples,minX,minZ,width,depth,64);
  const positions=[],colors=[],uvs=[],indices=[];
  const baseColor=new THREE.Color(activeTrack==="laguna"?0xb39a68:activeTrack==="monaco"?0x9a988e:activeTrack==="monza"?0x6f904b:0x708c50);
  for(let iz=0;iz<=nz;iz++){
   const z=minZ+depth*iz/nz;
   for(let ix=0;ix<=nx;ix++){
-   const x=minX+width*ix/nx;let best=Infinity,nearest=samples[0];
-   for(let j=0;j<samples.length;j++){
-    const p=samples[j].p,dx=x-p.x,dz=z-p.z,d=dx*dx+dz*dz;
-    if(d<best){best=d;nearest=samples[j];}
-   }
-   const distance=Math.sqrt(best),height=terrainHeightFromSample(nearest,x,z,distance);
+   const x=minX+width*ix/nx,nearest=nearestTerrainSample(x,z);
+   const height=terrainHeightFromSample(nearest.sample,x,z,nearest.distance);
    positions.push(x,height,z);uvs.push(x/70,z/70);
    const variation=.94+(.5+.5*Math.sin(x*.018+z*.013))*.075;
-   const color=baseColor.clone().multiplyScalar(variation);
-   colors.push(color.r,color.g,color.b);
+   colors.push(baseColor.r*variation,baseColor.g*variation,baseColor.b*variation);
   }
  }
  for(let iz=0;iz<nz;iz++)for(let ix=0;ix<nx;ix++){
@@ -1352,7 +1393,6 @@ function buildTerrain(def){
  const material=new THREE.MeshStandardMaterial({map:terrainTexture(),vertexColors:true,roughness:.98,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=true;environmentGroup.add(mesh);
 }
-
 function createTrack(){
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
@@ -1368,7 +1408,8 @@ function createTrack(){
  trackScale=def.length/horizontalLength(pathCurve);
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
  routeLength=horizontalLength(pathCurve);
- route=sampleCurve(pathCurve,Math.max(1400,Math.ceil(def.length/4)),def,minAlt);
+ route=sampleCurve(pathCurve,Math.max(1050,Math.ceil(def.length/6)),def,minAlt);
+ buildRouteSpatialGrid();
   applySafeTrackWidths(route,roadWidth);
  let layoutIssues=validateTrackLayout(route,roadWidth+.65);
  if(layoutIssues.length){
@@ -1391,7 +1432,7 @@ function createTrack(){
  for(const side of [-1,1]){
   const edgePts=route.map((s,i)=>stableTrackOffset(route,i,side,Math.max(2.8,roadHalfWidthAt(s)-.12),.075));
   const edgeCurve=new THREE.CatmullRomCurve3(edgePts,true,"centripetal",.5);
-  trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,route.length,.055,5,true),edgeMat));
+  trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(360,Math.floor(route.length*.55)),.055,5,true),edgeMat));
  }
  const railTop=makeMat(0x8c969c,.38,.72);railTop.userData.radius=.16;
  const railMid=makeMat(0x626d75,.48,.65);railMid.userData.radius=.11;
@@ -1694,7 +1735,7 @@ function buildGrandstandsAndCrowd(){
   activeTrack==="monza"?[.045,.25,.52,.79]:[.08,.33,.59,.86];
  const palette=[0x263d8c,0xc83e37,0xe5e6dd,0x273b31,0xd3a23b,0x683d9c,0x1d91a8,0xededeb];
  const torsoGeo=new THREE.CapsuleGeometry(.17,.34,3,6),headGeo=new THREE.SphereGeometry(.115,7,6);
- const max=positions.length*6*38;
+ const max=positions.length*6*(graphicsQuality==='low'?12:graphicsQuality==='high'?34:22);
  const torsoMesh=new THREE.InstancedMesh(torsoGeo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9}),max);
  const headMesh=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:0xd8b28d,roughness:.96}),max);
  const dummy=new THREE.Object3D();let people=0;
@@ -1723,8 +1764,8 @@ function buildGrandstandsAndCrowd(){
   }
   environmentGroup.add(stand);
   // Every spectator is placed at the exact sampled terrain height below their row.
-  for(let row=0;row<6;row++)for(let col=0;col<38;col++){
-   const along=(col-18.5)*1.12,lateral=roadWidth/2+41.9+row*2.35;
+  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?12:graphicsQuality==='high'?34:22);col++){
+   const along=(col-(graphicsQuality==='low'?5.5:graphicsQuality==='high'?16.5:10.5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
    const p=offsetPoint(sample,side,lateral,0),safe=ensureOffTrackPoint(new THREE.Vector3(p.x+sample.tan.x*along,0,p.z+sample.tan.z*along),side,14),x=safe.x,z=safe.z;
    const y=terrainHeightAt(x,z)+1.0+row*.47;
    dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
@@ -1741,7 +1782,7 @@ function buildGrandstandsAndCrowd(){
 
 function buildScenery(){
  const dry=activeTrack==="laguna",park=["monza","silverstone","suzuka"].includes(activeTrack),city=activeTrack==="monaco";
- const quality=graphicsQuality==="low"?.72:graphicsQuality==="high"?1.32:1;
+ const quality=graphicsQuality==="low"?.38:graphicsQuality==="high"?1:.72;
  const count=Math.round(city?95:(park?620:dry?430:560)*quality);
  const trunkMat=makeMat(dry?0x756047:0x56483a,.96);
  const broadMat=makeMat(dry?0x8a8558:park?0x426d3e:0x315d3a,.98);
@@ -2295,15 +2336,51 @@ function drawDashboard(){
  wheelShiftLedMeshes.forEach((mesh,i)=>{const on=(i+1)/wheelShiftLedMeshes.length<rpm;mesh.material.color.setHex(on?ledColours[Math.min(i,15)]:0x25343b);if(mesh.material.emissive)mesh.material.emissive.setHex(on?ledColours[Math.min(i,15)]:0x000000);mesh.material.emissiveIntensity=on?.65:0;});
  wheelControlMeshes.forEach(mesh=>{const control=mesh.userData.wheelControl,active=control==="ERS"?car.ersDeploy:control==="DRS"?car.drsArmed:false;mesh.material.color.setHex(active?0x75e3a7:mesh.userData.baseColor);});
 }
+function positionCarAtStart(){
+ if(!carRoot)buildCar();
+ const sample=route[6]||route[0],yaw=Math.atan2(sample.tan.x,sample.tan.z);
+ if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
+ carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);
+ carRoot.rotation.set(0,yaw,0);
+ car={
+  x:sample.p.x,z:sample.p.z,y:sample.p.y+.045,yaw,
+  u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
+  wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,
+  longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
+  pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,
+  barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
+  drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,
+  powerMode:powerModeSetting,diffMode:differentialSetting,
+  radioMessage:0,reverse:false
+ };
+ nearestInfo=findNearest(car.x,car.z,car.y);
+ elapsed=0;lap=1;lapStart=0;bestLap=Infinity;
+ previousProgress=nearestInfo.progress;
+ updateHud(getGrip(),1);
+}
 function findNearest(x,z,yHint=null){
- let best=Infinity,out={index:0,progress:0,point:route[0].p,tangent:route[0].tan,offset:0};
  const n=route.length;
- for(let i=0;i<n;i+=2){
-  const s=route[i],dx=x-s.p.x,dz=z-s.p.z,dy=yHint==null?0:yHint-s.p.y;
-  // Weight elevation so close plan-view overlaps select the correct physical ribbon.
-  const d=dx*dx+dz*dz+dy*dy*4.5;
-  if(d<best){best=d;const right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();out={index:i,progress:i/n,point:s.p,tangent:s.tan,offset:dx*right.x+dz*right.z,distance:Math.sqrt(dx*dx+dz*dz)};}
+ let best=Infinity,out={index:0,progress:0,point:route[0]?.p||new THREE.Vector3(),tangent:route[0]?.tan||new THREE.Vector3(0,0,1),offset:0,distance:Infinity};
+ if(!n)return out;
+ const cx=Math.floor(x/ROUTE_GRID_CELL),cz=Math.floor(z/ROUTE_GRID_CELL);
+ const scoreIndex=i=>{
+  const s=route[i],dx=x-s.p.x,dz=z-s.p.z,dy=yHint==null?0:yHint-s.p.y,score=dx*dx+dz*dz+dy*dy*4.5;
+  if(score<best){
+   best=score;const rx=s.tan.z,rz=-s.tan.x,len=Math.hypot(rx,rz)||1;
+   out={index:i,progress:i/n,point:s.p,tangent:s.tan,offset:dx*rx/len+dz*rz/len,distance:Math.hypot(dx,dz)};
+  }
+ };
+ if(routeSpatialGrid.size){
+  for(let ring=0;ring<=6;ring++){
+   for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+    if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
+    const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));if(bucket)for(const i of bucket)scoreIndex(i);
+   }
+   const safeRadius=Math.max(7,(ring-.65)*ROUTE_GRID_CELL);
+   if(best<safeRadius*safeRadius)break;
+  }
  }
+ if(!Number.isFinite(best))for(let i=0;i<n;i+=2)scoreIndex(i);
  return out;
 }
 function updatePreview(){
@@ -2852,10 +2929,10 @@ function restartLap(){clearCrashEffects();buildCar();positionCarAtStart();spawnO
 function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
- const ratio=graphicsQuality==="low"?.9:graphicsQuality==="high"?1.7:1.3;
+ const ratio=graphicsQuality==="low"?.72:graphicsQuality==="high"?1.3:1;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ratio));
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- if(sunLight){const mapSize=graphicsQuality==="low"?1024:graphicsQuality==="high"?3072:2048;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
+ renderer.shadowMap.enabled=graphicsQuality!=='low';renderer.shadowMap.type=THREE.PCFShadowMap;
+ if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1536:1024;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
  renderer.setSize(window.innerWidth,window.innerHeight,false);
 }
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.zoom=1;camera.fov=66;camera.updateProjectionMatrix();}
