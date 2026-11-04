@@ -1378,6 +1378,7 @@ function createTrack(){
   layoutIssues=validateTrackLayout(route,roadWidth+.65);
   if(layoutIssues.length)console.error("APEX TRACK VALIDATION: remaining close track sections on "+def.name,layoutIssues.slice(0,8));
  }
+ applySafeTrackWidths(route,roadWidth); // Re-sync per-corner widths after any global clearance adjustment.
  terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
