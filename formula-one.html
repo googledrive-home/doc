@@ -1919,6 +1919,7 @@ function updateSoftBody(dt){
 }
 function applyCrashDamage(severity,side,zone="side"){
  if(!carRoot||severity<.12)return;
+ playImpactSound(severity);
  applySoftBodyImpact(severity,side,zone);
  vehicleDamage=clamp(vehicleDamage+severity*.22,0,.92);
  const impactPoint=carRoot.position.clone();impactPoint.y+=.7;
@@ -2351,7 +2352,9 @@ function updatePhysics(dt){
  const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
+ const previousDrsState=!!car.drsActive;
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
+ if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
  const speedFraction=clamp(speed/70,0,1);
  const steerLimit=(.045+.38/(1+Math.pow(speed/17,1.7)))*steeringResponse;
  const steeringRate=lerp(8.5,2.7,smoothStep(4,66,speed));
@@ -2674,13 +2677,29 @@ function playShiftSound(direction){
  if(!audioCtx||!soundEnabled)return;
  const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),sub=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
  osc.type="sawtooth";sub.type="sine";
- const start=direction>0?620:760,end=direction>0?175:290;
+ const start=direction>0?780:240,end=direction>0?175:980;
  osc.frequency.setValueAtTime(start,now);osc.frequency.exponentialRampToValueAtTime(end,now+.095);
- sub.frequency.setValueAtTime(direction>0?105:145,now);sub.frequency.exponentialRampToValueAtTime(62,now+.12);
+ sub.frequency.setValueAtTime(direction>0?125:72,now);sub.frequency.exponentialRampToValueAtTime(direction>0?58:190,now+.12);
  filter.type="lowpass";filter.frequency.setValueAtTime(1800,now);filter.frequency.exponentialRampToValueAtTime(520,now+.11);
  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.085*masterVolume*engineVolume,now+.006);gain.gain.exponentialRampToValueAtTime(.0001,now+.145);
  osc.connect(filter);sub.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
  osc.start(now);sub.start(now);osc.stop(now+.15);sub.stop(now+.15);
+}
+function playDrsSound(engaging){
+ if(!audioCtx||!soundEnabled)return;
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+ osc.type="sawtooth";filter.type="bandpass";filter.frequency.value=engaging?1850:1100;filter.Q.value=2;
+ osc.frequency.setValueAtTime(engaging?520:980,now);osc.frequency.exponentialRampToValueAtTime(engaging?1120:360,now+.12);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.035*masterVolume*effectsVolume,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.16);
+ osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.17);
+}
+function playImpactSound(severity=.3){
+ if(!audioCtx||!soundEnabled)return;
+ const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+ osc.type="triangle";osc.frequency.setValueAtTime(105+severity*90,now);osc.frequency.exponentialRampToValueAtTime(38,now+.19);
+ filter.type="lowpass";filter.frequency.setValueAtTime(850+severity*900,now);filter.frequency.exponentialRampToValueAtTime(125,now+.2);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime((.035+severity*.13)*masterVolume*effectsVolume,now+.004);gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+ osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start(now);osc.stop(now+.23);
 }
 function initAudio(){
  if(audioCtx){audioCtx.resume();return;}
@@ -2693,6 +2712,7 @@ function initAudio(){
  engineFilter=audioCtx.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=1150;engineFilter.Q.value=.8;
  engineWhineFilter=audioCtx.createBiquadFilter();engineWhineFilter.type="bandpass";engineWhineFilter.frequency.value=1500;engineWhineFilter.Q.value=1.5;
  engineGain=audioCtx.createGain();engineGain.gain.value=0;
+ enginePulseOsc=audioCtx.createOscillator();enginePulseOsc.type="sine";enginePulseOsc.frequency.value=100;enginePulseGain=audioCtx.createGain();enginePulseGain.gain.value=.012;enginePulseOsc.connect(enginePulseGain);enginePulseGain.connect(engineGain);enginePulseOsc.start();
  engine2Gain=audioCtx.createGain();engine2Gain.gain.value=.22;
  engineLowGain=audioCtx.createGain();engineLowGain.gain.value=.30;
  engineWhineGain=audioCtx.createGain();engineWhineGain.gain.value=.10;
@@ -2749,13 +2769,15 @@ function updateAudio(throttle,brake,slip){
  engineOsc.frequency.setTargetAtTime(Math.max(55,rpm/20),t,.028);
  engineOsc2.frequency.setTargetAtTime(Math.max(110,rpm/10),t,.038);
  engineLowOsc.frequency.setTargetAtTime(Math.max(38,rpm/40),t,.055);
- engineWhineOsc.frequency.setTargetAtTime(360+rpm*.31+car.gear*36,t,.045);
+ engineWhineOsc.frequency.setTargetAtTime(360+rpm*.31+car.gear*36+(car.ersDeploy?420:0),t,.045);
+ if(enginePulseOsc)enginePulseOsc.frequency.setTargetAtTime(Math.max(48,rpm/45),t,.075);
+ if(enginePulseGain)enginePulseGain.gain.setTargetAtTime(.008+rpmNorm*.016,t,.09);
  engineFilter.frequency.setTargetAtTime(760+rpm*.075+load*1250,t,.06);
  engineWhineFilter.frequency.setTargetAtTime(1800+rpm*.22,t,.07);
  if(intakeFilter)intakeFilter.frequency.setTargetAtTime(620+rpm*.055+throttle*1450,t,.085);
  if(engine2Gain)engine2Gain.gain.setTargetAtTime(.17+load*.15,t,.07);
  if(engineLowGain)engineLowGain.gain.setTargetAtTime(.11+load*.12,t,.07);
- if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.025+rpmNorm*.085,t,.07);
+ if(engineWhineGain)engineWhineGain.gain.setTargetAtTime(.025+rpmNorm*.085+(car.ersDeploy?.055:0),t,.07);
  if(intakeGain)intakeGain.gain.setTargetAtTime(soundEnabled?(.012+throttle*(.11+rpmNorm*.065))*(masterVolume*engineVolume):0,t,.07);
  if(intakeGain&&throttle<.045&&rpm>9000)intakeGain.gain.setTargetAtTime(soundEnabled?.026*masterVolume*engineVolume:0,t,.035);
  const shiftCut=car.shiftTimer>0?.48:1;
@@ -2948,11 +2970,11 @@ function bindSettings(){
  $("effectsVolumeRange").addEventListener("input",e=>{effectsVolume=Number(e.target.value)/100;$("effectsVolumeValue").textContent=e.target.value+"%";});
  $("steeringResponseRange").addEventListener("input",e=>{steeringResponse=Number(e.target.value)/100;$("steeringResponseValue").textContent=e.target.value+"%";});
  $("brakeStrengthRange").addEventListener("input",e=>{brakeStrength=Number(e.target.value)/100;$("brakeStrengthValue").textContent=e.target.value+"%";});
- $("steeringWheelLockRange").addEventListener("input",e=>{steeringWheelLock=Number(e.target.value);$("steeringWheelLockValue").textContent=e.target.value+"°";});
- $("brakeBiasRange").addEventListener("input",e=>{brakeBiasSetting=Number(e.target.value)/100;if(car)car.brakeBias=brakeBiasSetting;$("brakeBiasValue").textContent=e.target.value+"%";});
- $("downforceRange").addEventListener("input",e=>{downforceScale=Number(e.target.value)/100;$("downforceValue").textContent=e.target.value+"%";});
- $("diffModeSelect").addEventListener("change",e=>{differentialSetting=Number(e.target.value);if(car)car.diffMode=differentialSetting;});
- $("powerModeSelect").addEventListener("change",e=>{powerModeSetting=Number(e.target.value);if(car)car.powerMode=powerModeSetting;});
+ $("steeringWheelLockRange").addEventListener("input",e=>{steeringWheelLock=Number(e.target.value);$("steeringWheelLockValue").textContent=e.target.value+"°";saveGameSettings();});
+ $("brakeBiasRange").addEventListener("input",e=>{brakeBiasSetting=Number(e.target.value)/100;if(car)car.brakeBias=brakeBiasSetting;$("brakeBiasValue").textContent=e.target.value+"%";saveGameSettings();});
+ $("downforceRange").addEventListener("input",e=>{downforceScale=Number(e.target.value)/100;$("downforceValue").textContent=e.target.value+"%";saveGameSettings();});
+ $("diffModeSelect").addEventListener("change",e=>{differentialSetting=Number(e.target.value);if(car)car.diffMode=differentialSetting;saveGameSettings();});
+ $("powerModeSelect").addEventListener("change",e=>{powerModeSetting=Number(e.target.value);if(car)car.powerMode=powerModeSetting;saveGameSettings();});
 }
 function bindCameraLook(){
  worldCanvas.addEventListener("contextmenu",e=>e.preventDefault());
