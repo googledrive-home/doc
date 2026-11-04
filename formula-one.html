@@ -4235,9 +4235,25 @@ const REDBULL_ASSET_PACK_URL="assets/RedBull2022-GameAssetPack.zip";
 async function getRedBullAssetPack(){
  if(!redBullAssetPackPromise){
   redBullAssetPackPromise=(async()=>{
-   const response=await fetch(REDBULL_ASSET_PACK_URL,{cache:"force-cache"});
-   if(!response.ok)throw new Error("Asset pack not found at "+REDBULL_ASSET_PACK_URL+" (HTTP "+response.status+")");
-   const zip=await JSZip.loadAsync(await response.arrayBuffer());
+   let archiveBuffer=null;
+   // Prefer the one-piece ZIP when present. If Chromebook users uploaded the seven
+   // smaller chunks instead, fetch them and reconstruct the same ZIP in memory.
+   const whole=await fetch(REDBULL_ASSET_PACK_URL,{cache:"force-cache"});
+   if(whole.ok){
+    archiveBuffer=await whole.arrayBuffer();
+   }else{
+    const partNames=Array.from({length:7},(_,i)=>"assets/APEX-RedBull-Part-"+String(i+1).padStart(2,"0")+"-of-07.bin");
+    const responses=await Promise.all(partNames.map(url=>fetch(url,{cache:"force-cache"})));
+    const failed=responses.map((r,i)=>!r.ok?{name:partNames[i],status:r.status}:null).filter(Boolean);
+    if(failed.length)throw new Error("Red Bull model files are not uploaded yet. Missing part(s): "+failed.map(x=>x.name+" (HTTP "+x.status+")").join(", "));
+    const chunks=await Promise.all(responses.map(r=>r.arrayBuffer()));
+    const total=chunks.reduce((n,b)=>n+b.byteLength,0);
+    const combined=new Uint8Array(total);let offset=0;
+    for(const chunk of chunks){combined.set(new Uint8Array(chunk),offset);offset+=chunk.byteLength;}
+    archiveBuffer=combined.buffer;
+    if(combined[0]!==0x50||combined[1]!==0x4b)throw new Error("The seven Red Bull asset chunks did not reconstruct a valid ZIP archive.");
+   }
+   const zip=await JSZip.loadAsync(archiveBuffer);
    const fbxEntry=zip.file("RedBull-2022-optimized.fbx");
    if(!fbxEntry)throw new Error("RedBull-2022-optimized.fbx is missing from the asset pack");
    const textureURLs=new Map(),entries=Object.values(zip.files).filter(f=>!f.dir&&/\/textures\/.*\.webp$/i.test("/"+f.name));
