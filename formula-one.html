@@ -130,6 +130,17 @@ input[type=range]{accent-color:#ff765e}
 .condition-meter{height:4px;margin-top:5px;overflow:hidden;border-radius:5px;background:#ffffff16}
 .condition-meter i{display:block;width:100%;height:100%;background:#43d69a;transition:width .18s,background .18s}
 @media(max-width:760px){#tireHud{min-width:180px;width:210px;padding:7px 8px;max-height:45vh}#carConditionMap{height:67px}.condition-grid{gap:4px}.condition-item{padding:4px 5px}}
+
+.model-state{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:6px 7px;border:1px solid #ffffff15;border-radius:7px;background:#ffffff07}
+.model-state span{font-size:7px;letter-spacing:.12em;font-weight:900;color:#8da1b0}
+.model-state b{font-size:8px;letter-spacing:.04em;color:#e7c76b;text-align:right}
+.model-state b[data-state="active"]{color:#43d69a}
+.model-state b[data-state="error"]{color:#ff8b7d}
+#desktopDrivePads{position:fixed;z-index:12;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
+#desktopDrivePads button{min-width:116px;height:42px;padding:0 14px;border:1px solid #ffffff30;border-radius:10px;background:#0b1722eF;color:#eaf0f5;font-size:10px;font-weight:950;letter-spacing:.09em;box-shadow:0 8px 25px #0007;touch-action:none;user-select:none}
+#desktopDrivePads #driveGo{background:linear-gradient(120deg,#ff684e,#ffad56);color:#1c1210;border-color:#ffb17c}
+#desktopDrivePads button.down{filter:brightness(1.25);transform:translateY(1px)}
+@media(max-width:760px){#desktopDrivePads{display:none}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
@@ -199,6 +210,7 @@ input[type=range]{accent-color:#ff765e}
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
  <div class="hudtitle">Vehicle telemetry</div>
+ <div class="model-state"><span>CAR MODEL</span><b id="vehicleModelState" data-state="loading">LOADING RED BULL 2022…</b></div>
  <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
  <div class="tireline"><span>Rear tyre temperature</span><b id="rearTemp">78°C</b></div>
  <div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div>
@@ -305,6 +317,10 @@ input[type=range]{accent-color:#ff765e}
   <footer class="settings-footer"><span>Changes apply immediately · Each camera keeps its own profile</span><button class="action" id="settingsDoneBtn">APPLY & CLOSE</button></footer>
  </section>
 </div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
+<div id="desktopDrivePads" aria-label="Driving controls">
+ <button id="driveBrake" type="button">BRAKE · HOLD</button>
+ <button id="driveGo" type="button">ACCELERATE · HOLD</button>
+</div>
 <pre id="errorBox"></pre>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
@@ -4238,21 +4254,28 @@ async function getRedBullAssetPack(){
    let archiveBuffer=null;
    // Prefer the one-piece ZIP when present. If Chromebook users uploaded the seven
    // smaller chunks instead, fetch them and reconstruct the same ZIP in memory.
-   const whole=await fetch(REDBULL_ASSET_PACK_URL,{cache:"force-cache"});
+   updateVehicleModelStatus("loading","Checking uploaded Red Bull files…");
+   const whole=await fetch(REDBULL_ASSET_PACK_URL+"?v=redbull-asset-7", {cache:"no-store"});
    if(whole.ok){
     archiveBuffer=await whole.arrayBuffer();
    }else{
     const partNames=Array.from({length:7},(_,i)=>"assets/APEX-RedBull-Part-"+String(i+1).padStart(2,"0")+"-of-07.bin");
-    const responses=await Promise.all(partNames.map(url=>fetch(url,{cache:"force-cache"})));
+    const responses=await Promise.all(partNames.map(url=>fetch(url+"?v=redbull-asset-7",{cache:"no-store"})));
     const failed=responses.map((r,i)=>!r.ok?{name:partNames[i],status:r.status}:null).filter(Boolean);
     if(failed.length)throw new Error("Red Bull model files are not uploaded yet. Missing part(s): "+failed.map(x=>x.name+" (HTTP "+x.status+")").join(", "));
     const chunks=await Promise.all(responses.map(r=>r.arrayBuffer()));
     const total=chunks.reduce((n,b)=>n+b.byteLength,0);
+    if(total!==15858187)throw new Error("Asset chunks total "+total+" bytes; expected 15858187. Re-upload the seven original part files.");
     const combined=new Uint8Array(total);let offset=0;
     for(const chunk of chunks){combined.set(new Uint8Array(chunk),offset);offset+=chunk.byteLength;}
     archiveBuffer=combined.buffer;
     if(combined[0]!==0x50||combined[1]!==0x4b)throw new Error("The seven Red Bull asset chunks did not reconstruct a valid ZIP archive.");
+    updateVehicleModelStatus("loading","Checking asset integrity…");
+    const digest=await crypto.subtle.digest("SHA-256",combined);
+    const checksum=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+    if(checksum!=="8e9ab217019053c3437f01eb722f0e3cf9bf58b47b8a89fb5387bb7199d40c97")throw new Error("Red Bull asset checksum does not match. One or more uploaded pieces may be incomplete.");
    }
+   updateVehicleModelStatus("loading","Extracting FBX and textures…");
    const zip=await JSZip.loadAsync(archiveBuffer);
    const fbxEntry=zip.file("RedBull-2022-optimized.fbx");
    if(!fbxEntry)throw new Error("RedBull-2022-optimized.fbx is missing from the asset pack");
@@ -4266,6 +4289,10 @@ async function getRedBullAssetPack(){
   })().catch(error=>{redBullAssetPackPromise=null;throw error;});
  }
  return redBullAssetPackPromise;
+}
+function updateVehicleModelStatus(state,message){
+ const element=$("vehicleModelState");if(!element)return;
+ element.dataset.state=state;element.textContent=message;element.title=message;
 }
 function sourcePartInfo(name){
  const n=String(name||"").toLowerCase();
@@ -4413,9 +4440,10 @@ async function loadRedBullCarModel(targetRoot,generation){
   for(const o of remove)if(o.parent)o.parent.remove(o);
   source.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(source),size=bounds.getSize(new THREE.Vector3());
-  if(!Number.isFinite(size.z)||size.z<100)throw new Error("Imported FBX has invalid dimensions");
+  if(!Number.isFinite(size.z)||size.z<0.5)throw new Error("Imported FBX has invalid dimensions after unit conversion: "+JSON.stringify({x:size.x,y:size.y,z:size.z}));
   const centre=new THREE.Vector3((bounds.min.x+bounds.max.x)*.5,bounds.min.y,(bounds.min.z+bounds.max.z)*.5);
   const scale=5.45/size.z,parts=[],modelRoot=new THREE.Group();modelRoot.name="Red Bull 2022 imported car";
+  updateVehicleModelStatus("loading","Fitting "+size.z.toFixed(2)+" m source model to 5.45 m chassis…");
   source.traverse(o=>{
    if(!o.isMesh||!o.geometry)return;
    const geometry=o.geometry.clone();geometry.applyMatrix4(o.matrixWorld);
@@ -4426,6 +4454,8 @@ async function loadRedBullCarModel(targetRoot,generation){
    mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=false;modelRoot.add(mesh);parts.push(mesh);
   });
   if(parts.length<35)throw new Error("Imported FBX contained too few car parts: "+parts.length);
+  const tyreNameCount=parts.filter(m=>/^(front tires?|back tires?)(\.001)?$/i.test(m.userData.sourceName||m.name)).length;
+  if(tyreNameCount!==4)throw new Error("Expected four named wheel tyres but found "+tyreNameCount+".");
   if(manager.itemsTotal>0&&manager.itemsLoaded<manager.itemsTotal)await Promise.race([textureReady,new Promise(resolve=>setTimeout(resolve,10000))]);
   if(targetRoot!==carRoot||generation!==carBuildGeneration)return;
   // The fallback stays hidden as a whole; its meshes must not remain in the imported car's
@@ -4441,25 +4471,38 @@ async function loadRedBullCarModel(targetRoot,generation){
    registerDamagePart(mesh,zoneName+" "+name,info.threshold,info.zone);
    const n=name.toLowerCase();
    if(/exhaust|differential|engine|power unit/.test(n))importedEngineMeshes.push(mesh);
-   if(/cabin|seat|belt|clip|control|switch|shifter|front wing|spoiler front|canard|mirror glass/.test(n))cockpitVisibleMeshes.push(mesh);
+   if(/seat|belt|clip|control|switch|shifter|mirror glass/.test(n))cockpitVisibleMeshes.push(mesh);
    if(/^(control|switch|shifter|control shaft)$/i.test(name)){} 
   }
   createImportedSteeringWheel(modelRoot,parts);
   addImportedHalo(targetRoot);
   targetRoot.add(modelRoot);
+  modelRoot.updateMatrixWorld(true);
+  const seatMesh=parts.find(m=>/^seat$/i.test(m.userData.sourceName||m.name));
+  const cabinMesh=parts.find(m=>/^cabin$/i.test(m.userData.sourceName||m.name));
+  const seatBounds=seatMesh?new THREE.Box3().setFromObject(seatMesh):null;
+  const cabinBounds=cabinMesh?new THREE.Box3().setFromObject(cabinMesh):null;
+  const seatCentre=seatBounds?seatBounds.getCenter(new THREE.Vector3()):new THREE.Vector3(0,.64,0);
+  const seatTop=seatBounds?seatBounds.max.y:.76,tubTop=cabinBounds?cabinBounds.max.y:.90;
+  camera.userData.importedCockpitEye={x:0,y:clamp(Math.max(seatTop+.10,tubTop-.025),.78,1.02),z:seatCentre.z+.035};
   if(proceduralFallbackRoot)proceduralFallbackRoot.visible=false;
   targetRoot.scale.set(1,1,1);
   importedCarModelRoot=modelRoot;importedCarActive=true;
+  updateVehicleModelStatus("active","RED BULL 2022 · "+parts.length+" PARTS · "+importedWheelAssemblies.length+" WHEELS");
   console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
   targetRoot.updateMatrixWorld(true);
   setCamera(0);
  }catch(error){
-  if(generation===carBuildGeneration)console.warn("Red Bull 2022 asset pack is not active; using the procedural fallback. Upload "+REDBULL_ASSET_PACK_URL+" to the repository to enable the imported car.",error);
+  if(generation===carBuildGeneration){
+   updateVehicleModelStatus("error","FALLBACK · "+(error?.message||String(error)));
+   console.error("Red Bull 2022 model import failed; procedural fallback remains active.",error);
+  }
  }
 }
 
 function buildCar(){
  const modelGeneration=++carBuildGeneration;
+ updateVehicleModelStatus("loading","LOADING RED BULL 2022…");
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
@@ -5207,9 +5250,10 @@ function setCamera(frameDt=.016){
  const pitch=THREE.MathUtils.degToRad(profile.pitch);
  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
-  camera.position.set(profile.x,1.02+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),.04+profile.z);
+  const eye=camera.userData.importedCockpitEye||{x:0,y:.86,z:.04};
+  camera.position.set(eye.x+profile.x,eye.y+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),eye.z+profile.z);
   camera.rotation.order="YXZ";
-  camera.rotation.set(-.065+pitch,Math.PI+yaw,0);
+  camera.rotation.set(-.035+pitch,Math.PI+yaw,0);
   camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
   camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   const cockpitSet=new Set(cockpitVisibleMeshes);
@@ -5457,6 +5501,7 @@ function startSession(){
  $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
  spawnOpponents();
  running=true;paused=false;applyUISettings();elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
+ worldCanvas.focus({preventScroll:true});
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
@@ -5659,7 +5704,8 @@ function handleWheelControlClick(event){
  drawDashboard();
 }
 function bindControls(){
- worldCanvas.addEventListener("pointerdown",handleWheelControlClick);
+ worldCanvas.tabIndex=0;
+ worldCanvas.addEventListener("pointerdown",e=>{worldCanvas.focus({preventScroll:true});handleWheelControlClick(e);});
  window.addEventListener("keydown",e=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
@@ -5671,6 +5717,15 @@ function bindControls(){
   if(e.code==="KeyH"){showHaloColumn=!showHaloColumn;applyCockpitPreferences();saveGameSettings();setCamera(0);}
  });
  window.addEventListener("keyup",e=>{keys[e.code]=false;});
+ window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;document.querySelectorAll("#desktopDrivePads button").forEach(b=>b.classList.remove("down"));});
+ const bindHold=(id,key)=>{
+  const button=$(id);if(!button)return;
+  const down=e=>{e.preventDefault();keys[key]=true;button.classList.add("down");try{button.setPointerCapture(e.pointerId);}catch(_){}};
+  const up=e=>{e.preventDefault();keys[key]=false;button.classList.remove("down");};
+  button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);
+  button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
+ };
+ bindHold("driveGo","KeyW");bindHold("driveBrake","KeyS");
  document.querySelectorAll(".touchbtn").forEach(btn=>{
   const key=btn.dataset.key;const down=e=>{e.preventDefault();keys[key]=true;btn.classList.add("down");},up=e=>{e.preventDefault();keys[key]=false;btn.classList.remove("down");};
   btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);
