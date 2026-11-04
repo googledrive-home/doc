@@ -131,6 +131,9 @@ input[type=range]{accent-color:#ff765e}
 .condition-meter i{display:block;width:100%;height:100%;background:#43d69a;transition:width .18s,background .18s}
 @media(max-width:760px){#tireHud{min-width:180px;width:210px;padding:7px 8px;max-height:45vh}#carConditionMap{height:67px}.condition-grid{gap:4px}.condition-item{padding:4px 5px}}
 </style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
+</script>
 </head>
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
@@ -3233,7 +3236,7 @@ let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,
 let showSteeringWheel=true,showDriverHands=true;
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},intermediate:{mu:1.88,wear:.96,label:"INTER"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
-const finalDrive=4.15,wheelRadius=.36,mass=800,lf=1.85,lr=1.35,izz=1350,airDensity=1.18;
+const finalDrive=4.15,wheelRadius=.375,mass=800,lf=1.85,lr=1.35,izz=1350,airDensity=1.18;
 const worldCanvas=$("world"),previewCanvas=$("trackPreview"),previewCtx=previewCanvas.getContext("2d"),miniCanvas=$("minimap"),miniCtx=miniCanvas.getContext("2d");
 let miniMapBaseCanvas=null,miniMapProjection=null;
 
