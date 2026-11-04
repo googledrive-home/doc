@@ -1402,7 +1402,9 @@ function openStandaloneGame(file,title,launchMode=''){
   shell.style.display='flex';
   document.body.style.overflow='hidden';
   frame.title=$('standaloneGameTitle').textContent;
-  const target=new URL('./'+file,window.location.href);if(launchMode)target.searchParams.set('launch',launchMode);
+  const target=new URL('./'+file,window.location.href);
+  if(file==='formula-one.html')target.searchParams.set('build','apex-redbull-controls-20261104');
+  if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
 }
 function closeStandaloneGame(){
