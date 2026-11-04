@@ -52,7 +52,7 @@ input[type=range]{accent-color:#ff765e}
 #bottomHud{position:absolute;bottom:13px;left:14px;right:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
 #controlsLegend{padding:10px 12px;color:#9babb9;font-size:9px;line-height:1.7;max-width:390px}
 .key{display:inline-block;padding:2px 5px;border:1px solid #ffffff2a;border-radius:4px;background:#ffffff0e;color:#edf1f5;font-weight:900;font-size:8px;margin:0 2px}
-#tireHud{padding:10px 12px;min-width:190px}.tireline{display:flex;justify-content:space-between;font-size:9px;color:#91a3b3;margin-top:6px}.tireline b{color:#eaf1f5}
+#tireHud{padding:10px 12px;min-width:205px;max-height:48vh;overflow:auto}.tireline{display:flex;justify-content:space-between;font-size:9px;color:#91a3b3;margin-top:6px}.tireline b{color:#eaf1f5}
 #weatherPanel{position:fixed;z-index:9;right:14px;top:58px;width:min(310px,calc(100vw - 28px));padding:14px;display:none;pointer-events:auto}
 #weatherPanel.open{display:block}
 #weatherPanel h3{margin:0 0 12px;font-size:12px;letter-spacing:.12em}
@@ -175,7 +175,7 @@ input[type=range]{accent-color:#ff765e}
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
-  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Tyre telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div></div></div>
+  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Vehicle telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div><div class="tireline"><span>Engine</span><b id="engineHealthValue">100%</b></div><div class="tireline"><span>Gearbox</span><b id="gearboxHealthValue">100%</b></div><div class="tireline"><span>Chassis</span><b id="chassisHealthValue">100%</b></div><div class="tireline"><span>Suspension</span><b id="suspensionHealthValue">100%</b></div><div class="tireline"><span>Front aero</span><b id="frontAeroHealthValue">100%</b></div><div class="tireline"><span>Rear aero</span><b id="rearAeroHealthValue">100%</b></div><div class="tireline"><span>Floor</span><b id="floorHealthValue">100%</b></div></div></div>
 </div>
 <div id="weatherPanel" class="panel">
   <h3>LIVE WEATHER SETTINGS</h3>
@@ -1940,7 +1940,7 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
  ])
 });
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
@@ -2821,8 +2821,18 @@ function updateOpponents(dt){
  });
 }
 
+function damageSystemForPart(name){
+ const n=name.toLowerCase();
+ if(/front wing|front splitter|nose|front endplate/.test(n))return "frontAero";
+ if(/rear wing|rear endplate|rear wing mounting/.test(n))return "rearAero";
+ if(/gearbox/.test(n))return "gearbox";
+ if(/engine|power unit|exhaust|sidepod|air intake|radiator/.test(n))return "engine";
+ if(/wishbone|suspension|wheel|tyre/.test(n))return "suspension";
+ if(/diffuser|floor|underfloor/.test(n))return "floor";
+ return "chassis";
+}
 function registerDamagePart(mesh,name,threshold){
- damageParts.push({mesh,name,threshold,detached:false});
+ damageParts.push({mesh,name,threshold,system:damageSystemForPart(name),detached:false});
  return mesh;
 }
 function spawnCrashParticles(origin,side,severity){
@@ -2837,88 +2847,36 @@ function spawnCrashParticles(origin,side,severity){
  }
 }
 function initSoftBody(){
- const points=[
-  [0,.58,2.7],[-.36,.61,2.15],[.36,.61,2.15],[-.48,.65,1.12],[.48,.65,1.12],
-  [-.46,.78,.38],[.46,.78,.38],[-.46,.78,-.68],[.46,.78,-.68],
-  [-.4,.68,-1.55],[.4,.68,-1.55],[-.34,.66,-2.35],[.34,.66,-2.35],[0,.72,-2.62],
-  [-.68,.45,1.55],[.68,.45,1.55],[-.68,.47,-1.42],[.68,.47,-1.42]
- ];
- softBodyNodes=points.map(p=>({position:new THREE.Vector3(...p),initial:new THREE.Vector3(...p),velocity:new THREE.Vector3(),mass:1}));
- const links=[[0,1],[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[6,8],[7,9],[8,10],[9,11],[10,12],[11,13],[12,13],
-  [1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[3,6],[4,5],[5,8],[6,7],[7,10],[8,9],[9,12],[10,11],
-  [14,15],[14,3],[15,4],[14,5],[15,6],[16,17],[16,9],[17,10],[16,11],[17,12],
-  [1,5],[2,6],[5,9],[6,10],[9,13],[10,13]];
- softBodyBeams=links.map(([a,b])=>({a,b,rest:softBodyNodes[a].position.distanceTo(softBodyNodes[b].position),stiffness:.72,yieldStrain:.105,breakStrain:.62,broken:false}));
- for(const mesh of softBodyShells){
-  const attr=mesh.geometry.attributes.position,original=attr.array.slice(),indices=new Uint8Array(attr.count*3),weights=new Float32Array(attr.count*3);
-  for(let i=0;i<attr.count;i++){
-   const v=new THREE.Vector3(attr.getX(i),attr.getY(i),attr.getZ(i));
-   const nearest=softBodyNodes.map((node,index)=>({index,d:v.distanceToSquared(node.position)})).sort((a,b)=>a.d-b.d).slice(0,3);
-   const total=nearest.reduce((sum,item)=>sum+1/(item.d+.18),0);
-   for(let j=0;j<3;j++){indices[i*3+j]=nearest[j].index;weights[i*3+j]=(1/(nearest[j].d+.18))/total;}
-  }
-  mesh.userData.softBind={original,indices,weights};
- }
+ softBodyNodes=[];softBodyBeams=[];softBodyActive=false;
 }
-function applySoftBodyImpact(severity,side,zone){
- if(!softBodyNodes.length)return;
- softBodyActive=true;
- const targetZ=zone==="front"?2.12:zone==="rear"?-2.35:.05,targetX=zone==="side"?side*.58:0;
- const impulse=new THREE.Vector3(zone==="side"?-side:0,.14,zone==="front"?-1:zone==="rear"?1:0).multiplyScalar(7+severity*17);
- for(const node of softBodyNodes){
-  const dx=node.position.x-targetX,dz=node.position.z-targetZ;
-  const weight=Math.exp(-(dx*dx*1.7+dz*dz*.65)/1.15);
-  if(weight>.025)node.velocity.addScaledVector(impulse,weight);
- }
+function applySoftBodyImpact(){
+ // Rigid survival-cell mode: damage is represented by subsystem loss and breakaway components.
+ softBodyActive=false;
 }
-function updateSoftBody(dt){
- if(!softBodyNodes.length||!softBodyActive)return;
- let maxNodeSpeed=0;
- for(const node of softBodyNodes){
-  node.position.addScaledVector(node.velocity,dt);
-  node.velocity.multiplyScalar(Math.exp(-2.4*dt));
-  maxNodeSpeed=Math.max(maxNodeSpeed,node.velocity.length());
- }
- // A small iterative beam solver makes the monocoque yield and retain a bent shape after a hit.
- for(let pass=0;pass<4;pass++){
-  for(const beam of softBodyBeams){
-   if(beam.broken)continue;
-   const a=softBodyNodes[beam.a].position,b=softBodyNodes[beam.b].position;
-   const delta=b.clone().sub(a),length=delta.length();
-   if(length<1e-5)continue;
-   const strain=(length-beam.rest)/beam.rest;
-   if(Math.abs(strain)>beam.breakStrain){beam.broken=true;continue;}
-   if(Math.abs(strain)>beam.yieldStrain)beam.rest+= (length-beam.rest)*.18;
-   const correction=delta.multiplyScalar(((length-beam.rest)/length)*beam.stiffness*.5);
-   a.add(correction);b.sub(correction);
-  }
- }
- // Bind the visible body shells to nearby structural nodes and update their vertices.
- for(const mesh of softBodyShells){
-  const bind=mesh.userData.softBind;if(!bind)continue;
-  const attr=mesh.geometry.attributes.position,base=bind.original,idx=bind.indices,w=bind.weights;
-  for(let i=0;i<attr.count;i++){
-   let dx=0,dy=0,dz=0;
-   for(let j=0;j<3;j++){
-    const node=softBodyNodes[idx[i*3+j]],rest=node.rest||null;
-    const initial=node.initial||null;
-    if(initial){dx+=(node.position.x-initial.x)*w[i*3+j];dy+=(node.position.y-initial.y)*w[i*3+j];dz+=(node.position.z-initial.z)*w[i*3+j];}
-   }
-   attr.setXYZ(i,base[i*3]+dx,base[i*3+1]+dy,base[i*3+2]+dz);
-  }
-  attr.needsUpdate=true;mesh.geometry.computeVertexNormals();mesh.geometry.computeBoundingSphere();
- }
- if(maxNodeSpeed<.012)softBodyActive=false;
+function updateSoftBody(){
+ // Intentionally no vertex deformation: chassis and bodywork remain rigid between breakaway points.
 }
 function applyCrashDamage(severity,side,zone="side"){
  if(!carRoot||severity<.12)return;
  playImpactSound(severity);
- applySoftBodyImpact(severity,side,zone);
  vehicleDamage=clamp(vehicleDamage+severity*.22,0,.92);
+ const loss=(key,amount)=>{vehicleHealth[key]=clamp(vehicleHealth[key]-amount,0,100);};
+ loss("chassis",severity*(zone==="side"?25:zone==="underfloor"?13:16));
+ if(zone==="front"){loss("frontAero",severity*76);loss("suspension",severity*25);}
+ else if(zone==="rear"){loss("rearAero",severity*78);loss("engine",severity*27);loss("gearbox",severity*30);loss("suspension",severity*13);}
+ else if(zone==="underfloor"){loss("floor",severity*72);loss("suspension",severity*16);}
+ else{loss("engine",severity*18);loss("suspension",severity*32);loss("floor",severity*16);}
+ const matchesZone=part=>{
+  const n=part.name.toLowerCase();
+  if(zone==="front")return /front|nose|splitter/.test(n);
+  if(zone==="rear")return /rear|engine|gearbox|diffuser|air intake|exhaust/.test(n);
+  if(zone==="underfloor")return /floor|diffuser|suspension|gearbox/.test(n);
+  return /sidepod|floor edge|wishbone|mirror|suspension|rear chassis rail/.test(n);
+ };
+ const candidates=damageParts.filter(p=>!p.detached&&severity>=p.threshold&&matchesZone(p)).sort((a,b)=>a.threshold-b.threshold);
+ const limit=severity>.92?5:severity>.78?4:severity>.52?2:1;
+ const broken=candidates.slice(0,limit);
  const impactPoint=carRoot.position.clone();impactPoint.y+=.7;
- const candidates=damageParts.filter(p=>!p.detached&&severity>=p.threshold).sort((a,b)=>a.threshold-b.threshold);
- // One major part per impact, with smaller parts allowed to follow on severe impacts.
- const broken=candidates.slice(0,severity>.94?12:severity>.78?7:severity>.48?3:1);
  const forward=new THREE.Vector3(Math.sin(car.yaw),0,Math.cos(car.yaw));
  const right=new THREE.Vector3(Math.cos(car.yaw),0,-Math.sin(car.yaw));
  const inherited=new THREE.Vector3(car.u*forward.x+car.v*right.x,0,car.u*forward.z+car.v*right.z);
@@ -2926,16 +2884,16 @@ function applyCrashDamage(severity,side,zone="side"){
  for(const part of broken){
   part.mesh.updateWorldMatrix(true,true);
   scene.attach(part.mesh);
-  softBodyShells=softBodyShells.filter(shell=>shell!==part.mesh);
   part.detached=true;
-  const spread=(Math.random()-.5)*5;
-  const velocity=inherited.clone().addScaledVector(impulse,2.5+severity*13);
+  if(part.system&&Number.isFinite(vehicleHealth[part.system]))loss(part.system,severity*17);
+  const spread=(Math.random()-.5)*2.2;
+  const velocity=inherited.clone().multiplyScalar(.72).addScaledVector(impulse,1.4+severity*7);
   velocity.x+=right.x*spread;velocity.z+=right.z*spread;
-  velocity.y=1.8+severity*4+Math.random()*1.7;
+  velocity.y=.85+severity*2.7+Math.random()*.7;
   looseDamageParts.push({
    mesh:part.mesh,velocity,
-   angular:new THREE.Vector3((Math.random()-.5)*12,side*(4+Math.random()*7),(Math.random()-.5)*12),
-   age:0,life:10
+   angular:new THREE.Vector3((Math.random()-.5)*3.4,side*(1.2+Math.random()*2.2),(Math.random()-.5)*3.4),
+   age:0,life:8
   });
  }
  spawnCrashParticles(impactPoint,side,severity);
@@ -2968,12 +2926,12 @@ function clearCrashEffects(){
  looseDamageParts=[];
  for(const p of crashDebris){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}
  crashDebris=[];
- vehicleDamage=0;
+ vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
 }
 
 function buildCar(){
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
- carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;
+ carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
  const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
  const yellow=makeMat(0xffd45e,.4,.2),white=makeMat(0xf4f1e8,.48,.18);
@@ -3406,7 +3364,8 @@ function updatePhysics(dt){
   else if(car.rpm<6200&&car.gear>1&&throttle<.40){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
- const downforce=.5*airDensity*4.4*downforceScale*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
+ const aeroFront=.42+.58*vehicleHealth.frontAero/100,aeroRear=.42+.58*vehicleHealth.rearAero/100,floorEfficiency=.55+.45*vehicleHealth.floor/100;
+ const downforce=.5*airDensity*4.4*downforceScale*speed*speed*aeroFront*aeroRear*floorEfficiency*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
  const frontLoad=clamp(normal*.44-weightTransfer,normal*.29,normal*.65),rearLoad=Math.max(0,normal-frontLoad);
  const tempF=temperatureGrip(car.tempF),tempR=temperatureGrip(car.tempR),baseGrip=getGrip();
@@ -3418,7 +3377,7 @@ function updatePhysics(dt){
  const launchMap=lerp(.48,1,clamp(speed/24,0,1));
  const powerMap=car.powerMode===2?1.045:car.powerMode===3?.94:1;
  const ersBoost=car.ersDeploy&&car.ersEnergy>0?1.12:1;
- let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
+ let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*(.35+.65*vehicleHealth.engine/100)*(.45+.55*vehicleHealth.gearbox/100)*powerMap*ersBoost;
  const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
  let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+26*car.u;if(car.drsActive)drag*=.78;
@@ -3557,7 +3516,7 @@ function updatePhysics(dt){
    car.vy*=Math.exp(-dt*18);
   }
   // Critically damped individual springs: apply the remaining contact error relative to the current wheel position.
-  const springOmega=20,springLimitLow=-.16,springLimitHigh=.18;
+  const springOmega=lerp(11,20,vehicleHealth.suspension/100),springLimitLow=lerp(-.23,-.16,vehicleHealth.suspension/100),springLimitHigh=lerp(.24,.18,vehicleHealth.suspension/100);
   for(const item of wheelContacts){
    const corner=item.corner;
    const remaining=item.correction-bodyDelta;
@@ -3618,7 +3577,7 @@ function updateHud(grip,offGrip){
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
  $("gripValue").textContent=Math.round(grip*45)+"%";$("gripBar").style.width=clamp(grip/2.2*100,0,100)+"%";
  $("wearValue").textContent=Math.round(car.wear*100)+"%";$("wearBar").style.width=(car.wear*100)+"%";
- $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";
+ $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";$("engineHealthValue").textContent=Math.round(vehicleHealth.engine)+"%";$("gearboxHealthValue").textContent=Math.round(vehicleHealth.gearbox)+"%";$("chassisHealthValue").textContent=Math.round(vehicleHealth.chassis)+"%";$("suspensionHealthValue").textContent=Math.round(vehicleHealth.suspension)+"%";$("frontAeroHealthValue").textContent=Math.round(vehicleHealth.frontAero)+"%";$("rearAeroHealthValue").textContent=Math.round(vehicleHealth.rearAero)+"%";$("floorHealthValue").textContent=Math.round(vehicleHealth.floor)+"%";
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
