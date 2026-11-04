@@ -141,7 +141,7 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><label for="assistSelect">Driving aids</label><select id="assistSelect"><option value="sport">Sport</option><option value="assisted" selected>Assisted</option><option value="simulation">Simulation</option></select></div>
       </div>
       <div class="two">
-        <div class="field"><label for="transmissionSelect">Transmission</label><select id="transmissionSelect"><option value="automatic">Automatic</option><option value="sequential" selected>Sequential paddles</option><option value="manual">Manual + clutch</option></select></div>
+        <div class="field"><label for="transmissionSelect">Transmission</label><select id="transmissionSelect"><option value="automatic" selected>Automatic · 8-speed</option><option value="sequential">Sequential paddles</option><option value="manual">Manual + clutch</option></select></div>
         <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="2">2 cars</option><option value="4" selected>4 cars</option><option value="6">6 cars</option><option value="8">8 cars</option></select></div>
       </div>
       <div class="two">
@@ -1101,8 +1101,8 @@ function nearestTerrainSample(x,z){
  }
  return {sample:nearest,distance:Math.sqrt(best)};
 }
-let shiftMode="sequential",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
-let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=false;
+let shiftMode="automatic",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
@@ -1239,9 +1239,10 @@ function applySafeTrackWidths(samples,nominalWidth){
   samples[i].roadHalfWidth=Math.min(raw[i],smooth);
  }}
 function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
- const p=point.clone(),minimum=roadWidth*.5+clearance;
+ const p=point.clone();
  for(let attempt=0;attempt<8;attempt++){
   const near=findNearest(p.x,p.z,null),offset=Math.abs(near.offset);
+  const localHalf=roadHalfWidthAt(route[near.index]||route[0]),minimum=localHalf+clearance;
   if(offset>=minimum)return p;
   const right=new THREE.Vector3(near.tangent.z,0,-near.tangent.x).normalize();
   const side=Math.abs(near.offset)>.12?Math.sign(near.offset):preferredSide;
@@ -1268,19 +1269,37 @@ function trackSegmentDistance2D(a,b,c,d){
 }
 function validateTrackLayout(points,minClearance){
  const issues=[],n=points.length,stride=Math.max(1,Math.floor(n/900)),sampled=[];
- for(let i=0;i<n;i+=stride)sampled.push(points[i].p||points[i]);
+ for(let i=0;i<n;i+=stride){
+  const item=points[i],p=item.p||item;
+  sampled.push({p,index:i,half:Number.isFinite(item.roadHalfWidth)?item.roadHalfWidth:minClearance*.5});
+ }
  const m=sampled.length;
  for(let i=0;i<m;i++){
-  const a=sampled[i],b=sampled[(i+1)%m];
+  const ia=(i+1)%m,a=sampled[i].p,b=sampled[ia].p;
   for(let j=i+1;j<m;j++){
    const gap=Math.min(j-i,m-(j-i));if(gap<3)continue;
-   const c=sampled[j],d=sampled[(j+1)%m];
+   const jb=(j+1)%m,c=sampled[j].p,d=sampled[jb].p;
    if(Math.abs((a.y+b.y-c.y-d.y)*.5)>2.25)continue;
    const distance=trackSegmentDistance2D(a,b,c,d);
-   if(distance<minClearance)issues.push({a:i,b:j,distance});
+   const halfA=(sampled[i].half+sampled[ia].half)*.5,halfB=(sampled[j].half+sampled[jb].half)*.5;
+   const required=Math.min(minClearance,halfA+halfB+.85);
+   if(distance<required)issues.push({a:sampled[i].index,b:sampled[j].index,distance});
   }
  }
  return issues;
+}
+function applyLocalClearanceWidths(samples,issues){
+ const n=samples.length;if(!n||!issues.length)return;
+ for(const issue of issues){
+  const allowed=Math.min(roadWidth*.5,Math.max(3.25,(issue.distance-.9)*.5));
+  for(const centre of [issue.a,issue.b]){
+   for(let delta=-10;delta<=10;delta++){
+    const i=(centre+delta+n)%n,weight=1-Math.abs(delta)/11;
+    const target=lerp(samples[i].roadHalfWidth,allowed,weight);
+    samples[i].roadHalfWidth=Math.min(samples[i].roadHalfWidth,target);
+   }
+  }
+ }
 }
 function makeRibbon(samples,width,material,yOff=.025){
  const pos=[],uv=[],idx=[],extra=Math.max(0,(width-roadWidth)*.5);
@@ -1329,9 +1348,19 @@ function terrainNoise(x,z){
  return Math.sin(x*.0010+z*.0012)*1.0+Math.cos(z*.0018-x*.0014)*.55+Math.sin((x-z)*.003)*.25;
 }
 function terrainHeightFromSample(sample,x,z,distance){
- // Blend track elevation into a shared terrain datum away from the asphalt to avoid steep walls between nearby laps.
+ // Collision terrain retains real circuit elevation and blends smoothly into the landscape.
  const blend=smoothStep(52,260,distance);
  return lerp(sample.p.y-.16,terrainBaseY+terrainNoise(x,z),blend);
+}
+function terrainVisualHeightFromSample(sample,x,z,distance){
+ const natural=terrainHeightFromSample(sample,x,z,distance);
+ if(!route.length)return natural;
+ const near=findNearest(x,z),local=route[near.index]||sample;
+ const edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
+ // Lower render-only ground beneath asphalt, kerbs and run-off so terrain triangles cannot intersect the car.
+ const shoulderBlend=smoothStep(edge+10,edge+40,lateral);
+ const clearance=near.point.y-.58;
+ return Math.min(natural,lerp(clearance,natural,shoulderBlend));
 }
 function terrainHeightAt(x,z){
  const nearest=nearestTerrainSample(x,z);
@@ -1376,7 +1405,7 @@ function buildTerrain(def){
   const z=minZ+depth*iz/nz;
   for(let ix=0;ix<=nx;ix++){
    const x=minX+width*ix/nx,nearest=nearestTerrainSample(x,z);
-   const height=terrainHeightFromSample(nearest.sample,x,z,nearest.distance);
+   const height=terrainVisualHeightFromSample(nearest.sample,x,z,nearest.distance);
    positions.push(x,height,z);uvs.push(x/70,z/70);
    const variation=.94+(.5+.5*Math.sin(x*.018+z*.013))*.075;
    colors.push(baseColor.r*variation,baseColor.g*variation,baseColor.b*variation);
@@ -1413,15 +1442,12 @@ function createTrack(){
  buildRouteSpatialGrid();
   applySafeTrackWidths(route,roadWidth);
  let layoutIssues=validateTrackLayout(route,roadWidth+.65);
- if(layoutIssues.length){
-  const closest=Math.min(...layoutIssues.map(issue=>issue.distance));
-  const safeWidth=Math.max(7.5,closest-.9);
-  if(safeWidth<roadWidth){console.warn("APEX reduced track width to prevent self-overlap on "+def.name,roadWidth.toFixed(2)+"m -> "+safeWidth.toFixed(2)+"m");roadWidth=safeWidth;}
+ for(let pass=0;pass<2&&layoutIssues.length;pass++){
+  applyLocalClearanceWidths(route,layoutIssues);
   layoutIssues=validateTrackLayout(route,roadWidth+.65);
-  if(layoutIssues.length)console.error("APEX TRACK VALIDATION: remaining close track sections on "+def.name,layoutIssues.slice(0,8));
  }
- applySafeTrackWidths(route,roadWidth); // Re-sync per-corner widths after any global clearance adjustment.
- terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
+ if(layoutIssues.length)console.warn("APEX retained local clearances on "+def.name,layoutIssues.slice(0,8));
+terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
@@ -2318,7 +2344,7 @@ function drawDashboard(){
  c.fillStyle="#0b1c25";c.fillRect(28,119,230,307);c.fillStyle="#1e3541";c.fillRect(28,119,230,4);
  c.fillStyle="#a9c0ca";c.font="800 32px system-ui";c.fillText("GEAR",52,165);
  c.fillStyle="#f8fbfc";c.font="900 190px ui-monospace,monospace";c.fillText(car.reverse?"R":String(car.gear),48,354);
- c.fillStyle=car.reverse?"#ffb45e":"#62e5a0";c.font="900 38px system-ui";c.fillText(car.reverse?"REVERSE":"SEQUENTIAL",52,403);
+ c.fillStyle=car.reverse?"#ffb45e":"#62e5a0";c.font="900 38px system-ui";c.fillText(car.reverse?"REVERSE":shiftMode.toUpperCase(),52,403);
  c.fillStyle="#0b1c25";c.fillRect(282,119,710,307);c.fillStyle="#1e3541";c.fillRect(282,119,710,4);
  c.fillStyle="#9fb6c2";c.font="800 34px system-ui";c.fillText("VEHICLE SPEED",314,165);
  c.fillStyle="#ffffff";c.font="900 154px ui-monospace,monospace";c.fillText(String(speed).padStart(3,"0"),302,315);
@@ -2375,13 +2401,12 @@ function findNearest(x,z,yHint=null){
   for(let ring=0;ring<=6;ring++){
    for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
     if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
-    const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));if(bucket)for(const i of bucket)scoreIndex(i);
+    const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));
+    if(bucket)for(const i of bucket)scoreIndex(i);
    }
-   const safeRadius=Math.max(7,(ring-.65)*ROUTE_GRID_CELL);
-   if(best<safeRadius*safeRadius)break;
   }
  }
- if(!Number.isFinite(best))for(let i=0;i<n;i+=2)scoreIndex(i);
+ if(!Number.isFinite(best)||best>ROUTE_GRID_CELL*ROUTE_GRID_CELL*36)for(let i=0;i<n;i+=2)scoreIndex(i);
  return out;
 }
 function updatePreview(){
@@ -2464,8 +2489,8 @@ function updatePhysics(dt){
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
  if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
  const speedFraction=clamp(speed/70,0,1);
- const steerLimit=(.045+.38/(1+Math.pow(speed/17,1.7)))*steeringResponse;
- const steeringRate=lerp(8.5,2.7,smoothStep(4,66,speed));
+ const steerLimit=(.06+.50/(1+Math.pow(speed/20,1.65)))*steeringResponse;
+ const steeringRate=lerp(10.5,3.3,smoothStep(3,70,speed));
  car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*steeringRate));
  const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
  const canManualShift=shiftMode==="sequential"||(shiftMode==="manual"&&clutchPressed);
@@ -2475,8 +2500,8 @@ function updatePhysics(dt){
  const wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  if(!car.reverse&&shiftMode==="automatic"&&car.shiftTimer<=0){
-  if(car.rpm>14100&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
-  else if(car.rpm<7200&&car.gear>1&&throttle<.72){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
+  if(car.rpm>12700&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
+  else if(car.rpm<6500&&car.gear>1&&throttle<.45){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
  car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
  const downforce=.5*airDensity*4.4*downforceScale*speed*speed*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
@@ -2494,7 +2519,7 @@ function updatePhysics(dt){
  let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*powerMap*ersBoost;
  const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
- let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+105*car.u;if(car.drsActive)drag*=.78;
+ let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+26*car.u;if(car.drsActive)drag*=.78;
  let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*brakeDirection-drag*.55;
  let frontFx=-brakeForce*frontBrakeShare*brakeDirection-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
@@ -2515,10 +2540,10 @@ function updatePhysics(dt){
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
  const gripFactor=clamp((frontCap+rearCap)/(normal*2.05),.42,1.08);
- const requestedYawRate=car.u*Math.tan(car.steer)/wheelbase*.62*gripFactor;
+ const requestedYawRate=car.u*Math.tan(car.steer)/wheelbase*.78*gripFactor;
  // Lateral acceleration available rises with aero load, while yaw rate necessarily falls as speed climbs.
  const availableCornerG=clamp((frontCap+rearCap)/mass/9.81*.78,.78,3.6);
- const yawLimit=availableCornerG*9.81/Math.max(8,speed);
+ const yawLimit=availableCornerG*9.81/Math.max(6.5,speed);
  const stableYaw=clamp(requestedYawRate,-yawLimit,yawLimit);
  car.r=lerp(car.r,stableYaw,1-Math.exp(-dt*(assistMode==="assisted"?5.4:assistMode==="sport"?4.4:3.3)));
  car.r=clamp(car.r,-yawLimit,yawLimit);car.yaw+=car.r*dt;
@@ -2671,7 +2696,7 @@ function updatePhysics(dt){
  previousProgress=progress;elapsed+=dt;
  carRoot.position.set(car.x,car.y,car.z);
  carRoot.rotation.set(slope+car.pitch,car.yaw,car.roll,"YXZ");
- const roadWheelLock=(.045+.38)*steeringResponse,wheelLockRadians=THREE.MathUtils.degToRad(steeringWheelLock/2);
+ const roadWheelLock=(.06+.50)*steeringResponse,wheelLockRadians=THREE.MathUtils.degToRad(steeringWheelLock/2);
   steeringPivot.rotation.z=-clamp(car.steer/Math.max(.001,roadWheelLock)*wheelLockRadians,-wheelLockRadians,wheelLockRadians);handGroup.rotation.z=0;
  for(const pivot of frontWheelPivots)pivot.rotation.y=car.steer;
  for(const wheel of wheelMeshes)wheel.rotation.x=car.wheelSpin;
@@ -2987,10 +3012,11 @@ function syncCameraProfileSettings(){
   $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
  }
 }
-const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV2";
-const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV1";
+const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV3";
+const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV2";
+const F1_SETTINGS_OLD_KEY="apexFormulaRacingSettingsV1";
 function saveGameSettings(){
- try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:2,
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:3,
   displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
   cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
   differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
@@ -2998,11 +3024,11 @@ function saveGameSettings(){
 }
 function loadGameSettings(){
  try{
-  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||"null");if(!saved)return;
+  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||"null");if(!saved)return;
   if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
   if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
   const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
-  showHaloColumn=saved.schemaVersion>=2?saved.showHaloColumn===true:false;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
+  showHaloColumn=saved.schemaVersion>=3?saved.showHaloColumn!==false:true;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
   cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
   cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);steeringResponse=num(saved.steeringResponse,.65,.25,1);
   steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
