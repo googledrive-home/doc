@@ -3878,12 +3878,13 @@ function syncCameraProfileSettings(){
   $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
  }
 }
-const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV4";
-const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV3";
-const F1_SETTINGS_OLD_KEY="apexFormulaRacingSettingsV2";
-const F1_SETTINGS_OLDER_KEY="apexFormulaRacingSettingsV1";
+const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV5";
+const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV4";
+const F1_SETTINGS_OLD_KEY="apexFormulaRacingSettingsV3";
+const F1_SETTINGS_OLDER_KEY="apexFormulaRacingSettingsV2";
+const F1_SETTINGS_OLDEST_KEY="apexFormulaRacingSettingsV1";
 function saveGameSettings(){
- try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:4,
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:5,
   displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
   cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
   differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
@@ -3891,11 +3892,11 @@ function saveGameSettings(){
 }
 function loadGameSettings(){
  try{
-  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||"null");if(!saved)return;
+  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||localStorage.getItem(F1_SETTINGS_OLDEST_KEY)||"null");if(!saved)return;
   if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
   if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
   const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
-  showHaloColumn=saved.schemaVersion>=3?saved.showHaloColumn!==false:true;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
+  showHaloColumn=saved.schemaVersion>=5?saved.showHaloColumn!==false:true;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
   cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
   cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);steeringResponse=saved.schemaVersion>=4?num(saved.steeringResponse,.75,.25,1):.75;
   steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
