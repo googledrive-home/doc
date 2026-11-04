@@ -5720,7 +5720,7 @@ function loadGameSettings(){
   const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||localStorage.getItem(F1_SETTINGS_OLDEST_KEY)||localStorage.getItem(F1_SETTINGS_V1_KEY)||"null");if(!saved)return;
   if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
   if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
-  if(saved.schemaVersion<6){cameraProfiles[1].fov=Math.max(72,Number(cameraProfiles[1].fov)||66);cameraProfiles[2].fov=Math.max(76,Number(cameraProfiles[2].fov)||66);}
+  if(saved.schemaVersion<6){showHaloColumn=true;cameraProfiles[1].fov=Math.max(72,Number(cameraProfiles[1].fov)||66);cameraProfiles[2].fov=Math.max(76,Number(cameraProfiles[2].fov)||66);}
   const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
   showHaloColumn=saved.schemaVersion>=5?saved.showHaloColumn!==false:true;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
   cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
