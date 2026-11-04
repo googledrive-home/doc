@@ -111,6 +111,25 @@ input[type=range]{accent-color:#ff765e}
 #pauseOverlay .pausecard{border-color:#ffffff35;background:linear-gradient(145deg,#162433,#080e16)}
 #pauseOverlay .pausecard h2{letter-spacing:.04em}
 @media(max-width:760px){.loadcard{padding:23px 20px}.load-bottom{font-size:7px}.settings-body{grid-template-columns:1fr;padding:10px}.settings-head{padding:15px}.settings-head h2{font-size:19px}.settings-footer{align-items:flex-start;flex-direction:column}.settings-footer .action{width:100%}.menu-section-head .secondary{padding:8px}}
+
+#tireHud{width:min(292px,calc(100vw - 22px));min-width:250px;max-height:54vh;overflow:auto}
+.condition-title{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:7px;border-top:1px solid #ffffff18;color:#dce7ed;font-size:8px;font-weight:950;letter-spacing:.14em;text-transform:uppercase}
+.condition-title small{font-size:7px;color:#8da0ae;letter-spacing:.10em}
+#carConditionMap{display:block;width:100%;height:91px;margin:4px 0 2px;border:1px solid #ffffff12;border-radius:8px;background:linear-gradient(180deg,#14232c,#0a141d)}
+.map-outline{fill:#263541;stroke:#73818d;stroke-width:1.5}
+.map-part{fill:#43d69a;stroke:#0a1118;stroke-width:2;stroke-linejoin:round;transition:fill .18s}
+.map-link{fill:none;stroke:#43d69a;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.map-tyres rect{fill:#11171d;stroke:#60707d;stroke-width:1.5}
+.condition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.condition-item{min-width:0;padding:6px 7px;border:1px solid #ffffff12;border-radius:7px;background:#ffffff06}
+.condition-item label{display:block;color:#91a3b3;font-size:7px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.condition-item b{display:block;margin-top:2px;color:#43d69a;font-size:8px;letter-spacing:.05em}
+.condition-item b[data-level="worn"]{color:#e9c66b}
+.condition-item b[data-level="damaged"]{color:#f49b54}
+.condition-item b[data-level="critical"],.condition-item b[data-level="failed"]{color:#f26762}
+.condition-meter{height:4px;margin-top:5px;overflow:hidden;border-radius:5px;background:#ffffff16}
+.condition-meter i{display:block;width:100%;height:100%;background:#43d69a;transition:width .18s,background .18s}
+@media(max-width:760px){#tireHud{min-width:180px;width:210px;padding:7px 8px;max-height:45vh}#carConditionMap{height:67px}.condition-grid{gap:4px}.condition-item{padding:4px 5px}}
 </style>
 </head>
 <body>
@@ -137,7 +156,7 @@ input[type=range]{accent-color:#ff765e}
       <div class="field"><label for="trackSelect">Circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div>
       <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
       <div class="two">
-        <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="wet">Full wet</option></select></div>
+        <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="intermediate">Intermediate</option><option value="wet">Full wet</option></select></div>
         <div class="field"><label for="assistSelect">Driving aids</label><select id="assistSelect"><option value="sport">Sport</option><option value="assisted" selected>Assisted</option><option value="simulation">Simulation</option></select></div>
       </div>
       <div class="two">
@@ -174,8 +193,34 @@ input[type=range]{accent-color:#ff765e}
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
-  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
-  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel"><div class="hudtitle">Vehicle telemetry</div><div class="tireline"><span>Front temperature</span><b id="tireTemp">76°C</b></div><div class="tireline"><span>Rear temperature</span><b id="rearTemp">78°C</b></div><div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div><div class="tireline"><span>Engine</span><b id="engineHealthValue">100%</b></div><div class="tireline"><span>Gearbox</span><b id="gearboxHealthValue">100%</b></div><div class="tireline"><span>Chassis</span><b id="chassisHealthValue">100%</b></div><div class="tireline"><span>Suspension</span><b id="suspensionHealthValue">100%</b></div><div class="tireline"><span>Front aero</span><b id="frontAeroHealthValue">100%</b></div><div class="tireline"><span>Rear aero</span><b id="rearAeroHealthValue">100%</b></div><div class="tireline"><span>Floor</span><b id="floorHealthValue">100%</b></div></div></div>
+  <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
+  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
+ <div class="hudtitle">Vehicle telemetry</div>
+ <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
+ <div class="tireline"><span>Rear tyre temperature</span><b id="rearTemp">78°C</b></div>
+ <div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div>
+ <div class="condition-title">Component condition <small>LIVE DAMAGE MAP</small></div>
+ <svg id="carConditionMap" viewBox="0 0 220 112" role="img" aria-label="Top-down car condition diagram">
+  <path class="map-outline" d="M109 4 L125 19 L133 36 L131 77 L145 92 L143 103 L77 103 L75 92 L89 77 L87 36 L95 19 Z"/>
+  <path id="mapFrontAero" class="map-part" d="M44 7 L176 7 L188 15 L32 15 Z"/>
+  <path id="mapChassis" class="map-part" d="M96 19 Q110 12 124 19 L128 68 L92 68 Z"/>
+  <path id="mapFloor" class="map-part" d="M91 40 L129 40 L131 82 L89 82 Z"/>
+  <rect id="mapEngine" class="map-part" x="96" y="69" width="28" height="16" rx="4"/>
+  <rect id="mapGearbox" class="map-part" x="101" y="84" width="18" height="8" rx="2"/>
+  <path id="mapRearAero" class="map-part" d="M53 98 L167 98 L179 107 L41 107 Z"/>
+  <path id="mapSuspension" class="map-link" d="M90 30 L70 37 L93 55 M130 30 L150 37 L127 55 M90 72 L70 85 L91 92 M130 72 L150 85 L129 92"/>
+  <g class="map-tyres"><rect x="54" y="25" width="18" height="28" rx="7"/><rect x="148" y="25" width="18" height="28" rx="7"/><rect x="54" y="72" width="18" height="28" rx="7"/><rect x="148" y="72" width="18" height="28" rx="7"/></g>
+ </svg>
+ <div class="condition-grid">
+  <div class="condition-item"><label>Engine</label><b id="engineHealthValue">NOMINAL</b><div class="condition-meter"><i id="engineHealthBar"></i></div></div>
+  <div class="condition-item"><label>Gearbox</label><b id="gearboxHealthValue">NOMINAL</b><div class="condition-meter"><i id="gearboxHealthBar"></i></div></div>
+  <div class="condition-item"><label>Chassis</label><b id="chassisHealthValue">NOMINAL</b><div class="condition-meter"><i id="chassisHealthBar"></i></div></div>
+  <div class="condition-item"><label>Suspension</label><b id="suspensionHealthValue">NOMINAL</b><div class="condition-meter"><i id="suspensionHealthBar"></i></div></div>
+  <div class="condition-item"><label>Front aero</label><b id="frontAeroHealthValue">NOMINAL</b><div class="condition-meter"><i id="frontAeroHealthBar"></i></div></div>
+  <div class="condition-item"><label>Rear aero</label><b id="rearAeroHealthValue">NOMINAL</b><div class="condition-meter"><i id="rearAeroHealthBar"></i></div></div>
+  <div class="condition-item"><label>Floor</label><b id="floorHealthValue">NOMINAL</b><div class="condition-meter"><i id="floorHealthBar"></i></div></div>
+ </div>
+</div></div>
 </div>
 <div id="weatherPanel" class="panel">
   <h3>LIVE WEATHER SETTINGS</h3>
@@ -3174,6 +3219,7 @@ function nearestTerrainSample(x,z){
 let shiftMode="automatic",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
+let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
@@ -3181,7 +3227,7 @@ const cameraProfiles=Array.from({length:5},()=>({x:0,y:0,z:0,pitch:0,yaw:0,fov:6
 let cameraSensitivity=.18,lookToApex=0,steeringResponse=.75,steeringWheelLock=300,brakeStrength=1,downforceScale=1,brakeBiasSetting=.58,differentialSetting=2,powerModeSetting=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
 let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,tyres:true,controls:true};
 let showSteeringWheel=true,showDriverHands=true;
-const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},wet:{mu:1.62,wear:.82,label:"WET"}};
+const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},intermediate:{mu:1.88,wear:.96,label:"INTER"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
 const finalDrive=4.15,wheelRadius=.36,mass=800,lf=1.85,lr=1.35,izz=1350,airDensity=1.18;
 const worldCanvas=$("world"),previewCanvas=$("trackPreview"),previewCtx=previewCanvas.getContext("2d"),miniCanvas=$("minimap"),miniCtx=miniCanvas.getContext("2d");
@@ -3549,6 +3595,7 @@ function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width;
+ trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
  const minAlt=def.elevationProfile?Math.min(...def.elevationProfile.map(v=>v[1])):Math.min(...activeTrackPoints.map(v=>v[2]));
@@ -3577,7 +3624,7 @@ function createTrack(){
  computeTrackClearance(route);
 terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
- const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
+ const asphalt=new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
  const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x777f7b,.92);
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
@@ -3602,6 +3649,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  addStartFinish();
  buildScenery();addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();addCircuitFacilities();addCircuitLandmarks();
  positionCarAtStart();
+ updateWeather();
  updatePreview();drawMiniMap();
 }
 function addStartFinish(){
@@ -4287,7 +4335,7 @@ function buildCar(){
   const pedalMesh=box(.105,.16,.045,makeMat(pedal===1?0x8d9aa2:0x48535c,.45,.48),-.14+pedal*.14,.64,1.43);
   pedalMesh.rotation.x=-.18;cockpitVisibleMeshes.push(pedalMesh);
  }
- const columnStart=new THREE.Vector3(0,.88,1.32),columnEnd=new THREE.Vector3(0,1.04,.72),columnDir=columnEnd.clone().sub(columnStart);
+ const columnStart=new THREE.Vector3(0,.88,1.32),columnEnd=new THREE.Vector3(0,1.00,.80),columnDir=columnEnd.clone().sub(columnStart);
  const steeringColumn=new THREE.Mesh(new THREE.CylinderGeometry(.045,.06,columnDir.length(),12),makeMat(0x161e27,.42,.68));
  steeringColumn.position.copy(columnStart.clone().add(columnEnd).multiplyScalar(.5));steeringColumn.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),columnDir.normalize());cockpitVisibleMeshes.push(steeringColumn);carRoot.add(steeringColumn);
  const dashShelf=box(.92,.08,.30,carbon,0,1.08,1.30);cockpitVisibleMeshes.push(dashShelf);
@@ -4323,7 +4371,7 @@ function buildCar(){
  const frontPillarCollar=new THREE.Mesh(new THREE.CylinderGeometry(.075,.09,.09,18),makeMat(0x505c66,.32,.85));
  frontPillarCollar.position.set(0,.91,1.48);frontPillarCollar.rotation.x=Math.PI/2;carRoot.add(frontPillarCollar);cockpitVisibleMeshes.push(frontPillarCollar);
  // Steering wheel, screen and animated driver's hands.
-steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(1.04);carRoot.add(steeringPivot);
+steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringPivot.scale.setScalar(.78);carRoot.add(steeringPivot);
   // Defined open-frame flat-bottom steering wheel with real grips and a large central display.
   const wheelFace=box(.61,.37,.055,carbon,0,.02,-.285,steeringPivot);
   const rimTop=box(1.00,.075,.12,carbon,0,.255,-.30,steeringPivot);
@@ -4562,12 +4610,16 @@ function drawMiniCar(){
  ctx.fillStyle="#ff684e";ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
 }
 function getGrip(){
- const spec=tireSpecs[tyreCompound]||tireSpecs.medium;
- const water=weather.rain/100,wetSuit=tyreCompound==="wet"?1:.68;
- let grip=spec.mu*(1-water*(1-wetSuit)*.72);
+ const spec=tireSpecs[tyreCompound]||tireSpecs.medium,water=clamp(trackWetness,0,1);
+ let wetFactor;
+ if(tyreCompound==="wet")wetFactor=lerp(.80,1.04,smoothStep(.20,.86,water));
+ else if(tyreCompound==="intermediate")wetFactor=Math.max(.56,1.01-.70*Math.pow((water-.42)/.58,2));
+ else wetFactor=Math.max(.29,1-.72*water);
+ let grip=spec.mu*wetFactor;
  if(assistMode==="assisted")grip*=.96;
  if(assistMode==="sport")grip*=1.01;
- return grip*car.wear;
+ const aquaplane=water>.82?1-clamp((water-.82)/.18*(Math.abs(car.u)/58)*.25,0,.25):1;
+ return grip*car.wear*aquaplane;
 }
 const torqueCurve=[[4300,405],[5500,475],[7000,535],[8500,570],[10000,582],[11200,565],[12500,515],[13800,435],[15000,345]];
 function torqueAt(rpm){
@@ -4587,20 +4639,22 @@ function temperatureGrip(temp){
 function updatePhysics(dt){
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
- if(keys.KeyR&&!keys._r){
-  if(Math.abs(car.u)<1.25){car.reverse=!car.reverse;car.gear=1;car.shiftTimer=.18;playShiftSound(car.reverse?-1:1);}
-  keys._r=true;
- }else if(!keys.KeyR)keys._r=false;
  const throttleRequest=(keys.KeyW||keys.ArrowUp)?1:0;
  const throttle=lerp(car.throttle||0,throttleRequest,1-Math.exp(-dt*4.6));
  const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
+ if(keys.KeyR&&!keys._r){
+  if(Math.abs(car.u)<.45&&Math.abs(car.v)<.45&&throttleRequest===0){
+   car.reverse=!car.reverse;car.gear=1;car.shiftTimer=.24;car.throttle=0;playShiftSound(car.reverse?-1:1);
+  }
+  keys._r=true;
+ }else if(!keys.KeyR)keys._r=false;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
  const previousDrsState=!!car.drsActive;
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
  if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
  const speedFraction=clamp(speed/70,0,1);
- const steerLimit=(.06+.50/(1+Math.pow(speed/20,1.65)))*steeringResponse;
+ const steerLimit=(.06+.50/(1+Math.pow(speed/20,1.65)))*steeringResponse*(car.reverse?.72:1);
  const steeringRate=lerp(10.5,3.3,smoothStep(3,70,speed));
  car.steer+=(steerInput*steerLimit-car.steer)*(1-Math.exp(-dt*steeringRate));
  const clutchPressed=!!(keys.ShiftLeft||keys.ShiftRight);
@@ -4609,12 +4663,13 @@ function updatePhysics(dt){
  if(!car.reverse&&canManualShift&&keys.KeyQ){if(!keys._q&&car.gear>1){car.gear--;car.shiftTimer=shiftMode==="manual"?.24:.16;playShiftSound(-1);keys._q=true;}}else if(!keys.KeyQ)keys._q=false;
  car.shiftTimer=Math.max(0,car.shiftTimer-dt);
  const wheelRPM=speed/(2*Math.PI*wheelRadius)*60;
- car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
+ const ratioForCurrentGear=()=>car.reverse?2.15:gearRatios[car.gear-1];
+ car.rpm=clamp(wheelRPM*ratioForCurrentGear()*finalDrive,4300,14900);
  if(!car.reverse&&shiftMode==="automatic"&&car.shiftTimer<=0){
   if(car.rpm>11800&&car.gear<8){car.gear++;car.shiftTimer=.15;playShiftSound(1);}
   else if(car.rpm<6200&&car.gear>1&&throttle<.40){car.gear--;car.shiftTimer=.17;playShiftSound(-1);}
  }
- car.rpm=clamp(wheelRPM*gearRatios[car.gear-1]*finalDrive,4300,14900);
+ car.rpm=clamp(wheelRPM*ratioForCurrentGear()*finalDrive,4300,14900);
  const aeroFront=.42+.58*vehicleHealth.frontAero/100,aeroRear=.42+.58*vehicleHealth.rearAero/100,floorEfficiency=.55+.45*vehicleHealth.floor/100;
  const downforce=.5*airDensity*4.4*downforceScale*speed*speed*aeroFront*aeroRear*floorEfficiency*(1-vehicleDamage*.28),normal=mass*9.81+downforce;
  const wheelbase=lf+lr,weightTransfer=mass*car.longAccel*.38/wheelbase;
@@ -4625,10 +4680,11 @@ function updatePhysics(dt){
  car.surfaceGrip=surfaceOffset<=half?1:surfaceOffset<=half+5?.68:surfaceOffset<=half+12?.34:.14;
  const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
  const torque=torqueAt(car.rpm),clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
- const launchMap=lerp(.48,1,clamp(speed/24,0,1));
+ const launchMap=car.reverse?1:lerp(.48,1,clamp(speed/24,0,1));
  const powerMap=car.powerMode===2?1.045:car.powerMode===3?.94:1;
  const ersBoost=car.ersDeploy&&car.ersEnergy>0?1.12:1;
- let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*gearRatios[car.gear-1]*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*(.35+.65*vehicleHealth.engine/100)*(.45+.55*vehicleHealth.gearbox/100)*powerMap*ersBoost;
+ const reverseTaper=car.reverse?clamp((5.8-speed)/1.1,0,1):1;
+ let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*ratioForCurrentGear()*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*(.35+.65*vehicleHealth.engine/100)*(.45+.55*vehicleHealth.gearbox/100)*powerMap*ersBoost*(car.reverse?.32*reverseTaper:1);
  const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
  let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+26*car.u;if(car.drsActive)drag*=.78;
@@ -4640,14 +4696,14 @@ function updatePhysics(dt){
  rearFx=clamp(rearFx,-rearCap*.82,rearCap*tractionReserve);
  frontFx=clamp(frontFx,-frontCap*.88,frontCap*.88);
  const vDen=Math.max(4,Math.abs(car.u)),alphaF=Math.atan2(car.v+lf*car.r,vDen)-car.steer,alphaR=Math.atan2(car.v-lr*car.r,vDen);
- const tyreStiffness=6.4*(1-.14*(weather.rain/100)*(tyreCompound==="wet"?.2:1)),rollingGrip=clamp(speed/5,0,1);
+ const tyreStiffness=6.4*(1-.10*trackWetness)*(tyreCompound==="wet"?.98:1),rollingGrip=clamp(speed/5,0,1);
  let fyF=-frontCap*pacejka(alphaF,tyreStiffness)*rollingGrip,fyR=-rearCap*pacejka(alphaR,tyreStiffness*1.04)*rollingGrip;
  const frontBudget=Math.sqrt(Math.max(0,frontCap*frontCap-frontFx*frontFx)),rearBudget=Math.sqrt(Math.max(0,rearCap*rearCap-rearFx*rearFx));
  fyF=clamp(fyF,-frontBudget,frontBudget);fyR=clamp(fyR,-rearBudget,rearBudget);
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u=clamp(car.u+car.longAccel*dt,-18,100);car.v+=latAccel*dt;
+ car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);car.v+=latAccel*dt;
  const lateralDamping=assistMode==="assisted"?2.8:assistMode==="sport"?1.55:.78;
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
@@ -4823,17 +4879,41 @@ function updatePhysics(dt){
  car.throttle=throttle;car.brake=brake;
 }
 
+function updateVehicleCondition(){
+ const systems=[
+  ["engine","engineHealthValue","engineHealthBar","mapEngine"],
+  ["gearbox","gearboxHealthValue","gearboxHealthBar","mapGearbox"],
+  ["chassis","chassisHealthValue","chassisHealthBar","mapChassis"],
+  ["suspension","suspensionHealthValue","suspensionHealthBar","mapSuspension"],
+  ["frontAero","frontAeroHealthValue","frontAeroHealthBar","mapFrontAero"],
+  ["rearAero","rearAeroHealthValue","rearAeroHealthBar","mapRearAero"],
+  ["floor","floorHealthValue","floorHealthBar","mapFloor"]
+ ];
+ for(const [key,labelId,barId,mapId] of systems){
+  const value=clamp(vehicleHealth[key]??100,0,100);
+  const state=value>=85?{name:"NOMINAL",level:"nominal",color:"#43d69a"}:
+   value>=65?{name:"WORN",level:"worn",color:"#e9c66b"}:
+   value>=40?{name:"DAMAGED",level:"damaged",color:"#f49b54"}:
+   value>=15?{name:"CRITICAL",level:"critical",color:"#f26762"}:
+   {name:"FAILED",level:"failed",color:"#c9434d"};
+  const label=$(labelId),bar=$(barId),map=$(mapId);
+  if(label){label.textContent=state.name;label.dataset.level=state.level;}
+  if(bar){bar.style.width=value+"%";bar.style.background=state.color;}
+  if(map){map.style.fill=state.color;map.style.stroke=state.color;}
+ }
+}
 function updateHud(grip,offGrip){
  $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=car.reverse?"R":String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
  $("gripValue").textContent=Math.round(grip*45)+"%";$("gripBar").style.width=clamp(grip/2.2*100,0,100)+"%";
  $("wearValue").textContent=Math.round(car.wear*100)+"%";$("wearBar").style.width=(car.wear*100)+"%";
- $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";$("engineHealthValue").textContent=Math.round(vehicleHealth.engine)+"%";$("gearboxHealthValue").textContent=Math.round(vehicleHealth.gearbox)+"%";$("chassisHealthValue").textContent=Math.round(vehicleHealth.chassis)+"%";$("suspensionHealthValue").textContent=Math.round(vehicleHealth.suspension)+"%";$("frontAeroHealthValue").textContent=Math.round(vehicleHealth.frontAero)+"%";$("rearAeroHealthValue").textContent=Math.round(vehicleHealth.rearAero)+"%";$("floorHealthValue").textContent=Math.round(vehicleHealth.floor)+"%";
+ $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
  $("transmissionValue").textContent=shiftMode==="automatic"?"AUTO":shiftMode==="manual"?"MAN":"SEQ";
- $("damageValue").textContent=Math.round(vehicleDamage*100)+"%";
+ $("damageValue").textContent=vehicleDamage<.04?"CLEAN":vehicleDamage<.20?"LIGHT":vehicleDamage<.48?"MODERATE":vehicleDamage<.72?"HEAVY":"SEVERE";
+ const wetLabel=trackWetness<.12?"DRY":trackWetness<.36?"DAMP":trackWetness<.72?"WET":"SOAKED";$("surfaceWetnessValue").textContent=wetLabel;$("surfaceWetnessBar").style.width=(trackWetness*100)+"%";
  drawDashboard();drawMiniCar();
 }
 function setCamera(frameDt=.016){
@@ -4880,7 +4960,7 @@ function cycleCamera(){
  camera.zoom=1;camera.clearViewOffset();camera.userData.ready=false;setCamera(0);
 }
 function updateWeather(){
- const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100;
+ const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100,wet=clamp(trackWetness,0,1);
  const palettes={clear:{sky:0x92b6c8,top:0x2f638b,horizon:0xc5dce4,bottom:0x748b98,ground:0x314f3b,sun:2.25},cloudy:{sky:0x71818b,top:0x465764,horizon:0x9ba9ac,bottom:0x69767a,ground:0x34463e,sun:1.05},rain:{sky:0x536572,top:0x293c4a,horizon:0x72818a,bottom:0x59646b,ground:0x293b38,sun:.58},fog:{sky:0x9ca9ac,top:0x7f9299,horizon:0xc0c9c8,bottom:0xa2adad,ground:0x45504b,sun:.7},heat:{sky:0x9bc3d5,top:0x4d82a7,horizon:0xd7e3dc,bottom:0x8d9a91,ground:0x665f42,sun:2.6}};
  const p=palettes[weather.kind]||palettes.clear;
  scene.background.setHex(p.sky);scene.fog.color.setHex(p.sky);scene.fog.density=.00018+fog*.00115+(weather.kind==="rain"?.00025:0);
@@ -4890,10 +4970,19 @@ function updateWeather(){
  if(hemiLight)hemiLight.intensity=2.3;
  if(ambientLight)ambientLight.intensity=.62;
  if(fillLight)fillLight.intensity=weather.kind==="rain"?.72:.48;
- if(trackGroup){trackGroup.traverse(o=>{if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.isAsphalt){o.material.roughness=lerp(.87,.28,rain);o.material.metalness=rain*.08;}});}
- if(rain>0.03||weather.kind==="rain")ensureRain();
- else if(rainPoints)rainPoints.visible=false;
+ if(trackGroup)trackGroup.traverse(o=>{
+  if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.isAsphalt){
+   o.material.roughness=lerp(.87,.18,wet);o.material.metalness=lerp(.02,.16,wet);
+   if("clearcoat" in o.material){o.material.clearcoat=.82*wet;o.material.clearcoatRoughness=lerp(.82,.16,wet);}
+   o.material.color.setHex(0xffffff).multiplyScalar(1-.055*wet);
+  }
+ });
+ if(rain>.03||weather.kind==="rain")ensureRain();else if(rainPoints)rainPoints.visible=false;
  $("weatherName").textContent=weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
+ const label=wet<.12?"DRY":wet<.36?"DAMP":wet<.72?"WET":"SOAKED";
+ if($("surfaceWetnessValue"))$("surfaceWetnessValue").textContent=label;
+ if($("surfaceWetnessBar"))$("surfaceWetnessBar").style.width=(wet*100)+"%";
+ lastWetnessVisual=wet;
 }
 let rainPoints=null,rainGeometry=null;
 function ensureRain(){
@@ -4905,9 +4994,20 @@ function ensureRain(){
  rainPoints.visible=weather.rain>1||weather.kind==="rain";rainPoints.material.opacity=.12+weather.rain/100*.52;
 }
 function updateRain(dt){
+ const rainRate=weather.kind==="rain"?weather.rain/100:weather.kind==="cloudy"?weather.rain/100*.22:0;
+ const evaporation=(.00045+clamp((weather.temp-10)/32,0,1)*.0012)*(1-weather.cloud/100*.65);
+ trackWetness=clamp(trackWetness+rainRate*.007*dt-evaporation*dt,0,1);
+ wetnessVisualTimer+=dt;
+ if(wetnessVisualTimer>=.4){
+  wetnessVisualTimer=0;
+  if(Math.abs(trackWetness-lastWetnessVisual)>.012)updateWeather();
+ }
  if(!rainPoints||!rainPoints.visible||!carRoot)return;
  const a=rainGeometry.attributes.position.array;
- for(let i=0;i<a.length;i+=3){a[i+1]-=dt*(18+weather.rain*.45);if(a[i+1]<0){a[i+1]=32+Math.random()*18;a[i]=car.x+(Math.random()-.5)*100;a[i+2]=car.z+(Math.random()-.5)*100;}}
+ for(let i=0;i<a.length;i+=3){
+  a[i+1]-=dt*(18+weather.rain*.45);
+  if(a[i+1]<0){a[i+1]=32+Math.random()*18;a[i]=car.x+(Math.random()-.5)*100;a[i+2]=car.z+(Math.random()-.5)*100;}
+ }
  rainPoints.position.set(car.x,0,car.z);rainGeometry.attributes.position.needsUpdate=true;
 }
 function setWeatherFromInputs(prefix){
