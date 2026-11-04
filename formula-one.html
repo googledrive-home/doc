@@ -4272,7 +4272,7 @@ function sourcePartInfo(name){
  if(/front tires?|front disk|rim front|bujon front|tires lid front|inside rim front/.test(n))return {zone:"front",threshold:/front tires?/.test(n)?.58:.72};
  if(/back tires?|rim bck|rim back|bujon back|tires lid back|inside rim back/.test(n))return {zone:"rear",threshold:/back tires?/.test(n)?.60:.74};
  if(/front wing|spoiler front|front spoiler|canard|front.*endplate/.test(n))return {zone:"front",threshold:.30};
- if(/rear wing|body back wing|spoiler drs|spoiler small|spoiler big|swan.?neck|radar wing|vertical radar/.test(n))return {zone:"rear",threshold:.42};
+ if(/rear wing|body back wing|spoiler(?! front)|swan.?neck|radar wing|vertical radar|pitot tube wing/.test(n))return {zone:"rear",threshold:.42};
  if(/diffuser|floor|underfloor|grid/.test(n))return {zone:"underfloor",threshold:.48};
  if(/engine|exhaust|differential|gearbox|power unit/.test(n))return {zone:"rear",threshold:.68};
  if(/mirror|fender|wishbone|suspension|front spoiler holder/.test(n))return {zone:"side",threshold:.30};
@@ -4329,55 +4329,55 @@ function createImportedSteeringWheel(modelRoot,parts){
  const control=parts.find(m=>/^control$/i.test(m.userData.sourceName||m.name));
  if(!control)throw new Error("The imported model has no Control steering-wheel component");
  const bounds=control.geometry.boundingBox||control.geometry.computeBoundingBox();
- const centre=bounds.getCenter(new THREE.Vector3());
+ const centre=bounds.getCenter(new THREE.Vector3()),nativeSize=bounds.getSize(new THREE.Vector3());
+ const wheelWidth=clamp(nativeSize.x,.15,.24),wheelHeight=clamp(nativeSize.y,.09,.15),wheelDepth=Math.max(.018,nativeSize.z);
  const pivot=new THREE.Group();pivot.name="Red Bull steering wheel pivot";pivot.position.copy(centre);pivot.rotation.order="YXZ";modelRoot.add(pivot);
  const wheelParts=parts.filter(m=>/^(control|switch|shifter|control shaft)$/i.test(m.userData.sourceName||m.name));
  for(const part of wheelParts){
   part.geometry.translate(-centre.x,-centre.y,-centre.z);
   part.position.set(0,0,0);part.rotation.set(0,0,0);part.scale.set(1,1,1);
-  pivot.add(part);registerDamagePart(part,"cockpit steering "+(part.userData.sourceName||part.name),.84,"side");
+  pivot.add(part);cockpitVisibleMeshes.push(part);
+  registerDamagePart(part,"cockpit steering "+(part.userData.sourceName||part.name),.84,"side");
  }
  steeringPivot=pivot;wheelControlMeshes=[];wheelShiftLedMeshes=[];
  const carbon=new THREE.MeshStandardMaterial({color:0x121922,roughness:.48,metalness:.32});
  const grip=new THREE.MeshStandardMaterial({color:0x202a32,roughness:.88,metalness:.02});
- const box=(w,h,d,x,y,z,material=carbon)=>{
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-  mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;pivot.add(mesh);cockpitVisibleMeshes.push(mesh);return mesh;
- };
- // Compact flat-bottom Formula wheel surround sized to the imported control housing.
- box(.405,.026,.034,carbon,0,.158,.006);
- box(.030,.245,.034,carbon,-.188,.015,.006);box(.030,.245,.034,carbon,.188,.015,.006);
- box(.255,.027,.034,carbon,0,-.112,.006);
- box(.052,.235,.041,-.178,.005,-.004,grip);box(.052,.235,.041,.178,.005,-.004,grip);
- const bezel=new THREE.Mesh(new THREE.BoxGeometry(.162,.098,.014),carbon);bezel.position.set(0,0,-.024);pivot.add(bezel);cockpitVisibleMeshes.push(bezel);
+ const bezelWidth=wheelWidth*.70,bezelHeight=wheelHeight*.76,bezelDepth=.010,screenWidth=wheelWidth*.59,screenHeight=wheelHeight*.60;
+ const faceZ=-(wheelDepth*.5+.006);
+ const bezel=new THREE.Mesh(new THREE.BoxGeometry(bezelWidth,bezelHeight,bezelDepth),carbon);
+ bezel.position.set(0,0,faceZ);bezel.castShadow=true;pivot.add(bezel);cockpitVisibleMeshes.push(bezel);
  if(!dashCanvas){dashCanvas=document.createElement("canvas");dashCanvas.width=1024;dashCanvas.height=600;dashContext=dashCanvas.getContext("2d");dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;}
- const display=new THREE.Mesh(new THREE.PlaneGeometry(.151,.088),new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false}));
- display.position.set(0,0,-.033);display.rotation.y=Math.PI;display.name="Red Bull wheel telemetry display";pivot.add(display);cockpitVisibleMeshes.push(display);
+ const display=new THREE.Mesh(new THREE.PlaneGeometry(screenWidth,screenHeight),new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false,depthTest:false}));
+ display.position.set(0,0,faceZ-bezelDepth*.56-.0008);display.rotation.y=Math.PI;display.renderOrder=5;
+ display.name="Red Bull wheel telemetry display";pivot.add(display);cockpitVisibleMeshes.push(display);
  const labelMaterial=(label)=>{
   const canvas=document.createElement("canvas");canvas.width=96;canvas.height=48;
-  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(6,13,19,.94)";ctx.fillRect(0,0,96,48);
-  ctx.fillStyle="#f4f7f8";ctx.font="900 18px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,48,25);
+  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(6,13,19,.96)";ctx.fillRect(0,0,96,48);
+  ctx.fillStyle="#f4f7f8";ctx.font="900 15px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,48,25);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  return new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,toneMapped:false});
+  return new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,toneMapped:false,depthTest:false});
  };
+ const buttonX=wheelWidth*.415,buttonY=wheelHeight*.245,buttonRadius=wheelWidth*.036,buttonZ=faceZ-bezelDepth*.5-.006;
  const addButton=(label,x,y,color,controlName)=>{
-  const button=new THREE.Mesh(new THREE.CylinderGeometry(.012,.014,.017,16),new THREE.MeshStandardMaterial({color,roughness:.34,metalness:.18}));
-  button.rotation.x=Math.PI/2;button.position.set(x,y,-.046);button.userData.wheelControl=controlName;button.userData.baseColor=color;
-  pivot.add(button);cockpitVisibleMeshes.push(button);wheelControlMeshes.push(button);
-  const legend=new THREE.Mesh(new THREE.PlaneGeometry(.030,.013),labelMaterial(label));
-  legend.position.set(x,y,-.057);legend.rotation.y=Math.PI;pivot.add(legend);cockpitVisibleMeshes.push(legend);
+  const button=new THREE.Mesh(new THREE.CylinderGeometry(buttonRadius*.88,buttonRadius,buttonRadius*1.35,16),new THREE.MeshStandardMaterial({color,roughness:.34,metalness:.18}));
+  button.rotation.x=Math.PI/2;button.position.set(x,y,buttonZ);button.userData.wheelControl=controlName;button.userData.baseColor=color;
+  button.castShadow=true;pivot.add(button);cockpitVisibleMeshes.push(button);wheelControlMeshes.push(button);
+  const legend=new THREE.Mesh(new THREE.PlaneGeometry(wheelWidth*.105,wheelHeight*.082),labelMaterial(label));
+  legend.position.set(x,y,buttonZ-buttonRadius*.78);legend.rotation.y=Math.PI;legend.renderOrder=6;pivot.add(legend);cockpitVisibleMeshes.push(legend);
  };
- addButton("ERS",-.126,.063,0xe04b43,"ERS");addButton("RAD",-.126,0,0x397bb9,"RADIO");addButton("BB+",-.126,-.063,0xe3bf42,"BBAL");
- addButton("DRS",.126,.063,0x35a879,"DRS");addButton("MODE",.126,0,0x9b67bd,"MODE");addButton("DIFF",.126,-.063,0xe07c38,"DIFF");
+ addButton("ERS",-buttonX,buttonY,0xe04b43,"ERS");addButton("RAD",-buttonX,0,0x397bb9,"RADIO");addButton("BB+",-buttonX,-buttonY,0xe3bf42,"BBAL");
+ addButton("DRS",buttonX,buttonY,0x35a879,"DRS");addButton("MODE",buttonX,0,0x9b67bd,"MODE");addButton("DIFF",buttonX,-buttonY,0xe07c38,"DIFF");
+ const ledStep=wheelWidth*.047,ledWidth=wheelWidth*.034,ledHeight=wheelHeight*.052,ledY=wheelHeight*.435;
  for(let i=0;i<16;i++){
-  const color=i<9?0x39d78c:i<12?0xe9c34f:0xe95144,led=new THREE.Mesh(new THREE.BoxGeometry(.014,.012,.012),new THREE.MeshStandardMaterial({color:0x26343a,emissive:0x000000,roughness:.42}));
-  led.position.set((i-7.5)*.023,.187,-.012);pivot.add(led);cockpitVisibleMeshes.push(led);wheelShiftLedMeshes.push(led);
+  const led=new THREE.Mesh(new THREE.BoxGeometry(ledWidth,ledHeight,.006),new THREE.MeshStandardMaterial({color:0x26343a,emissive:0x000000,roughness:.42}));
+  led.position.set((i-7.5)*ledStep,ledY,faceZ-.002);pivot.add(led);cockpitVisibleMeshes.push(led);wheelShiftLedMeshes.push(led);
  }
  handGroup=new THREE.Group();pivot.add(handGroup);
  for(const side of [-1,1]){
-  const glove=new THREE.Mesh(new THREE.SphereGeometry(.044,12,9),grip);
-  glove.scale.set(1.15,.78,1);glove.position.set(side*.17,-.028,.027);handGroup.add(glove);cockpitVisibleMeshes.push(glove);
+  const glove=new THREE.Mesh(new THREE.SphereGeometry(wheelWidth*.105,12,9),grip);
+  glove.scale.set(.76,.62,.72);glove.position.set(side*wheelWidth*.36,-wheelHeight*.40,.035);handGroup.add(glove);cockpitVisibleMeshes.push(glove);
  }
+ pivot.userData.nativeWheelSize={x:nativeSize.x,y:nativeSize.y,z:nativeSize.z};
  return pivot;
 }
 function addImportedHalo(root){
@@ -4440,7 +4440,7 @@ async function loadRedBullCarModel(targetRoot,generation){
    const zoneName=info.zone==="front"?"front":info.zone==="rear"?"rear":info.zone==="underfloor"?"underfloor":"side";
    registerDamagePart(mesh,zoneName+" "+name,info.threshold,info.zone);
    const n=name.toLowerCase();
-   if(/engine|exhaust|differential|grid|chassis/.test(n))importedEngineMeshes.push(mesh);
+   if(/exhaust|differential|engine|power unit/.test(n))importedEngineMeshes.push(mesh);
    if(/cabin|seat|belt|clip|control|switch|shifter|front wing|spoiler front|canard|mirror glass/.test(n))cockpitVisibleMeshes.push(mesh);
    if(/^(control|switch|shifter|control shaft)$/i.test(name)){} 
   }
@@ -5150,10 +5150,16 @@ function updateImportedCarThermals(dt){
   for(const mat of materials)if(mat&&mat.emissive){mat.emissive.setRGB(.68*glow,.19*glow,.025*glow);mat.emissiveIntensity=.9*glow;}
  }
  for(const wheel of importedWheelAssemblies){
-  const health=car.wheelHealth?.[wheel.id]??100,tyre=wheel.tyreMesh;
-  if(tyre&&!wheel.detached&&tyre.parent===wheel.roll&&tyre.material?.color){
-   tyre.material.color.setHex(health<35?0x9a7263:health<65?0xc0a89a:0xffffff);
-   tyre.material.roughness=lerp(.82,.97,1-health/100);
+  const health=car.wheelHealth?.[wheel.id]??100,tyre=wheel.tyreMesh,radialScale=lerp(1,.86,1-health/100);
+  wheel.health=health;
+  if(tyre&&!wheel.detached&&tyre.parent===wheel.roll){
+   tyre.scale.y=radialScale;tyre.scale.z=radialScale;
+   const corner=wheelCornerPivots.find(c=>c.wheelId===wheel.id);
+   if(corner)corner.radius=wheel.baseRadius*radialScale;
+   if(tyre.material?.color){
+    tyre.material.color.setHex(health<25?0x80645b:health<50?0x9a7263:health<75?0xc0a89a:0xffffff);
+    tyre.material.roughness=lerp(.82,.98,1-health/100);
+   }
   }
  }
 }
