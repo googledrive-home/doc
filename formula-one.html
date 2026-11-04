@@ -5641,7 +5641,7 @@ function startSession(){
  if(!carRoot)buildCar();
  if(!car)positionCarAtStart();
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
- $("menu").style.display="none";$("hud").style.display="block";$("pauseOverlay").style.display="none";
+ $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
  try{spawnOpponents();}catch(error){console.error("Opponent setup failed; continuing in solo practice.",error);try{clearOpponents();}catch(_){}}
  try{applyUISettings();}catch(error){console.warn("HUD settings could not be applied.",error);}
