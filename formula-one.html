@@ -2102,14 +2102,13 @@ function offsetPoint(s,side,distance,height){const right=new THREE.Vector3(s.tan
 function roadHalfWidthAt(sample){return sample&&Number.isFinite(sample.roadHalfWidth)?sample.roadHalfWidth:roadWidth*.5;}
 function stableTrackOffset(samples,index,side,halfWidth,height=0){
  const n=samples.length,i=(index+n)%n,previous=samples[(i-1+n)%n].p,next=samples[(i+1)%n].p,current=samples[i].p;
- const inX=current.x-previous.x,inZ=current.z-previous.z,outX=next.x-current.x,outZ=next.z-current.z;
- const inLen=Math.hypot(inX,inZ)||1,outLen=Math.hypot(outX,outZ)||1;
- const inRight=new THREE.Vector2(inZ/inLen,-inX/inLen),outRight=new THREE.Vector2(outZ/outLen,-outX/outLen);
- const miter=inRight.add(outRight);
- if(miter.lengthSq()<1e-6)miter.copy(outRight);else miter.normalize();
- const projection=miter.dot(outRight);
- const miterLength=projection>.25?clamp(halfWidth/projection,halfWidth,halfWidth*1.7):halfWidth;
- return current.clone().add(new THREE.Vector3(miter.x*side*miterLength,height,miter.y*side*miterLength));
+ const ax=current.x-previous.x,az=current.z-previous.z,bx=next.x-current.x,bz=next.z-current.z;
+ const al=Math.hypot(ax,az)||1,bl=Math.hypot(bx,bz)||1;
+ const inRight=new THREE.Vector2(az/al,-ax/al),outRight=new THREE.Vector2(bz/bl,-bx/bl),miter=inRight.add(outRight);
+ const projection=miter.lengthSq()>1e-6?(miter.normalize(),miter.dot(outRight)):-1;
+ if(projection<.52)return current.clone().add(new THREE.Vector3(outRight.x*side*halfWidth,height,outRight.y*side*halfWidth));
+ const amount=Math.min(halfWidth/projection,halfWidth*1.32);
+ return current.clone().add(new THREE.Vector3(miter.x*side*amount,height,miter.y*side*amount));
 }
 function applySafeTrackWidths(samples,nominalWidth){
  const base=nominalWidth*.5,n=samples.length,raw=new Float32Array(n);
@@ -2178,22 +2177,35 @@ function validateTrackLayout(points,minClearance){
 function applyLocalClearanceWidths(samples,issues){
  const n=samples.length;if(!n||!issues.length)return;
  for(const issue of issues){
-  const allowed=Math.min(roadWidth*.5,Math.max(3.25,(issue.distance-.9)*.5));
-  const shoulderAllowed=Math.max(0,Math.min(2.65,(issue.distance-allowed*2-.95)*.5));
-  for(const centre of [issue.a,issue.b]){
-   for(let delta=-10;delta<=10;delta++){
-    const i=(centre+delta+n)%n,weight=1-Math.abs(delta)/11;
-    samples[i].roadHalfWidth=Math.min(samples[i].roadHalfWidth,lerp(samples[i].roadHalfWidth,allowed,weight));
-    samples[i].roadShoulderExtra=Math.min(samples[i].roadShoulderExtra??2.65,lerp(samples[i].roadShoulderExtra??2.65,shoulderAllowed,weight));
-   }
+  const allowed=Math.min(roadWidth*.5,Math.max(3,(issue.distance-1.1)*.43));
+  for(const centre of [issue.a,issue.b])for(let d=-14;d<=14;d++){
+   const i=(centre+d+n)%n,w=1-Math.abs(d)/15;
+   samples[i].roadHalfWidth=Math.min(samples[i].roadHalfWidth,lerp(samples[i].roadHalfWidth,allowed,w));
   }
  }
 }
+function computeTrackClearance(samples){
+ const n=samples.length,step=routeLength/Math.max(1,n),exclude=34;
+ for(let i=0;i<n;i++){
+  const p=samples[i].p;let nearest=Infinity,otherHalf=roadHalfWidthAt(samples[i]);
+  for(let j=0;j<n;j++){
+   const arc=Math.min((j-i+n)%n,(i-j+n)%n)*step;if(arc<exclude)continue;
+   const q=samples[j].p;if(Math.abs(p.y-q.y)>3.8)continue;
+   const d=Math.hypot(p.x-q.x,p.z-q.z);
+   if(d<nearest){nearest=d;otherHalf=roadHalfWidthAt(samples[j]);}
+  }
+  samples[i].nearTrackClearance=nearest;samples[i].nearTrackHalfWidth=otherHalf;
+ }
+}
+function tracksideExtraAt(s,desired,margin=1.25){
+ const base=roadHalfWidthAt(s),other=Number.isFinite(s.nearTrackHalfWidth)?s.nearTrackHalfWidth:base;
+ return Number.isFinite(s.nearTrackClearance)?clamp((s.nearTrackClearance-base-other-margin)*.5,0,desired):desired;
+}
 function makeRibbon(samples,width,material,yOff=.025){
- const pos=[],uv=[],idx=[],nominalExtra=Math.max(0,(width-roadWidth)*.5);
+ const pos=[],uv=[],idx=[],nominal=Math.max(0,(width-roadWidth)*.5);
  for(let i=0;i<samples.length;i++){
-  const s=samples[i],extra=nominalExtra>0?Math.min(nominalExtra,s.roadShoulderExtra??nominalExtra):0,half=roadHalfWidthAt(s)+extra;
-  const a=stableTrackOffset(samples,i,-1,half,yOff),b=stableTrackOffset(samples,i,1,half,yOff),v=(i/samples.length)*routeLength/12;
+  const s=samples[i],base=roadHalfWidthAt(s),extra=width>roadWidth?Math.min(nominal,tracksideExtraAt(s,nominal,1.15),base*.42):0,half=base+extra;
+  const a=stableTrackOffset(samples,i,-1,half,yOff),b=stableTrackOffset(samples,i,1,half,yOff),v=i/samples.length*routeLength/12;
   pos.push(a.x,a.y,a.z,b.x,b.y,b.z);uv.push(0,v,1,v);
  }
  for(let i=0;i<samples.length;i++){const j=(i+1)%samples.length,a=i*2,b=a+1,c=j*2,d=c+1;idx.push(a,c,b,b,c,d);}
@@ -2203,15 +2215,18 @@ function makeRibbon(samples,width,material,yOff=.025){
 function makeCurb(samples,side,width){
  const pos=[],col=[],idx=[],red=new THREE.Color(0xd82f37),white=new THREE.Color(0xf3eee5);
  for(let i=0;i<samples.length;i++){
-  const half=roadHalfWidthAt(samples[i]),a=stableTrackOffset(samples,i,side,half+.15,.045),b=stableTrackOffset(samples,i,side,half+.15+width,.045);
-  pos.push(a.x,a.y,a.z,b.x,b.y,b.z);const c=Math.floor((i/samples.length)*routeLength/7)%2?white:red;for(let k=0;k<2;k++)col.push(c.r,c.g,c.b);
+  const base=roadHalfWidthAt(samples[i]),cw=tracksideExtraAt(samples[i],width,.8);
+  const a=stableTrackOffset(samples,i,side,base+.15,.045),b=stableTrackOffset(samples,i,side,base+.15+cw,.045);
+  pos.push(a.x,a.y,a.z,b.x,b.y,b.z);
+  const c=Math.floor(i/samples.length*routeLength/7)%2?white:red;for(let k=0;k<2;k++)col.push(c.r,c.g,c.b);
  }
  for(let i=0;i<samples.length;i++){const j=(i+1)%samples.length,a=i*2,b=a+1,c=j*2,d=c+1;idx.push(a,c,b,b,c,d);}
  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setAttribute("color",new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
  return new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,side:THREE.DoubleSide}));
 }
 function makeRail(samples,side,distance,height,material){
- const extra=Math.max(0,distance-roadWidth*.5),pts=samples.map((s,i)=>stableTrackOffset(samples,i,side,roadHalfWidthAt(s)+extra,height));
+ const desired=Math.max(0,distance-roadWidth*.5);
+ const pts=samples.map((s,i)=>stableTrackOffset(samples,i,side,roadHalfWidthAt(s)+tracksideExtraAt(s,desired,1.6),height));
  const c=new THREE.CatmullRomCurve3(pts,true,"centripetal",.5);
  return new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(360,Math.floor(samples.length*.55)),material.userData.radius||.13,6,true),material);
 }
@@ -2242,24 +2257,26 @@ function terrainHeightFromSample(sample,x,z,distance){
 }
 function terrainVisualHeightFromSample(sample,x,z,distance){
  const natural=terrainHeightFromSample(sample,x,z,distance);
- if(!route.length||distance>120)return natural;
- const near=findNearest(x,z,sample.p.y),local=route[near.index]||sample;
- const edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
- const shoulderBlend=smoothStep(edge+34,edge+175,lateral);
- const clearance=near.point.y-2.65;
- return Math.min(natural,lerp(clearance,natural,shoulderBlend));
+ if(!route.length||distance>145)return natural;
+ const near=findNearest(x,z,sample.p.y),local=route[near.index]||sample,edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
+ const blend=smoothStep(edge+3.5,edge+34,lateral),clearance=near.point.y-.92;
+ return Math.min(natural,lerp(clearance,natural,blend));
 }
-function terrainHeightAt(x,z){
+function terrainHeightAt(x,z,yHint=null,routeHint=null){
+ if(route.length&&Number.isInteger(routeHint)){
+  const near=findNearest(x,z,yHint,routeHint);
+  if(near.distance<95)return terrainHeightFromSample({p:near.point},x,z,near.distance);
+ }
  const nearest=nearestTerrainSample(x,z);
  return terrainHeightFromSample(nearest.sample,x,z,nearest.distance);
 }
-function surfaceHeightAt(x,z,yHint=null){
- if(!route.length)return terrainHeightAt(x,z);
- const near=findNearest(x,z,yHint),offset=Math.abs(near.offset),edge=roadHalfWidthAt(route[near.index]||route[0]);
- if(offset<=edge+.82)return near.point.y+.05;
- if(offset<=edge+2.8)return near.point.y+.02;
- const base=terrainHeightAt(x,z);
- return lerp(near.point.y+.02,base,smoothStep(edge+2.4,edge+5.1,offset));
+function surfaceHeightAt(x,z,yHint=null,routeHint=null){
+ if(!route.length)return terrainHeightAt(x,z,yHint,routeHint);
+ const near=findNearest(x,z,yHint,routeHint),offset=Math.abs(near.offset),edge=roadHalfWidthAt(route[near.index]||route[0]);
+ if(offset<=edge+.95)return near.point.y+.045;
+ if(offset<=edge+2.9)return near.point.y+.02;
+ const base=terrainHeightAt(x,z,yHint,routeHint);
+ return lerp(near.point.y+.02,base,smoothStep(edge+2.6,edge+5.6,offset));
 }
 function terrainTexture(){
  const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
@@ -2280,7 +2297,7 @@ function buildTerrain(def){
  for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
  minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
  const width=maxX-minX,depth=maxZ-minZ;
- const nx=graphicsQuality==="low"?112:graphicsQuality==="high"?252:176;
+ const nx=graphicsQuality==="low"?144:graphicsQuality==="high"?300:216;
  const nz=Math.max(112,Math.round(nx*depth/width));
  const coarseStep=Math.max(1,Math.floor(route.length/180)),samples=[];
  for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
@@ -2318,9 +2335,15 @@ function createTrack(){
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
  const minAlt=def.elevationProfile?Math.min(...def.elevationProfile.map(v=>v[1])):Math.min(...activeTrackPoints.map(v=>v[2]));
- const rawPoints=activeTrackPoints.slice();
- if(rawPoints.length>2&&Math.hypot(rawPoints[0][0]-rawPoints[rawPoints.length-1][0],rawPoints[0][1]-rawPoints[rawPoints.length-1][1])<2)rawPoints.pop();
- const points=rawPoints.map(v=>new THREE.Vector3(v[0],def.elevationProfile?0:v[2]-minAlt,v[1]));
+ const rawPoints=activeTrackPoints.slice(),cleanPoints=[];
+ for(const point of rawPoints){
+  const previous=cleanPoints[cleanPoints.length-1];
+  if(previous&&Math.hypot(point[0]-previous[0],point[1]-previous[1])<.75)continue;
+  cleanPoints.push(point);
+ }
+ if(cleanPoints.length>3&&Math.hypot(cleanPoints[0][0]-cleanPoints[cleanPoints.length-1][0],cleanPoints[0][1]-cleanPoints[cleanPoints.length-1][1])<1.5)cleanPoints.pop();
+ if(cleanPoints.length<8)throw new Error("Track layout has too few distinct control points: "+def.name);
+ const points=cleanPoints.map(v=>new THREE.Vector3(v[0],def.elevationProfile?0:v[2]-minAlt,v[1]));
  pathCurve=new THREE.CatmullRomCurve3(points,true,"centripetal",.42);
  trackScale=def.length/horizontalLength(pathCurve);
  pathCurve.points.forEach(p=>{p.x*=trackScale;p.z*=trackScale;});
@@ -2334,6 +2357,7 @@ function createTrack(){
   layoutIssues=validateTrackLayout(route,roadWidth+.65);
  }
  if(layoutIssues.length)console.warn("APEX retained local clearances on "+def.name,layoutIssues.slice(0,8));
+ computeTrackClearance(route);
 terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshStandardMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:weather.rain>10?.42:.87,metalness:.02,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
@@ -2355,7 +2379,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  const postCount=Math.ceil(route.length/5);
  const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,1.15,.16),postMat,postCount*2);
  const dummy=new THREE.Object3D();let pi=0;
- for(let i=0;i<route.length;i+=5){for(const side of [-1,1]){dummy.position.copy(stableTrackOffset(route,i,side,roadHalfWidthAt(route[i])+5.8,0).add(new THREE.Vector3(0,.52,0)));dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);}}
+ for(let i=0;i<route.length;i+=5){for(const side of [-1,1]){dummy.position.copy(stableTrackOffset(route,i,side,roadHalfWidthAt(route[i])+tracksideExtraAt(route[i],5.8,1.6),0).add(new THREE.Vector3(0,.52,0)));dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);}}
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
  buildScenery();addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();addCircuitFacilities();addCircuitLandmarks();
@@ -2906,11 +2930,17 @@ function applyCrashDamage(severity,side,zone="side"){
 }
 function updateCrashDebris(dt){
  for(let i=looseDamageParts.length-1;i>=0;i--){
-  const p=looseDamageParts[i];p.age+=dt;p.velocity.y-=9.81*dt;
-  p.mesh.position.addScaledVector(p.velocity,dt);
-  p.mesh.rotation.x+=p.angular.x*dt;p.mesh.rotation.y+=p.angular.y*dt;p.mesh.rotation.z+=p.angular.z*dt;
-  const floor=surfaceHeightAt(p.mesh.position.x,p.mesh.position.z,p.mesh.position.y)+.12;
-  if(p.mesh.position.y<floor){p.mesh.position.y=floor;p.velocity.y=Math.abs(p.velocity.y)*.22;p.velocity.x*=.72;p.velocity.z*=.72;p.angular.multiplyScalar(.55);}
+  const p=looseDamageParts[i];p.age+=dt;
+  if(!p.grounded){
+   p.velocity.y-=9.81*dt;p.mesh.position.addScaledVector(p.velocity,dt);
+   p.mesh.rotation.x+=p.angular.x*dt;p.mesh.rotation.y+=p.angular.y*dt;p.mesh.rotation.z+=p.angular.z*dt;
+   const floor=surfaceHeightAt(p.mesh.position.x,p.mesh.position.z,p.mesh.position.y)+.08;
+   if(p.mesh.position.y<floor){
+    p.mesh.position.y=floor;
+    if(Math.abs(p.velocity.y)<2.2){p.velocity.set(0,0,0);p.angular.multiplyScalar(.12);p.grounded=true;}
+    else{p.velocity.y=Math.abs(p.velocity.y)*.16;p.velocity.x*=.58;p.velocity.z*=.58;p.angular.multiplyScalar(.42);}
+   }
+  }
   if(p.age>p.life){scene.remove(p.mesh);looseDamageParts.splice(i,1);}
  }
  for(let i=crashDebris.length-1;i>=0;i--){
@@ -3055,13 +3085,25 @@ function buildCar(){
  cockpitVisibleMeshes.push(cockpitNoseDeck);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
- const haloMat=makeMat(0x77838d,.24,.84);
- function tube(points,r,mat,group=carRoot){const c=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const m=new THREE.Mesh(new THREE.TubeGeometry(c,64,r,10,false),mat);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;}
- const haloHoop=tube([[-.79,1.05,-.66],[-.88,1.30,-.20],[-.84,1.57,.34],[-.55,1.82,.66],[0,1.91,.76],[.55,1.82,.66],[.84,1.57,.34],[.88,1.30,-.20],[.79,1.05,-.66]],.035,haloMat);
- const haloFootL=box(.22,.075,.24,carbon,-.79,1.02,-.66);haloFootL.rotation.z=-.04;
- const haloFootR=box(.22,.075,.24,carbon,.79,1.02,-.66);haloFootR.rotation.z=.04;
- cockpitVisibleMeshes.push(haloHoop,haloFootL,haloFootR);
- cockpitHaloColumn=tube([[0,1.91,.76],[0,1.55,1.02],[0,1.13,1.38]],.038,haloMat);cockpitHaloColumn.frustumCulled=false;cockpitVisibleMeshes.push(cockpitHaloColumn);
+ const haloMat=new THREE.MeshStandardMaterial({color:0x8997a2,metalness:.88,roughness:.24});
+ function tube(points,r,mat,group=carRoot,closed=false,segments=88){
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(p[0],p[1],p[2])),closed,"centripetal",.5);
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,segments,r,12,closed),mat);
+  mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=false;group.add(mesh);return mesh;
+ }
+ const haloHoop=tube([[-.79,1.02,-.86],[-.94,1.28,-.46],[-.98,1.58,.02],[-.78,1.84,.48],[-.40,1.98,.72],[0,2.015,.75],[.40,1.98,.72],[.78,1.84,.48],[.98,1.58,.02],[.94,1.28,-.46],[.79,1.02,-.86]],.047,haloMat);
+ cockpitVisibleMeshes.push(haloHoop);
+ cockpitHaloColumn=tube([[0,2.01,.75],[0,1.82,.93],[0,1.54,1.12],[0,1.24,1.31],[0,.91,1.48]],.045,haloMat);
+ cockpitHaloColumn.visible=showHaloColumn;cockpitVisibleMeshes.push(cockpitHaloColumn);
+ for(const side of [-1,1]){
+  const rearFoot=box(.25,.09,.28,carbon,side*.79,.98,-.86);rearFoot.rotation.z=-side*.05;cockpitVisibleMeshes.push(rearFoot);
+  const brace=tube([[side*.79,.99,-.86],[side*.75,.91,-1.02],[side*.69,.78,-1.10]],.036,haloMat);cockpitVisibleMeshes.push(brace);
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.072,.082,.065,16),makeMat(0x505c66,.34,.82));
+  collar.position.set(side*.69,.78,-1.10);collar.rotation.z=side*.12;carRoot.add(collar);cockpitVisibleMeshes.push(collar);
+  const frontMount=box(.20,.075,.20,carbon,side*.67,.89,1.12);frontMount.rotation.z=side*.08;cockpitVisibleMeshes.push(frontMount);
+ }
+ const frontPillarCollar=new THREE.Mesh(new THREE.CylinderGeometry(.075,.09,.09,18),makeMat(0x505c66,.32,.85));
+ frontPillarCollar.position.set(0,.91,1.48);frontPillarCollar.rotation.x=Math.PI/2;carRoot.add(frontPillarCollar);cockpitVisibleMeshes.push(frontPillarCollar);
  // Steering wheel, screen and animated driver's hands.
 steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringPivot.scale.setScalar(1.04);carRoot.add(steeringPivot);
   // Defined open-frame flat-bottom steering wheel with real grips and a large central display.
@@ -3076,20 +3118,20 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.04,.72);steeringP
   dashCanvas=document.createElement("canvas");dashCanvas.width=1024;dashCanvas.height=600;dashContext=dashCanvas.getContext("2d");
   dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
   const dashMaterial=new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false});
-  const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.54,.31),dashMaterial);
+  const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.46,.285),dashMaterial)
   wheelDisplay.position.set(0,.025,-.385);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
 
  const makeWheelLabel=(label)=>{
-  const canvas=document.createElement("canvas");canvas.width=128;canvas.height=64;
-  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(7,13,19,.92)";ctx.fillRect(0,0,128,64);
-  ctx.fillStyle="#f1f5f7";ctx.font="900 27px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,64,33);
+  const canvas=document.createElement("canvas");canvas.width=96;canvas.height=48;
+  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(7,13,19,.88)";ctx.fillRect(0,0,96,48);
+  ctx.fillStyle="#f1f5f7";ctx.font="900 19px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,48,25);
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
   return new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,toneMapped:false});
  };
  const addWheelButton=(label,x,y,color,control)=>{
   const button=new THREE.Mesh(new THREE.CylinderGeometry(.027,.031,.040,16),makeMat(color,.34,.12));
   button.rotation.x=-Math.PI/2;button.position.set(x,y,-.405);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
-  const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.068,.028),makeWheelLabel(label));labelMesh.position.set(x,y,-.174);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
+  const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.050,.020),makeWheelLabel(label));labelMesh.position.set(x,y,-.448);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
   wheelControlMeshes.push(button);
  };
  addWheelButton("ERS",-.49,.13,0xe04b43,"ERS");
@@ -3220,53 +3262,44 @@ function drawDashboard(){
 }
 function positionCarAtStart(){
  if(!carRoot)buildCar();
- const sample=route[6]||route[0],yaw=Math.atan2(sample.tan.x,sample.tan.z);
- if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
- carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);
- carRoot.rotation.set(0,yaw,0);
- car={
-  x:sample.p.x,z:sample.p.z,y:sample.p.y+.045,yaw,
-  u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
-  wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,
-  longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
-  pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,
-  barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
-  drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,
-  powerMode:powerModeSetting,diffMode:differentialSetting,
-  radioMessage:0,reverse:false
- };
- nearestInfo=findNearest(car.x,car.z,car.y);
- elapsed=0;lap=1;lapStart=0;bestLap=Infinity;
- previousProgress=nearestInfo.progress;
- updateHud(getGrip(),1);
+ const sample=route[6]||route[0];if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
+ const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
+ carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);carRoot.rotation.set(-slope,yaw,0);
+ car={x:sample.p.x,z:sample.p.z,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
+  wear:1,tempF:88,tempR:90,slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
+  pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
+  drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false,routeIndex:6};
+ nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;
+ elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
 }
-function findNearest(x,z,yHint=null){
- const n=route.length;
- let best=Infinity,out={index:0,progress:0,point:route[0]?.p||new THREE.Vector3(),tangent:route[0]?.tan||new THREE.Vector3(0,0,1),offset:0,distance:Infinity};
+function findNearest(x,z,yHint=null,routeHint=null){
+ const n=route.length;let best=Infinity;
+ let out={index:0,progress:0,point:route[0]?.p||new THREE.Vector3(),tangent:route[0]?.tan||new THREE.Vector3(0,0,1),offset:0,distance:Infinity};
  if(!n)return out;
- const cx=Math.floor(x/ROUTE_GRID_CELL),cz=Math.floor(z/ROUTE_GRID_CELL);
- const scoreIndex=i=>{
-  const s=route[i],dx=x-s.p.x,dz=z-s.p.z,dy=yHint==null?0:yHint-s.p.y;
-  const score=dx*dx+dz*dz+dy*dy*4.5;
+ const scoreSegment=i=>{
+  const index=(i+n)%n,next=(index+1)%n,a=route[index],b=route[next],dx=b.p.x-a.p.x,dz=b.p.z-a.p.z;
+  const lengthSq=dx*dx+dz*dz,t=lengthSq?clamp(((x-a.p.x)*dx+(z-a.p.z)*dz)/lengthSq,0,1):0;
+  const px=lerp(a.p.x,b.p.x,t),py=lerp(a.p.y,b.p.y,t),pz=lerp(a.p.z,b.p.z,t),ox=x-px,oz=z-pz,dy=yHint==null?0:yHint-py;
+  const score=ox*ox+oz*oz+dy*dy*4.5;
   if(score<best){
-   best=score;const rx=s.tan.z,rz=-s.tan.x,len=Math.hypot(rx,rz)||1;
-   out={index:i,progress:i/n,point:s.p,tangent:s.tan,offset:dx*rx/len+dz*rz/len,distance:Math.hypot(dx,dz)};
+   best=score;const tangent=new THREE.Vector3(lerp(a.tan.x,b.tan.x,t),lerp(a.tan.y,b.tan.y,t),lerp(a.tan.z,b.tan.z,t)).normalize();
+   const rx=tangent.z,rz=-tangent.x,len=Math.hypot(rx,rz)||1;
+   out={index,progress:(index+t)/n,point:new THREE.Vector3(px,py,pz),tangent,offset:ox*rx/len+oz*rz/len,distance:Math.hypot(ox,oz)};
   }
  };
- if(routeSpatialGrid.size){
-  const maxRing=yHint==null?6:3;
-  for(let ring=0;ring<=maxRing;ring++){
-   for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
-    if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
-    const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));
-    if(bucket)for(const i of bucket)scoreIndex(i);
-   }
+ if(Number.isInteger(routeHint)){
+  for(let d=-18;d<=18;d++)scoreSegment(routeHint+d);
+  if(Number.isFinite(best)&&out.distance<roadWidth*3)return out;
+  best=Infinity;out={index:0,progress:0,point:route[0].p,tangent:route[0].tan,offset:0,distance:Infinity};
+ }
+ const cx=Math.floor(x/ROUTE_GRID_CELL),cz=Math.floor(z/ROUTE_GRID_CELL);
+ if(routeSpatialGrid.size)for(let ring=0;ring<=6;ring++){
+  for(let dx=-ring;dx<=ring;dx++)for(let dz=-ring;dz<=ring;dz++){
+   if(ring>0&&Math.abs(dx)!==ring&&Math.abs(dz)!==ring)continue;
+   const bucket=routeSpatialGrid.get(routeGridKey(cx+dx,cz+dz));if(bucket)for(const i of bucket)scoreSegment(i);
   }
  }
- // Full scan is only a recovery path when the query cell has no indexed samples.
- if(!Number.isFinite(best)){
-  for(let i=0;i<n;i+=2)scoreIndex(i);
- }
+ if(!Number.isFinite(best))for(let i=0;i<n;i+=2)scoreSegment(i);
  return out;
 }
 function updatePreview(){
@@ -3410,7 +3443,7 @@ function updatePhysics(dt){
  car.r=clamp(car.r,-yawLimit,yawLimit);car.yaw+=car.r*dt;
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
- nearestInfo=findNearest(car.x,car.z,car.y);
+ nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
  // Guardrails are collision surfaces, not teleport triggers. Resolve only outward normal velocity.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
  const side=Math.sign(nearestInfo.offset)||1,railDistance=roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8,bodyHalfWidth=.92;
@@ -3443,12 +3476,12 @@ function updatePhysics(dt){
     }
    }
   }
-  nearestInfo=findNearest(car.x,car.z,car.y);
+  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
  }
  const localRoadHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
   const roadBlend=smoothStep(localRoadHalf-.85,localRoadHalf+2.2,Math.abs(nearestInfo.offset));
  const roadSurface=nearestInfo.point.y+.045;
- const runoffSurface=terrainHeightAt(car.x,car.z);
+ const runoffSurface=terrainHeightAt(car.x,car.z,car.y,nearestInfo.index)
  const surfaceY=lerp(roadSurface,runoffSurface,roadBlend);
  // Natural airborne motion and spring-damped suspension attitude.
  if(car.airborne){
@@ -3469,7 +3502,7 @@ function updatePhysics(dt){
  const tyreVerticalRadius=.38*Math.hypot(worldMatrix[5],worldMatrix[9]);
  for(const corner of wheelCornerPivots){
   const centre=carRoot.localToWorld(new THREE.Vector3(corner.pivot.position.x,corner.pivot.position.y,corner.pivot.position.z));
-  const ground=surfaceHeightAt(centre.x,centre.z,centre.y);
+  const ground=surfaceHeightAt(centre.x,centre.z,centre.y,nearestInfo.index);
   const correction=ground+tyreVerticalRadius-centre.y;
   wheelContacts.push({corner,correction,ground});
  }
@@ -3482,7 +3515,7 @@ function updatePhysics(dt){
   let deepest=0;
   for(const p of roofPoints){
    const world=carRoot.localToWorld(new THREE.Vector3(p[0],p[1],p[2]));
-   const ground=surfaceHeightAt(world.x,world.z,world.y);
+   const ground=surfaceHeightAt(world.x,world.z,world.y,nearestInfo.index);
    deepest=Math.max(deepest,ground-world.y);
   }
   if(deepest>0){shellContact=true;shellCorrection=deepest+.012;}
