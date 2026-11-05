@@ -109,6 +109,9 @@ input[type=range]{accent-color:#ff765e}
 .broadcast-row{display:grid;grid-template-columns:20px 1fr 43px;align-items:center;gap:6px;padding:6px 2px;border-bottom:1px solid #ffffff0f;font-size:9px}
 .broadcast-row:last-child{border-bottom:0}.broadcast-row .pos{color:#8ea0af;font-weight:900}.broadcast-row .driver{min-width:0}.broadcast-row .driver b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#edf2f5;font-size:9px}.broadcast-row .driver small{display:block;color:#8999a7;font-size:7px;margin-top:2px}.broadcast-row .gap{color:#ffca83;text-align:right;font-size:8px;font-weight:900}.broadcast-row.you{background:#ff946f14;border-radius:5px}.broadcast-row.you .pos,.broadcast-row.you .driver b{color:#ffd19a}
 .broadcast-panel footer{display:flex;align-items:center;gap:6px;margin-top:8px;color:#8496a5;font-size:7px;font-weight:900;letter-spacing:.12em}.live-dot{width:6px;height:6px;border-radius:50%;background:#f04a4a;box-shadow:0 0 8px #f04a4a}
+.team-radio-banner{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);display:none;align-items:center;gap:10px;max-width:min(560px,90vw);padding:9px 13px;border:1px solid #ffffff2a;border-radius:8px;background:#07111deb;box-shadow:0 10px 32px #0008;pointer-events:none}
+.team-radio-banner.open{display:flex}.team-radio-banner b{flex:0 0 auto;color:#ff987d;font-size:8px;letter-spacing:.17em}.team-radio-banner span{color:#e4edf2;font-size:10px;line-height:1.4}
+@media(max-width:760px){.team-radio-banner{bottom:122px;padding:8px 10px}.team-radio-banner span{font-size:9px}}
 @media(max-width:760px){.broadcast-panel{top:215px;right:6px;width:174px;padding:8px}.broadcast-row{grid-template-columns:16px 1fr 34px;padding:5px 1px}.broadcast-row .driver b{font-size:8px}.broadcast-row .gap{font-size:7px}.broadcast-panel header b{font-size:7px}.broadcast-panel header span{font-size:8px}.broadcast-panel footer{font-size:6px}}
 .pit-service-overlay{position:fixed;inset:0;z-index:28;display:none;place-items:center;padding:16px;background:#02060bd9;backdrop-filter:blur(10px)}.pit-service-overlay.open{display:grid}
 .pit-service-card{width:min(540px,96vw);padding:22px;border:1px solid #ffffff30;border-radius:16px;background:linear-gradient(145deg,#172a38,#09131d);box-shadow:0 26px 90px #000b}
@@ -441,7 +444,8 @@ input[type=range]{accent-color:#ff765e}
     </div>
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="championshipHudBtn">SEASON</button><button class="hudbtn" id="broadcastBtn">BROADCAST</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
-  <div id="broadcastPanel" class="broadcast-panel"><header><b>APEX TV · LIVE TIMING</b><span id="broadcastLapLabel">LAP 1 / 3</span></header><div id="broadcastTimingRows"></div><footer><span class="live-dot"></span> LIVE SESSION · WORLD FEED</footer></div>
+  <div id="broadcastPanel" class="broadcast-panel"><header><b>APEX TV · LIVE TIMING</b><span id="broadcastLapLabel">LAP 1 / 3</span></header><div id="broadcastTimingRows"></div><footer><span class="live-dot"></span> LIVE SESSION · <span id="broadcastCameraLabel">TRACKSIDE CAM 1 / 4</span></footer></div>
+  <div id="teamRadioBanner" class="team-radio-banner" aria-live="polite"><b>APEX ENGINEER</b><span id="teamRadioText">Radio check. We are ready when you are.</span></div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">P</span> PIT STOP <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
@@ -3505,7 +3509,7 @@ const CHAMPIONSHIP_AI_DRIVERS=[
 ];
 const CHAMPIONSHIP_TEAMS=["APEX GP","SILVER ARROW","PAPAYA RACING","SCUDERIA ROSSO","GREENWORKS"];
 let gameMode="quick",quickTrackSelection="spa",championshipState=null;
-let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0;
+let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0,broadcastCircuitProgress=0,teamRadioTimer=0;
 function makeEmptyChampionship(){
  const driverPoints={player:0},teamPoints={};
  CHAMPIONSHIP_AI_DRIVERS.forEach(driver=>driverPoints[driver.id]=0);
@@ -3564,12 +3568,14 @@ function toggleBroadcast(){
 }
 function renderBroadcastTiming(){
  if(!broadcastActive||!car||!nearestInfo)return;
- const playerDistance=lap-1+nearestInfo.progress;
+ if(!pitLaneDriving)broadcastCircuitProgress=nearestInfo.progress;
+ const playerDistance=lap-1+(pitLaneDriving?broadcastCircuitProgress:nearestInfo.progress);
  const participants=[{name:"YOU",team:"APEX GP",distance:playerDistance,isPlayer:true,status:pitLaneDriving?"PIT":"RACE"}];
  for(const bot of opponents)participants.push({name:bot.driverName||("DRIVER "+bot.number),team:bot.teamName||"AI TEAM",distance:Math.max(0,(bot.laps-1)+bot.progress),isPlayer:false,status:"RACE"});
  participants.sort((a,b)=>b.distance-a.distance);
  const leader=participants[0]?.distance||0;
  $("broadcastLapLabel").textContent="LAP "+Math.min(lap,raceLaps)+" / "+raceLaps;
+ $("broadcastCameraLabel").textContent="TRACKSIDE CAM "+(broadcastShotIndex+1)+" / 4";
  $("broadcastTimingRows").innerHTML=participants.map((item,index)=>{
   const gap=leader-item.distance;
   const gapText=index===0?"LEADER":gap>=1?Math.floor(gap)+" L":Math.round(gap*(circuitRouteLength||routeLength))+"m";
@@ -4783,6 +4789,17 @@ function clearOpponents(){
  opponents.forEach(bot=>scene.remove(bot.root));
  opponents=[];
 }
+function showTeamRadio(message,duration=4.5){
+ teamRadioTimer=duration;
+ const banner=$("teamRadioBanner");if(!banner)return;
+ $("teamRadioText").textContent=message;
+ banner.classList.add("open");
+}
+function updateTeamRadio(dt){
+ if(teamRadioTimer<=0)return;
+ teamRadioTimer=Math.max(0,teamRadioTimer-dt);
+ if(teamRadioTimer===0)$("teamRadioBanner").classList.remove("open");
+}
 function showRaceControlMessage(message,type="info",duration=3.2){
  raceControlMessageTimer=duration;const banner=$("raceControlBanner");if(!banner)return;
  banner.textContent=message;banner.className="race-control-banner open "+type;
@@ -4793,6 +4810,8 @@ function setRaceFlag(flag,duration=8){
  else{if(raceFlag==="VSC"&&flag==="YELLOW")return;raceFlag=flag;raceFlagTimer=Math.max(raceFlagTimer,duration);}
  const label=raceFlag==="VSC"?"VIRTUAL SAFETY CAR":raceFlag==="YELLOW"?"YELLOW FLAG":"GREEN FLAG";
  showRaceControlMessage(label,raceFlag==="VSC"?"vsc":raceFlag==="YELLOW"?"yellow":"info",raceFlagTimer||2.4);
+ if(flag==="YELLOW")showTeamRadio("Yellow flag ahead. Lift off and be ready to avoid the incident.");
+ if(flag==="VSC")showTeamRadio("Virtual safety car deployed. Hold your speed delta and leave space.");
 }
 function updateRaceControl(dt){
  if(raceFlag!=="GREEN"){
@@ -4816,7 +4835,7 @@ function updateRaceStart(dt){
   if(raceStartTimer>=raceStartReleaseAt){
    raceStartState="green";raceStartTimer=0;lapStart=elapsed;lamps.classList.add("green");
    [...lamps.children].forEach(lamp=>lamp.classList.add("on"));label.textContent="LIGHTS OUT · GO!";
-   if(!raceStartJumpReported)showRaceControlMessage("GREEN FLAG · RACE STARTED","info",2.6);
+   if(!raceStartJumpReported){showRaceControlMessage("GREEN FLAG · RACE STARTED","info",2.6);showTeamRadio("Lights out. Good launch — watch the first braking zone.");}
   }
  }else if(raceStartState==="green"){
   overlay.classList.add("open");raceStartTimer+=dt;if(raceStartTimer>=1.05){raceStartState="none";overlay.classList.remove("open");}
@@ -6009,6 +6028,7 @@ function updatePhysics(dt){
  const progress=nearestInfo.progress;
  if(!pitLaneDriving&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
   const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);
+  showTeamRadio("Lap "+lap+" complete. Keep it tidy and manage the tyre temperatures.");
   lap++;lapStart=elapsed;
   if(lap>raceLaps){
    running=false;paused=true;silenceAudio();
@@ -6136,14 +6156,31 @@ function setCamera(frameDt=.016){
   if(camera.parent!==scene)scene.attach(camera);
   camera.rotation.order="XYZ";
   if(cameraMode===5){
-   const shots=[{side:1,behind:23,height:10,look:5,fov:56},{side:-1,behind:20,height:8,look:4,fov:54},{side:1,behind:-16,height:7,look:-3,fov:52},{side:-1,behind:-13,height:6,look:-2,fov:54}];
+   const shots=[
+    {side:1,behind:17,height:8.5,fov:52},
+    {side:-1,behind:13,height:6.8,fov:55},
+    {side:1,behind:-11,height:7.5,fov:50},
+    {side:-1,behind:-8,height:5.8,fov:54}
+   ];
    broadcastShotTimer+=frameDt;
    if(broadcastShotTimer>=7.5){broadcastShotTimer=0;broadcastShotIndex=(broadcastShotIndex+1)%shots.length;}
-   const shot=shots[broadcastShotIndex],forward=new THREE.Vector3(Math.sin(car.yaw),0,Math.cos(car.yaw)),right=new THREE.Vector3(Math.cos(car.yaw),0,-Math.sin(car.yaw));
-   const desired=carRoot.position.clone().addScaledVector(right,shot.side*shot.behind*.72).addScaledVector(forward,-shot.behind).add(new THREE.Vector3(0,shot.height,0));
-   const target=carRoot.position.clone().addScaledVector(forward,shot.look).add(new THREE.Vector3(0,1.05,0));
-   camera.position.lerp(desired,clamp(frameDt*2.4,0,1));camera.fov=shot.fov;camera.zoom=1;camera.clearViewOffset();
-   camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
+   const shot=shots[broadcastShotIndex];
+   if(pitLaneDriving||!circuitRoute.length){
+    const forward=new THREE.Vector3(Math.sin(car.yaw),0,Math.cos(car.yaw));
+    const right=new THREE.Vector3(Math.cos(car.yaw),0,-Math.sin(car.yaw));
+    const desired=carRoot.position.clone().addScaledVector(right,shot.side*13).addScaledVector(forward,-shot.behind).add(new THREE.Vector3(0,shot.height*.72,0));
+    const target=carRoot.position.clone().add(new THREE.Vector3(0,1.05,0));
+    camera.position.lerp(desired,clamp(frameDt*2.6,0,1));camera.lookAt(target);
+   }else{
+    const camRoute=circuitRoute,index=Math.floor(broadcastCircuitProgress*camRoute.length)%camRoute.length;
+    const sample=camRoute[index],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+    const sideOffset=circuitRoadWidth*.5+12;
+    const desired=sample.p.clone().addScaledVector(right,shot.side*sideOffset).addScaledVector(sample.tan,-shot.behind).add(new THREE.Vector3(0,shot.height,0));
+    const target=carRoot.position.clone().add(new THREE.Vector3(0,1.05,0));
+    camera.position.lerp(desired,clamp(frameDt*2.8,0,1));camera.lookAt(target);
+   }
+   camera.fov=shot.fov;camera.zoom=1;camera.clearViewOffset();
+   camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
   }else{
   let localPos,localLook;
   if(cameraMode===0){localPos=new THREE.Vector3(0,3.35,-9.2);localLook=new THREE.Vector3(0,.78,2.1);}
@@ -6418,7 +6455,7 @@ function updatePitService(dt){
  pitServiceActive=false;pitServiceOpen=false;$("pitServiceOverlay").classList.remove("open");
  $("pitServiceCancelBtn").disabled=false;$("pitServiceStartBtn").disabled=false;$("pitServiceStartBtn").textContent="START SERVICE";
  $("trackState").textContent="PIT EXIT · RELEASE";$("trackState").style.color="#f0c75c";
- showRaceControlMessage("PIT SERVICE COMPLETE · RELEASE","info",2.8);
+ showRaceControlMessage("PIT SERVICE COMPLETE · RELEASE","info",2.8);showTeamRadio("Service complete. Fresh tyres fitted — rejoin carefully at pit exit.");
 }
 function requestPitService(){
  if(!running||paused)return;
@@ -6508,7 +6545,7 @@ function startSession(sessionMode="practice"){
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;raceStartState="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
+function returnToMenu(){running=false;paused=false;raceStartState="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();
  }
@@ -6542,6 +6579,7 @@ function animate(now){
  }else if(carRoot){physicsAccumulator=0;setCamera(frameDt);}
  if(skyDome)skyDome.position.copy(camera.position);
  if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
+ if(teamRadioTimer>0)updateTeamRadio(frameDt);
  if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
  if(renderer&&scene&&camera)renderer.render(scene,camera);
 }
