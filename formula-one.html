@@ -4839,6 +4839,7 @@ function updateTrafficRadio(dt){
   trafficRadioScanTimer=0;trafficRadioCooldown=Math.max(0,trafficRadioCooldown-dt);return;
  }
  trafficRadioCooldown=Math.max(0,trafficRadioCooldown-dt);
+ if(raceStartState==="countdown"||teamRadioTimer>1){trafficRadioScanTimer=0;return;}
  trafficRadioScanTimer+=dt;
  if(trafficRadioScanTimer<1.1)return;
  trafficRadioScanTimer=0;
@@ -6665,7 +6666,7 @@ function bindPitStation(){
 }
 
 function startSession(sessionMode="practice"){
- const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;weatherForecastTimer=0;weatherForecastRefresh=0;
+ const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;weatherForecastTimer=0;weatherForecastRefresh=0;
  raceStartState=startInPit?"none":"countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
  $("raceStartOverlay").classList.toggle("open",!startInPit);
@@ -6686,7 +6687,7 @@ function startSession(sessionMode="practice"){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
+function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
 function returnToMenu(){running=false;paused=false;raceStartState="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();
