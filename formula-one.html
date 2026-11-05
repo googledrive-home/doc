@@ -615,29 +615,35 @@ const fmtTime = s => { const m=Math.floor(s/60), r=s-m*60; return String(m).padS
 const fmtKm = n => (n/1000).toFixed(3)+" KM";
 const trackDefs = {
  spa:{
-  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:11.4,base:"forest",
+  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:12.5,minWidth:11,elevationRange:102.2,pitEntryBeforeM:85,pitExitAfterM:301,base:"forest",
   elevationProfile:[[0,418],[220,424],[310,419],[690,403],[890,391],[1130,415],[1490,446],[2200,463],[2470,470],[2870,455],[3110,438],[3600,402],[4280,377],[4740,375],[5100,373],[5700,388],[6000,398],[6540,408],[7004,418]],
   points:[[0,0,418],[80,0,420],[145,2,419],[190,-8,416],[215,-35,411],[210,-65,404],[180,-86,397],[145,-85,391],[210,-120,390],[260,-90,397],[285,-40,407],[300,20,420],[260,80,438],[250,130,460],[285,176,467],[390,190,467],[500,205,470],[555,228,465],[570,265,456],[548,300,449],[505,305,444],[470,285,442],[435,310,438],[400,350,432],[380,400,424],[405,438,414],[452,458,405],[490,485,397],[495,525,391],[470,558,385],[430,565,380],[398,540,377],[370,510,374],[330,505,373],[295,530,374],[275,565,377],[285,605,381],[320,635,385],[325,675,389],[295,700,388],[250,695,383],[205,680,379],[160,655,376],[120,630,373],[70,620,365],[25,635,370],[-20,660,378],[-65,665,386],[-105,640,392],[-125,605,398],[-115,565,405],[-80,540,411],[-35,535,416],[5,550,419],[30,580,421],[20,615,420],[-10,630,417],[40,610,415],[55,575,415],[60,545,416],[65,515,417],[25,505,418],[45,480,418],[35,440,416],[0,400,415],[-35,350,413],[-45,285,411],[-30,220,410],[0,160,411],[15,100,414],[10,50,416],[0,0,418]]
  },
  monza:{
-  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:10.6,base:"park",
+  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:11,minWidth:10,elevationRange:12.8,pitEntryBeforeM:110,pitExitAfterM:260,base:"park",
+  // Monza's published overall elevation change is 12.8 m.
+  elevationProfile:[[0,168],[500,169],[1000,171],[1500,170],[2100,172],[2600,170],[3200,165],[3600,159.2],[4100,163],[4600,169],[5200,170.5],[5793,168.5]],
   points:[[0,0,162],[105,0,162.5],[220,0,163],[335,0,164],[440,0,165],[485,12,165],[490,42,164],[470,59,164],[437,50,164],[415,30,165],[400,60,165],[378,105,166],[340,145,167],[285,166,168],[235,162,168],[205,145,167],[195,122,166],[215,106,165],[190,93,165],[160,110,166],[135,143,167],[102,158,168],[72,143,169],[50,115,169],[22,110,168],[-12,128,168],[-45,158,167],[-85,168,166],[-120,148,164],[-153,120,163],[-195,95,161],[-245,80,159],[-300,85,158],[-350,70,159],[-378,40,160],[-362,10,161],[-330,3,162],[-305,22,162],[-285,50,163],[-255,65,164],[-225,55,164],[-205,35,164],[-185,48,164],[-165,75,164],[-140,85,163],[-118,65,162],[-100,33,161],[-73,0,160],[-35,-28,159],[10,-58,158],[65,-75,158],[120,-75,159],[165,-55,160],[185,-28,161],[175,-8,162],[130,-1,162],[75,0,162],[0,0,162]]
  },
  laguna:{
-  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:10.8,base:"dry",
+  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:10.8,minWidth:9.14,elevationRange:55,pitEntryBeforeM:105,pitExitAfterM:250,base:"dry",
   elevationProfile:[[0,220],[220.9,222],[430.2,226],[530.3,229],[614.2,231],[682,229],[754.9,225],[837.9,222],[910.5,220],[976.7,219],[1060.1,219],[1151.5,221],[1250.4,225],[1335.8,232],[1414.5,238],[1500.8,244],[1585.5,249],[1689,253],[1799.2,258],[1904.5,260],[2000.1,261],[2069.3,260],[2149.4,259],[2230.8,260],[2307.8,259],[2368.2,256],[2421.3,250],[2472.3,244],[2520,238],[2581.4,230],[2647.2,223],[2729.4,220],[2821.7,216],[2910.2,213],[2991.7,211],[3064.7,209],[3130.5,208],[3199.6,207],[3281,207],[3354.8,209],[3428.8,213],[3510.5,218],[3602,220]],
   points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,250],[76,270,244],[62,255,238],[38,244,230],[10,240,223],[-22,225,220],[-48,195,216],[-63,160,213],[-61,125,211],[-42,100,209],[-27,76,208],[-47,54,207],[-77,36,207],[-92,8,209],[-70,-15,213],[-35,-18,218],[0,0,220]]
  },
  silverstone:{
-  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:12.3,base:"parkland",
+  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:15,minWidth:12,elevationRange:11.3,pitEntryBeforeM:52,pitExitAfterM:305,base:"parkland",
+  // Approximate distance anchors following Silverstone's published 11.3 m rise.
+  elevationProfile:[[0,152],[450,153],[850,155],[1300,156.3],[1750,155],[2033,154],[2500,152],[3168,153.5],[3800,154.5],[4300,155.5],[4857,154],[5200,150],[5500,145],[5891,152]],
   points:[[0,0,153],[0,100,153],[14,175,153],[55,230,154],[125,250,155],[205,230,156],[260,185,156],[285,120,155],[315,70,154],[365,45,153],[430,55,153],[500,90,153],[565,145,152],[630,175,151],[700,155,151],[745,105,151],[760,40,150],[735,-30,150],[680,-90,151],[600,-130,152],[510,-155,153],[415,-160,153],[325,-145,153],[235,-125,153],[150,-95,153],[85,-55,153],[35,-25,153]]
  },
  monaco:{
-  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:9.3,base:"city",
+  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:9.3,minWidth:8,elevationRange:42,pitEntryBeforeM:90,pitExitAfterM:160,base:"city",
+  // Monaco's published 42 m swing: climb to Casino, then descend towards Rascasse.
+  elevationProfile:[[0,48],[120,52],[300,64],[560,82],[720,89.5],[1000,85],[1250,77],[1600,66],[1950,60],[2250,56],[2500,52],[2800,47.5],[3100,49.5],[3337,48]],
   points:[[0,0,12],[0,55,12],[15,95,12],[50,120,12],[95,115,12],[125,85,12],[135,45,12],[120,5,12],[145,-25,12],[190,-35,12],[225,-70,12],[225,-120,12],[195,-155,12],[150,-165,12],[105,-150,12],[75,-120,12],[55,-80,12],[30,-55,12],[0,-50,12],[-30,-55,12],[-65,-80,12],[-80,-45,12],[-75,-5,12],[-45,25,12],[0,0,12]]
  },
  suzuka:{
-  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:11.5,base:"parkland",
+  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:13,minWidth:10,elevationRange:52,pitEntryBeforeM:80,pitExitAfterM:375,base:"parkland",
   // Approximate circuit elevation profile informed by Suzuka's published course guide.
   // The East-course pass at 2.50 km is below the West-course crossover at 4.87 km.
   elevationProfile:[[0,30],[250,22],[500,8],[800,13],[1050,25],[1320,42],[1658,54],[1900,60],[2160,51],[2350,38],[2498,26],[2620,23],[2800,19],[3100,17],[3440,19],[3750,22],[4100,25],[4400,27],[4620,29],[4760,32],[4820,35],[4870,35],[4920,35],[4980,34],[5100,31],[5350,28],[5580,26],[5807,30]],
@@ -3476,7 +3482,7 @@ let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromis
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
-const PIT_LANE_WIDTH=9.2,PIT_LANE_LIMIT=22.2;
+const PIT_LANE_WIDTH=12.5,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
 let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
 let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
@@ -3893,8 +3899,12 @@ function sampleCurve(curve,count,def,minAltitude){
   const t=i/count,p=curve.getPointAt(t),tan=curve.getTangentAt(t).normalize();
   if(def.elevationProfile){
    const d=t*routeLength;
-   p.y=elevationAt(def.elevationProfile,d)-minAltitude;
-   const rise=elevationAt(def.elevationProfile,d+2)-elevationAt(def.elevationProfile,d-2);
+   const profileMin=Math.min(...def.elevationProfile.map(point=>point[1]));
+   const profileMax=Math.max(...def.elevationProfile.map(point=>point[1]));
+   const profileRange=Math.max(.001,profileMax-profileMin);
+   const elevationScale=(def.elevationRange||profileRange)/profileRange;
+   p.y=(elevationAt(def.elevationProfile,d)-minAltitude)*elevationScale;
+   const rise=(elevationAt(def.elevationProfile,d+2)-elevationAt(def.elevationProfile,d-2))*elevationScale;
    const horizontal=Math.max(.0001,Math.hypot(tan.x,tan.z));
    tan.set(tan.x/horizontal,rise/4,tan.z/horizontal).normalize();
   }
@@ -3933,19 +3943,13 @@ function stableTrackOffset(samples,index,side,halfWidth,height=0){
  return current.clone().add(new THREE.Vector3(miter.x*side*amount,height,miter.y*side*amount));
 }
 function applySafeTrackWidths(samples,nominalWidth){
- const base=nominalWidth*.5,n=samples.length,raw=new Float32Array(n);
- for(let i=0;i<n;i++){
-  const p=samples[i].p,prev=samples[(i-1+n)%n].p,next=samples[(i+1)%n].p;
-  const ax=p.x-prev.x,az=p.z-prev.z,bx=next.x-p.x,bz=next.z-p.z;
-  const al=Math.hypot(ax,az)||1,bl=Math.hypot(bx,bz)||1;
-  const dot=clamp((ax*bx+az*bz)/(al*bl),-1,1),turn=Math.acos(dot);
-  const radius=turn>.008?((al+bl)*.5)/(2*Math.sin(turn*.5)):Infinity;
-  raw[i]=Math.min(base,Math.max(Math.max(4.7,base*.86),radius*.78));
+ const base=nominalWidth*.5;
+ for(const sample of samples){
+  sample.roadHalfWidth=base;
+  sample.roadShoulderExtra=2.65;
  }
- for(let i=0;i<n;i++){
-  const smooth=(raw[(i-2+n)%n]+2*raw[(i-1+n)%n]+3*raw[i]+2*raw[(i+1)%n]+raw[(i+2)%n])/9;
-  samples[i].roadHalfWidth=Math.min(raw[i],smooth);samples[i].roadShoulderExtra=2.65;
- }}
+}
+
 function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
  const p=point.clone();if(!route.length)return p;
  let near=findNearest(p.x,p.z,null);
@@ -4015,7 +4019,7 @@ function validateTrackLayout(points,minClearance){
 function applyLocalClearanceWidths(samples,issues){
  const n=samples.length;if(!n||!issues.length)return;
  for(const issue of issues){
-  const minimumHalfWidth=Math.min(roadWidth*.5,Math.max(4.6,roadWidth*.44));
+  const minimumHalfWidth=Math.min(roadWidth*.5,(trackDefs[activeTrack].minWidth||roadWidth*.86)*.5);
   const allowed=Math.min(roadWidth*.5,Math.max(minimumHalfWidth,(issue.distance-1.1)*.43));
   for(const centre of [issue.a,issue.b])for(let d=-14;d<=14;d++){
    const i=(centre+d+n)%n,w=1-Math.abs(d)/15;
@@ -4071,12 +4075,16 @@ function makeRail(samples,side,distance,height,material){
 }
 function isPitTrackConnectionGap(progress){
  const p=(progress%1+1)%1;
- return (p>=.065&&p<=.105)||(p>=.915&&p<=.985);
+ return p<=Math.min(.24,pitExitCircuitProgress+.025)||p>=Math.max(.76,pitEntryCircuitProgress-.025);
 }
 function isPitLaneCorridorProgress(progress){
  const p=(progress%1+1)%1;
- return p>=.91||p<=.11;
+ return p<=Math.min(.27,pitExitCircuitProgress+.055)||p>=Math.max(.72,pitEntryCircuitProgress-.055);
 }
+function pitTrackConnectionGaps(){
+ return [[0,Math.min(.24,pitExitCircuitProgress+.025)],[Math.max(.76,pitEntryCircuitProgress-.025),.99999]];
+}
+
 function makeRailWithGaps(samples,side,distance,height,material,gaps){
  const group=new THREE.Group(),n=samples.length,desired=Math.max(0,distance-roadWidth*.5);
  const sorted=gaps.slice().sort((a,b)=>a[0]-b[0]);
@@ -4131,16 +4139,33 @@ function addSuzukaBridgeStructure(){
  }
 }
 function makeAsphaltTexture(){
- const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
- const ctx=canvas.getContext("2d");ctx.fillStyle="#55595d";ctx.fillRect(0,0,512,512);
- const pixels=ctx.createImageData(512,512);
- for(let i=0;i<pixels.data.length;i+=4){const n=(Math.random()-.5)*34,v=clamp(76+n,42,108);pixels.data[i]=v;pixels.data[i+1]=v+1;pixels.data[i+2]=v+3;pixels.data[i+3]=255;}
+ const canvas=document.createElement("canvas");canvas.width=1024;canvas.height=1024;
+ const ctx=canvas.getContext("2d");ctx.fillStyle="#4b5054";ctx.fillRect(0,0,1024,1024);
+ const pixels=ctx.createImageData(1024,1024);
+ for(let y=0;y<1024;y++)for(let x=0;x<1024;x++){
+  const i=(y*1024+x)*4,coarse=Math.sin(x*.024+y*.013)*2.4+Math.cos(x*.009-y*.021)*2.0,fine=(Math.random()-.5)*24;
+  const value=clamp(78+coarse+fine,42,112);
+  pixels.data[i]=value;pixels.data[i+1]=value+1;pixels.data[i+2]=value+3;pixels.data[i+3]=255;
+ }
  ctx.putImageData(pixels,0,0);
- for(let i=0;i<1550;i++){const shade=45+Math.floor(Math.random()*45);ctx.fillStyle="rgba("+shade+","+shade+","+ (shade+2)+","+(.06+Math.random()*.16)+")";ctx.fillRect(Math.random()*512,Math.random()*512,1+Math.random()*3,1+Math.random()*2);}
- for(let i=0;i<26;i++){const x=Math.random()*512,y=Math.random()*512;ctx.strokeStyle="rgba(24,27,30,"+(.035+Math.random()*.045)+")";ctx.lineWidth=1+Math.random()*2;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+8,y+30,x-7,y+70,x+5,y+105);ctx.stroke();}
- for(let i=0;i<14;i++){ctx.fillStyle="rgba(125,127,126,.045)";ctx.fillRect(Math.random()*512,Math.random()*512,18+Math.random()*42,5+Math.random()*12);}
- const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
+ for(let i=0;i<22;i++){
+  const x=Math.random()*1024,y=Math.random()*1024,w=35+Math.random()*150,h=8+Math.random()*35;
+  ctx.fillStyle="rgba(25,29,32,"+(.025+Math.random()*.035)+")";ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle="rgba(190,194,193,.045)";ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+ }
+ for(let i=0;i<34;i++){
+  const x=Math.random()*1024,y=Math.random()*1024;ctx.beginPath();ctx.moveTo(x,y);
+  ctx.bezierCurveTo(x-18,y+100,x+25,y+180,x+Math.random()*20-10,y+290);
+  ctx.strokeStyle="rgba(18,21,24,"+(.025+Math.random()*.045)+")";ctx.lineWidth=1+Math.random()*3;ctx.stroke();
+ }
+ for(let i=0;i<18000;i++){
+  const x=Math.random()*1024,y=Math.random()*1024,r=.25+Math.random()*1.3;
+  ctx.fillStyle=Math.random()>.5?"rgba(20,23,25,.10)":"rgba(210,211,206,.08)";ctx.fillRect(x,y,r,r);
+ }
+ const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+ tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=12;tex.needsUpdate=true;return tex;
 }
+
 function smoothStep(a,b,x){
  const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);
 }
@@ -4181,18 +4206,43 @@ function surfaceHeightAt(x,z,yHint=null,routeHint=null){
  return lerp(near.point.y+.02,base,smoothStep(edge+2.6,edge+5.6,offset));
 }
 function terrainTexture(){
- const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
- const c=canvas.getContext("2d");
- const base=activeTrack==="laguna"?"#d1bd91":activeTrack==="monaco"?"#b7b1a7":activeTrack==="monza"?"#b4bd96":activeTrack==="suzuka"?"#8ba17a":activeTrack==="silverstone"?"#879b72":"#80936f";
- c.fillStyle=base;c.fillRect(0,0,256,256);
- for(let i=0;i<7800;i++){
-  const shade=Math.floor(Math.random()*42),alpha=.025+Math.random()*.105;
-  c.fillStyle=activeTrack==="laguna"?"rgba(133,107,59,"+alpha+")":activeTrack==="monaco"?"rgba("+(95+shade)+","+(96+shade)+","+(92+shade)+","+alpha+")":"rgba("+(54+shade)+","+(89+shade)+","+(38+shade*.45)+","+alpha+")";
-  const size=.7+Math.random()*2.2;c.fillRect(Math.random()*256,Math.random()*256,size,size);
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
+ const c=canvas.getContext("2d"),dry=activeTrack==="laguna",city=activeTrack==="monaco";
+ const base=dry?"#b9a77e":city?"#98988f":activeTrack==="monza"?"#668052":activeTrack==="suzuka"?"#54774c":activeTrack==="silverstone"?"#5e7a4e":"#637c4c";
+ c.fillStyle=base;c.fillRect(0,0,512,512);
+ const soil=dry?["#a88f64","#c1aa7e","#8f825f"]:["#536b43","#71895b","#455d3a","#8c9362"];
+ for(let i=0;i<2400;i++){
+  const x=Math.random()*512,y=Math.random()*512,r=1+Math.random()*(dry?8:5);
+  c.globalAlpha=.045+Math.random()*.09;c.fillStyle=soil[i%soil.length];
+  c.beginPath();c.ellipse(x,y,r*1.7,r,Math.random()*Math.PI,0,Math.PI*2);c.fill();
+ }
+ c.globalAlpha=1;
+ if(!city)for(let i=0;i<14000;i++){
+  const x=Math.random()*512,y=Math.random()*512,len=.8+Math.random()*(dry?2:4);
+  c.strokeStyle=dry?(Math.random()>.5?"rgba(133,111,68,.26)":"rgba(220,197,143,.28)"):(Math.random()>.5?"rgba(28,62,30,.26)":"rgba(181,194,119,.24)");
+  c.lineWidth=.45+Math.random()*.55;c.beginPath();c.moveTo(x,y);c.lineTo(x+(Math.random()-.5)*1.7,y-len);c.stroke();
+ }
+ for(let i=0;i<380;i++){
+  const x=Math.random()*512,y=Math.random()*512,w=3+Math.random()*24,h=2+Math.random()*16;
+  c.fillStyle=dry?"rgba(119,91,55,.12)":city?"rgba(62,65,64,.10)":"rgba(34,53,31,.10)";
+  c.beginPath();c.ellipse(x,y,w,h,Math.random()*Math.PI,0,Math.PI*2);c.fill();
  }
  const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+ tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=10;return tex;
+}
+function makeGravelTexture(sand=false){
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=512;
+ const c=canvas.getContext("2d");c.fillStyle=sand?"#b89d70":"#777a78";c.fillRect(0,0,512,512);
+ const colours=sand?["#cbb58b","#9b835e","#d7c39b","#84765e"]:["#5d6262","#93938c","#454b4d","#b2b1a7","#777b7b"];
+ for(let i=0;i<18000;i++){
+  const x=Math.random()*512,y=Math.random()*512,r=.5+Math.random()*(sand?2.1:1.7);
+  c.fillStyle=colours[i%colours.length];c.globalAlpha=.18+Math.random()*.35;
+  c.beginPath();c.ellipse(x,y,r*1.45,r,Math.random()*Math.PI,0,Math.PI*2);c.fill();
+ }
+ c.globalAlpha=1;const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
  tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;return tex;
 }
+
 function buildTerrain(def){
  const terrainPad=activeTrack==="laguna"?850:1100;
  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
@@ -4232,7 +4282,8 @@ function buildTerrain(def){
 }
 function buildRunoffAreas(){
  if(activeTrack==="monaco")return;
- const gravelMat=makeMat(0x777b79,.99),sandMat=makeMat(0xc1a873,1);
+ const gravelMat=new THREE.MeshStandardMaterial({color:0xffffff,map:makeGravelTexture(false),roughness:.99,metalness:0});
+ const sandMat=new THREE.MeshStandardMaterial({color:0xffffff,map:makeGravelTexture(true),roughness:1,metalness:0});
  const fractions=[.075,.145,.225,.315,.405,.495,.585,.675,.765,.855,.935];
  fractions.forEach((fraction,index)=>{
   let side=index%2===0?1:-1;if(side===1&&isPitLaneCorridorProgress(fraction))side=-1;
@@ -4251,7 +4302,7 @@ function createTrack(){
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
- const def=trackDefs[activeTrack];roadWidth=def.width*1.15;
+ const def=trackDefs[activeTrack];roadWidth=def.width;
  trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;trackRubber=0;
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
@@ -4279,11 +4330,18 @@ function createTrack(){
  }
  if(layoutIssues.length)console.warn("APEX retained local clearances on "+def.name,layoutIssues.slice(0,8));
  computeTrackClearance(route);
+ const sampledWidthMin=Math.min(...route.map(sample=>roadHalfWidthAt(sample)*2));
+ const sampledWidthMax=Math.max(...route.map(sample=>roadHalfWidthAt(sample)*2));
+ const sampledElevationMin=Math.min(...route.map(sample=>sample.p.y));
+ const sampledElevationMax=Math.max(...route.map(sample=>sample.p.y));
+ const audit={circuit:def.name,targetLengthM:def.length,centrelineLengthM:+routeLength.toFixed(2),nominalWidthM:def.width,publishedMinimumWidthM:def.minWidth??null,sampledRoadWidthM:[+sampledWidthMin.toFixed(2),+sampledWidthMax.toFixed(2)],publishedElevationChangeM:def.elevationRange??null,modelElevationChangeM:+(sampledElevationMax-sampledElevationMin).toFixed(2)};
+ console.info("APEX CIRCUIT DIMENSION AUDIT",audit);
+ if(Math.abs(routeLength-def.length)>1)console.warn("Centreline length exceeds 1 m target tolerance",audit);
 terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
  const asphalt=new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;circuitAsphaltMaterial=asphalt;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
- const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x777f7b,.92);
+ const runoff=new THREE.MeshStandardMaterial({color:0xffffff,map:makeGravelTexture(activeTrack==="laguna"),roughness:.97,metalness:0});
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
  
  trackGroup.add(makeCurb(route,-1,.85));trackGroup.add(makeCurb(route,1,.85));
@@ -4293,11 +4351,14 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
   const edgeCurve=new THREE.CatmullRomCurve3(edgePts,true,"centripetal",.5);
   trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(360,Math.floor(route.length*.55)),.055,5,true),edgeMat));
  }
- const railTop=makeMat(0x8c969c,.38,.72);railTop.userData.radius=.16;
- const railMid=makeMat(0x626d75,.48,.65);railMid.userData.radius=.11;
+ circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
+ buildPitLane();
+ const pitGaps=pitTrackConnectionGaps();
+ const railTop=makeMat(0x7b858b,.58,.28);railTop.userData.radius=.085;
+ const railMid=makeMat(0x59646b,.62,.24);railMid.userData.radius=.065;
  for(const side of [-1,1]){
-  const topRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,1.02,railTop,[[.065,.105],[.915,.985]]):makeRail(route,side,roadWidth/2+5.8,1.02,railTop);
-  const midRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,.55,railMid,[[.065,.105],[.915,.985]]):makeRail(route,side,roadWidth/2+5.8,.55,railMid);
+  const topRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,1.02,railTop,pitGaps):makeRail(route,side,roadWidth/2+5.8,1.02,railTop);
+  const midRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,.55,railMid,pitGaps):makeRail(route,side,roadWidth/2+5.8,.55,railMid);
   trackGroup.add(topRail,midRail);
  }
  if(activeTrack==="suzuka")addSuzukaBridgeStructure();
@@ -4315,8 +4376,6 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  }
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
- circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
- buildPitLane();
  buildScenery();
  buildRunoffAreas();
  if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
@@ -4454,20 +4513,20 @@ function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples
   const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
   const x=sample.p.x+rx*side*distance,z=sample.p.z+rz*side*distance;
   basePoints.push(new THREE.Vector3(x,sample.p.y+.18,z));
-  midPoints.push(new THREE.Vector3(x,sample.p.y+1.02,z));
-  topPoints.push(new THREE.Vector3(x,sample.p.y+2.0,z));
+  midPoints.push(new THREE.Vector3(x,sample.p.y+.68,z));
+  topPoints.push(new THREE.Vector3(x,sample.p.y+1.12,z));
  }
  const railMat=makeMat(0x9ba8ae,.42,.48),baseMat=makeMat(0x46545d,.82,.12);
- for(const [points,radius,material] of [[basePoints,.13,baseMat],[midPoints,.095,railMat],[topPoints,.095,railMat]]){
+ for(const [points,radius,material] of [[basePoints,.09,baseMat],[midPoints,.065,railMat],[topPoints,.065,railMat]]){
   const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.28);
   const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,points.length),radius,6,false),material);
   mesh.castShadow=true;mesh.receiveShadow=true;trackGroup.add(mesh);
  }
  const count=Math.floor((end-start)/8)+1;
- const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,2.0,.22),railMat,count),dummy=new THREE.Object3D();let index=0;
+ const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,1.12,.16),railMat,count),dummy=new THREE.Object3D();let index=0;
  for(let i=start;i<=end;i+=8){
   const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
-  dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+1.0,sample.p.z+rz*side*distance);
+  dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+.56,sample.p.z+rz*side*distance);
   dummy.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);dummy.updateMatrix();posts.setMatrixAt(index++,dummy.matrix);
  }
  posts.count=index;posts.castShadow=true;trackGroup.add(posts);
@@ -4498,55 +4557,59 @@ function addPitPaddockBuildings(){
 }
 
 function addPitStationMarker(sample,label){
- const marker=new THREE.Group();marker.position.copy(sample.p);marker.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
+ const marker=new THREE.Group();
+ const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+ const signPoint=sample.p.clone().addScaledVector(right,-(roadWidth*.5+PIT_LANE_WIDTH+8));
+ marker.position.set(signPoint.x,terrainHeightAt(signPoint.x,signPoint.z),signPoint.z);
+ marker.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
  const postMat=makeMat(0x263747,.55,.25),boardMat=makeMat(0x102942,.6,.15);
- for(const x of [-3.8,3.8]){const post=new THREE.Mesh(new THREE.BoxGeometry(.18,3.6,.18),postMat);post.position.set(x,1.8,0);marker.add(post);}
- const board=new THREE.Mesh(new THREE.BoxGeometry(8,1.15,.25),boardMat);board.position.y=3.25;marker.add(board);
+ for(const x of [-3.0,3.0]){const post=new THREE.Mesh(new THREE.BoxGeometry(.14,2.6,.14),postMat);post.position.set(x,1.3,0);marker.add(post);}
+ const board=new THREE.Mesh(new THREE.BoxGeometry(6.3,.85,.2),boardMat);board.position.y=2.65;marker.add(board);
  const canvas=document.createElement("canvas");canvas.width=768;canvas.height=128;
  const ctx=canvas.getContext("2d");ctx.fillStyle="#102942";ctx.fillRect(0,0,768,128);
- ctx.fillStyle="#f4f5f1";ctx.font="900 62px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,384,65);ctx.fillStyle="#e8473f";ctx.fillRect(0,116,768,12);
+ ctx.fillStyle="#f4f5f1";ctx.font="900 58px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,384,65);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(7.65,1.1),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
- sign.position.set(0,3.25,.15);marker.add(sign);environmentGroup.add(marker);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(6.0,.82),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+ sign.position.set(0,2.65,.13);marker.add(sign);environmentGroup.add(marker);
 }
+
 function buildPitLane(){
  pitDriveRoute=[];pitDriveRouteLength=0;pitEntryRoute=[];pitEntryRouteLength=0;pitLaneSamples=[];
  if(!route.length)return;
- const n=route.length,laneOffset=roadWidth*.5+10.5,laneEnd=.075;
+ const n=route.length,def=trackDefs[activeTrack];
+ const entryBefore=clamp(def.pitEntryBeforeM??100,55,180);
+ const exitAfter=clamp(def.pitExitAfterM??270,130,430);
+ const entryProgress=(routeLength-entryBefore)/routeLength;
+ const exitProgress=exitAfter/routeLength;
+ const blendMeters=Math.min(120,Math.max(75,exitAfter*.40));
+ const laneEndProgress=Math.max(.008,exitProgress-blendMeters/routeLength);
+ pitEntryCircuitProgress=entryProgress;pitExitCircuitProgress=exitProgress;
+ const laneOffset=roadWidth*.5+PIT_LANE_WIDTH*.5+5.0;
  const at=(progress,offset)=>{
   const wrapped=(progress%1+1)%1,index=Math.round(wrapped*n)%n;
   if(offset===0)return route[index].p.clone().add(new THREE.Vector3(0,.11,0));
   return stableTrackOffset(route,index,1,offset,.11);
  };
- const straightnessAt=progress=>{
-  const centre=Math.round(((progress%1+1)%1)*n)%n,span=Math.max(5,Math.floor(n*.008));
-  let score=0,previous=null,minY=Infinity,maxY=-Infinity;
-  for(let step=-span;step<=span;step+=2){
-   const sample=route[(centre+step+n)%n];minY=Math.min(minY,sample.p.y);maxY=Math.max(maxY,sample.p.y);
-   if(previous){const dot=clamp(previous.tan.x*sample.tan.x+previous.tan.z*sample.tan.z,-1,1);score+=(1-dot)*3.5;}
-   previous=sample;
-  }
-  return score+(maxY-minY)*.045;
- };
- let bestEntry=Infinity,bestExit=Infinity;
- pitEntryCircuitProgress=.925;pitExitCircuitProgress=.105;
- for(let candidate=.885;candidate<=.975;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestEntry){bestEntry=score;pitEntryCircuitProgress=candidate;}}
- for(let candidate=.12;candidate<=.20;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestExit){bestExit=score;pitExitCircuitProgress=candidate;}}
- const laneControls=Array.from({length:10},(_,i)=>at(laneEnd*i/9,laneOffset));
- const lane=makePitPathSamples(laneControls,Math.max(150,Math.ceil(n*laneEnd)));pitLaneSamples=lane.samples;
- const entryControls=[];
- for(let i=0;i<=8;i++){const t=i/8,progress=pitEntryCircuitProgress+(1-pitEntryCircuitProgress)*t,offset=laneOffset*smoothStep(0,1,t);entryControls.push(at(progress,offset));}
- const entry=makePitPathSamples(entryControls,Math.max(112,Math.ceil(n*(1-pitEntryCircuitProgress))));
- const exitControls=[];
- for(let i=0;i<=8;i++){const t=i/8,progress=laneEnd+(pitExitCircuitProgress-laneEnd)*t,offset=laneOffset*(1-smoothStep(0,1,t));exitControls.push(at(progress,offset));}
- const exit=makePitPathSamples(exitControls,Math.max(100,Math.ceil(n*(pitExitCircuitProgress-laneEnd))));
- const garageOffset=roadWidth*.5+38;
+ const laneControls=Array.from({length:10},(_,i)=>at(laneEndProgress*i/9,laneOffset));
+ const lane=makePitPathSamples(laneControls,Math.max(120,Math.ceil(laneEndProgress*n)));
+ pitLaneSamples=lane.samples;
+ const entryControls=Array.from({length:9},(_,i)=>{
+  const t=i/8,progress=entryProgress+(1-entryProgress)*t;
+  return at(progress,laneOffset*smoothStep(0,1,t));
+ });
+ const entry=makePitPathSamples(entryControls,Math.max(72,Math.ceil(entryBefore/2.2)));
+ const exitControls=Array.from({length:10},(_,i)=>{
+  const t=i/9,progress=laneEndProgress+(exitProgress-laneEndProgress)*t;
+  return at(progress,laneOffset*(1-smoothStep(0,1,t)));
+ });
+ const exit=makePitPathSamples(exitControls,Math.max(90,Math.ceil(blendMeters/2.0)));
+ const garageOffset=laneOffset+PIT_LANE_WIDTH+14;
  const driveway=makePitPathSamples([
   at(0,garageOffset),
-  at(0,garageOffset-8.0),
-  at(0,laneOffset+7.5),
+  at(0,laneOffset+PIT_LANE_WIDTH*.5+5.5),
+  at(0,laneOffset+PIT_LANE_WIDTH*.5+1.8),
   at(0,laneOffset)
- ],54);
+ ],100);
  const join=(...parts)=>{
   const merged=[];
   for(const part of parts){const start=merged.length?1:0;for(let i=start;i<part.length;i++)merged.push(part[i]);}
@@ -4557,7 +4620,8 @@ function buildPitLane(){
  };
  const visualRoute=join(entry.samples,lane.samples,exit.samples);
  pitEntryRoute=visualRoute;pitEntryRouteLength=polylineLength(pitEntryRoute);
- pitDriveRoute=join(driveway.samples,lane.samples,exit.samples);pitDriveRouteLength=polylineLength(pitDriveRoute);
+ pitDriveRoute=join(driveway.samples,lane.samples,exit.samples);
+ pitDriveRouteLength=polylineLength(pitDriveRoute);
  const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});
  pitAsphalt.userData.isAsphalt=true;
  addPitRibbon(visualRoute,PIT_LANE_WIDTH,pitAsphalt,.075);
@@ -4567,9 +4631,8 @@ function buildPitLane(){
   addPitEdgeLine(samples,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
  }
  addPitEdgeLine(lane.samples,1,PIT_LANE_WIDTH*.5+.28,0xe8c84d,.045);
- const barrierOffset=PIT_LANE_WIDTH*.5+2.7;
- addPitSafetyBarrier(lane.samples,-1,barrierOffset,10,lane.samples.length-11);
- addPitSafetyBarrier(lane.samples,1,barrierOffset,10,lane.samples.length-11);
+ // Only the paddock-side edge receives a barrier. The circuit-facing edge stays open.
+ addPitSafetyBarrier(lane.samples,1,PIT_LANE_WIDTH*.5+4.8,12,lane.samples.length-13);
  if(activeTrack!=="monaco")addPitPaddockBuildings();
  const stall=pitDriveRoute[0],stallYaw=Math.atan2(stall.tan.x,stall.tan.z),stallGroup=new THREE.Group();
  stallGroup.position.copy(stall.p);stallGroup.rotation.y=stallYaw;
@@ -4583,8 +4646,6 @@ function buildPitLane(){
   for(const [x,y,z,w,h,d] of serviceMarkings){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),serviceLine);line.position.set(x,y,z);serviceBay.add(line);}
   environmentGroup.add(serviceBay);
  }
- addPitStationMarker(pitEntryRoute[0],"PIT ENTRY");
- addPitStationMarker(pitEntryRoute[pitEntryRoute.length-1],"PIT EXIT  /  MERGE");
 }
 function restoreCircuitRoute(){
  if(circuitRoute.length){route=circuitRoute;routeLength=circuitRouteLength;roadWidth=circuitRoadWidth;routeSpatialGrid=circuitRouteSpatialGrid;}
