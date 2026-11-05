@@ -3403,7 +3403,7 @@ const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=8.4,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
 let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
-let pitDriveRoute=[],pitDriveRouteLength=0,pitLaneDriving=false;
+let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out";
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
  routeSpatialGrid=new Map();
@@ -3737,6 +3737,33 @@ function makeRail(samples,side,distance,height,material){
  const c=new THREE.CatmullRomCurve3(pts,true,"centripetal",.5);
  return new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(360,Math.floor(samples.length*.55)),material.userData.radius||.13,6,true),material);
 }
+function isPitTrackConnectionGap(progress){
+ const p=(progress%1+1)%1;
+ return (p>=.065&&p<=.105)||(p>=.915&&p<=.985);
+}
+function isPitLaneCorridorProgress(progress){
+ const p=(progress%1+1)%1;
+ return p>=.91||p<=.11;
+}
+function makeRailWithGaps(samples,side,distance,height,material,gaps){
+ const group=new THREE.Group(),n=samples.length,desired=Math.max(0,distance-roadWidth*.5);
+ const sorted=gaps.slice().sort((a,b)=>a[0]-b[0]);
+ for(let g=0;g<sorted.length;g++){
+  const startProgress=sorted[g][1],endProgress=sorted[(g+1)%sorted.length][0];
+  let start=Math.ceil(startProgress*n),end=Math.floor(endProgress*n);
+  if(end<=start)end+=n;
+  const points=[];
+  for(let k=start;k<=end;k++){
+   const i=k%n;
+   points.push(stableTrackOffset(samples,i,side,roadHalfWidthAt(samples[i])+tracksideExtraAt(samples[i],desired,1.6),height));
+  }
+  if(points.length<5)continue;
+  const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.5);
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,Math.floor(points.length*.55)),material.userData.radius||.13,6,false),material);
+  mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+ }
+ return group;
+}
 function addSuzukaBridgeStructure(){
  if(activeTrack!=="suzuka"||!route.length)return;
  // GP centreline crossing: the East-course pass is near 2,498 m;
@@ -3917,13 +3944,24 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  }
  const railTop=makeMat(0x8c969c,.38,.72);railTop.userData.radius=.16;
  const railMid=makeMat(0x626d75,.48,.65);railMid.userData.radius=.11;
- for(const side of [-1,1]){trackGroup.add(makeRail(route,side,roadWidth/2+5.8,1.02,railTop));trackGroup.add(makeRail(route,side,roadWidth/2+5.8,.55,railMid));}
+ for(const side of [-1,1]){
+  const topRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,1.02,railTop,[[.065,.105],[.915,.985]]):makeRail(route,side,roadWidth/2+5.8,1.02,railTop);
+  const midRail=side===1?makeRailWithGaps(route,side,roadWidth/2+5.8,.55,railMid,[[.065,.105],[.915,.985]]):makeRail(route,side,roadWidth/2+5.8,.55,railMid);
+  trackGroup.add(topRail,midRail);
+ }
  if(activeTrack==="suzuka")addSuzukaBridgeStructure();
  const postMat=makeMat(0x69747b,.58,.58);
  const postCount=Math.ceil(route.length/5);
  const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,1.15,.16),postMat,postCount*2);
  const dummy=new THREE.Object3D();let pi=0;
- for(let i=0;i<route.length;i+=5){for(const side of [-1,1]){dummy.position.copy(stableTrackOffset(route,i,side,roadHalfWidthAt(route[i])+tracksideExtraAt(route[i],5.8,1.6),0).add(new THREE.Vector3(0,.52,0)));dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);}}
+ for(let i=0;i<route.length;i+=5){
+  const progress=i/route.length;
+  for(const side of [-1,1]){
+   if(side===1&&isPitTrackConnectionGap(progress))continue;
+   dummy.position.copy(stableTrackOffset(route,i,side,roadHalfWidthAt(route[i])+tracksideExtraAt(route[i],5.8,1.6),0).add(new THREE.Vector3(0,.52,0)));
+   dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);
+  }
+ }
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
  buildScenery();addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();addCircuitFacilities();addCircuitLandmarks();
@@ -4097,61 +4135,99 @@ function addPitStationMarker(sample,label){
  sign.position.set(0,3.25,.15);marker.add(sign);environmentGroup.add(marker);
 }
 function buildPitLane(){
- pitDriveRoute=[];pitDriveRouteLength=0;if(!route.length)return;
- const n=route.length,point=(index,offset)=>stableTrackOffset(route,((index%n)+n)%n,1,offset,.11);
- const laneStartOffset=roadWidth*.5+15.5;
- const garageOffset=roadWidth/2+38;
- const driveControls=[
-  point(0,garageOffset),
-  point(0,garageOffset-10),
-  point(0,laneStartOffset),
-  point(Math.round(n*.012),laneStartOffset),
-  point(Math.round(n*.035),laneStartOffset),
-  point(Math.round(n*.055),laneStartOffset*.56),
-  point(Math.round(n*.070),0)
- ];
- const drive=makePitPathSamples(driveControls,300);pitDriveRoute=drive.samples;pitDriveRouteLength=drive.length;
+ pitDriveRoute=[];pitDriveRouteLength=0;pitEntryRoute=[];pitEntryRouteLength=0;pitLaneSamples=[];
+ if(!route.length)return;
+ const n=route.length,laneOffset=roadWidth*.5+15.5;
+ const at=(progress,offset)=>{
+  const wrapped=(progress%1+1)%1,index=Math.round(wrapped*n)%n;
+  if(offset===0)return route[index].p.clone().add(new THREE.Vector3(0,.11,0));
+  return stableTrackOffset(route,index,1,offset,.11);
+ };
+ const laneControls=[0,.012,.024,.036,.048,.060,.075].map(progress=>at(progress,laneOffset));
+ const lane=makePitPathSamples(laneControls,Math.max(120,Math.ceil(n*.075)));
+ pitLaneSamples=lane.samples;
  const entryControls=[
-  point(Math.round(n*.925),roadWidth*.5+1.6),
-  point(Math.round(n*.945),roadWidth*.5+7.5),
-  point(Math.round(n*.965),roadWidth*.5+13.5),
-  point(Math.round(n*.986),roadWidth*.5+17.5),
-  point(0,laneStartOffset)
+  at(.925,0),
+  at(.941,roadWidth*.5+2.2),
+  at(.960,roadWidth*.5+8.0),
+  at(.980,roadWidth*.5+13.5),
+  at(0,laneOffset)
  ];
- const entry=makePitPathSamples(entryControls,90),visualPath=entry.samples.concat(pitDriveRoute.slice(1));
- const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});pitAsphalt.userData.isAsphalt=true;
- addPitRibbon(visualPath,PIT_LANE_WIDTH,pitAsphalt,.075);
- addPitEdgeLine(visualPath,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
- addPitEdgeLine(visualPath,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
- addPitEdgeLine(pitDriveRoute,1,PIT_LANE_WIDTH*.5+.28,0xe8c84d,.045);
+ const entry=makePitPathSamples(entryControls,112);
+ const exitControls=[
+  at(.075,laneOffset),
+  at(.083,roadWidth*.5+8.0),
+  at(.092,roadWidth*.5+1.8),
+  at(.100,0)
+ ];
+ const exit=makePitPathSamples(exitControls,64);
+ const garageOffset=roadWidth*.5+38;
+ const driveway=makePitPathSamples([
+  at(0,garageOffset),
+  at(0,garageOffset-8.0),
+  at(0,laneOffset+7.5),
+  at(0,laneOffset)
+ ],54);
+ const join=(...parts)=>{
+  const merged=[];
+  for(const part of parts){const start=merged.length?1:0;for(let i=start;i<part.length;i++)merged.push(part[i]);}
+  return merged;
+ };
+ const polylineLength=samples=>{
+  let length=0;for(let i=1;i<samples.length;i++)length+=samples[i].p.distanceTo(samples[i-1].p);return length;
+ };
+ const visualRoute=join(entry.samples,lane.samples,exit.samples);
+ pitEntryRoute=visualRoute;pitEntryRouteLength=polylineLength(pitEntryRoute);
+ pitDriveRoute=join(driveway.samples,lane.samples,exit.samples);pitDriveRouteLength=polylineLength(pitDriveRoute);
+ const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});
+ pitAsphalt.userData.isAsphalt=true;
+ addPitRibbon(visualRoute,PIT_LANE_WIDTH,pitAsphalt,.075);
+ addPitRibbon(driveway.samples,PIT_LANE_WIDTH,pitAsphalt,.078);
+ for(const samples of [visualRoute,driveway.samples]){
+  addPitEdgeLine(samples,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
+  addPitEdgeLine(samples,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
+ }
+ addPitEdgeLine(lane.samples,1,PIT_LANE_WIDTH*.5+.28,0xe8c84d,.045);
  const barrierOffset=PIT_LANE_WIDTH*.5+2.7;
- addPitSafetyBarrier(entry.samples,-1,barrierOffset,4,entry.samples.length-1);
- addPitSafetyBarrier(entry.samples,1,barrierOffset,4,entry.samples.length-1);
- const driveBarrierEnd=Math.floor(pitDriveRoute.length*.80);
- addPitSafetyBarrier(pitDriveRoute,-1,barrierOffset,0,driveBarrierEnd);
- addPitSafetyBarrier(pitDriveRoute,1,barrierOffset,0,driveBarrierEnd);
- addPitPaddockBuildings();
- const stall=pitDriveRoute[0],stallYaw=Math.atan2(stall.tan.x,stall.tan.z),stallGroup=new THREE.Group();stallGroup.position.copy(stall.p);stallGroup.rotation.y=stallYaw;
+ addPitSafetyBarrier(lane.samples,-1,barrierOffset,10,lane.samples.length-11);
+ addPitSafetyBarrier(lane.samples,1,barrierOffset,10,lane.samples.length-11);
+ if(activeTrack!=="monaco")addPitPaddockBuildings();
+ const stall=pitDriveRoute[0],stallYaw=Math.atan2(stall.tan.x,stall.tan.z),stallGroup=new THREE.Group();
+ stallGroup.position.copy(stall.p);stallGroup.rotation.y=stallYaw;
  const stallLine=makeMat(0xf0eee4,.72),bayParts=[[0,.13,-3.1,3.4,.045,.12],[0,.13,3.1,3.4,.045,.12],[-1.7,.13,0,.12,.045,6.2],[1.7,.13,0,.12,.045,6.2]];
  for(const [x,y,z,w,h,d] of bayParts){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),stallLine);line.position.set(x,y,z);stallGroup.add(line);}
  environmentGroup.add(stallGroup);
- addPitStationMarker(pitDriveRoute[pitDriveRoute.length-1],"PIT EXIT  /  MERGE");
- addPitStationMarker(entry.samples[0],"PIT ENTRY");
+ addPitStationMarker(pitEntryRoute[0],"PIT ENTRY");
+ addPitStationMarker(pitEntryRoute[pitEntryRoute.length-1],"PIT EXIT  /  MERGE");
 }
 function restoreCircuitRoute(){
  if(circuitRoute.length){route=circuitRoute;routeLength=circuitRouteLength;roadWidth=circuitRoadWidth;routeSpatialGrid=circuitRouteSpatialGrid;}
  pitLaneDriving=false;
 }
-function activatePitLaneRoute(){
- if(!pitDriveRoute.length)throw new Error("The selected circuit pit lane is not ready.");
- route=pitDriveRoute;routeLength=pitDriveRouteLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;buildRouteSpatialGrid();
+function activatePitLaneRoute(useEntryRoute=false){
+ const selected=useEntryRoute?pitEntryRoute:pitDriveRoute,selectedLength=useEntryRoute?pitEntryRouteLength:pitDriveRouteLength;
+ if(!selected.length)throw new Error("The selected circuit pit lane is not ready.");
+ route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
+}
+function tryEnterPitLane(){
+ if(pitLaneDriving||!pitEntryRoute.length||!car||!nearestInfo||car.reverse)return false;
+ const progress=nearestInfo.progress,localHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
+ if(progress<.915||progress>.995||nearestInfo.offset<Math.max(3.6,localHalf*.64)||nearestInfo.offset>localHalf+18||Math.abs(car.u)<2.5)return false;
+ const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
+ if(headingDot<.42)return false;
+ const x=car.x,z=car.z,y=car.y;
+ activatePitLaneRoute(true);
+ nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
+ $("trackState").textContent="PIT LANE · 80 KM/H";$("trackState").style.color="#f0c75c";
+ return true;
 }
 function mergeOntoCircuit(){
  if(!pitLaneDriving)return;
- const x=car.x,z=car.z,y=car.y;restoreCircuitRoute();
+ const purpose=pitRoutePurpose,x=car.x,z=car.z,y=car.y;
+ restoreCircuitRoute();pitRoutePurpose="out";
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
  $("trackState").textContent="ON CIRCUIT";$("trackState").style.color="#63dfa6";
- if(opponentCount>0){try{spawnOpponents();}catch(error){console.warn("AI release delayed after pit exit.",error);}}
+ if(purpose==="out"&&opponentCount>0&&!opponents.length){try{spawnOpponents();}catch(error){console.warn("AI release delayed after pit exit.",error);}}
 }
 
 function addMonacoHarbour(){
@@ -5504,7 +5580,8 @@ function updatePhysics(dt){
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
- // Guardrails are collision surfaces, not teleport triggers. Resolve only outward normal velocity.
+ if(!pitLaneDriving&&tryEnterPitLane())nearestInfo=findNearest(car.x,car.z,car.y,null);
+  // Guardrails are collision surfaces, not teleport triggers. Resolve only outward normal velocity.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
  const side=Math.sign(nearestInfo.offset)||1,railDistance=pitLaneDriving?PIT_LANE_WIDTH*.5+2.7:roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8,bodyHalfWidth=.92;
  const vx=car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw);
@@ -6093,7 +6170,7 @@ function animate(now){
   if(keys.KeyK)profile.pitch=clamp(profile.pitch+lookStep,-35,35);
   physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
   const fixed=1/120;let steps=0;
-  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
+  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);if(!pitLaneDriving)updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
   updateRain(frameDt);hudAccumulator+=frameDt;
   if(hudAccumulator>=.08){updateHud(getGrip(),car.surfaceGrip);hudAccumulator=0;updateAudio(car.throttle,car.brake,car.slip);}
   setCamera(frameDt);
