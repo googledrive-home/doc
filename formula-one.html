@@ -3644,9 +3644,7 @@ function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
  return p;
 }
 function safeTracksidePoint(sample,side,distance,clearance=5){
- const point=offsetPoint(sample,side,distance,0);
- if(distance>=roadWidth*.5+clearance+18)return point;
- return ensureOffTrackPoint(point,side,clearance);
+ return ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance);
 }
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
 function pointSegmentDistance2D(p,a,b){
@@ -6187,10 +6185,10 @@ function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();posit
 function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
- const ratio=graphicsQuality==="low"?.72:graphicsQuality==="high"?1.3:1;
+ const ratio=graphicsQuality==="low"?.68:graphicsQuality==="high"?1.12:.88;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ratio));
- renderer.shadowMap.enabled=graphicsQuality!=='low';renderer.shadowMap.type=THREE.PCFShadowMap;
- if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1536:1024;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
+ renderer.shadowMap.enabled=graphicsQuality!=="low";renderer.shadowMap.type=THREE.PCFShadowMap;
+ if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1024:768;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
  renderer.setSize(window.innerWidth,window.innerHeight,false);
 }
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.zoom=1;camera.fov=66;camera.updateProjectionMatrix();}
