@@ -3743,6 +3743,11 @@ function initRenderer(){
   side:THREE.BackSide,depthWrite:false,depthTest:false,toneMapped:false
  });
  skyDome=new THREE.Mesh(new THREE.SphereGeometry(12000,32,16),skyMaterial);skyDome.frustumCulled=false;skyDome.renderOrder=-1000;scene.add(skyDome);
+  const starCount=520,starPositions=new Float32Array(starCount*3);
+  for(let i=0;i<starCount;i++){const y=THREE.MathUtils.randFloatSpread(1),angle=Math.random()*Math.PI*2,radius=Math.sqrt(1-y*y);starPositions[i*3]=Math.cos(angle)*radius*11850;starPositions[i*3+1]=y*11850;starPositions[i*3+2]=Math.sin(angle)*radius*11850;}
+  const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute("position",new THREE.BufferAttribute(starPositions,3));
+  starField=new THREE.Points(starGeometry,new THREE.PointsMaterial({color:0xd7e7ff,size:7,sizeAttenuation:false,transparent:true,opacity:0,depthWrite:false,depthTest:false}));
+  starField.frustumCulled=false;starField.renderOrder=-999;scene.add(starField);
  cloudGroup=new THREE.Group();scene.add(cloudGroup);
  cloudMaterial=new THREE.MeshBasicMaterial({color:0xf4f7f8,transparent:true,opacity:.075,depthWrite:false,toneMapped:false});
  const cloudPuff=new THREE.SphereGeometry(1,28,20);
@@ -4098,7 +4103,7 @@ function createTrack(){
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
  const def=trackDefs[activeTrack];roadWidth=def.width*1.10;
- trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;
+ trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;trackRubber=0;
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
  const minAlt=def.elevationProfile?Math.min(...def.elevationProfile.map(v=>v[1])):Math.min(...activeTrackPoints.map(v=>v[2]));
@@ -4163,12 +4168,30 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  addStartFinish();
  buildScenery();
  if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
- addCircuitFacilities();addCircuitLandmarks();
+ addCircuitFacilities();addCircuitLandmarks();buildCircuitFloodlights();
  circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
  buildPitLane();
  positionCarAtStart();
  updateWeather();
  updatePreview();drawMiniMap();
+}
+function buildCircuitFloodlights(){
+ trackFloodlights=[];
+ if(!route.length||!environmentGroup)return;
+ const poleMaterial=makeMat(0x5b6670,.62,.38);
+ const lampMaterial=new THREE.MeshStandardMaterial({color:0x9eabb4,emissive:0xffedcf,emissiveIntensity:0,roughness:.34,metalness:.24});
+ const poleGeometry=new THREE.CylinderGeometry(.11,.17,8.4,7),armGeometry=new THREE.BoxGeometry(1.9,.10,.12),housingGeometry=new THREE.BoxGeometry(.72,.30,.46);
+ for(let i=0;i<4;i++){
+  const sample=route[Math.floor((i+.5)/4*route.length)%route.length],side=i%2?1:-1;
+  const p=safeTracksidePoint(sample,side,roadWidth*.5+22,10),ground=terrainHeightAt(p.x,p.z);
+  const poleGroup=new THREE.Group();poleGroup.position.set(p.x,ground,p.z);
+  const pole=new THREE.Mesh(poleGeometry,poleMaterial);pole.position.y=4.2;pole.castShadow=false;poleGroup.add(pole);
+  const arm=new THREE.Mesh(armGeometry,poleMaterial);arm.position.set(side>0?-.75:.75,8.15,0);arm.castShadow=false;poleGroup.add(arm);
+  const lamp=new THREE.Mesh(housingGeometry,lampMaterial);lamp.position.set(side>0?-1.55:1.55,8.05,0);lamp.castShadow=false;poleGroup.add(lamp);
+  environmentGroup.add(poleGroup);
+  const light=new THREE.PointLight(0xffe8c9,0,92,2);light.position.set(p.x+(side>0?-1.55:1.55),ground+8.0,p.z);light.castShadow=false;environmentGroup.add(light);
+  trackFloodlights.push({light,material:lampMaterial});
+ }
 }
 function addStartFinish(){
  const s=route[0],yaw=Math.atan2(s.tan.x,s.tan.z),line=new THREE.Group();line.position.copy(s.p);line.position.y+=.085;line.rotation.y=yaw;
@@ -5785,7 +5808,7 @@ function getGrip(){
  if(assistMode==="assisted")grip*=.96;
  if(assistMode==="sport")grip*=1.01;
  const aquaplane=water>.82?1-clamp((water-.82)/.18*(Math.abs(car.u)/58)*.25,0,.25):1;
- return grip*car.wear*aquaplane;
+ return grip*car.wear*aquaplane*(1+trackRubber*(1-water*.62));
 }
 const torqueCurve=[[4300,405],[5500,475],[7000,535],[8500,570],[10000,582],[11200,565],[12500,515],[13800,435],[15000,345]];
 function torqueAt(rpm){
@@ -6038,6 +6061,7 @@ function updatePhysics(dt){
  const progress=nearestInfo.progress;
  if(!pitLaneDriving&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
   const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);
+  trackRubber=clamp(trackRubber+.012*(1-trackWetness*.45),0,.085);
   showTeamRadio("Lap "+lap+" complete. Keep it tidy and manage the tyre temperatures.");
   lap++;lapStart=elapsed;
   if(lap>raceLaps){
@@ -6141,6 +6165,7 @@ function updateHud(grip,offGrip){
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
+ ensureCarHeadlights();
  const profile=cameraProfiles[cameraMode]||cameraProfiles[2];
  const yaw=THREE.MathUtils.degToRad(profile.yaw+(lookToApex?(car?.steer||0)*lookToApex*38:0));
  const pitch=THREE.MathUtils.degToRad(profile.pitch);
@@ -6220,17 +6245,50 @@ function cycleCamera(){
  cameraMode=order[(order.indexOf(cameraMode)+1)%order.length];
  camera.zoom=1;camera.clearViewOffset();camera.userData.ready=false;setCamera(0);
 }
+function ensureCarHeadlights(){
+ if(!carRoot||carRoot.userData.headlights)return;
+ const lights=[];
+ for(const side of [-1,1]){
+  const target=new THREE.Object3D();target.position.set(side*.62,.18,72);carRoot.add(target);
+  const light=new THREE.SpotLight(0xdcecff,nightLevel*25,145,Math.PI/8,.58,1.45);
+  light.position.set(side*.62,.58,2.1);light.target=target;light.castShadow=false;carRoot.add(light);lights.push(light);
+ }
+ carRoot.userData.headlights=lights;
+}
+function syncTimeOfDayControls(){
+ const hour=Math.round(timeOfDay)%24,label=String(hour).padStart(2,"0")+":00";
+ $("timeOfDayValue").textContent=label;$("liveTimeValue").textContent=label;
+ $("timeOfDayRange").value=hour;$("liveTime").value=hour;
+}
+function setTimeOfDay(value){timeOfDay=clamp(Math.round(Number(value)||0),0,23);syncTimeOfDayControls();updateWeather();}
 function updateWeather(){
  const rain=weather.rain/100,cloud=weather.cloud/100,fog=weather.fog/100,wet=clamp(trackWetness,0,1);
- const palettes={clear:{sky:0x92b6c8,top:0x2f638b,horizon:0xc5dce4,bottom:0x748b98,ground:0x314f3b,sun:2.25},cloudy:{sky:0x71818b,top:0x465764,horizon:0x9ba9ac,bottom:0x69767a,ground:0x34463e,sun:1.05},rain:{sky:0x536572,top:0x293c4a,horizon:0x72818a,bottom:0x59646b,ground:0x293b38,sun:.58},fog:{sky:0x9ca9ac,top:0x7f9299,horizon:0xc0c9c8,bottom:0xa2adad,ground:0x45504b,sun:.7},heat:{sky:0x9bc3d5,top:0x4d82a7,horizon:0xd7e3dc,bottom:0x8d9a91,ground:0x665f42,sun:2.6}};
- const p=palettes[weather.kind]||palettes.clear;
- scene.background.setHex(p.sky);scene.fog.color.setHex(p.sky);scene.fog.density=.00018+fog*.00115+(weather.kind==="rain"?.00025:0);
- if(skyMaterial){skyMaterial.uniforms.topColor.value.setHex(p.top);skyMaterial.uniforms.horizonColor.value.setHex(p.horizon);skyMaterial.uniforms.bottomColor.value.setHex(p.bottom);}
+ const palettes={clear:{sky:0x92b6c8,top:0x2f638b,horizon:0xc5dce4,bottom:0x748b98,sun:2.25},cloudy:{sky:0x71818b,top:0x465764,horizon:0x9ba9ac,bottom:0x69767a,sun:1.05},rain:{sky:0x536572,top:0x293c4a,horizon:0x72818a,bottom:0x59646b,sun:.58},fog:{sky:0x9ca9ac,top:0x7f9299,horizon:0xc0c9c8,bottom:0xa2adad,sun:.7},heat:{sky:0x9bc3d5,top:0x4d82a7,horizon:0xd7e3dc,bottom:0x8d9a91,sun:2.6}};
+ const p=palettes[weather.kind]||palettes.clear,hour=((timeOfDay%24)+24)%24;
+ const solarPhase=(hour-6)/12*Math.PI,sunElevation=Math.sin(solarPhase);
+ daylightLevel=clamp((sunElevation+.07)/.80,0,1);nightLevel=1-daylightLevel;
+ const twilight=clamp(1-Math.abs(sunElevation)/.48,0,1)*(1-daylightLevel*.25);
+ const skyColor=new THREE.Color(p.sky).lerp(new THREE.Color(0x071323),nightLevel).lerp(new THREE.Color(0x77586b),twilight*.42);
+ const topColor=new THREE.Color(p.top).lerp(new THREE.Color(0x020712),nightLevel).lerp(new THREE.Color(0x332a43),twilight*.25);
+ const horizonColor=new THREE.Color(p.horizon).lerp(new THREE.Color(0x1b2c42),nightLevel).lerp(new THREE.Color(0xe39a70),twilight*.78);
+ const bottomColor=new THREE.Color(p.bottom).lerp(new THREE.Color(0x070d16),nightLevel).lerp(new THREE.Color(0x6e4f59),twilight*.28);
+ scene.background.copy(skyColor);scene.fog.color.copy(skyColor);
+ scene.fog.density=.00018+fog*.00115+(weather.kind==="rain"?.00025:0)+(nightLevel*.000035);
+ if(skyMaterial){skyMaterial.uniforms.topColor.value.copy(topColor);skyMaterial.uniforms.horizonColor.value.copy(horizonColor);skyMaterial.uniforms.bottomColor.value.copy(bottomColor);}
  if(cloudMaterial){cloudMaterial.opacity=.035+cloud*.36;if(weather.kind==="rain")cloudMaterial.color.setHex(0xaebdc6);else cloudMaterial.color.setHex(0xe4e9eb);}
- if(sunLight)sunLight.intensity=Math.max(1.35,p.sun*(1-cloud*.24));
- if(hemiLight)hemiLight.intensity=2.3;
- if(ambientLight)ambientLight.intensity=.62;
- if(fillLight)fillLight.intensity=weather.kind==="rain"?.72:.48;
+ const azimuth=hour/24*Math.PI*2;
+ if(sunLight){
+  sunLight.position.set(Math.cos(azimuth)*520,Math.max(-.08,sunElevation)*480,Math.sin(azimuth)*520);
+  sunLight.color.setHex(twilight>.18?0xffc08d:0xfff0d5);
+  sunLight.intensity=Math.max(.018,p.sun*(.10+.90*daylightLevel)*(1-cloud*.24));
+  sunLight.castShadow=daylightLevel>.10&&graphicsQuality!=="low";sunLight.shadow.needsUpdate=true;
+ }
+ if(hemiLight){hemiLight.intensity=lerp(.22,2.3,daylightLevel);hemiLight.color.setHex(nightLevel>.65?0x526c91:0xe8f3ff);hemiLight.groundColor.setHex(nightLevel>.65?0x182331:0x899486);}
+ if(ambientLight)ambientLight.intensity=lerp(.10,.62,daylightLevel);
+ if(fillLight){fillLight.intensity=lerp(.22,weather.kind==="rain"?.72:.48,daylightLevel);fillLight.color.setHex(nightLevel>.55?0x8eacd8:0xc7e0f5);}
+ if(starField){starField.visible=nightLevel>.18;starField.material.opacity=clamp((nightLevel-.12)*1.15,0,.92);}
+ trackFloodlights.forEach(({light,material})=>{light.intensity=nightLevel*22;material.emissiveIntensity=nightLevel*1.7;});
+ if(carRoot&&carRoot.userData.headlights)carRoot.userData.headlights.forEach(light=>{light.intensity=nightLevel*26;light.visible=nightLevel>.12;});
  if(trackGroup)trackGroup.traverse(o=>{
   if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.isAsphalt){
    o.material.roughness=lerp(.87,.18,wet);o.material.metalness=lerp(.02,.16,wet);
@@ -6239,12 +6297,14 @@ function updateWeather(){
   }
  });
  if(rain>.03||weather.kind==="rain")ensureRain();else if(rainPoints)rainPoints.visible=false;
- $("weatherName").textContent=weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
+ $("weatherName").textContent=weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1)+" · "+String(Math.floor(hour)).padStart(2,"0")+":00";
  const label=wet<.12?"DRY":wet<.36?"DAMP":wet<.72?"WET":"SOAKED";
  if($("surfaceWetnessValue"))$("surfaceWetnessValue").textContent=label;
  if($("surfaceWetnessBar"))$("surfaceWetnessBar").style.width=(wet*100)+"%";
- lastWetnessVisual=wet;
+ if($("trackRubberValue"))$("trackRubberValue").textContent=trackRubber<.015?"GREEN":trackRubber<.05?"BUILDING":"RUBBERED";
+ syncTimeOfDayControls();lastWetnessVisual=wet;
 }
+
 let rainPoints=null,rainGeometry=null;
 function ensureRain(){
  if(!rainPoints){
@@ -6254,10 +6314,31 @@ function ensureRain(){
  }
  rainPoints.visible=weather.rain>1||weather.kind==="rain";rainPoints.material.opacity=.12+weather.rain/100*.52;
 }
+function updateWeatherEvolution(dt){
+ if(!weatherEvolutionEnabled||!running||paused)return;
+ weatherForecastTimer+=dt;weatherForecastRefresh+=dt;
+ if(weatherForecastRefresh<.75)return;weatherForecastRefresh=0;
+ const phase=weatherForecastTimer%160,oldKind=weather.kind;
+ let kind="clear",cloud=20,rain=0,temp=22;
+ if(phase<34){kind="clear";cloud=20;rain=0;temp=22;}
+ else if(phase<58){const t=(phase-34)/24;kind="cloudy";cloud=lerp(20,86,t);rain=0;temp=lerp(22,19,t);}
+ else if(phase<66){const t=(phase-58)/8;kind="rain";cloud=90;rain=lerp(0,68,t);temp=18;}
+ else if(phase<106){kind="rain";cloud=92;rain=68;temp=18;}
+ else if(phase<134){const t=(phase-106)/28;kind=t<.6?"rain":"cloudy";cloud=lerp(92,48,t);rain=lerp(68,0,t);temp=lerp(18,20,t);}
+ else{const t=(phase-134)/26;kind="clear";cloud=lerp(48,20,t);rain=0;temp=lerp(20,22,t);}
+ const changed=kind!==weather.kind||Math.abs(cloud-weather.cloud)>2||Math.abs(rain-weather.rain)>2||Math.abs(temp-weather.temp)>.6;
+ if(!changed)return;
+ weather.kind=kind;weather.cloud=cloud;weather.rain=rain;weather.temp=temp;weather.fog=0;
+ syncWeatherInputs();updateWeather();
+ if(oldKind!=="rain"&&kind==="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN ARRIVING","yellow",4);showTeamRadio("Rain is arriving. Watch the grip level and prepare for a tyre change.");}
+ else if(oldKind==="rain"&&kind!=="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN EASING","info",3.4);showTeamRadio("Rain is easing. The racing line should start to dry.");}
+}
 function updateRain(dt){
+ updateWeatherEvolution(dt);
  const rainRate=weather.kind==="rain"?weather.rain/100:weather.kind==="cloudy"?weather.rain/100*.22:0;
  const evaporation=(.00045+clamp((weather.temp-10)/32,0,1)*.0012)*(1-weather.cloud/100*.65);
  trackWetness=clamp(trackWetness+rainRate*.007*dt-evaporation*dt,0,1);
+ trackRubber=clamp(trackRubber-rainRate*.0007*dt,0,.085);
  wetnessVisualTimer+=dt;
  if(wetnessVisualTimer>=.4){
   wetnessVisualTimer=0;
@@ -6284,7 +6365,10 @@ function syncWeatherInputs(){
  $("liveWeather").value=weather.kind;$("liveRain").value=weather.rain;$("liveTemp").value=weather.temp;$("liveCloud").value=weather.cloud;$("liveFog").value=weather.fog;
  $("rainValue").textContent=weather.rain+"%";$("tempValue").textContent=weather.temp+"°C";$("cloudValue").textContent=weather.cloud+"%";$("fogValue").textContent=weather.fog+"%";
  $("liveRainValue").textContent=weather.rain+"%";$("liveTempValue").textContent=weather.temp+"°C";$("liveCloudValue").textContent=weather.cloud+"%";$("liveFogValue").textContent=weather.fog+"%";
+ $("weatherEvolutionSelect").value=weatherEvolutionEnabled?"dynamic":"manual";$("liveWeatherEvolution").value=weatherEvolutionEnabled?"dynamic":"manual";
+ syncTimeOfDayControls();
 }
+
 function playShiftSound(direction){
  if(!audioCtx||!soundEnabled)return;
  const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),sub=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
@@ -6535,10 +6619,11 @@ function bindPitStation(){
 }
 
 function startSession(sessionMode="practice"){
- const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;
+ const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;weatherForecastTimer=0;weatherForecastRefresh=0;
  raceStartState=startInPit?"none":"countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
- $("raceStartOverlay").classList.toggle("open",!startInPit);$("raceControlBanner").classList.remove("open");
+ $("raceStartOverlay").classList.toggle("open",!startInPit);
+ if(weatherEvolutionEnabled)showRaceControlMessage("DYNAMIC FORECAST ACTIVE · CONDITIONS MAY CHANGE","info",3.8);$("raceControlBanner").classList.remove("open");
  playMenuUiSound("race");const menuElement=$("menu");menuElement.classList.add("leaving");setTimeout(()=>{menuElement.style.display="none";menuElement.classList.remove("leaving");},360);
  $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
@@ -6802,6 +6887,10 @@ function bindControls(){
   btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);
  });
  $("trackSelect").addEventListener("change",()=>{activeTrack=$("trackSelect").value;quickTrackSelection=activeTrack;createTrack();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";});
+ const timeChange=e=>setTimeOfDay(e.target.value);
+ $("timeOfDayRange").addEventListener("input",timeChange);$("liveTime").addEventListener("input",timeChange);
+ const forecastChange=e=>{weatherEvolutionEnabled=e.target.value==="dynamic";weatherForecastTimer=0;weatherForecastRefresh=0;syncWeatherInputs();if(weatherEvolutionEnabled)showRaceControlMessage("DYNAMIC FORECAST ENABLED","info",2.8);};
+ $("weatherEvolutionSelect").addEventListener("change",forecastChange);$("liveWeatherEvolution").addEventListener("change",forecastChange);
  $("gameModeSelect").addEventListener("change",applyGameModeSelection);
  $("championshipOpenBtn").addEventListener("click",openChampionship);$("championshipHudBtn").addEventListener("click",openChampionship);
  $("championshipCloseBtn").addEventListener("click",closeChampionship);$("championshipDoneBtn").addEventListener("click",closeChampionship);
