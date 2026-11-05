@@ -5942,7 +5942,7 @@ function updatePitStationUI(){
  $("pitTrackName").textContent=trackDefs[activeTrack].short+" · "+trackDefs[activeTrack].country.toUpperCase();
 }
 function openPitStation(){
- playMenuUiSound("tap");syncWeatherInputs();updatePitStationUI();$("pitStationOverlay").classList.add("open");
+ playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();$("pitStationOverlay").classList.add("open");
 }
 function closePitStation(){playMenuUiSound("close");$("pitStationOverlay").classList.remove("open");}
 function setPitTyre(compound){
