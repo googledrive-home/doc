@@ -230,6 +230,33 @@ input[type=range]{accent-color:#ff765e}
  #menu .chip{padding:6px 8px;font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){#menu .menu,#settingsOverlay.open .settings-card{animation:none}.menu-race-backdrop{opacity:.32}}
+
+/* Compact APEX race interface */
+#topHud{left:10px;right:10px;top:10px;gap:7px;z-index:6}
+#telemetry{gap:5px}.statbox{min-width:76px;padding:7px 9px}.statbox strong{font-size:18px}
+#hudActions{position:relative;align-items:flex-start;gap:4px;flex-wrap:nowrap}
+#hudActions>.hudbtn{padding:8px 9px;font-size:8px;letter-spacing:.045em}
+#hudExtraActions{display:none;position:absolute;right:0;top:calc(100% + 7px);z-index:30;width:min(340px,calc(100vw - 18px));padding:7px;gap:5px;flex-wrap:wrap;justify-content:flex-end;background:#07111df2;border:1px solid #ffffff30;border-radius:10px;box-shadow:0 12px 36px #0009;pointer-events:auto}
+#hudExtraActions.open{display:flex}#hudExtraActions .hudbtn{flex:0 0 auto;padding:8px 9px;font-size:8px}
+#leftHud{left:10px;top:82px;width:160px;padding:9px}#rightHud{right:10px;top:82px;width:178px;padding:9px}#minimap{height:100px;margin-top:6px}
+#bottomHud{left:10px;right:10px;bottom:10px;gap:8px}
+#tireHud{width:min(270px,calc(100vw - 20px));min-width:0;max-width:270px;max-height:48vh;padding:8px 10px}
+#carConditionMap{height:76px;margin:3px 0}.condition-title{margin-top:7px;padding-top:6px}
+#tireHud .condition-meter{height:4px;margin-top:4px}#tireHud .tireline{margin-top:5px}
+.tyre-wear-meter{height:5px;background:#ffffff1b;border-radius:6px;overflow:hidden}
+.tyre-wear-meter i{display:block;height:100%;width:100%;background:#43d69a;transition:width .2s,background .2s}
+#weatherPanel{top:62px}
+@media(max-width:760px){
+ #topHud{left:5px;right:5px;top:5px;gap:4px;align-items:flex-start}#telemetry{gap:3px}
+ .statbox{min-width:52px;padding:6px}.statbox strong{font-size:15px}
+ #hudActions{gap:3px}#hudActions>.hudbtn{padding:7px 6px;font-size:7px}
+ #hudExtraActions{width:min(250px,calc(100vw - 12px));gap:4px;padding:6px}#hudExtraActions .hudbtn{padding:7px 6px;font-size:7px}
+ #leftHud{left:6px;top:62px;width:125px;padding:7px}#rightHud{right:6px;top:62px;width:132px;padding:7px}
+ #minimap{height:82px}#bottomHud{left:6px;right:6px;bottom:68px;justify-content:flex-end}
+ #tireHud{width:min(225px,calc(100vw - 12px));max-width:225px;max-height:40vh;padding:7px 8px}#carConditionMap{height:65px}
+}
+@media(max-width:430px){#rightHud{display:none}#leftHud{width:112px}#tireHud{width:min(205px,calc(100vw - 12px));max-width:205px}}
+
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
@@ -446,11 +473,11 @@ input[type=range]{accent-color:#ff765e}
       <div class="statbox panel"><label>GEAR</label><strong id="gearValue">N</strong><small id="rpmValue">4,500 RPM</small></div>
       <div class="statbox panel"><label>LAP</label><strong id="lapValue">01</strong><small id="lapTime">00:00.000</small></div>
     </div>
-    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="championshipHudBtn">SEASON</button><button class="hudbtn" id="ghostToggleBtn" style="display:none">GHOST: NO PB</button><button class="hudbtn" id="broadcastBtn">BROADCAST</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
+    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="moreHudBtn" aria-expanded="false">MORE ▾</button><div id="hudExtraActions"><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="championshipHudBtn">SEASON</button><button class="hudbtn" id="ghostToggleBtn" style="display:none">GHOST: NO PB</button><button class="hudbtn" id="broadcastBtn">BROADCAST</button><button class="hudbtn" id="soundBtn">SOUND ON</button></div><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="broadcastPanel" class="broadcast-panel"><header><b>APEX TV · LIVE TIMING</b><span id="broadcastLapLabel">LAP 1 / 3</span></header><div id="broadcastTimingRows"></div><footer><span class="live-dot"></span> LIVE SESSION · <span id="broadcastCameraLabel">TRACKSIDE CAM 1 / 4</span></footer></div>
   <div id="teamRadioBanner" class="team-radio-banner" aria-live="polite"><b>APEX ENGINEER</b><span id="teamRadioText">Radio check. We are ready when you are.</span></div>
-  <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
+  <div id="leftHud" class="panel"><div class="hudtitle">Circuit</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">P</span> PIT STOP <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
  <div class="hudtitle">Vehicle telemetry</div>
@@ -458,8 +485,9 @@ input[type=range]{accent-color:#ff765e}
  <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
  <div class="tireline"><span>Rear tyre temperature</span><b id="rearTemp">78°C</b></div>
  <div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div>
- <div class="condition-title">Component condition <small>LIVE DAMAGE MAP</small></div>
- <svg id="carConditionMap" viewBox="0 0 220 112" role="img" aria-label="Top-down car condition diagram">
+ <div class="condition-title">Tyre wear <small id="tyreWearValue">100%</small></div>
+ <div class="condition-meter tyre-wear-meter"><i id="tyreWearBar"></i></div>
+ <svg id="carConditionMap" viewBox="0 0 220 112" role="img" aria-label="Top-down car and tyre condition diagram">
   <path class="map-outline" d="M109 4 L125 19 L133 36 L131 77 L145 92 L143 103 L77 103 L75 92 L89 77 L87 36 L95 19 Z"/>
   <path id="mapFrontAero" class="map-part" d="M44 7 L176 7 L188 15 L32 15 Z"/>
   <path id="mapChassis" class="map-part" d="M96 19 Q110 12 124 19 L128 68 L92 68 Z"/>
@@ -468,8 +496,9 @@ input[type=range]{accent-color:#ff765e}
   <rect id="mapGearbox" class="map-part" x="101" y="84" width="18" height="8" rx="2"/>
   <path id="mapRearAero" class="map-part" d="M53 98 L167 98 L179 107 L41 107 Z"/>
   <path id="mapSuspension" class="map-link" d="M90 30 L70 37 L93 55 M130 30 L150 37 L127 55 M90 72 L70 85 L91 92 M130 72 L150 85 L129 92"/>
-  <g class="map-tyres"><rect x="54" y="25" width="18" height="28" rx="7"/><rect x="148" y="25" width="18" height="28" rx="7"/><rect x="54" y="72" width="18" height="28" rx="7"/><rect x="148" y="72" width="18" height="28" rx="7"/></g>
+  <g class="map-tyres"><rect id="mapTyreFL" x="54" y="25" width="18" height="28" rx="7"/><rect id="mapTyreFR" x="148" y="25" width="18" height="28" rx="7"/><rect id="mapTyreRL" x="54" y="72" width="18" height="28" rx="7"/><rect id="mapTyreRR" x="148" y="72" width="18" height="28" rx="7"/></g>
  </svg>
+ <div class="condition-title">Vehicle systems <small>LIVE DAMAGE MAP</small></div>
  <div class="condition-grid">
   <div class="condition-item"><label>Engine</label><b id="engineHealthValue">NOMINAL</b><div class="condition-meter"><i id="engineHealthBar"></i></div></div>
   <div class="condition-item"><label>Gearbox</label><b id="gearboxHealthValue">NOMINAL</b><div class="condition-meter"><i id="gearboxHealthBar"></i></div></div>
@@ -3447,10 +3476,10 @@ let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromis
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
-const PIT_LANE_WIDTH=8.4,PIT_LANE_LIMIT=22.2;
+const PIT_LANE_WIDTH=9.2,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
 let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
-let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out";
+let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
  routeSpatialGrid=new Map();
@@ -3732,14 +3761,14 @@ function completeChampionshipRound(){
 }
 
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
-let timeOfDay=14,daylightLevel=1,nightLevel=0,weatherEvolutionEnabled=false,weatherForecastTimer=0,weatherForecastRefresh=0,trackRubber=0;
+let timeOfDay=14,daylightLevel=1,nightLevel=0,weatherEvolutionEnabled=false,weatherForecastTimer=0,weatherForecastRefresh=0,weatherRainWarningSent=false,trackRubber=0;
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
 const keys={};
 const cameraProfiles=Array.from({length:5},(_,i)=>({x:0,y:0,z:0,pitch:0,yaw:0,fov:i===2?76:i===1?72:68}));
 let cameraSensitivity=.18,lookToApex=0,steeringResponse=.75,steeringWheelLock=300,brakeStrength=1,downforceScale=1,brakeBiasSetting=.58,differentialSetting=2,powerModeSetting=1,cameraShake=0,masterVolume=.85,engineVolume=.95,effectsVolume=.75,cameraDragState=null;
-let displayOptions={master:true,telemetry:true,brand:true,circuit:true,map:true,tyres:true,controls:true};
+let displayOptions={master:true,telemetry:true,brand:false,circuit:false,map:true,tyres:true,controls:false};
 let showSteeringWheel=true,showDriverHands=true;
 const tireSpecs={soft:{mu:2.12,wear:1.45,label:"SOFT"},medium:{mu:1.94,wear:1,label:"MEDIUM"},hard:{mu:1.78,wear:.68,label:"HARD"},intermediate:{mu:1.88,wear:.96,label:"INTER"},wet:{mu:1.62,wear:.82,label:"WET"}};
 const gearRatios=[3.05,2.55,2.16,1.88,1.67,1.49,1.34,1.22];
@@ -3911,7 +3940,7 @@ function applySafeTrackWidths(samples,nominalWidth){
   const al=Math.hypot(ax,az)||1,bl=Math.hypot(bx,bz)||1;
   const dot=clamp((ax*bx+az*bz)/(al*bl),-1,1),turn=Math.acos(dot);
   const radius=turn>.008?((al+bl)*.5)/(2*Math.sin(turn*.5)):Infinity;
-  raw[i]=Math.min(base,Math.max(3.35,radius*.70));
+  raw[i]=Math.min(base,Math.max(Math.max(4.7,base*.86),radius*.78));
  }
  for(let i=0;i<n;i++){
   const smooth=(raw[(i-2+n)%n]+2*raw[(i-1+n)%n]+3*raw[i]+2*raw[(i+1)%n]+raw[(i+2)%n])/9;
@@ -3930,7 +3959,23 @@ function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
  return p;
 }
 function safeTracksidePoint(sample,side,distance,clearance=5){
- return ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance);
+ let p=ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance);
+ for(const samples of [pitDriveRoute,pitEntryRoute]){
+  let nearest=null,nearestDistance=Infinity;
+  for(let i=0;i<samples.length;i+=3){
+   const item=samples[i],d=Math.hypot(p.x-item.p.x,p.z-item.p.z);
+   if(d<nearestDistance){nearestDistance=d;nearest=item;}
+  }
+  const required=PIT_LANE_WIDTH*.5+Math.max(5,clearance)+2;
+  if(nearest&&nearestDistance<required){
+   const rightX=nearest.tan.z,rightZ=-nearest.tan.x;
+   const sideDot=(p.x-nearest.p.x)*rightX+(p.z-nearest.p.z)*rightZ;
+   const away=sideDot>=0?1:-1;
+   p.add(new THREE.Vector3(rightX,0,rightZ).multiplyScalar(away*(required-nearestDistance+2)));
+   p=ensureOffTrackPoint(p,side,clearance);
+  }
+ }
+ return p;
 }
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
 function pointSegmentDistance2D(p,a,b){
@@ -3970,7 +4015,8 @@ function validateTrackLayout(points,minClearance){
 function applyLocalClearanceWidths(samples,issues){
  const n=samples.length;if(!n||!issues.length)return;
  for(const issue of issues){
-  const allowed=Math.min(roadWidth*.5,Math.max(3,(issue.distance-1.1)*.43));
+  const minimumHalfWidth=Math.min(roadWidth*.5,Math.max(4.6,roadWidth*.44));
+  const allowed=Math.min(roadWidth*.5,Math.max(minimumHalfWidth,(issue.distance-1.1)*.43));
   for(const centre of [issue.a,issue.b])for(let d=-14;d<=14;d++){
    const i=(centre+d+n)%n,w=1-Math.abs(d)/15;
    samples[i].roadHalfWidth=Math.min(samples[i].roadHalfWidth,lerp(samples[i].roadHalfWidth,allowed,w));
@@ -4184,12 +4230,28 @@ function buildTerrain(def){
  const material=new THREE.MeshStandardMaterial({map:terrainTexture(),vertexColors:true,roughness:.98,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=true;environmentGroup.add(mesh);
 }
+function buildRunoffAreas(){
+ if(activeTrack==="monaco")return;
+ const gravelMat=makeMat(0x777b79,.99),sandMat=makeMat(0xc1a873,1);
+ const fractions=[.075,.145,.225,.315,.405,.495,.585,.675,.765,.855,.935];
+ fractions.forEach((fraction,index)=>{
+  let side=index%2===0?1:-1;if(side===1&&isPitLaneCorridorProgress(fraction))side=-1;
+  const sample=route[Math.floor(fraction*route.length)%route.length],isSand=index%3===1||index%5===0;
+  const length=(isSand?30:24)+(index%3)*5,width=(isSand?17:13)+(index%4)*2;
+  const p=safeTracksidePoint(sample,side,roadWidth*.5+15+(index%3)*3,width*.58+9),ground=terrainHeightAt(p.x,p.z);
+  const shape=new THREE.Shape(),steps=18;
+  for(let k=0;k<steps;k++){const angle=k/steps*Math.PI*2,wobble=.82+((index*19+k*11)%17)/100,x=Math.cos(angle)*wobble,y=Math.sin(angle)*wobble;if(k===0)shape.moveTo(x,y);else shape.lineTo(x,y);}
+  shape.closePath();const geometry=new THREE.ShapeGeometry(shape,2);geometry.rotateX(-Math.PI/2);
+  const patch=new THREE.Mesh(geometry,(isSand?sandMat:gravelMat).clone());
+  patch.position.set(p.x,ground+.035,p.z);patch.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);patch.scale.set(length*.5,1,width*.5);patch.receiveShadow=true;environmentGroup.add(patch);
+ });
+}
 function createTrack(){
  restoreCircuitRoute();pitLaneDriving=false;
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
- const def=trackDefs[activeTrack];roadWidth=def.width*1.10;
+ const def=trackDefs[activeTrack];roadWidth=def.width*1.15;
  trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;trackRubber=0;
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
@@ -4253,11 +4315,12 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  }
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
- buildScenery();
- if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
- addCircuitFacilities();addCircuitLandmarks();buildCircuitFloodlights();
  circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
  buildPitLane();
+ buildScenery();
+ buildRunoffAreas();
+ if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
+ addCircuitFacilities();addCircuitLandmarks();buildCircuitFloodlights();
  positionCarAtStart();
  updateWeather();
  updatePreview();drawMiniMap();
@@ -4449,30 +4512,34 @@ function addPitStationMarker(sample,label){
 function buildPitLane(){
  pitDriveRoute=[];pitDriveRouteLength=0;pitEntryRoute=[];pitEntryRouteLength=0;pitLaneSamples=[];
  if(!route.length)return;
- const n=route.length,laneOffset=roadWidth*.5+15.5;
+ const n=route.length,laneOffset=roadWidth*.5+10.5,laneEnd=.075;
  const at=(progress,offset)=>{
   const wrapped=(progress%1+1)%1,index=Math.round(wrapped*n)%n;
   if(offset===0)return route[index].p.clone().add(new THREE.Vector3(0,.11,0));
   return stableTrackOffset(route,index,1,offset,.11);
  };
- const laneControls=[0,.012,.024,.036,.048,.060,.075].map(progress=>at(progress,laneOffset));
- const lane=makePitPathSamples(laneControls,Math.max(120,Math.ceil(n*.075)));
- pitLaneSamples=lane.samples;
- const entryControls=[
-  at(.925,0),
-  at(.941,roadWidth*.5+2.2),
-  at(.960,roadWidth*.5+8.0),
-  at(.980,roadWidth*.5+13.5),
-  at(0,laneOffset)
- ];
- const entry=makePitPathSamples(entryControls,112);
- const exitControls=[
-  at(.075,laneOffset),
-  at(.083,roadWidth*.5+8.0),
-  at(.092,roadWidth*.5+1.8),
-  at(.100,0)
- ];
- const exit=makePitPathSamples(exitControls,64);
+ const straightnessAt=progress=>{
+  const centre=Math.round(((progress%1+1)%1)*n)%n,span=Math.max(5,Math.floor(n*.008));
+  let score=0,previous=null,minY=Infinity,maxY=-Infinity;
+  for(let step=-span;step<=span;step+=2){
+   const sample=route[(centre+step+n)%n];minY=Math.min(minY,sample.p.y);maxY=Math.max(maxY,sample.p.y);
+   if(previous){const dot=clamp(previous.tan.x*sample.tan.x+previous.tan.z*sample.tan.z,-1,1);score+=(1-dot)*3.5;}
+   previous=sample;
+  }
+  return score+(maxY-minY)*.045;
+ };
+ let bestEntry=Infinity,bestExit=Infinity;
+ pitEntryCircuitProgress=.925;pitExitCircuitProgress=.105;
+ for(let candidate=.885;candidate<=.975;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestEntry){bestEntry=score;pitEntryCircuitProgress=candidate;}}
+ for(let candidate=.085;candidate<=.175;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestExit){bestExit=score;pitExitCircuitProgress=candidate;}}
+ const laneControls=Array.from({length:10},(_,i)=>at(laneEnd*i/9,laneOffset));
+ const lane=makePitPathSamples(laneControls,Math.max(150,Math.ceil(n*laneEnd)));pitLaneSamples=lane.samples;
+ const entryControls=[];
+ for(let i=0;i<=8;i++){const t=i/8,progress=pitEntryCircuitProgress+(1-pitEntryCircuitProgress)*t,offset=laneOffset*smoothStep(0,1,t);entryControls.push(at(progress,offset));}
+ const entry=makePitPathSamples(entryControls,Math.max(112,Math.ceil(n*(1-pitEntryCircuitProgress))));
+ const exitControls=[];
+ for(let i=0;i<=8;i++){const t=i/8,progress=laneEnd+(pitExitCircuitProgress-laneEnd)*t,offset=laneOffset*(1-smoothStep(0,1,t));exitControls.push(at(progress,offset));}
+ const exit=makePitPathSamples(exitControls,Math.max(100,Math.ceil(n*(pitExitCircuitProgress-laneEnd))));
  const garageOffset=roadWidth*.5+38;
  const driveway=makePitPathSamples([
   at(0,garageOffset),
@@ -4509,11 +4576,13 @@ function buildPitLane(){
  const stallLine=makeMat(0xf0eee4,.72),bayParts=[[0,.13,-3.1,3.4,.045,.12],[0,.13,3.1,3.4,.045,.12],[-1.7,.13,0,.12,.045,6.2],[1.7,.13,0,.12,.045,6.2]];
  for(const [x,y,z,w,h,d] of bayParts){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),stallLine);line.position.set(x,y,z);stallGroup.add(line);}
  environmentGroup.add(stallGroup);
- const serviceSample=lane.samples[Math.floor(lane.samples.length*.55)],serviceBay=new THREE.Group();
- serviceBay.position.copy(serviceSample.p);serviceBay.rotation.y=Math.atan2(serviceSample.tan.x,serviceSample.tan.z);
  const serviceLine=makeMat(0xf0eee4,.72),serviceMarkings=[[0,.14,-3.25,3.7,.05,.12],[0,.14,3.25,3.7,.05,.12],[-1.85,.14,0,.12,.05,6.5],[1.85,.14,0,.12,.05,6.5],[0,.14,0,2.9,.05,.12]];
- for(const [x,y,z,w,h,d] of serviceMarkings){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),serviceLine);line.position.set(x,y,z);serviceBay.add(line);}
- environmentGroup.add(serviceBay);
+ for(const fraction of [.24,.43,.62,.81]){
+  const serviceSample=lane.samples[Math.floor(lane.samples.length*fraction)],serviceBay=new THREE.Group();
+  serviceBay.position.copy(serviceSample.p);serviceBay.rotation.y=Math.atan2(serviceSample.tan.x,serviceSample.tan.z);
+  for(const [x,y,z,w,h,d] of serviceMarkings){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),serviceLine);line.position.set(x,y,z);serviceBay.add(line);}
+  environmentGroup.add(serviceBay);
+ }
  addPitStationMarker(pitEntryRoute[0],"PIT ENTRY");
  addPitStationMarker(pitEntryRoute[pitEntryRoute.length-1],"PIT EXIT  /  MERGE");
 }
@@ -4529,7 +4598,8 @@ function activatePitLaneRoute(useEntryRoute=false){
 function tryEnterPitLane(){
  if(pitLaneDriving||!pitEntryRoute.length||!car||!nearestInfo||car.reverse)return false;
  const progress=nearestInfo.progress,localHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
- if(progress<.915||progress>.995||nearestInfo.offset<Math.max(3.6,localHalf*.64)||nearestInfo.offset>localHalf+18||Math.abs(car.u)<2.5)return false;
+ const entryDelta=(progress-pitEntryCircuitProgress+1)%1;
+ if((entryDelta>.024&&entryDelta<.976)||nearestInfo.offset<Math.max(3.6,localHalf*.64)||nearestInfo.offset>localHalf+18||Math.abs(car.u)<2.5)return false;
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
  if(headingDot<.42)return false;
  const x=car.x,z=car.z,y=car.y;
@@ -4852,8 +4922,9 @@ function buildScenery(){
  const pineGeo=new THREE.ConeGeometry(1,1,12,3);
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,count);
  const broadCrownA=new THREE.InstancedMesh(broadGeo,broadMat,count*3);
+ const broadCrownB=new THREE.InstancedMesh(new THREE.SphereGeometry(1,13,10),makeMat(dry?0x9c9364:park?0x527844:0x416c43,.98),count*2);
  const pineCrown=new THREE.InstancedMesh(pineGeo,pineMat,count);
- const dummy=new THREE.Object3D();let treeN=0,broadN=0,pineN=0;
+ const dummy=new THREE.Object3D();let treeN=0,broadN=0,broadAltN=0,pineN=0;
  const step=Math.max(1,Math.floor(route.length/(count/2)));
  for(let i=0;i<route.length&&treeN<count;i+=step){
   const sample=route[i];
@@ -4861,24 +4932,27 @@ function buildScenery(){
    if(treeN>=count)break;
    const seed=(i*31+treeN*17)%997,dist=roadWidth/2+(dry?35:park?30:27)+(seed%190);
    const p=safeTracksidePoint(sample,side,dist,9),ground=terrainHeightAt(p.x,p.z);
-   const scale=.72+(seed%53)/100,type=seed%5;
+   const scale=.68+(seed%83)/100,type=seed%5;
    dummy.position.set(p.x,ground+2.5*scale,p.z);dummy.scale.set(.78*scale,scale,.78*scale);dummy.rotation.set(0,seed*.11,0);dummy.updateMatrix();trunks.setMatrixAt(treeN,dummy.matrix);
-   if(type===0||type===1){
+   if(type===0){
     const lobes=[[0,5.15,0,2.4,1.85,2.2],[-1.15,4.85,.15,1.75,1.55,1.7],[1.12,4.92,-.12,1.8,1.52,1.72]];
     for(const lobe of lobes){
      dummy.position.set(p.x+lobe[0]*scale,ground+lobe[1]*scale,p.z+lobe[2]*scale);
      dummy.scale.set(lobe[3]*scale,lobe[4]*scale,lobe[5]*scale);dummy.rotation.y=seed*.07;dummy.updateMatrix();broadCrownA.setMatrixAt(broadN++,dummy.matrix);
     }
+   }else if(type===1){
+    dummy.position.set(p.x,ground+5.05*scale,p.z);dummy.scale.set(2.75*scale,2.35*scale,2.6*scale);dummy.rotation.y=seed*.09;dummy.updateMatrix();
+    broadCrownB.setMatrixAt(broadAltN,dummy.matrix);broadCrownB.setColorAt(broadAltN,new THREE.Color().setHSL(.25+(seed%17)/170,.30,.30+(seed%13)/100));broadAltN++;
    }else{
     dummy.position.set(p.x,ground+4.75*scale,p.z);dummy.scale.set((type===2?2.25:1.5)*scale,(type===2?5.2:3.8)*scale,(type===2?2.25:1.5)*scale);dummy.rotation.y=seed*.04;dummy.updateMatrix();pineCrown.setMatrixAt(pineN++,dummy.matrix);
    }
    treeN++;
   }
  }
- trunks.count=treeN;broadCrownA.count=broadN;pineCrown.count=pineN;
- trunks.castShadow=false;broadCrownA.castShadow=false;pineCrown.castShadow=false;
- trunks.receiveShadow=false;broadCrownA.receiveShadow=false;pineCrown.receiveShadow=false;
- environmentGroup.add(trunks,broadCrownA,pineCrown);
+ trunks.count=treeN;broadCrownA.count=broadN;broadCrownB.count=broadAltN;pineCrown.count=pineN;
+ trunks.castShadow=false;broadCrownA.castShadow=false;broadCrownB.castShadow=false;pineCrown.castShadow=false;
+ trunks.receiveShadow=false;broadCrownA.receiveShadow=false;broadCrownB.receiveShadow=false;pineCrown.receiveShadow=false;
+ environmentGroup.add(trunks,broadCrownA,broadCrownB,pineCrown);
  const shrubCount=Math.round((dry?230:park?300:260)*quality),shrubGeo=new THREE.SphereGeometry(1,8,6);
  const shrubs=new THREE.InstancedMesh(shrubGeo,shrubMat,shrubCount);
  const grassCount=Math.round((park?560:dry?420:460)*quality),grassGeo=new THREE.ConeGeometry(1,1,4),grassMat=makeMat(dry?0x9a8651:0x527543,1);
@@ -6178,7 +6252,7 @@ function updatePhysics(dt){
  }
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
- car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear),.18,1);
+ car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear)*.58,.18,1);
  car.tempF=lerp(car.tempF,weather.temp+58+stress*19,Math.min(1,dt*.12));
  car.tempR=lerp(car.tempR,weather.temp+59+stress*20,Math.min(1,dt*.12));
  importedThermalAccumulator+=dt;
@@ -6282,12 +6356,16 @@ function updateVehicleCondition(){
   if(bar){bar.style.width=value+"%";bar.style.background=state.color;}
   if(map){map.style.fill=state.color;map.style.stroke=state.color;}
  }
+ const wear=clamp((car&&Number.isFinite(car.wear)?car.wear:1)*100,0,100);
+ const wearColor=wear>=70?"#43d69a":wear>=42?"#e9c66b":wear>=22?"#f49b54":"#f26762";
+ const wearLabel=$("tyreWearValue"),wearBar=$("tyreWearBar");
+ if(wearLabel)wearLabel.textContent=Math.round(wear)+"%";
+ if(wearBar){wearBar.style.width=wear+"%";wearBar.style.background=wearColor;}
+ for(const id of ["mapTyreFL","mapTyreFR","mapTyreRL","mapTyreRR"]){const tyre=$(id);if(tyre){tyre.style.fill=wearColor;tyre.style.stroke=wearColor;}}
 }
 function updateHud(grip,offGrip){
  $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=car.reverse?"R":String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
- $("gripValue").textContent=Math.round(grip*45)+"%";$("gripBar").style.width=clamp(grip/2.2*100,0,100)+"%";
- $("wearValue").textContent=Math.round(car.wear*100)+"%";$("wearBar").style.width=(car.wear*100)+"%";
  $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
@@ -6453,25 +6531,32 @@ function updateWeatherEvolution(dt){
  if(!weatherEvolutionEnabled||!running||paused)return;
  weatherForecastTimer+=dt;weatherForecastRefresh+=dt;
  if(weatherForecastRefresh<.75)return;weatherForecastRefresh=0;
- const phase=weatherForecastTimer%160,oldKind=weather.kind;
+ const phase=weatherForecastTimer%360,oldKind=weather.kind;
+ if(phase<20)weatherRainWarningSent=false;
+ if(phase>=105&&phase<135&&!weatherRainWarningSent){
+  weatherRainWarningSent=true;
+  showRaceControlMessage("WEATHER WARNING · RAIN EXPECTED IN 30 SECONDS","yellow",6);
+  showTeamRadio("Rain is forecast in around 30 seconds. Prepare for a sustained wet stint and consider intermediate or wet tyres.");
+ }
  let kind="clear",cloud=20,rain=0,temp=22;
- if(phase<34){kind="clear";cloud=20;rain=0;temp=22;}
- else if(phase<58){const t=(phase-34)/24;kind="cloudy";cloud=lerp(20,86,t);rain=0;temp=lerp(22,19,t);}
- else if(phase<66){const t=(phase-58)/8;kind="rain";cloud=90;rain=lerp(0,68,t);temp=18;}
- else if(phase<106){kind="rain";cloud=92;rain=68;temp=18;}
- else if(phase<134){const t=(phase-106)/28;kind=t<.6?"rain":"cloudy";cloud=lerp(92,48,t);rain=lerp(68,0,t);temp=lerp(18,20,t);}
- else{const t=(phase-134)/26;kind="clear";cloud=lerp(48,20,t);rain=0;temp=lerp(20,22,t);}
+ if(phase<75){kind="clear";cloud=20;rain=0;temp=22;}
+ else if(phase<135){const t=(phase-75)/60;kind="cloudy";cloud=lerp(35,94,t);rain=0;temp=lerp(22,18,t);}
+ else if(phase<165){const t=(phase-135)/30;kind="rain";cloud=96;rain=lerp(0,70,t);temp=18;}
+ else if(phase<300){kind="rain";cloud=96;rain=70;temp=18;}
+ else if(phase<330){const t=(phase-300)/30;kind="rain";cloud=lerp(96,72,t);rain=lerp(70,0,t);temp=lerp(18,20,t);}
+ else if(phase<345){const t=(phase-330)/15;kind="cloudy";cloud=lerp(72,45,t);rain=0;temp=lerp(20,21,t);}
+ else{const t=(phase-345)/15;kind="clear";cloud=lerp(45,20,t);rain=0;temp=lerp(21,22,t);}
  const changed=kind!==weather.kind||Math.abs(cloud-weather.cloud)>2||Math.abs(rain-weather.rain)>2||Math.abs(temp-weather.temp)>.6;
  if(!changed)return;
  weather.kind=kind;weather.cloud=cloud;weather.rain=rain;weather.temp=temp;weather.fog=0;
  syncWeatherInputs();updateWeather();
- if(oldKind!=="rain"&&kind==="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN ARRIVING","yellow",4);showTeamRadio("Rain is arriving. Watch the grip level and prepare for a tyre change.");}
- else if(oldKind==="rain"&&kind!=="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN EASING","info",3.4);showTeamRadio("Rain is easing. The racing line should start to dry.");}
+ if(oldKind!=="rain"&&kind==="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN ARRIVING","yellow",5);showTeamRadio("Rain has arrived. Expect a sustained wet stint; watch the surface and tyre temperatures.");}
+ else if(oldKind==="rain"&&kind!=="rain"){showRaceControlMessage("WEATHER UPDATE · RAIN HAS STOPPED","info",5);showTeamRadio("The rain has stopped. The racing line will dry gradually as the surface water evaporates.");}
 }
 function updateRain(dt){
  updateWeatherEvolution(dt);
  const rainRate=weather.kind==="rain"?weather.rain/100:weather.kind==="cloudy"?weather.rain/100*.22:0;
- const evaporation=(.00045+clamp((weather.temp-10)/32,0,1)*.0012)*(1-weather.cloud/100*.65);
+ const evaporation=(.0015+clamp((weather.temp-10)/32,0,1)*.0022)*(1-weather.cloud/100*.30);
  trackWetness=clamp(trackWetness+rainRate*.007*dt-evaporation*dt,0,1);
  trackRubber=clamp(trackRubber-rainRate*.0007*dt,0,.085);
  wetnessVisualTimer+=dt;
@@ -6754,7 +6839,7 @@ function bindPitStation(){
 }
 
 function startSession(sessionMode="practice"){
- const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;weatherForecastTimer=0;weatherForecastRefresh=0;
+ const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
  raceStartState=startInPit?"none":"countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;
@@ -6849,7 +6934,7 @@ const F1_SETTINGS_OLDEST_KEY="apexFormulaRacingSettingsV3";
 const F1_SETTINGS_V2_KEY="apexFormulaRacingSettingsV2";
 const F1_SETTINGS_V1_KEY="apexFormulaRacingSettingsV1";
 function saveGameSettings(){
- try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:7,
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:8,
   displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
   cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
   differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
@@ -6859,6 +6944,7 @@ function loadGameSettings(){
  try{
   const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||localStorage.getItem(F1_SETTINGS_OLDEST_KEY)||localStorage.getItem(F1_SETTINGS_V2_KEY)||localStorage.getItem(F1_SETTINGS_V1_KEY)||"null");if(!saved)return;
   if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
+  if(Number(saved.schemaVersion||0)<8)Object.assign(displayOptions,{brand:false,circuit:false,controls:false});
   if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
   if(saved.schemaVersion<7){
    Object.assign(cameraProfiles[1],{x:0,y:0,z:0,pitch:0,yaw:0,fov:72});
@@ -6917,6 +7003,13 @@ function closeSettings(){
  settingsResumeAfterClose=false;
 }
 function bindSettings(){
+ $("moreHudBtn").addEventListener("click",()=>{
+  const open=$("hudExtraActions").classList.toggle("open");
+  $("moreHudBtn").setAttribute("aria-expanded",String(open));
+ });
+ document.addEventListener("pointerdown",event=>{
+  if(!event.target.closest("#hudActions")){$("hudExtraActions").classList.remove("open");$("moreHudBtn").setAttribute("aria-expanded","false");}
+ });
  $("menuSettingsBtn").addEventListener("click",openSettings);
  $("settingsHudBtn").addEventListener("click",openSettings);
  $("settingsPauseBtn").addEventListener("click",openSettings);
