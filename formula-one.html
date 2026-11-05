@@ -4040,8 +4040,8 @@ function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples
   const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
   const x=sample.p.x+rx*side*distance,z=sample.p.z+rz*side*distance;
   basePoints.push(new THREE.Vector3(x,sample.p.y+.18,z));
-  midPoints.push(new THREE.Vector3(x,sample.p.y+.72,z));
-  topPoints.push(new THREE.Vector3(x,sample.p.y+1.34,z));
+  midPoints.push(new THREE.Vector3(x,sample.p.y+1.02,z));
+  topPoints.push(new THREE.Vector3(x,sample.p.y+2.0,z));
  }
  const railMat=makeMat(0x9ba8ae,.42,.48),baseMat=makeMat(0x46545d,.82,.12);
  for(const [points,radius,material] of [[basePoints,.13,baseMat],[midPoints,.095,railMat],[topPoints,.095,railMat]]){
@@ -4050,10 +4050,10 @@ function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples
   mesh.castShadow=true;mesh.receiveShadow=true;trackGroup.add(mesh);
  }
  const count=Math.floor((end-start)/8)+1;
- const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,1.35,.16),railMat,count),dummy=new THREE.Object3D();let index=0;
+ const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,2.0,.22),railMat,count),dummy=new THREE.Object3D();let index=0;
  for(let i=start;i<=end;i+=8){
   const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
-  dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+.68,sample.p.z+rz*side*distance);
+  dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+1.0,sample.p.z+rz*side*distance);
   dummy.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);dummy.updateMatrix();posts.setMatrixAt(index++,dummy.matrix);
  }
  posts.count=index;posts.castShadow=true;trackGroup.add(posts);
@@ -6058,7 +6058,7 @@ function startSession(sessionMode="practice"){
  $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
  if(startInPit){activatePitLaneRoute();positionCarAtStart(true);}
- else{restoreCircuitRoute();if(!car)positionCarAtStart();}
+ else{restoreCircuitRoute();positionCarAtStart(false);}
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
