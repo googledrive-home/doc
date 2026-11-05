@@ -4348,6 +4348,11 @@ function buildPitLane(){
  const stallLine=makeMat(0xf0eee4,.72),bayParts=[[0,.13,-3.1,3.4,.045,.12],[0,.13,3.1,3.4,.045,.12],[-1.7,.13,0,.12,.045,6.2],[1.7,.13,0,.12,.045,6.2]];
  for(const [x,y,z,w,h,d] of bayParts){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),stallLine);line.position.set(x,y,z);stallGroup.add(line);}
  environmentGroup.add(stallGroup);
+ const serviceSample=lane.samples[Math.floor(lane.samples.length*.55)],serviceBay=new THREE.Group();
+ serviceBay.position.copy(serviceSample.p);serviceBay.rotation.y=Math.atan2(serviceSample.tan.x,serviceSample.tan.z);
+ const serviceLine=makeMat(0xf0eee4,.72),serviceMarkings=[[0,.14,-3.25,3.7,.05,.12],[0,.14,3.25,3.7,.05,.12],[-1.85,.14,0,.12,.05,6.5],[1.85,.14,0,.12,.05,6.5],[0,.14,0,2.9,.05,.12]];
+ for(const [x,y,z,w,h,d] of serviceMarkings){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),serviceLine);line.position.set(x,y,z);serviceBay.add(line);}
+ environmentGroup.add(serviceBay);
  addPitStationMarker(pitEntryRoute[0],"PIT ENTRY");
  addPitStationMarker(pitEntryRoute[pitEntryRoute.length-1],"PIT EXIT  /  MERGE");
 }
@@ -4800,12 +4805,13 @@ function spawnOpponents(){
    };
    o.material=Array.isArray(o.material)?o.material.map(paintMaterial):paintMaterial(o.material);
   });
-  const progress=(.035+i*.047)%1;
+  const gridDistance=14+Math.floor(i/2)*14+(i%2)*1.5;
+  const progress=(1-gridDistance/routeLength+1)%1;
   const wheels=[],frontPivots=[];
   root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
   const baseOffset=(i%2?1:-1)*(1.25+(i%3)*.35),pace=base+(i%3-1)*1.7;
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
-  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:driver.team,wheels,frontPivots,wheelSpin:0,laps:1,passCommitment:0};
+  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:driver.team,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0};
   const sample=route[Math.floor(progress*route.length)%route.length];
   const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
   root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
@@ -5615,9 +5621,9 @@ function drawDashboard(){
  wheelShiftLedMeshes.forEach((mesh,i)=>{const on=(i+1)/wheelShiftLedMeshes.length<rpm;mesh.material.color.setHex(on?ledColours[Math.min(i,15)]:0x25343b);if(mesh.material.emissive)mesh.material.emissive.setHex(on?ledColours[Math.min(i,15)]:0x000000);mesh.material.emissiveIntensity=on?.65:0;});
  wheelControlMeshes.forEach(mesh=>{const control=mesh.userData.wheelControl,active=control==="ERS"?car.ersDeploy:control==="DRS"?car.drsArmed:false;mesh.material.color.setHex(active?0x75e3a7:mesh.userData.baseColor);});
 }
-function positionCarAtStart(fromPitBox=false){
+function positionCarAtStart(fromPitBox=false,fromGrid=false){
  if(!carRoot)buildCar();
- const startIndex=fromPitBox?0:6,sample=route[startIndex]||route[0];
+ const startIndex=fromPitBox?0:fromGrid?0:6,sample=route[startIndex]||route[0];
  if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
  carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);carRoot.rotation.set(-slope,yaw,0);
@@ -6440,7 +6446,7 @@ function startSession(sessionMode="practice"){
  $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
  if(startInPit){activatePitLaneRoute();positionCarAtStart(true);}
- else{restoreCircuitRoute();positionCarAtStart(false);}
+ else{restoreCircuitRoute();positionCarAtStart(false,true);}
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
@@ -6452,7 +6458,7 @@ function startSession(sessionMode="practice"){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart();raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
+function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
 function returnToMenu(){running=false;paused=false;raceStartState="none";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();
