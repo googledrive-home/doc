@@ -4880,6 +4880,7 @@ function spawnOpponents(){
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
  for(let i=0;i<opponentCount;i++){
   const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);
+  const playerLights=[];root.traverse(o=>{if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)playerLights.push(o);});playerLights.forEach(o=>o.parent?.remove(o));
   const color=new THREE.Color(colors[i%colors.length]);
   root.traverse(o=>{
    if(!o.isMesh||!o.material)return;
@@ -6160,6 +6161,7 @@ function updateHud(grip,offGrip){
  $("transmissionValue").textContent=shiftMode==="automatic"?"AUTO":shiftMode==="manual"?"MAN":"SEQ";
  $("damageValue").textContent=vehicleDamage<.04?"CLEAN":vehicleDamage<.20?"LIGHT":vehicleDamage<.48?"MODERATE":vehicleDamage<.72?"HEAVY":"SEVERE";
  const wetLabel=trackWetness<.12?"DRY":trackWetness<.36?"DAMP":trackWetness<.72?"WET":"SOAKED";$("surfaceWetnessValue").textContent=wetLabel;$("surfaceWetnessBar").style.width=(trackWetness*100)+"%";
+ $("trackRubberValue").textContent=trackRubber<.015?"GREEN":trackRubber<.05?"BUILDING":"RUBBERED";
  drawDashboard();drawMiniCar();renderBroadcastTiming();
  if(car.wear<.22&&tyreWearRadioLap!==lap){tyreWearRadioLap=lap;showTeamRadio("Tyre wear is getting low. Consider boxing this lap if the handling drops away.");}
 }
@@ -6249,9 +6251,9 @@ function ensureCarHeadlights(){
  if(!carRoot||carRoot.userData.headlights)return;
  const lights=[];
  for(const side of [-1,1]){
-  const target=new THREE.Object3D();target.position.set(side*.62,.18,72);carRoot.add(target);
+  const target=new THREE.Object3D();target.userData.playerHeadlightTarget=true;target.position.set(side*.62,.18,72);carRoot.add(target);
   const light=new THREE.SpotLight(0xdcecff,nightLevel*25,145,Math.PI/8,.58,1.45);
-  light.position.set(side*.62,.58,2.1);light.target=target;light.castShadow=false;carRoot.add(light);lights.push(light);
+  light.userData.playerHeadlight=true;light.position.set(side*.62,.58,2.1);light.target=target;light.castShadow=false;carRoot.add(light);lights.push(light);
  }
  carRoot.userData.headlights=lights;
 }
