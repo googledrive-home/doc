@@ -3509,7 +3509,7 @@ const CHAMPIONSHIP_AI_DRIVERS=[
 ];
 const CHAMPIONSHIP_TEAMS=["APEX GP","SILVER ARROW","PAPAYA RACING","SCUDERIA ROSSO","GREENWORKS"];
 let gameMode="quick",quickTrackSelection="spa",championshipState=null;
-let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0,broadcastCircuitProgress=0,teamRadioTimer=0;
+let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0,broadcastCircuitProgress=0,teamRadioTimer=0,tyreWearRadioLap=-1;
 function makeEmptyChampionship(){
  const driverPoints={player:0},teamPoints={};
  CHAMPIONSHIP_AI_DRIVERS.forEach(driver=>driverPoints[driver.id]=0);
@@ -3564,11 +3564,13 @@ function toggleBroadcast(){
  else{broadcastReturnCamera=cameraMode;cameraMode=5;broadcastActive=true;broadcastShotIndex=0;broadcastShotTimer=0;}
  $("broadcastPanel").classList.toggle("open",broadcastActive);
  $("broadcastBtn").textContent=broadcastActive?"EXIT TV":"BROADCAST";
- camera.userData.ready=false;setCamera(0);
+ if(!pitLaneDriving&&nearestInfo)broadcastCircuitProgress=nearestInfo.progress;
+ renderBroadcastTiming();camera.userData.ready=false;setCamera(0);
 }
 function renderBroadcastTiming(){
- if(!broadcastActive||!car||!nearestInfo)return;
+ if(!car||!nearestInfo)return;
  if(!pitLaneDriving)broadcastCircuitProgress=nearestInfo.progress;
+ if(!broadcastActive)return;
  const playerDistance=lap-1+(pitLaneDriving?broadcastCircuitProgress:nearestInfo.progress);
  const participants=[{name:"YOU",team:"APEX GP",distance:playerDistance,isPlayer:true,status:pitLaneDriving?"PIT":"RACE"}];
  for(const bot of opponents)participants.push({name:bot.driverName||("DRIVER "+bot.number),team:bot.teamName||"AI TEAM",distance:Math.max(0,(bot.laps-1)+bot.progress),isPlayer:false,status:"RACE"});
@@ -4816,7 +4818,7 @@ function setRaceFlag(flag,duration=8){
 function updateRaceControl(dt){
  if(raceFlag!=="GREEN"){
   raceFlagTimer=Math.max(0,raceFlagTimer-dt);
-  if(raceFlagTimer<=0){raceFlag="GREEN";showRaceControlMessage("GREEN FLAG","info",2.2);}
+  if(raceFlagTimer<=0){raceFlag="GREEN";showRaceControlMessage("GREEN FLAG","info",2.2);showTeamRadio("Green flag. Racing conditions resumed — you can push.");}
  }
  if(raceControlMessageTimer>0){
   raceControlMessageTimer=Math.max(0,raceControlMessageTimer-dt);
@@ -4828,7 +4830,7 @@ function updateRaceStart(dt){
  const overlay=$("raceStartOverlay"),lamps=$("raceStartLamps"),label=$("raceStartLabel");if(!overlay||!lamps||!label)return;
  if(raceStartState==="countdown"){
   overlay.classList.add("open");raceStartTimer+=dt;
-  if((keys.KeyW||keys.ArrowUp)&&!raceStartJumpReported){raceStartJumpReported=true;raceStartPenalty+=5;showRaceControlMessage("FALSE START · +5.0S PENALTY","penalty",4.2);}
+  if((keys.KeyW||keys.ArrowUp)&&!raceStartJumpReported){raceStartJumpReported=true;raceStartPenalty+=5;showRaceControlMessage("FALSE START · +5.0S PENALTY","penalty",4.2);showTeamRadio("Hold position. False start detected — five-second penalty.");}
   raceStartLit=Math.min(5,Math.floor(raceStartTimer/.64));
   [...lamps.children].forEach((lamp,i)=>lamp.classList.toggle("on",i<raceStartLit));
   lamps.classList.remove("green");label.textContent=raceStartLit>=5?"HOLD POSITION":"GET READY";
@@ -6127,6 +6129,7 @@ function updateHud(grip,offGrip){
  $("damageValue").textContent=vehicleDamage<.04?"CLEAN":vehicleDamage<.20?"LIGHT":vehicleDamage<.48?"MODERATE":vehicleDamage<.72?"HEAVY":"SEVERE";
  const wetLabel=trackWetness<.12?"DRY":trackWetness<.36?"DAMP":trackWetness<.72?"WET":"SOAKED";$("surfaceWetnessValue").textContent=wetLabel;$("surfaceWetnessBar").style.width=(trackWetness*100)+"%";
  drawDashboard();drawMiniCar();renderBroadcastTiming();
+ if(car.wear<.22&&tyreWearRadioLap!==lap){tyreWearRadioLap=lap;showTeamRadio("Tyre wear is getting low. Consider boxing this lap if the handling drops away.");}
 }
 function setCamera(frameDt=.016){
  if(!carRoot)return;
@@ -6524,7 +6527,7 @@ function bindPitStation(){
 }
 
 function startSession(sessionMode="practice"){
- const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;
+ const startInPit=sessionMode==="practice";currentSessionMode=sessionMode;tyreWearRadioLap=-1;
  raceStartState=startInPit?"none":"countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
  $("raceStartOverlay").classList.toggle("open",!startInPit);$("raceControlBanner").classList.remove("open");
