@@ -4595,7 +4595,10 @@ function buildPitLane(){
  pitLaneSamples=lane.samples;
  const entryControls=Array.from({length:9},(_,i)=>{
   const t=i/8,progress=entryProgress+(1-entryProgress)*t;
-  return at(progress,laneOffset*smoothStep(0,1,t));
+  // Start near the usable outer edge of the racing surface so the car can
+  // actually join the pit path from the track, rather than snapping from centreline.
+  const edgeOffset=roadWidth*.45;
+  return at(progress,lerp(edgeOffset,laneOffset,smoothStep(0,1,t)));
  });
  const entry=makePitPathSamples(entryControls,Math.max(72,Math.ceil(entryBefore/2.2)));
  const exitControls=Array.from({length:10},(_,i)=>{
