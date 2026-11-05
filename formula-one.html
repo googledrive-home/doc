@@ -615,35 +615,35 @@ const fmtTime = s => { const m=Math.floor(s/60), r=s-m*60; return String(m).padS
 const fmtKm = n => (n/1000).toFixed(3)+" KM";
 const trackDefs = {
  spa:{
-  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:12.5,minWidth:11,elevationRange:102.2,pitEntryBeforeM:85,pitExitAfterM:301,base:"forest",
+  name:"Circuit de Spa-Francorchamps",short:"SPA-FRANCORCHAMPS",country:"Belgium",length:7004,turns:19,width:12.5,minWidth:11,maxWidth:14,elevationRange:102.2,pitEntryBeforeM:85,pitExitAfterM:301,pitLaneLengthM:386.6,base:"forest",
   elevationProfile:[[0,418],[220,424],[310,419],[690,403],[890,391],[1130,415],[1490,446],[2200,463],[2470,470],[2870,455],[3110,438],[3600,402],[4280,377],[4740,375],[5100,373],[5700,388],[6000,398],[6540,408],[7004,418]],
   points:[[0,0,418],[80,0,420],[145,2,419],[190,-8,416],[215,-35,411],[210,-65,404],[180,-86,397],[145,-85,391],[210,-120,390],[260,-90,397],[285,-40,407],[300,20,420],[260,80,438],[250,130,460],[285,176,467],[390,190,467],[500,205,470],[555,228,465],[570,265,456],[548,300,449],[505,305,444],[470,285,442],[435,310,438],[400,350,432],[380,400,424],[405,438,414],[452,458,405],[490,485,397],[495,525,391],[470,558,385],[430,565,380],[398,540,377],[370,510,374],[330,505,373],[295,530,374],[275,565,377],[285,605,381],[320,635,385],[325,675,389],[295,700,388],[250,695,383],[205,680,379],[160,655,376],[120,630,373],[70,620,365],[25,635,370],[-20,660,378],[-65,665,386],[-105,640,392],[-125,605,398],[-115,565,405],[-80,540,411],[-35,535,416],[5,550,419],[30,580,421],[20,615,420],[-10,630,417],[40,610,415],[55,575,415],[60,545,416],[65,515,417],[25,505,418],[45,480,418],[35,440,416],[0,400,415],[-35,350,413],[-45,285,411],[-30,220,410],[0,160,411],[15,100,414],[10,50,416],[0,0,418]]
  },
  monza:{
-  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:11,minWidth:10,elevationRange:12.8,pitEntryBeforeM:110,pitExitAfterM:260,base:"park",
+  name:"Autodromo Nazionale Monza",short:"MONZA",country:"Italy",length:5793,turns:11,width:11,minWidth:10,maxWidth:12,elevationRange:12.8,pitEntryBeforeM:110,pitExitAfterM:309,pitLaneLengthM:419,base:"park",
   // Monza's published overall elevation change is 12.8 m.
   elevationProfile:[[0,168],[500,169],[1000,171],[1500,170],[2100,172],[2600,170],[3200,165],[3600,159.2],[4100,163],[4600,169],[5200,170.5],[5793,168.5]],
   points:[[0,0,162],[105,0,162.5],[220,0,163],[335,0,164],[440,0,165],[485,12,165],[490,42,164],[470,59,164],[437,50,164],[415,30,165],[400,60,165],[378,105,166],[340,145,167],[285,166,168],[235,162,168],[205,145,167],[195,122,166],[215,106,165],[190,93,165],[160,110,166],[135,143,167],[102,158,168],[72,143,169],[50,115,169],[22,110,168],[-12,128,168],[-45,158,167],[-85,168,166],[-120,148,164],[-153,120,163],[-195,95,161],[-245,80,159],[-300,85,158],[-350,70,159],[-378,40,160],[-362,10,161],[-330,3,162],[-305,22,162],[-285,50,163],[-255,65,164],[-225,55,164],[-205,35,164],[-185,48,164],[-165,75,164],[-140,85,163],[-118,65,162],[-100,33,161],[-73,0,160],[-35,-28,159],[10,-58,158],[65,-75,158],[120,-75,159],[165,-55,160],[185,-28,161],[175,-8,162],[130,-1,162],[75,0,162],[0,0,162]]
  },
  laguna:{
-  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:10.8,minWidth:9.14,elevationRange:55,pitEntryBeforeM:105,pitExitAfterM:250,base:"dry",
+  name:"WeatherTech Raceway Laguna Seca",short:"LAGUNA SECA",country:"United States",length:3602,turns:11,width:10.8,minWidth:9.14,elevationRange:55,pitEntryBeforeM:105,pitExitAfterM:286.7,pitLaneLengthM:391.7,base:"dry",
   elevationProfile:[[0,220],[220.9,222],[430.2,226],[530.3,229],[614.2,231],[682,229],[754.9,225],[837.9,222],[910.5,220],[976.7,219],[1060.1,219],[1151.5,221],[1250.4,225],[1335.8,232],[1414.5,238],[1500.8,244],[1585.5,249],[1689,253],[1799.2,258],[1904.5,260],[2000.1,261],[2069.3,260],[2149.4,259],[2230.8,260],[2307.8,259],[2368.2,256],[2421.3,250],[2472.3,244],[2520,238],[2581.4,230],[2647.2,223],[2729.4,220],[2821.7,216],[2910.2,213],[2991.7,211],[3064.7,209],[3130.5,208],[3199.6,207],[3281,207],[3354.8,209],[3428.8,213],[3510.5,218],[3602,220]],
   points:[[0,0,220],[95,0,222],[185,2,226],[225,18,229],[245,48,231],[234,75,229],[205,87,225],[170,80,222],[150,56,220],[145,28,219],[110,20,219],[72,30,221],[40,58,225],[26,92,232],[45,120,238],[78,137,244],[100,166,249],[132,197,253],[166,230,258],[197,263,260],[215,300,261],[205,328,260],[175,345,259],[140,345,260],[110,331,259],[100,307,256],[91,286,250],[76,270,244],[62,255,238],[38,244,230],[10,240,223],[-22,225,220],[-48,195,216],[-63,160,213],[-61,125,211],[-42,100,209],[-27,76,208],[-47,54,207],[-77,36,207],[-92,8,209],[-70,-15,213],[-35,-18,218],[0,0,220]]
  },
  silverstone:{
-  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:15,minWidth:12,elevationRange:11.3,pitEntryBeforeM:52,pitExitAfterM:305,base:"parkland",
+  name:"Silverstone Circuit",short:"SILVERSTONE GP",country:"United Kingdom",length:5891,turns:18,width:15,minWidth:12,elevationRange:11.3,pitEntryBeforeM:52,pitExitAfterM:305,pitLaneLengthM:336,base:"parkland",
   // Approximate distance anchors following Silverstone's published 11.3 m rise.
   elevationProfile:[[0,152],[450,153],[850,155],[1300,156.3],[1750,155],[2033,154],[2500,152],[3168,153.5],[3800,154.5],[4300,155.5],[4857,154],[5200,150],[5500,145],[5891,152]],
   points:[[0,0,153],[0,100,153],[14,175,153],[55,230,154],[125,250,155],[205,230,156],[260,185,156],[285,120,155],[315,70,154],[365,45,153],[430,55,153],[500,90,153],[565,145,152],[630,175,151],[700,155,151],[745,105,151],[760,40,150],[735,-30,150],[680,-90,151],[600,-130,152],[510,-155,153],[415,-160,153],[325,-145,153],[235,-125,153],[150,-95,153],[85,-55,153],[35,-25,153]]
  },
  monaco:{
-  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:9.3,minWidth:8,elevationRange:42,pitEntryBeforeM:90,pitExitAfterM:160,base:"city",
+  name:"Circuit de Monaco",short:"MONACO GP",country:"Monaco",length:3337,turns:19,width:9.3,minWidth:8,elevationRange:42,pitEntryBeforeM:90,pitExitAfterM:235,pitLaneLengthM:325,base:"city",
   // Monaco's published 42 m swing: climb to Casino, then descend towards Rascasse.
   elevationProfile:[[0,48],[120,52],[300,64],[560,82],[720,89.5],[1000,85],[1250,77],[1600,66],[1950,60],[2250,56],[2500,52],[2800,47.5],[3100,49.5],[3337,48]],
   points:[[0,0,12],[0,55,12],[15,95,12],[50,120,12],[95,115,12],[125,85,12],[135,45,12],[120,5,12],[145,-25,12],[190,-35,12],[225,-70,12],[225,-120,12],[195,-155,12],[150,-165,12],[105,-150,12],[75,-120,12],[55,-80,12],[30,-55,12],[0,-50,12],[-30,-55,12],[-65,-80,12],[-80,-45,12],[-75,-5,12],[-45,25,12],[0,0,12]]
  },
  suzuka:{
-  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:13,minWidth:10,elevationRange:52,pitEntryBeforeM:80,pitExitAfterM:375,base:"parkland",
+  name:"Suzuka International Racing Course",short:"SUZUKA",country:"Japan",length:5807,turns:18,width:13,minWidth:10,maxWidth:16,elevationRange:52,pitEntryBeforeM:80,pitExitAfterM:335.2,pitLaneLengthM:415.2,base:"parkland",
   // Approximate circuit elevation profile informed by Suzuka's published course guide.
   // The East-course pass at 2.50 km is below the West-course crossover at 4.87 km.
   elevationProfile:[[0,30],[250,22],[500,8],[800,13],[1050,25],[1320,42],[1658,54],[1900,60],[2160,51],[2350,38],[2498,26],[2620,23],[2800,19],[3100,17],[3440,19],[3750,22],[4100,25],[4400,27],[4620,29],[4760,32],[4820,35],[4870,35],[4920,35],[4980,34],[5100,31],[5350,28],[5580,26],[5807,30]],
@@ -4334,7 +4334,7 @@ function createTrack(){
  const sampledWidthMax=Math.max(...route.map(sample=>roadHalfWidthAt(sample)*2));
  const sampledElevationMin=Math.min(...route.map(sample=>sample.p.y));
  const sampledElevationMax=Math.max(...route.map(sample=>sample.p.y));
- const audit={circuit:def.name,targetLengthM:def.length,centrelineLengthM:+routeLength.toFixed(2),nominalWidthM:def.width,publishedMinimumWidthM:def.minWidth??null,sampledRoadWidthM:[+sampledWidthMin.toFixed(2),+sampledWidthMax.toFixed(2)],publishedElevationChangeM:def.elevationRange??null,modelElevationChangeM:+(sampledElevationMax-sampledElevationMin).toFixed(2)};
+ const audit={circuit:def.name,targetLengthM:def.length,centrelineLengthM:+routeLength.toFixed(2),nominalWidthM:def.width,publishedWidthRangeM:[def.minWidth??null,def.maxWidth??null],sampledRoadWidthM:[+sampledWidthMin.toFixed(2),+sampledWidthMax.toFixed(2)],publishedElevationChangeM:def.elevationRange??null,modelElevationChangeM:+(sampledElevationMax-sampledElevationMin).toFixed(2)};
  console.info("APEX CIRCUIT DIMENSION AUDIT",audit);
  if(Math.abs(routeLength-def.length)>1)console.warn("Centreline length exceeds 1 m target tolerance",audit);
 terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
@@ -4625,6 +4625,10 @@ function buildPitLane(){
  pitEntryRoute=visualRoute;pitEntryRouteLength=polylineLength(pitEntryRoute);
  pitDriveRoute=join(driveway.samples,lane.samples,exit.samples);
  pitDriveRouteLength=polylineLength(pitDriveRoute);
+ const pitLengthTarget=def.pitLaneLengthM||entryBefore+exitAfter;
+ const pitAudit={circuit:def.name,targetPitLaneLengthM:pitLengthTarget,modelPitEntryToExitM:+pitEntryRouteLength.toFixed(1),entryReferenceBeforeStartM:entryBefore,exitReferenceAfterStartM:exitAfter,pitLaneWidthM:PIT_LANE_WIDTH,deltaPercent:+(100*(pitEntryRouteLength-pitLengthTarget)/pitLengthTarget).toFixed(1)};
+ console.info("APEX PIT-LANE DIMENSION AUDIT",pitAudit);
+ if(Math.abs(pitEntryRouteLength-pitLengthTarget)>pitLengthTarget*.12)console.warn("Pit route length differs from reference by more than 12%",pitAudit);
  const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});
  pitAsphalt.userData.isAsphalt=true;
  addPitRibbon(visualRoute,PIT_LANE_WIDTH,pitAsphalt,.075);
