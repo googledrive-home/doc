@@ -4050,7 +4050,7 @@ function buildPitLane(){
   point(0,laneStartOffset)
  ];
  const entry=makePitPathSamples(entryControls,90),visualPath=entry.samples.concat(pitDriveRoute.slice(1));
- const pitAsphalt=new THREE.MeshStandardMaterial({color:0x353c42,roughness:.9,metalness:.015,side:THREE.DoubleSide});
+ const pitAsphalt=new THREE.MeshStandardMaterial({color:0x353c42,roughness:.9,metalness:.015,side:THREE.DoubleSide});pitAsphalt.userData.isAsphalt=true;
  addPitRibbon(visualPath,PIT_LANE_WIDTH,pitAsphalt,.075);
  addPitEdgeLine(visualPath,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
  addPitEdgeLine(visualPath,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
@@ -5948,6 +5948,10 @@ function closePitStation(){playMenuUiSound("close");$("pitStationOverlay").class
 function setPitTyre(compound){
  if(!tireSpecs[compound])return;tyreCompound=compound;$("tyreSelect").value=compound;updatePitStationUI();
 }
+function applyPitTrackWetness(){
+ trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;
+ lastWetnessVisual=trackWetness;
+}
 function setPitWeather(kind){
  if(!["clear","cloudy","rain","fog","heat"].includes(kind))return;
  weather.kind=kind;
@@ -5956,7 +5960,7 @@ function setPitWeather(kind){
  if(kind==="rain"){weather.rain=Math.max(weather.rain,68);weather.cloud=94;weather.fog=12;}
  if(kind==="fog"){weather.rain=0;weather.cloud=72;weather.fog=58;}
  if(kind==="heat"){weather.rain=0;weather.cloud=8;weather.fog=0;weather.temp=Math.max(weather.temp,34);}
- syncWeatherInputs();updateWeather();updatePitStationUI();
+ applyPitTrackWetness();syncWeatherInputs();updateWeather();updatePitStationUI();
 }
 function bindPitStation(){
  document.querySelectorAll("[data-pit-tyre]").forEach(button=>button.addEventListener("click",()=>setPitTyre(button.dataset.pitTyre)));
@@ -5965,7 +5969,7 @@ function bindPitStation(){
   weather.rain=Number(event.target.value);
   if(weather.rain>12&&weather.kind==="clear")weather.kind="rain";
   if(weather.rain===0&&weather.kind==="rain")weather.kind="cloudy";
-  syncWeatherInputs();updateWeather();updatePitStationUI();
+  applyPitTrackWetness();syncWeatherInputs();updateWeather();updatePitStationUI();
  });
  $("pitTempRange").addEventListener("input",event=>{weather.temp=Number(event.target.value);syncWeatherInputs();updateWeather();updatePitStationUI();});
  $("pitBackBtn").addEventListener("click",closePitStation);
