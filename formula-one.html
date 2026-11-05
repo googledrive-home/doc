@@ -6676,6 +6676,7 @@ function animate(now){
   setCamera(frameDt);
  }else if(carRoot){physicsAccumulator=0;setCamera(frameDt);}
  if(skyDome)skyDome.position.copy(camera.position);
+ if(starField)starField.position.copy(camera.position);
  if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
  if(teamRadioTimer>0)updateTeamRadio(frameDt);
  if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
