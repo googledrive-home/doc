@@ -95,7 +95,12 @@ input[type=range]{accent-color:#ff765e}
 .race-start-lamps.green .race-start-lamp{background:radial-gradient(circle at 35% 30%,#caffdf,#19dc80 55%,#08783f);border-color:#6fffb1;box-shadow:0 0 16px #13ed83aa}
 .race-control-banner{position:fixed;z-index:16;top:70px;left:50%;transform:translateX(-50%);display:none;min-width:170px;padding:8px 15px;border:1px solid #ffffff30;border-radius:8px;background:#10261b;color:#7ff0b0;text-align:center;font-size:10px;font-weight:1000;letter-spacing:.16em;box-shadow:0 10px 28px #0008;pointer-events:none}
 .race-control-banner.open{display:block}.race-control-banner.yellow{background:#5a4511;color:#ffe08a;border-color:#ffd66e}.race-control-banner.vsc{background:#5a3012;color:#ffd0a0;border-color:#ffad63}.race-control-banner.penalty{background:#551c20;color:#ffb6ae;border-color:#ff7169}.race-control-banner.info{background:#17354a;color:#b7e5ff;border-color:#6bcaff}
-@media(max-width:760px){.race-start-overlay{top:58px}.race-start-panel{min-width:220px;padding:8px 12px}.race-start-lamp{width:21px;height:21px}.race-control-banner{top:52px}}
+.pit-service-overlay{position:fixed;inset:0;z-index:28;display:none;place-items:center;padding:16px;background:#02060bd9;backdrop-filter:blur(10px)}.pit-service-overlay.open{display:grid}
+.pit-service-card{width:min(540px,96vw);padding:22px;border:1px solid #ffffff30;border-radius:16px;background:linear-gradient(145deg,#172a38,#09131d);box-shadow:0 26px 90px #000b}
+.pit-service-card h2{margin:5px 0 7px;font-size:24px;letter-spacing:.04em}.pit-service-card p{margin:0;color:#9cabb8;font-size:11px;line-height:1.6}
+.pit-service-tyres{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:17px 0}.pit-service-tyres button{min-width:0;padding:10px 3px;border:1px solid #ffffff22;border-radius:8px;background:#ffffff08;color:#eaf0f4;font-size:9px;font-weight:950}
+.pit-service-tyres button.active{border-color:#ff8c70;background:#ff765e22;color:#ffd1c4}.pit-service-actions{display:flex;gap:8px;margin-top:14px}.pit-service-actions button{flex:1}.pit-service-status{min-height:18px;margin-top:10px;color:#ffd16e;font-size:10px;font-weight:900;letter-spacing:.08em}
+@media(max-width:760px){.race-start-overlay{top:58px}.race-start-panel{min-width:220px;padding:8px 12px}.race-start-lamp{width:21px;height:21px}.race-control-banner{top:52px}.pit-service-card{padding:17px}.pit-service-tyres{gap:4px}.pit-service-tyres button{font-size:8px;padding:9px 1px}}
 .settings-overlay{display:none;z-index:35;padding:12px;background:#03070bd9;backdrop-filter:blur(10px)}
 .settings-overlay.open{display:grid}
 .settings-card{width:min(940px,97vw);max-height:94dvh;display:flex;flex-direction:column;background:linear-gradient(145deg,#152230,#0a111a);border:1px solid #ffffff2c;border-radius:18px;box-shadow:0 28px 100px #000c;overflow:hidden}
@@ -418,11 +423,11 @@ input[type=range]{accent-color:#ff765e}
       <div class="statbox panel"><label>GEAR</label><strong id="gearValue">N</strong><small id="rpmValue">4,500 RPM</small></div>
       <div class="statbox panel"><label>LAP</label><strong id="lapValue">01</strong><small id="lapTime">00:00.000</small></div>
     </div>
-    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
+    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
-  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
+  <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">P</span> PIT STOP <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
  <div class="hudtitle">Vehicle telemetry</div>
  <div class="model-state"><span>CAR MODEL</span><b id="vehicleModelState" data-state="loading">LOADING RED BULL 2022…</b></div>
  <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
@@ -464,6 +469,7 @@ input[type=range]{accent-color:#ff765e}
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
 <div id="raceStartOverlay" class="race-start-overlay" aria-live="polite"><div class="race-start-panel"><small>APEX GRAND PRIX · START PROCEDURE</small><div id="raceStartLamps" class="race-start-lamps"><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i></div><strong id="raceStartLabel">GET READY</strong></div></div>
 <div id="raceControlBanner" class="race-control-banner" aria-live="polite">GREEN FLAG</div>
+<div id="pitServiceOverlay" class="pit-service-overlay" aria-label="Pit stop service"><section class="pit-service-card"><div class="eyebrow">APEX PIT WALL · SERVICE BAY</div><h2>CHANGE TYRES & REPAIR</h2><p>Stop inside the marked pit box, choose a compound and start the crew service. The crew replaces the tyres and reattaches damaged parts before releasing the car.</p><div class="pit-service-tyres"><button data-service-tyre="soft">SOFT</button><button data-service-tyre="medium">MEDIUM</button><button data-service-tyre="hard">HARD</button><button data-service-tyre="intermediate">INTER</button><button data-service-tyre="wet">WET</button></div><div id="pitServiceStatus" class="pit-service-status">SELECT A COMPOUND · READY FOR CREW</div><div class="pit-service-actions"><button class="action" id="pitServiceStartBtn">START SERVICE</button><button class="secondary" id="pitServiceCancelBtn">CANCEL</button></div></section></div>
 <div id="settingsOverlay" class="overlay settings-overlay">
  <section class="settings-card">
   <header class="settings-head"><div><div class="eyebrow">APEX MOTORSPORTS · PERSONALISATION</div><h2>GAME SETTINGS</h2><p>Configure the cockpit, camera, interface and driving feel.</p></div><button class="secondary" id="settingsCloseBtn">CLOSE ✕</button></header>
@@ -3464,6 +3470,7 @@ let shiftMode="automatic",aiSkill="balanced",opponentCount=4,raceLaps=3,graphics
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
+let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium";
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
@@ -4673,7 +4680,8 @@ function spawnOpponents(){
   const progress=(.035+i*.047)%1;
   const wheels=[],frontPivots=[];
   root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
-  const bot={root,progress,speed:base+(i%3-1)*1.7,baseSpeed:base+(i%3-1)*1.7,offset:(i%2?1:-1)*(1.25+(i%3)*.35),number:i+1,wheels,frontPivots,wheelSpin:0,laps:1};
+  const baseOffset=(i%2?1:-1)*(1.25+(i%3)*.35),pace=base+(i%3-1)*1.7;
+  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,wheels,frontPivots,wheelSpin:0,laps:1,passCommitment:0};
   const sample=route[Math.floor(progress*route.length)%route.length];
   const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
   root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
@@ -4683,32 +4691,59 @@ function spawnOpponents(){
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
 }
 function updateOpponents(dt){
- if(!opponents.length)return;
- const count=route.length,arcDistance=36*routeLength/count;
+ if(!opponents.length||raceStartState==="countdown")return;
+ const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
+ if(!count||!aiLength)return;
+ const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
+ const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
   let index=Math.floor(bot.progress*count)%count;
-  const here=route[index],ahead=route[(index+36)%count];
-  const dot=clamp(here.tan.dot(ahead.tan),-1,1),angle=Math.acos(dot);
-  const curvature=angle/Math.max(8,arcDistance);
-  const lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
-  const curveSpeed=Math.sqrt(lateralLimit/Math.max(.00025,curvature));
-  const target=Math.min(bot.baseSpeed,curveSpeed);
+  const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
+  const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
+  let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
+  let desiredOffset=bot.baseOffset,blocked=false;
+  const laneIsClear=candidate=>{
+   for(const item of traffic){
+    if(item.bot===bot)continue;
+    const forward=(item.progress-bot.progress+1)%1*aiLength,behind=(bot.progress-item.progress+1)%1*aiLength;
+    if((forward<62||behind<30)&&Math.abs(item.offset-candidate)<2.9)return false;
+   }
+   if(!pitLaneDriving&&nearestInfo){
+    const forward=(nearestInfo.progress-bot.progress+1)%1*aiLength,behind=(bot.progress-nearestInfo.progress+1)%1*aiLength;
+    if((forward<62||behind<30)&&Math.abs(nearestInfo.offset-candidate)<2.9)return false;
+   }
+   return true;
+  };
+  for(const item of traffic){
+   if(item.bot===bot)continue;
+   const gap=(item.progress-bot.progress+1)%1*aiLength;
+   if(gap>4&&gap<86&&Math.abs(item.offset-bot.offset)<3.0){blocked=true;break;}
+  }
+  if(!pitLaneDriving&&nearestInfo){
+   const playerGap=(nearestInfo.progress-bot.progress+1)%1*aiLength;
+   if(playerGap>4&&playerGap<86&&Math.abs(nearestInfo.offset-bot.offset)<3.1)blocked=true;
+  }
+  if(blocked){
+   const preferred=bot.baseOffset>=0?-laneLimit:laneLimit;
+   if(laneIsClear(preferred)){desiredOffset=preferred;bot.passCommitment=1.4;}
+   else if(laneIsClear(-preferred)){desiredOffset=-preferred;bot.passCommitment=1.0;}
+   else target*=.78;
+  }else if(bot.passCommitment>0){bot.passCommitment=Math.max(0,bot.passCommitment-dt);desiredOffset=bot.targetOffset;}
+  bot.targetOffset=desiredOffset;
+  if(raceFlag==="VSC")target=Math.min(target,42);else if(raceFlag==="YELLOW")target=Math.min(target,58);
   bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
-  const oldProgress=bot.progress;
-  bot.progress=(bot.progress+bot.speed*dt/routeLength)%1;
+  const oldProgress=bot.progress;bot.progress=(bot.progress+bot.speed*dt/aiLength)%1;
   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
   index=Math.floor(bot.progress*count)%count;
-  const sample=route[index],look=route[(index+24)%count];
+  const sample=aiRoute[index],look=aiRoute[(index+24)%count];
+  bot.offset=lerp(bot.offset,bot.targetOffset,1-Math.exp(-dt*1.65));
   const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
   bot.root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
   const heading=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
   bot.root.rotation.set(-slope,heading,0,"YXZ");
-  const futureHeading=Math.atan2(look.tan.x,look.tan.z);
-  const headingDelta=Math.atan2(Math.sin(futureHeading-heading),Math.cos(futureHeading-heading));
-  const aiSteer=clamp(headingDelta*.62,-.18,.18);
-  bot.frontPivots.forEach(p=>p.rotation.y=aiSteer);
-  bot.wheelSpin+=bot.speed*dt/wheelRadius;
-  bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);
+  const futureHeading=Math.atan2(look.tan.x,look.tan.z),headingDelta=Math.atan2(Math.sin(futureHeading-heading),Math.cos(futureHeading-heading));
+  const aiSteer=clamp(headingDelta*.62,-.18,.18)+(bot.targetOffset-bot.offset)*.012;
+  bot.frontPivots.forEach(p=>p.rotation.y=aiSteer);bot.wheelSpin+=bot.speed*dt/wheelRadius;bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);
  });
 }
 
@@ -4778,7 +4813,7 @@ function applyCrashDamage(severity,side,zone="side"){
  const inherited=new THREE.Vector3(car.u*forward.x+car.v*right.x,0,car.u*forward.z+car.v*right.z);
  const impulse=zone==="front"?forward.clone().negate():zone==="rear"?forward.clone():right.clone().multiplyScalar(side||1);
  for(const part of broken){
-  part.mesh.updateWorldMatrix(true,true);scene.attach(part.mesh);part.detached=true;
+  part.mesh.updateWorldMatrix(true,true);part.originalParent=part.mesh.parent;part.originalPosition=part.mesh.position.clone();part.originalQuaternion=part.mesh.quaternion.clone();part.originalScale=part.mesh.scale.clone();scene.attach(part.mesh);part.detached=true;
   if(part.system&&Number.isFinite(vehicleHealth[part.system]))loss(part.system,severity*17);
   const wheelId=part.mesh.userData.wheelId;
   if(wheelId&&car?.wheelHealth)car.wheelHealth[wheelId]=clamp(car.wheelHealth[wheelId]-severity*42,0,100);
@@ -5574,6 +5609,7 @@ function temperatureGrip(temp){
  return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
 }
 function updatePhysics(dt){
+ if(pitServiceOpen){car.u=0;car.v=0;car.throttle=0;car.brake=1;elapsed+=dt;return;}
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
  const throttleHeld=!!(keys.KeyW||keys.ArrowUp),throttleRequest=throttleHeld&&raceStartState!=="countdown"?1:0;
@@ -6182,6 +6218,54 @@ function updatePitStationUI(){
  $("pitRecommendation").textContent=recommendation[0];$("pitRecommendationNote").textContent=recommendation[1];
  $("pitTrackName").textContent=trackDefs[activeTrack].short+" · "+trackDefs[activeTrack].country.toUpperCase();
 }
+function updatePitService(dt){
+ if(!pitServiceActive)return;
+ pitServiceTimer=Math.max(0,pitServiceTimer-dt);$("pitServiceStatus").textContent="CREW WORKING · "+pitServiceTimer.toFixed(1)+"s";
+ if(pitServiceTimer>0)return;
+ tyreCompound=pitServiceSelectedTyre;$("tyreSelect").value=tyreCompound;
+ for(const part of damageParts){
+  if(!part.detached||!part.mesh)continue;
+  const parent=part.originalParent||carRoot;if(!parent)continue;
+  parent.add(part.mesh);
+  if(part.originalPosition)part.mesh.position.copy(part.originalPosition);
+  if(part.originalQuaternion)part.mesh.quaternion.copy(part.originalQuaternion);
+  if(part.originalScale)part.mesh.scale.copy(part.originalScale);
+  part.detached=false;part.originalParent=null;part.originalPosition=null;part.originalQuaternion=null;part.originalScale=null;
+ }
+ looseDamageParts=[];crashDebris.forEach(item=>{if(item.mesh)scene.remove(item.mesh);});crashDebris=[];
+ if(car){car.wear=1;car.tempF=weather.temp+58;car.tempR=weather.temp+59;car.wheelHealth={FL:100,FR:100,RL:100,RR:100};car.u=0;car.v=0;}
+ Object.keys(vehicleHealth).forEach(key=>vehicleHealth[key]=100);vehicleDamage=0;
+ pitServiceActive=false;pitServiceOpen=false;$("pitServiceOverlay").classList.remove("open");
+ $("pitServiceCancelBtn").disabled=false;$("pitServiceStartBtn").disabled=false;$("pitServiceStartBtn").textContent="START SERVICE";
+ $("trackState").textContent="PIT EXIT · RELEASE";$("trackState").style.color="#f0c75c";
+ showRaceControlMessage("PIT SERVICE COMPLETE · RELEASE","info",2.8);
+}
+function requestPitService(){
+ if(!running||paused)return;
+ if(!pitLaneDriving){showRaceControlMessage("PIT STOP · ENTER THE PIT LANE FIRST","info",2.8);return;}
+ if(!nearestInfo||nearestInfo.progress<.45||nearestInfo.progress>.70){showRaceControlMessage("PIT STOP · MOVE INTO THE SERVICE BOX","info",2.8);return;}
+ if(Math.hypot(car.u,car.v)>5.0){showRaceControlMessage("PIT STOP · SLOW BELOW 18 KM/H","yellow",2.6);return;}
+ pitServiceSelectedTyre=tyreCompound;pitServiceOpen=true;pitServiceActive=false;car.u=0;car.v=0;car.throttle=0;car.brake=1;
+ document.querySelectorAll("[data-service-tyre]").forEach(button=>button.classList.toggle("active",button.dataset.serviceTyre===pitServiceSelectedTyre));
+ $("pitServiceStatus").textContent="SELECT A COMPOUND · READY FOR CREW";
+ $("pitServiceStartBtn").disabled=false;$("pitServiceStartBtn").textContent="START SERVICE";$("pitServiceCancelBtn").disabled=false;
+ $("pitServiceOverlay").classList.add("open");
+}
+function startPitService(){
+ if(!pitServiceOpen||pitServiceActive)return;pitServiceActive=true;pitServiceTimer=4.8;
+ $("pitServiceStartBtn").disabled=true;$("pitServiceStartBtn").textContent="CREW WORKING…";$("pitServiceCancelBtn").disabled=true;
+ $("pitServiceStatus").textContent="CREW WORKING · 4.8s";
+}
+function cancelPitService(){
+ if(pitServiceActive)return;pitServiceOpen=false;$("pitServiceOverlay").classList.remove("open");$("pitServiceCancelBtn").disabled=false;
+}
+function bindPitService(){
+ document.querySelectorAll("[data-service-tyre]").forEach(button=>button.addEventListener("click",()=>{
+  if(pitServiceActive)return;pitServiceSelectedTyre=button.dataset.serviceTyre;
+  document.querySelectorAll("[data-service-tyre]").forEach(item=>item.classList.toggle("active",item===button));
+ }));
+ $("pitServiceStartBtn").addEventListener("click",startPitService);$("pitServiceCancelBtn").addEventListener("click",cancelPitService);
+}
 function openPitStation(){
  playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();$("pitStationOverlay").classList.add("open");
 }
@@ -6240,7 +6324,7 @@ function startSession(sessionMode="practice"){
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
 function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart();raceStartState=currentSessionMode==="race"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;raceStartState="none";$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function returnToMenu(){running=false;paused=false;raceStartState="none";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.68:graphicsQuality==="high"?1.12:.88;
@@ -6254,7 +6338,7 @@ function animate(now){
  requestAnimationFrame(animate);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(running&&!paused){
-  updateRaceStart(frameDt);updateRaceControl(frameDt);
+  updateRaceStart(frameDt);updateRaceControl(frameDt);updatePitService(frameDt);
   const lookStep=frameDt*48*cameraSensitivity/.18,profile=cameraProfiles[cameraMode];
   if(keys.KeyJ)profile.yaw=clamp(profile.yaw-lookStep,-65,65);
   if(keys.KeyL)profile.yaw=clamp(profile.yaw+lookStep,-65,65);
@@ -6262,7 +6346,7 @@ function animate(now){
   if(keys.KeyK)profile.pitch=clamp(profile.pitch+lookStep,-35,35);
   physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
   const fixed=1/120;let steps=0;
-  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);if(!pitLaneDriving)updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
+  while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);updateOpponents(fixed);physicsAccumulator-=fixed;steps++;}
   updateRain(frameDt);hudAccumulator+=frameDt;
   if(hudAccumulator>=.08){updateHud(getGrip(),car.surfaceGrip);hudAccumulator=0;updateAudio(car.throttle,car.brake,car.slip);}
   setCamera(frameDt);
@@ -6455,6 +6539,7 @@ function bindControls(){
  window.addEventListener("keydown",e=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
+  if(e.code==="KeyP"){e.preventDefault();requestPitService();}
   if(e.code==="Escape"){
    if($("settingsOverlay").classList.contains("open"))closeSettings();
    else if(running&&!paused)pauseGame();else if(paused)resumeGame();
@@ -6490,8 +6575,8 @@ function bindControls(){
  safeBind("race settings",bindSettings);
  safeBind("camera look",bindCameraLook);
  const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
- safeBind("pit station controls",bindPitStation);
- safeClick("startBtn",openPitStation);
+ safeBind("pit station controls",bindPitStation);safeBind("pit service controls",bindPitService);
+ safeClick("startBtn",openPitStation);safeClick("pitStopBtn",requestPitService);
  safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
  safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
  safeClick("pauseBtn",pauseGame);safeClick("resumeBtn",resumeGame);
