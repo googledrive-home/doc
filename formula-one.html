@@ -4615,18 +4615,30 @@ async function loadRedBullCarModel(targetRoot,generation){
   // The imported FBX already contains the Red Bull halo. Do not add a duplicate.
   targetRoot.add(modelRoot);
   modelRoot.updateMatrixWorld(true);
-  const seatMesh=parts.find(m=>/^seat$/i.test(m.userData.sourceName||m.name));
-  const cabinMesh=parts.find(m=>/^cabin$/i.test(m.userData.sourceName||m.name));
-  const seatBounds=seatMesh?new THREE.Box3().setFromObject(seatMesh):null;
-  const cabinBounds=cabinMesh?new THREE.Box3().setFromObject(cabinMesh):null;
   targetRoot.updateMatrixWorld(true);
+  // FBX mesh bounds are obtained in world space, then converted into car-local space.
+  // This keeps camera anchors correct after the car has been placed and rotated on the circuit.
+  const boundsInCarSpace=mesh=>{
+   const worldBounds=new THREE.Box3().setFromObject(mesh),localBounds=new THREE.Box3();
+   for(let mask=0;mask<8;mask++){
+    const corner=new THREE.Vector3(
+     mask&1?worldBounds.max.x:worldBounds.min.x,
+     mask&2?worldBounds.max.y:worldBounds.min.y,
+     mask&4?worldBounds.max.z:worldBounds.min.z
+    );
+    localBounds.expandByPoint(targetRoot.worldToLocal(corner));
+   }
+   return localBounds;
+  };
+  const seatMesh=parts.find(m=>/^seat$/i.test(m.userData.sourceName||m.name));
+  const seatBounds=seatMesh?boundsInCarSpace(seatMesh):null;
   const seatCentre=seatBounds?seatBounds.getCenter(new THREE.Vector3()):new THREE.Vector3(0,.64,-.35);
   const seatTop=seatBounds?seatBounds.max.y:.62;
   const nativeWheel=parts.find(m=>/^(control|steering.?wheel|volante)$/i.test(m.userData.sourceName||m.name));
-  const wheelBounds=nativeWheel?new THREE.Box3().setFromObject(nativeWheel):null;
+  const wheelBounds=nativeWheel?boundsInCarSpace(nativeWheel):null;
   const wheelCentre=wheelBounds?wheelBounds.getCenter(new THREE.Vector3()):new THREE.Vector3(0,.72,.20);
   const headPart=parts.find(m=>/^(helmet|driver.?head|head)$/i.test(m.userData.sourceName||m.name));
-  const headBounds=headPart?new THREE.Box3().setFromObject(headPart):null;
+  const headBounds=headPart?boundsInCarSpace(headPart):null;
   const headCentre=headBounds?headBounds.getCenter(new THREE.Vector3()):seatCentre.clone().add(new THREE.Vector3(0,.42,.02));
   // Eye point sits above the seat, slightly ahead of the driver and just behind the wheel.
   const cockpitEye=headBounds
@@ -4635,16 +4647,13 @@ async function loadRedBullCarModel(targetRoot,generation){
   camera.userData.importedCockpitEye={x:clamp(cockpitEye.x,-.18,.18),y:clamp(cockpitEye.y,.82,1.42),z:cockpitEye.z};
   // Fit the TV pod a few centimetres above and behind the actual FBX halo.
   const haloBounds=new THREE.Box3();
-  nativeHaloMeshes.forEach(mesh=>haloBounds.expandByObject(mesh));
+  nativeHaloMeshes.forEach(mesh=>haloBounds.union(boundsInCarSpace(mesh)));
   if(!haloBounds.isEmpty()){
    const haloCentre=haloBounds.getCenter(new THREE.Vector3());
-   const haloCameraWorld=new THREE.Vector3(haloCentre.x,haloBounds.max.y+.045,haloCentre.z-.16);
-   const tvLookWorld=headCentre.clone().lerp(wheelCentre,.48);
-   tvLookWorld.y=Math.max(tvLookWorld.y,wheelCentre.y+.025);
-   camera.userData.importedHaloTvRig={
-    position:targetRoot.worldToLocal(haloCameraWorld.clone()),
-    target:targetRoot.worldToLocal(tvLookWorld.clone())
-   };
+   const haloCameraPosition=new THREE.Vector3(haloCentre.x,haloBounds.max.y+.045,haloCentre.z-.16);
+   const tvLookTarget=headCentre.clone().lerp(wheelCentre,.48);
+   tvLookTarget.y=Math.max(tvLookTarget.y,wheelCentre.y+.025);
+   camera.userData.importedHaloTvRig={position:haloCameraPosition,target:tvLookTarget};
   }else{
    camera.userData.importedHaloTvRig={
     position:new THREE.Vector3(0,1.18,-.95),
