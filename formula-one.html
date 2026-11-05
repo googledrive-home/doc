@@ -365,6 +365,10 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><div class="range-head"><label for="cloudRange">Cloud cover</label><output id="cloudValue">20%</output></div><input id="cloudRange" type="range" min="0" max="100" value="20"></div>
         <div class="field"><div class="range-head"><label for="fogRange">Mist density</label><output id="fogValue">0%</output></div><input id="fogRange" type="range" min="0" max="100" value="0"></div>
       </div>
+      <div class="two">
+        <div class="field"><div class="range-head"><label for="timeOfDayRange">Time of day</label><output id="timeOfDayValue">14:00</output></div><input id="timeOfDayRange" type="range" min="0" max="23" step="1" value="14"></div>
+        <div class="field"><label for="weatherEvolutionSelect">Weather forecast</label><select id="weatherEvolutionSelect"><option value="manual" selected>Fixed conditions</option><option value="dynamic">Evolving during race</option></select></div>
+      </div>
       <button class="action race-action" id="startBtn"><span>OPEN PIT STATION</span><b>→</b></button>
       <div class="model-state menu-model-state" id="menuModelStatusRow" data-state="loading"><span>VEHICLE MODEL</span><b id="menuModelStatus" data-state="loading">LOADING RED BULL 2022…</b><button class="secondary" id="retryModelBtn" type="button">RETRY MODEL</button></div>
       <div class="note">Controls: W throttle · S brake · A/D steer · E/Q shift · R reverse · C camera · H halo · Esc pause. Right-mouse drag or I/J/K/L to look around in every camera. Layered high-rev hybrid V6 sound is synthesised in-game. Browser racing simulation; not a certified vehicle dynamics model.</div>
@@ -485,6 +489,9 @@ input[type=range]{accent-color:#ff765e}
     <div class="field"><div class="range-head"><label for="liveTemp">Air temperature</label><output id="liveTempValue">22°C</output></div><input id="liveTemp" type="range" min="5" max="42" value="22"></div>
     <div class="field"><div class="range-head"><label for="liveCloud">Cloud cover</label><output id="liveCloudValue">20%</output></div><input id="liveCloud" type="range" min="0" max="100" value="20"></div>
     <div class="field"><div class="range-head"><label for="liveFog">Mist density</label><output id="liveFogValue">0%</output></div><input id="liveFog" type="range" min="0" max="100" value="0"></div>
+    <div class="field"><div class="range-head"><label for="liveTime">Time of day</label><output id="liveTimeValue">14:00</output></div><input id="liveTime" type="range" min="0" max="23" step="1" value="14"></div>
+    <div class="field"><label for="liveWeatherEvolution">Weather forecast</label><select id="liveWeatherEvolution"><option value="manual" selected>Fixed conditions</option><option value="dynamic">Evolving during race</option></select></div>
+    <div class="field"><div class="hudrow"><span>Racing line rubber</span><b id="trackRubberValue">GREEN</b></div></div>
   </div>
 </div>
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
@@ -3434,7 +3441,7 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
  ])
 });
 
-let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
+let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,starField=null,trackFloodlights=[],softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false;
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
@@ -3638,6 +3645,7 @@ function completeChampionshipRound(){
 }
 
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
+let timeOfDay=14,daylightLevel=1,nightLevel=0,weatherEvolutionEnabled=false,weatherForecastTimer=0,weatherForecastRefresh=0,trackRubber=0;
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
 let engineLoops=[],engineLoopsStarted=false,engineSamplesReady=false;
