@@ -4531,7 +4531,7 @@ function buildPitLane(){
  let bestEntry=Infinity,bestExit=Infinity;
  pitEntryCircuitProgress=.925;pitExitCircuitProgress=.105;
  for(let candidate=.885;candidate<=.975;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestEntry){bestEntry=score;pitEntryCircuitProgress=candidate;}}
- for(let candidate=.085;candidate<=.175;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestExit){bestExit=score;pitExitCircuitProgress=candidate;}}
+ for(let candidate=.12;candidate<=.20;candidate+=.0025){const score=straightnessAt(candidate);if(score<bestExit){bestExit=score;pitExitCircuitProgress=candidate;}}
  const laneControls=Array.from({length:10},(_,i)=>at(laneEnd*i/9,laneOffset));
  const lane=makePitPathSamples(laneControls,Math.max(150,Math.ceil(n*laneEnd)));pitLaneSamples=lane.samples;
  const entryControls=[];
