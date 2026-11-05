@@ -3546,9 +3546,13 @@ function renderChampionship(){
 }
 function openChampionship(){renderChampionship();$("championshipOverlay").classList.add("open");}
 function closeChampionship(){$("championshipOverlay").classList.remove("open");}
+function syncActiveTrackLabels(){
+ const def=trackDefs[activeTrack];if(!def)return;
+ $("trackName").textContent=def.name;$("trackMeta").textContent=def.country+" · "+fmtKm(def.length)+" · "+def.turns+" turns";
+}
 function startNewChampionship(){
  championshipState=makeEmptyChampionship();saveChampionship();
- if(gameMode==="championship"){activeTrack=CHAMPIONSHIP_TRACK_ORDER[0];$("trackSelect").value=activeTrack;createTrack();}
+ if(gameMode==="championship"){activeTrack=CHAMPIONSHIP_TRACK_ORDER[0];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();}
  renderChampionship();
 }
 function applyGameModeSelection(){
@@ -3565,7 +3569,7 @@ function applyGameModeSelection(){
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[Math.min(championshipState.round,CHAMPIONSHIP_TRACK_ORDER.length-1)];
   $("trackSelect").value=activeTrack;
  }
- createTrack();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
+ createTrack();syncActiveTrackLabels();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
  renderChampionship();
 }
 function completeChampionshipRound(){
@@ -6461,7 +6465,7 @@ function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previo
 function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
 function returnToMenu(){running=false;paused=false;raceStartState="none";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
-  activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();
+  activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();
  }
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode==="championship";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
