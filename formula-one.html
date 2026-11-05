@@ -277,7 +277,10 @@ input[type=range]{accent-color:#ff765e}
 .pitstation-footer>div>small{color:#8395a4;font-size:8px}
 .pit-drive-button{display:flex;align-items:center;justify-content:center;gap:20px;min-width:260px;padding:16px 20px}
 .pit-drive-button span{font-size:11px}
-@media(max-width:800px){.pitstation-overlay{padding:7px}.pitstation-shell{max-height:98dvh}.pitstation-content{grid-template-columns:1fr;gap:10px;padding:10px}.pitstation-header{padding:12px;gap:8px}.pitstation-brand{min-width:0}.pitstation-head-meta{display:none}.pitstation-bay{height:185px}.pitstation-car{transform:translate(-50%,-42%) scale(.78) rotate(-5deg)}.pitstation-setup{padding:11px}.pitstation-footer{align-items:stretch;flex-direction:column;padding:12px}.pit-drive-button{width:100%;min-width:0}.pitstation-telemetry b{font-size:7px}}
+.pit-mode-actions{display:flex;align-items:center;gap:9px}
+.pit-race-button{min-height:54px;padding:0 18px;border-color:#ffffff34;background:linear-gradient(135deg,#172b3c,#101923);font-size:10px;font-weight:950;letter-spacing:.07em}
+.pit-race-button b{margin-left:12px;color:#f0c75c}
+@media(max-width:800px){.pitstation-overlay{padding:7px}.pitstation-shell{max-height:98dvh}.pitstation-content{grid-template-columns:1fr;gap:10px;padding:10px}.pitstation-header{padding:12px;gap:8px}.pitstation-brand{min-width:0}.pitstation-head-meta{display:none}.pitstation-bay{height:185px}.pitstation-car{transform:translate(-50%,-42%) scale(.78) rotate(-5deg)}.pitstation-setup{padding:11px}.pitstation-footer{align-items:stretch;flex-direction:column;padding:12px}.pit-drive-button{width:100%;min-width:0}.pit-mode-actions{width:100%;flex-direction:column}.pit-race-button{width:100%;min-height:48px}.pitstation-telemetry b{font-size:7px}}
 @media(max-width:430px){.pit-tyre-grid,.pit-weather-grid{gap:4px}.pit-tyre-card{padding:7px 2px}.pit-tyre-card small,.pit-weather-card small{font-size:6px}.pitstation-bay{height:160px}.pitstation-footer>div>small{line-height:1.5}}
 </style>
 
@@ -388,8 +391,11 @@ input[type=range]{accent-color:#ff765e}
    </section>
   </div>
   <footer class="pitstation-footer">
-   <div><span class="eyebrow">PIT WALL AUTHORISATION</span><b>CAR SYSTEMS CHECK COMPLETE</b><small>W / ↑ throttle · S / ↓ brake · A/D steer · C camera · Esc pause</small></div>
-   <button class="action pit-drive-button" id="pitDriveOutBtn"><span>START ENGINE · DRIVE OUT</span><b>→</b></button>
+   <div><span class="eyebrow">SELECT SESSION</span><b>SETUP CONFIRMED · READY TO RELEASE</b><small>Practice starts in the garage. Race starts on the circuit grid.</small></div>
+   <div class="pit-mode-actions">
+    <button class="action pit-drive-button" id="pitDriveOutBtn"><span>PRACTICE · START IN PIT LANE</span><b>→</b></button>
+    <button class="secondary pit-race-button" id="pitRaceBtn"><span>RACE · START ON TRACK</span><b>→</b></button>
+   </div>
   </footer>
  </section>
 </div>
@@ -3395,7 +3401,7 @@ let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,road
 const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=8.4,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
-let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map();
+let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
 let pitDriveRoute=[],pitDriveRouteLength=0,pitLaneDriving=false;
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
@@ -3896,7 +3902,7 @@ function createTrack(){
  computeTrackClearance(route);
 terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildTerrain(def);
- const asphalt=new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;
+ const asphalt=new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});asphalt.userData.isAsphalt=true;circuitAsphaltMaterial=asphalt;
  trackGroup.add(makeRibbon(route,roadWidth,asphalt,.045));
  const runoff=makeMat(activeTrack==="laguna"?0xa89d7c:0x777f7b,.92);
  trackGroup.add(makeRibbon(route,roadWidth+5.3,runoff,.018));
@@ -3955,23 +3961,30 @@ function addCircuitFacilities(){
   for(const x of [-2.55,2.55]){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2.5,.12),postMat);post.position.set(x,1.25,0);g.add(post);}
   environmentGroup.add(g);
  }
- const sample=route[8]||route[0],p=safeTracksidePoint(sample,1,roadWidth/2+38,18),ground=terrainHeightAt(p.x,p.z),pit=new THREE.Group();
+ const sample=route[0],p=safeTracksidePoint(sample,1,roadWidth/2+38,18),ground=terrainHeightAt(p.x,p.z),pit=new THREE.Group();
  pit.position.set(p.x,ground,p.z);pit.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
  const wall=makeMat(0x25384b,.75,.08),roofMat=makeMat(0x102b49,.52,.16),glassMat=new THREE.MeshStandardMaterial({color:0x7eabbc,metalness:.2,roughness:.22,emissive:0x182c35,emissiveIntensity:.16});
- const base=new THREE.Mesh(new THREE.BoxGeometry(16,5.2,64),wall);base.position.y=2.6;base.castShadow=true;pit.add(base);
- const upperGlass=new THREE.Mesh(new THREE.BoxGeometry(16.08,1.35,63.8),glassMat);upperGlass.position.set(0,4.0,0);pit.add(upperGlass);
- const roof=new THREE.Mesh(new THREE.BoxGeometry(17,.42,66),roofMat);roof.position.y=5.25;roof.castShadow=true;pit.add(roof);
+ const rearWall=new THREE.Mesh(new THREE.BoxGeometry(.42,5.2,64),wall);rearWall.position.set(7.8,2.6,0);rearWall.castShadow=true;pit.add(rearWall);
+ for(const z of [-31.8,31.8]){const endWall=new THREE.Mesh(new THREE.BoxGeometry(16,5.2,.42),wall);endWall.position.set(0,2.6,z);endWall.castShadow=true;pit.add(endWall);}
  const frontX=-8.08;
  for(let i=0;i<10;i++){
-  const z=-28+i*6.1,door=new THREE.Mesh(new THREE.BoxGeometry(.08,2.6,5.5),makeMat(i%2?0x53636c:0x43545f,.8,.12));
-  door.position.set(frontX,1.45,z);pit.add(door);
-  const header=new THREE.Mesh(new THREE.BoxGeometry(.12,.42,5.55),makeMat(0xeeeeea,.74));header.position.set(frontX-.025,2.98,z);pit.add(header);
+  const z=-28+i*6.1,openBay=i===4||i===5;
+  if(!openBay){const wallBay=new THREE.Mesh(new THREE.BoxGeometry(.42,5.2,5.9),wall);wallBay.position.set(frontX,2.6,z);wallBay.castShadow=true;pit.add(wallBay);}
+  else{
+   const jambMat=makeMat(0xe3e8e9,.6,.12);
+   for(const sideZ of [-2.95,2.95]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(.5,3.9,.28),jambMat);jamb.position.set(frontX-.05,1.95,z+sideZ);pit.add(jamb);}
+   const lintel=new THREE.Mesh(new THREE.BoxGeometry(.52,.42,6.0),jambMat);lintel.position.set(frontX-.05,4.05,z);pit.add(lintel);
+  }
+  if(!openBay){const door=new THREE.Mesh(new THREE.BoxGeometry(.08,2.6,5.5),makeMat(i%2?0x53636c:0x43545f,.8,.12));door.position.set(frontX-.24,1.45,z);pit.add(door);}
+  const header=new THREE.Mesh(new THREE.BoxGeometry(.12,.42,5.55),makeMat(0xeeeeea,.74));header.position.set(frontX-.28,2.98,z);pit.add(header);
  }
- const fascia=new THREE.Mesh(new THREE.BoxGeometry(.15,.85,64),makeMat(0x15222c,.5,.15));fascia.position.set(frontX-.08,4.78,0);pit.add(fascia);
+ const upperGlass=new THREE.Mesh(new THREE.BoxGeometry(16.08,1.35,63.8),glassMat);upperGlass.position.set(0,4.0,0);pit.add(upperGlass);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(17,.42,66),roofMat);roof.position.y=5.25;roof.castShadow=true;pit.add(roof);
+ const fascia=new THREE.Mesh(new THREE.BoxGeometry(.15,.85,64),makeMat(0x15222c,.5,.15));fascia.position.set(frontX-.42,4.78,0);pit.add(fascia);
  const logoCanvas=document.createElement("canvas");logoCanvas.width=1024;logoCanvas.height=128;
  const lc=logoCanvas.getContext("2d");lc.fillStyle="#14212a";lc.fillRect(0,0,1024,128);lc.fillStyle="#f5f5ef";lc.font="900 72px system-ui";lc.textAlign="center";lc.textBaseline="middle";lc.font="900 57px system-ui";lc.fillText("RED BULL RACING  •  PIT STATION",512,65);
  const logoTex=new THREE.CanvasTexture(logoCanvas);logoTex.colorSpace=THREE.SRGBColorSpace;
- const logo=new THREE.Mesh(new THREE.PlaneGeometry(14,.95),new THREE.MeshBasicMaterial({map:logoTex,side:THREE.DoubleSide}));logo.position.set(frontX-.18,4.78,0);logo.rotation.y=-Math.PI/2;pit.add(logo);
+ const logo=new THREE.Mesh(new THREE.PlaneGeometry(14,.95),new THREE.MeshBasicMaterial({map:logoTex,side:THREE.DoubleSide}));logo.position.set(frontX-.52,4.78,0);logo.rotation.y=-Math.PI/2;pit.add(logo);
  environmentGroup.add(pit);
  for(let i=0;i<8;i++){
   const r=route[Math.floor((.13+i*.103)*route.length)%route.length],side=i%2?1:-1,pt=safeTracksidePoint(r,side,roadWidth/2+55+(i%3)*11,12),y=terrainHeightAt(pt.x,pt.z),g=new THREE.Group();
@@ -4018,6 +4031,58 @@ function addPitEdgeLine(samples,side,distance,color=0xf0eee5,radius=.055){
  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,samples.length),radius,5,false),makeMat(color,.72));
  mesh.receiveShadow=true;trackGroup.add(mesh);
 }
+
+function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples.length-1){
+ const start=Math.max(0,startIndex),end=Math.min(samples.length-1,endIndex);
+ if(end-start<4)return;
+ const topPoints=[],midPoints=[],basePoints=[];
+ for(let i=start;i<=end;i++){
+  const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
+  const x=sample.p.x+rx*side*distance,z=sample.p.z+rz*side*distance;
+  basePoints.push(new THREE.Vector3(x,sample.p.y+.18,z));
+  midPoints.push(new THREE.Vector3(x,sample.p.y+.72,z));
+  topPoints.push(new THREE.Vector3(x,sample.p.y+1.34,z));
+ }
+ const railMat=makeMat(0x9ba8ae,.42,.48),baseMat=makeMat(0x46545d,.82,.12);
+ for(const [points,radius,material] of [[basePoints,.13,baseMat],[midPoints,.095,railMat],[topPoints,.095,railMat]]){
+  const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.28);
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,points.length),radius,6,false),material);
+  mesh.castShadow=true;mesh.receiveShadow=true;trackGroup.add(mesh);
+ }
+ const count=Math.floor((end-start)/8)+1;
+ const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,1.35,.16),railMat,count),dummy=new THREE.Object3D();let index=0;
+ for(let i=start;i<=end;i+=8){
+  const sample=samples[i],len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
+  dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+.68,sample.p.z+rz*side*distance);
+  dummy.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);dummy.updateMatrix();posts.setMatrixAt(index++,dummy.matrix);
+ }
+ posts.count=index;posts.castShadow=true;trackGroup.add(posts);
+}
+function addPitPaddockBuildings(){
+ const buildingGlass=new THREE.MeshStandardMaterial({color:0x7392a2,metalness:.18,roughness:.24,emissive:0x1b2c38,emissiveIntensity:.12});
+ const bodyColors=[0x1d3041,0x263746,0x37434a,0x263f4e,0x303b49,0x1c3444];
+ const labels=["TEAM HOSPITALITY","ENGINEERING","RACE CONTROL","PIT EQUIPMENT","TYRE CENTRE","PADDOCK CLUB"];
+ for(let i=0;i<6;i++){
+  const progress=.012+i*.0105,routeSample=route[Math.floor(progress*route.length)%route.length],side=i%3===1?-1:1;
+  const extra=side>0?48+(i%2)*5:46+(i%2)*6;
+  const p=safeTracksidePoint(routeSample,side,roadWidth/2+extra,17),ground=terrainHeightAt(p.x,p.z),building=new THREE.Group();
+  building.position.set(p.x,ground,p.z);
+  building.rotation.y=Math.atan2(routeSample.tan.x,routeSample.tan.z)+(side>0?0:Math.PI);
+  const width=17+(i%3)*2,length=26+(i%2)*7,height=5.6+(i%3)*.6;
+  const shell=new THREE.Mesh(new THREE.BoxGeometry(width,height,length),makeMat(bodyColors[i],.72,.14));shell.position.y=height/2;shell.castShadow=true;building.add(shell);
+  const glassBand=new THREE.Mesh(new THREE.BoxGeometry(.12,1.55,length*.84),buildingGlass);glassBand.position.set(-width/2-.08,3.0,0);building.add(glassBand);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(width+1,.34,length+1),makeMat(i%2?0xd0d5d5:0x162633,.58,.2));roof.position.y=height+.18;roof.castShadow=true;building.add(roof);
+  const signCanvas=document.createElement("canvas");signCanvas.width=768;signCanvas.height=128;
+  const signCtx=signCanvas.getContext("2d");signCtx.fillStyle="#112335";signCtx.fillRect(0,0,768,128);signCtx.fillStyle="#f4f4ee";signCtx.font="900 48px system-ui";signCtx.textAlign="center";signCtx.textBaseline="middle";signCtx.fillText(labels[i],384,63);signCtx.fillStyle="#e34b42";signCtx.fillRect(0,117,768,11);
+  const signTexture=new THREE.CanvasTexture(signCanvas);signTexture.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(width*.78,1.55),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));
+  sign.position.set(-width/2-.17,4.65,0);sign.rotation.y=-Math.PI/2;building.add(sign);
+  const ventsMat=makeMat(0x87939a,.7,.35);
+  for(let v=0;v<2;v++){const vent=new THREE.Mesh(new THREE.BoxGeometry(3.2,.65,2.5),ventsMat);vent.position.set((v?1:-1)*width*.25,height+.65,0);building.add(vent);}
+  environmentGroup.add(building);
+ }
+}
+
 function addPitStationMarker(sample,label){
  const marker=new THREE.Group();marker.position.copy(sample.p);marker.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
  const postMat=makeMat(0x263747,.55,.25),boardMat=makeMat(0x102942,.6,.15);
@@ -4034,14 +4099,17 @@ function buildPitLane(){
  pitDriveRoute=[];pitDriveRouteLength=0;if(!route.length)return;
  const n=route.length,point=(index,offset)=>stableTrackOffset(route,((index%n)+n)%n,1,offset,.11);
  const laneStartOffset=roadWidth*.5+15.5;
+ const garageOffset=roadWidth/2+38;
  const driveControls=[
+  point(0,garageOffset),
+  point(0,garageOffset-10),
   point(0,laneStartOffset),
-  point(Math.round(n*.012),laneStartOffset-3.0),
-  point(Math.round(n*.030),laneStartOffset-8.5),
-  point(Math.round(n*.050),laneStartOffset-13.0),
+  point(Math.round(n*.012),laneStartOffset),
+  point(Math.round(n*.035),laneStartOffset),
+  point(Math.round(n*.055),laneStartOffset*.56),
   point(Math.round(n*.070),0)
  ];
- const drive=makePitPathSamples(driveControls,220);pitDriveRoute=drive.samples;pitDriveRouteLength=drive.length;
+ const drive=makePitPathSamples(driveControls,300);pitDriveRoute=drive.samples;pitDriveRouteLength=drive.length;
  const entryControls=[
   point(Math.round(n*.925),roadWidth*.5+1.6),
   point(Math.round(n*.945),roadWidth*.5+7.5),
@@ -4050,11 +4118,18 @@ function buildPitLane(){
   point(0,laneStartOffset)
  ];
  const entry=makePitPathSamples(entryControls,90),visualPath=entry.samples.concat(pitDriveRoute.slice(1));
- const pitAsphalt=new THREE.MeshStandardMaterial({color:0x353c42,roughness:.9,metalness:.015,side:THREE.DoubleSide});pitAsphalt.userData.isAsphalt=true;
+ const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});pitAsphalt.userData.isAsphalt=true;
  addPitRibbon(visualPath,PIT_LANE_WIDTH,pitAsphalt,.075);
  addPitEdgeLine(visualPath,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
  addPitEdgeLine(visualPath,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
  addPitEdgeLine(pitDriveRoute,1,PIT_LANE_WIDTH*.5+.28,0xe8c84d,.045);
+ const barrierOffset=PIT_LANE_WIDTH*.5+2.7;
+ addPitSafetyBarrier(entry.samples,-1,barrierOffset,4,entry.samples.length-1);
+ addPitSafetyBarrier(entry.samples,1,barrierOffset,4,entry.samples.length-1);
+ const driveBarrierEnd=Math.floor(pitDriveRoute.length*.80);
+ addPitSafetyBarrier(pitDriveRoute,-1,barrierOffset,0,driveBarrierEnd);
+ addPitSafetyBarrier(pitDriveRoute,1,barrierOffset,0,driveBarrierEnd);
+ addPitPaddockBuildings();
  const stall=pitDriveRoute[0],stallYaw=Math.atan2(stall.tan.x,stall.tan.z),stallGroup=new THREE.Group();stallGroup.position.copy(stall.p);stallGroup.rotation.y=stallYaw;
  const stallLine=makeMat(0xf0eee4,.72),bayParts=[[0,.13,-3.1,3.4,.045,.12],[0,.13,3.1,3.4,.045,.12],[-1.7,.13,0,.12,.045,6.2],[1.7,.13,0,.12,.045,6.2]];
  for(const [x,y,z,w,h,d] of bayParts){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),stallLine);line.position.set(x,y,z);stallGroup.add(line);}
@@ -5430,7 +5505,7 @@ function updatePhysics(dt){
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
  // Guardrails are collision surfaces, not teleport triggers. Resolve only outward normal velocity.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
- const side=Math.sign(nearestInfo.offset)||1,railDistance=roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8,bodyHalfWidth=.92;
+ const side=Math.sign(nearestInfo.offset)||1,railDistance=pitLaneDriving?PIT_LANE_WIDTH*.5+2.7:roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8,bodyHalfWidth=.92;
  const vx=car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw);
  const vz=car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw);
  const normalVelocity=vx*right.x+vz*right.z,outwardVelocity=normalVelocity*side;
@@ -5973,10 +6048,12 @@ function bindPitStation(){
  });
  $("pitTempRange").addEventListener("input",event=>{weather.temp=Number(event.target.value);syncWeatherInputs();updateWeather();updatePitStationUI();});
  $("pitBackBtn").addEventListener("click",closePitStation);
- $("pitDriveOutBtn").addEventListener("click",()=>startSession(true));
+ $("pitDriveOutBtn").addEventListener("click",()=>startSession("practice"));
+ $("pitRaceBtn").addEventListener("click",()=>startSession("race"));
 }
 
-function startSession(startInPit=false){
+function startSession(sessionMode="practice"){
+ const startInPit=sessionMode==="practice";
  playMenuUiSound("race");const menuElement=$("menu");menuElement.classList.add("leaving");setTimeout(()=>{menuElement.style.display="none";menuElement.classList.remove("leaving");},360);
  $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
