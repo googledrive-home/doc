@@ -3397,7 +3397,7 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false;
-let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[];
+let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=8.4,PIT_LANE_LIMIT=22.2;
@@ -4331,23 +4331,30 @@ function addCircuitLandmarks(){
    return new THREE.MeshStandardMaterial({map:texture,roughness:.88,metalness:.02});
   });
   const roofMats=[0x9c564a,0x59636b,0x75877f,0x3c454d].map(color=>makeMat(color,.88,.02));
-  const buildingCount=160;
+  const buildingCount=168,unitBox=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
+  const facadeMeshes=facadeMaterials.map(material=>new THREE.InstancedMesh(unitBox,material,buildingCount/facadeMaterials.length));
+  const roofMeshes=roofMats.map(material=>new THREE.InstancedMesh(unitBox,material,buildingCount/roofMats.length));
+  const facadeCounts=facadeMaterials.map(()=>0),roofCounts=roofMats.map(()=>0);
+  const rooftopMesh=new THREE.InstancedMesh(unitBox,makeMat(0xb9b7ae,.86,.02),34);let rooftopCount=0;
   for(let i=0;i<buildingCount;i++){
    const progress=(i+.5)/buildingCount,sample=route[Math.floor(progress*route.length)%route.length],side=i%2?1:-1;
    const distance=roadWidth*.5+34+(i%5)*3.5,p=safeTracksidePoint(sample,side,distance,20),ground=terrainHeightAt(p.x,p.z);
-   const building=new THREE.Group();building.position.set(p.x,ground,p.z);
-   building.rotation.y=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
    const width=15+(i%5)*2.1,depth=13+(i%4)*1.9,height=23+(i%10)*3.8;
-   const body=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),facadeMaterials[i%facadeMaterials.length]);
-   body.position.y=height/2;body.castShadow=i%4===0;body.receiveShadow=true;building.add(body);
-   const roof=new THREE.Mesh(new THREE.BoxGeometry(width+1.1,.5,depth+1.1),roofMats[i%roofMats.length]);
-   roof.position.y=height+.25;roof.castShadow=i%6===0;building.add(roof);
+   const heading=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
+   const paletteIndex=i%facadeMaterials.length;
+   dummy.position.set(p.x,ground+height/2,p.z);dummy.scale.set(width,height,depth);dummy.rotation.set(0,heading,0);dummy.updateMatrix();
+   facadeMeshes[paletteIndex].setMatrixAt(facadeCounts[paletteIndex]++,dummy.matrix);
+   const roofIndex=i%roofMats.length;
+   dummy.position.set(p.x,ground+height+.25,p.z);dummy.scale.set(width+1.1,.5,depth+1.1);dummy.rotation.set(0,heading,0);dummy.updateMatrix();
+   roofMeshes[roofIndex].setMatrixAt(roofCounts[roofIndex]++,dummy.matrix);
    if(i%5===0){
-    const rooftop=new THREE.Mesh(new THREE.BoxGeometry(width*.32,1.8,depth*.28),facadeMaterials[(i+2)%facadeMaterials.length]);
-    rooftop.position.set(width*.18,height+1.1,-depth*.15);building.add(rooftop);
+    dummy.position.set(p.x+Math.sin(heading)*width*.15,ground+height+1.1,p.z+Math.cos(heading)*width*.15);
+    dummy.scale.set(width*.32,1.8,depth*.28);dummy.rotation.set(0,heading,0);dummy.updateMatrix();rooftopMesh.setMatrixAt(rooftopCount++,dummy.matrix);
    }
-   environmentGroup.add(building);
   }
+  facadeMeshes.forEach((mesh,i)=>{mesh.count=facadeCounts[i];mesh.castShadow=false;mesh.receiveShadow=true;environmentGroup.add(mesh);});
+  roofMeshes.forEach((mesh,i)=>{mesh.count=roofCounts[i];mesh.castShadow=false;environmentGroup.add(mesh);});
+  rooftopMesh.count=rooftopCount;rooftopMesh.castShadow=false;environmentGroup.add(rooftopMesh);
   addMonacoHarbour();
  }else if(activeTrack==="suzuka"){
   // A distant Ferris wheel landmark inspired by the park setting, safely beyond the runoff.
@@ -5736,7 +5743,8 @@ function updatePhysics(dt){
  car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear),.18,1);
  car.tempF=lerp(car.tempF,weather.temp+58+stress*19,Math.min(1,dt*.12));
  car.tempR=lerp(car.tempR,weather.temp+59+stress*20,Math.min(1,dt*.12));
- updateImportedCarThermals(dt);
+ importedThermalAccumulator+=dt;
+ if(importedThermalAccumulator>=.1){updateImportedCarThermals(importedThermalAccumulator);importedThermalAccumulator=0;}
  car.wheelSpin+=car.u*dt/wheelRadius;
  const localSupportHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
  if(Math.abs(nearestInfo.offset)<=localSupportHalf+.35&&car.y<surfaceY+.035){
@@ -5850,18 +5858,23 @@ function setCamera(frameDt=.016){
  const profile=cameraProfiles[cameraMode]||cameraProfiles[2];
  const yaw=THREE.MathUtils.degToRad(profile.yaw+(lookToApex?(car?.steer||0)*lookToApex*38:0));
  const pitch=THREE.MathUtils.degToRad(profile.pitch);
+ if(carRoot.userData.cameraVisibilityMode!==cameraMode){
+  if(cameraMode===2){
+   carRoot.traverse(mesh=>{if(mesh.isMesh){mesh.visible=true;mesh.frustumCulled=false;}});
+   if(cockpitHaloColumn)cockpitHaloColumn.visible=true;
+   nativeHaloMeshes.forEach(mesh=>{mesh.visible=true;mesh.frustumCulled=false;});
+  }else{
+   carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=true;});
+  }
+  carRoot.userData.cameraVisibilityMode=cameraMode;
+ }
  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
   const eye=camera.userData.importedCockpitEye||{x:0,y:.86,z:.04};
   camera.position.set(eye.x+profile.x,eye.y+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),eye.z+profile.z);
-  camera.rotation.order="YXZ";
-  camera.rotation.set(-.012+pitch,Math.PI+yaw,0);
+  camera.rotation.order="YXZ";camera.rotation.set(-.012+pitch,Math.PI+yaw,0);
   camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();camera.aspect=window.innerWidth/window.innerHeight;
   camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
-  // Preserve the complete car in onboard view: no FBX or body meshes are hidden.
-  carRoot.traverse(mesh=>{if(mesh.isMesh){mesh.visible=true;mesh.frustumCulled=false;}});
-  if(cockpitHaloColumn)cockpitHaloColumn.visible=true;
-  nativeHaloMeshes.forEach(mesh=>{mesh.visible=true;mesh.frustumCulled=false;});
   if(steeringPivot)steeringPivot.visible=showSteeringWheel;
   if(handGroup)handGroup.visible=showDriverHands&&showSteeringWheel;
  }else{
@@ -5873,16 +5886,13 @@ function setCamera(frameDt=.016){
    const rig=camera.userData.importedHaloTvRig;
    if(rig){localPos=rig.position.clone();localLook=rig.target.clone();}
    else{localPos=new THREE.Vector3(0,1.18,-.95);localLook=new THREE.Vector3(0,.92,1.65);}
-  }
-  else if(cameraMode===3){localPos=new THREE.Vector3(0,1.02,2.15);localLook=new THREE.Vector3(0,.86,9.2);}
+  }else if(cameraMode===3){localPos=new THREE.Vector3(0,1.02,2.15);localLook=new THREE.Vector3(0,.86,9.2);}
   else{localPos=new THREE.Vector3(0,3.05,6.0);localLook=new THREE.Vector3(0,.85,-1.6);}
   localPos.add(new THREE.Vector3(profile.x,profile.y+(cameraShake?Math.sin(elapsed*20)*.012*Math.min(1,Math.abs(car?.u||0)/40):0),profile.z));
-  const desired=carRoot.localToWorld(localPos.clone());
-  const target=carRoot.localToWorld(localLook.clone());
+  const desired=carRoot.localToWorld(localPos.clone()),target=carRoot.localToWorld(localLook.clone());
   camera.position.copy(desired);camera.fov=profile.fov;camera.zoom=1;camera.clearViewOffset();
-  camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();camera.lookAt(target);
-  camera.rotateY(yaw);camera.rotateX(pitch);
-  carRoot.traverse(mesh=>{if(mesh.isMesh)mesh.visible=true;});
+  camera.aspect=window.innerWidth/window.innerHeight;camera.near=.025;camera.far=18000;camera.updateProjectionMatrix();
+  camera.lookAt(target);camera.rotateY(yaw);camera.rotateX(pitch);
  }
  const names=["CHASE","TV POD","COCKPIT","HOOD","REAR TV"];
  $("cameraBtn").textContent="CAM: "+names[cameraMode];
