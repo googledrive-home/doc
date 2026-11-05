@@ -202,6 +202,85 @@ input[type=range]{accent-color:#ff765e}
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
 </script>
+
+<style id="pitStationStyles">
+.pitstation-overlay{display:none;z-index:32;padding:14px;background:radial-gradient(ellipse at 50% 12%,#162c3bde,#03070beb 72%);backdrop-filter:blur(12px)}
+.pitstation-overlay.open{display:grid}
+.pitstation-shell{width:min(1120px,98vw);max-height:96dvh;overflow:auto;border:1px solid #ffffff30;border-radius:20px;background:linear-gradient(145deg,#101d2a,#080e17);box-shadow:0 38px 130px #000d;color:#edf2f6}
+.pitstation-header{display:flex;align-items:center;gap:18px;padding:17px 22px;border-bottom:1px solid #ffffff19;background:linear-gradient(95deg,#142638,#0a121c)}
+.pitstation-brand{display:flex;align-items:center;gap:10px;min-width:230px}
+.pitstation-brand b{display:block;font-size:12px;letter-spacing:.13em}
+.pitstation-brand small,.pitstation-head-meta small{display:block;margin-top:4px;color:#8297a7;font-size:8px;font-weight:900;letter-spacing:.16em}
+.pitstation-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:11px;background:linear-gradient(135deg,#e9413b 0 49%,#f7c84a 50% 57%,#163c66 58%);color:#fff;font-size:15px;font-weight:1000;text-shadow:0 2px 4px #0008}
+.pitstation-head-meta{margin-left:auto;text-align:right}
+.pitstation-head-meta span{font-size:10px;font-weight:950;letter-spacing:.14em;color:#f2c85c}
+.pitstation-header .secondary{flex:0 0 auto}
+.pitstation-content{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;padding:18px}
+.pitstation-scene{min-width:0}
+.pitstation-scene-top{display:flex;justify-content:space-between;gap:10px;margin:2px 0 10px;color:#8297a7;font-size:8px;font-weight:950;letter-spacing:.15em}
+.pitstation-scene-top b{color:#f2c85c}
+.pitstation-bay{position:relative;height:290px;overflow:hidden;border:1px solid #ffffff24;border-radius:13px;background:linear-gradient(180deg,#152b3b 0%,#1c3541 48%,#111b24 49%,#0b1119 100%)}
+.pitstation-bay:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 74px,#ffffff08 75px 77px),linear-gradient(180deg,transparent 0 64%,#ffffff0b 64% 65%,transparent 65%);opacity:.8}
+.pitstation-roofline{position:absolute;left:0;right:0;top:34px;height:6px;background:linear-gradient(90deg,#d93d3b,#f4cf52 42%,#1d5a9b);box-shadow:0 5px 18px #0009}
+.pitstation-bay-number{position:absolute;right:15px;top:47px;color:#ffffff19;font-size:110px;font-weight:1000;letter-spacing:-.1em}
+.pitstation-lightbar{position:absolute;top:61px;left:50%;transform:translateX(-50%);display:flex;gap:13px}
+.pitstation-lightbar i{width:8px;height:8px;border-radius:50%;background:#ffcf54;box-shadow:0 0 13px #ffbb45}
+.pitstation-car{position:absolute;left:50%;top:51%;width:330px;height:145px;transform:translate(-50%,-43%) rotate(-5deg);filter:drop-shadow(0 18px 10px #0009)}
+.pitcar-body{position:absolute;left:67px;top:48px;width:195px;height:53px;border-radius:45% 48% 36% 36%;background:linear-gradient(180deg,#e84b41,#a51d2a 68%,#5c1724);clip-path:polygon(0 43%,13% 18%,34% 8%,49% 0,66% 8%,87% 23%,100% 43%,91% 88%,12% 100%)}
+.pitcar-nose{position:absolute;left:136px;top:30px;width:60px;height:84px;background:linear-gradient(90deg,#c92d38,#f0c64f 48%,#174f8a 80%);clip-path:polygon(20% 0,80% 0,100% 100%,0 100%)}
+.pitcar-front{position:absolute;left:102px;top:17px;width:130px;height:16px;border-radius:3px;background:#202c37;border-bottom:4px solid #e8c347}
+.pitcar-cockpit{position:absolute;left:143px;top:45px;width:45px;height:24px;border-radius:50% 50% 30% 30%;background:linear-gradient(160deg,#182a39,#05090d);border:2px solid #f1c34b}
+.pitcar-wing{position:absolute;z-index:3;height:8px;border-radius:2px;background:#172b3b;border-top:2px solid #e9c44b}
+.pitcar-front-wing{left:93px;top:110px;width:150px}
+.pitcar-rear-wing{left:88px;top:9px;width:160px;height:13px}
+.pitcar-wheel{position:absolute;z-index:2;width:31px;height:50px;border:5px solid #10151b;border-radius:8px;background:linear-gradient(90deg,#171d22,#303b43,#11171c)}
+.pitcar-wheel-a{left:75px;top:34px}.pitcar-wheel-b{left:236px;top:34px}.pitcar-wheel-c{left:75px;top:87px}.pitcar-wheel-d{left:236px;top:87px}
+.pitstation-floorline{position:absolute;left:-10%;right:-10%;bottom:44px;height:2px;background:linear-gradient(90deg,transparent,#e6c45b,#f0f3f5,#e6c45b,transparent);opacity:.8}
+.pitstation-floorlabel{position:absolute;bottom:15px;left:18px;color:#758a99;font-size:9px;font-weight:950;letter-spacing:.24em}
+.pitstation-telemetry{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:6px;margin-top:9px}
+.pitstation-telemetry div{padding:9px;border:1px solid #ffffff16;border-radius:8px;background:#ffffff06;min-width:0}
+.pitstation-telemetry small{display:block;color:#8194a4;font-size:7px;font-weight:950;letter-spacing:.15em}
+.pitstation-telemetry b{display:block;margin-top:4px;color:#e5edf2;font-size:8px;letter-spacing:.04em}
+.pitstation-instruction{margin:11px 2px 0;color:#90a2b0;font-size:9px;line-height:1.7}
+.pitstation-setup{min-width:0;padding:14px;border:1px solid #ffffff17;border-radius:13px;background:linear-gradient(155deg,#142332a8,#ffffff04)}
+.pitstation-section-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:0 0 11px}
+.pitstation-section-head h2{margin:4px 0 0;font-size:16px;letter-spacing:.01em}
+.pitstation-live{padding:6px 8px;border:1px solid #4bd69b55;border-radius:6px;color:#6de2ad;font-size:7px;font-weight:950;letter-spacing:.12em}
+.pit-tyre-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.pit-tyre-card{display:grid;justify-items:center;gap:5px;min-width:0;padding:9px 4px 8px;border:1px solid #ffffff18;border-radius:8px;background:#ffffff05;color:#e8edf1;text-align:center}
+.pit-tyre-card.active{border-color:#f1c75c;background:linear-gradient(180deg,#e9bc4b20,#ffffff08);box-shadow:inset 0 0 0 1px #f1c75c30}
+.pit-tyre-card b{font-size:8px;letter-spacing:.08em}
+.pit-tyre-card small{color:#8b9dac;font-size:7px;line-height:1.35}
+.pit-tyre-icon{display:block;width:22px;height:34px;border:5px solid #151a20;border-radius:8px;background:repeating-linear-gradient(0deg,#313b45 0 3px,#0d1218 3px 5px)}
+.pit-tyre-icon.soft{border-color:#e94d46}.pit-tyre-icon.medium{border-color:#e6c14b}.pit-tyre-icon.hard{border-color:#eeeeea}.pit-tyre-icon.inter{border-color:#39c58b}.pit-tyre-icon.wet{border-color:#478ed5;background:repeating-linear-gradient(0deg,#315d8d 0 3px,#101b29 3px 5px)}
+.pitstation-divider{height:1px;margin:15px 0;border-top:1px solid #ffffff1b}
+.pit-weather-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.pit-weather-card{display:grid;justify-items:center;gap:3px;padding:8px 3px;border:1px solid #ffffff17;border-radius:8px;background:#ffffff05;color:#eaf0f4}
+.pit-weather-card.active{border-color:#4eb8d9;background:#45b3d41a;box-shadow:inset 0 0 0 1px #4eb8d930}
+.pit-weather-card span{font-size:17px;color:#f2ca5d}
+.pit-weather-card b{font-size:7px;letter-spacing:.1em}
+.pit-weather-card small{color:#8497a7;font-size:7px}
+.pit-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:14px}
+.pit-range-grid label{display:grid;gap:8px}
+.pit-range-grid label span{display:flex;justify-content:space-between;color:#9aabba;font-size:7px;font-weight:950;letter-spacing:.12em}
+.pit-range-grid label b{color:#f1c65a;font-size:9px}
+.pit-range-grid input{width:100%;accent-color:#ff7257}
+.pitstation-readout{display:flex;align-items:center;gap:9px;margin-top:14px;padding:10px;border:1px solid #ffffff19;border-radius:9px;background:#050b12}
+.pit-readout-dot{width:9px;height:9px;flex:0 0 auto;border-radius:50%;background:#55d99e;box-shadow:0 0 13px #55d99e}
+.pitstation-readout>div{min-width:0;flex:1}
+.pitstation-readout b{display:block;color:#e8edf1;font-size:8px;letter-spacing:.08em}
+.pitstation-readout small{display:block;margin-top:4px;color:#899ba9;font-size:7px;line-height:1.4}
+.pitstation-ready{padding:5px 7px;border-radius:5px;background:#1b5b42;color:#7ce8b4;font-size:7px;font-weight:1000;letter-spacing:.12em}
+.pitstation-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 20px;border-top:1px solid #ffffff1b;background:#09121c}
+.pitstation-footer>div{display:grid;gap:4px}
+.pitstation-footer>div>b{font-size:9px;letter-spacing:.08em}
+.pitstation-footer>div>small{color:#8395a4;font-size:8px}
+.pit-drive-button{display:flex;align-items:center;justify-content:center;gap:20px;min-width:260px;padding:16px 20px}
+.pit-drive-button span{font-size:11px}
+@media(max-width:800px){.pitstation-overlay{padding:7px}.pitstation-shell{max-height:98dvh}.pitstation-content{grid-template-columns:1fr;gap:10px;padding:10px}.pitstation-header{padding:12px;gap:8px}.pitstation-brand{min-width:0}.pitstation-head-meta{display:none}.pitstation-bay{height:185px}.pitstation-car{transform:translate(-50%,-42%) scale(.78) rotate(-5deg)}.pitstation-setup{padding:11px}.pitstation-footer{align-items:stretch;flex-direction:column;padding:12px}.pit-drive-button{width:100%;min-width:0}.pitstation-telemetry b{font-size:7px}}
+@media(max-width:430px){.pit-tyre-grid,.pit-weather-grid{gap:4px}.pit-tyre-card{padding:7px 2px}.pit-tyre-card small,.pit-weather-card small{font-size:6px}.pitstation-bay{height:160px}.pitstation-footer>div>small{line-height:1.5}}
+</style>
+
 </head>
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
@@ -250,12 +329,71 @@ input[type=range]{accent-color:#ff765e}
         <div class="field"><div class="range-head"><label for="cloudRange">Cloud cover</label><output id="cloudValue">20%</output></div><input id="cloudRange" type="range" min="0" max="100" value="20"></div>
         <div class="field"><div class="range-head"><label for="fogRange">Mist density</label><output id="fogValue">0%</output></div><input id="fogRange" type="range" min="0" max="100" value="0"></div>
       </div>
-      <button class="action race-action" id="startBtn"><span>RACE</span><b>→</b></button>
+      <button class="action race-action" id="startBtn"><span>OPEN PIT STATION</span><b>→</b></button>
       <div class="model-state menu-model-state" id="menuModelStatusRow" data-state="loading"><span>VEHICLE MODEL</span><b id="menuModelStatus" data-state="loading">LOADING RED BULL 2022…</b><button class="secondary" id="retryModelBtn" type="button">RETRY MODEL</button></div>
       <div class="note">Controls: W throttle · S brake · A/D steer · E/Q shift · R reverse · C camera · H halo · Esc pause. Right-mouse drag or I/J/K/L to look around in every camera. Layered high-rev hybrid V6 sound is synthesised in-game. Browser racing simulation; not a certified vehicle dynamics model.</div>
     </div>
   </section>
+
+<div id="pitStationOverlay" class="overlay pitstation-overlay" aria-label="Red Bull Racing pit station">
+ <section class="pitstation-shell">
+  <header class="pitstation-header">
+   <div class="pitstation-brand"><span class="pitstation-mark">RB</span><div><b>RED BULL RACING</b><small>APEX GRAND PRIX · TEAM GARAGE</small></div></div>
+   <div class="pitstation-head-meta"><span id="pitTrackName">SPA-FRANCORCHAMPS</span><small>GARAGE BAY 01 · PRACTICE RELEASE</small></div>
+   <button class="secondary" id="pitBackBtn">← GARAGE</button>
+  </header>
+  <div class="pitstation-content">
+   <section class="pitstation-scene">
+    <div class="pitstation-scene-top"><span>LIVE PIT WALL</span><b id="pitWeatherSummary">CLEAR · DRY TRACK</b></div>
+    <div class="pitstation-bay">
+     <div class="pitstation-roofline"></div><div class="pitstation-bay-number">01</div>
+     <div class="pitstation-lightbar"><i></i><i></i><i></i><i></i><i></i></div>
+     <div class="pitstation-car">
+      <div class="pitcar-front"></div><div class="pitcar-nose"></div><div class="pitcar-body"></div><div class="pitcar-cockpit"></div>
+      <div class="pitcar-wing pitcar-front-wing"></div><div class="pitcar-wing pitcar-rear-wing"></div>
+      <i class="pitcar-wheel pitcar-wheel-a"></i><i class="pitcar-wheel pitcar-wheel-b"></i><i class="pitcar-wheel pitcar-wheel-c"></i><i class="pitcar-wheel pitcar-wheel-d"></i>
+     </div>
+     <div class="pitstation-floorline"></div><div class="pitstation-floorlabel">RB · 26</div>
+    </div>
+    <div class="pitstation-telemetry">
+     <div><small>CAR</small><b>RB FORMULA · V6 HYBRID</b></div>
+     <div><small>SESSION</small><b>PRACTICE</b></div>
+     <div><small>RELEASE</small><b>MANUAL · DRIVER CONTROL</b></div>
+    </div>
+    <p class="pitstation-instruction">Select your compound and conditions. The car will be released from the garage onto the pit lane—accelerate carefully and follow the exit to merge onto the circuit.</p>
+   </section>
+   <section class="pitstation-setup">
+    <div class="pitstation-section-head"><div><span class="eyebrow">01 / TYRE STRATEGY</span><h2>Choose your compound</h2></div><span class="pitstation-live">LIVE SETUP</span></div>
+    <div class="pit-tyre-grid">
+     <button class="pit-tyre-card" data-pit-tyre="soft"><i class="pit-tyre-icon soft"></i><b>SOFT</b><small>Maximum grip · Fast warm-up</small></button>
+     <button class="pit-tyre-card active" data-pit-tyre="medium"><i class="pit-tyre-icon medium"></i><b>MEDIUM</b><small>Balanced pace · Versatile</small></button>
+     <button class="pit-tyre-card" data-pit-tyre="hard"><i class="pit-tyre-icon hard"></i><b>HARD</b><small>Long life · Stable stint</small></button>
+     <button class="pit-tyre-card" data-pit-tyre="intermediate"><i class="pit-tyre-icon inter"></i><b>INTER</b><small>Light-to-medium rain</small></button>
+     <button class="pit-tyre-card" data-pit-tyre="wet"><i class="pit-tyre-icon wet"></i><b>FULL WET</b><small>Heavy rain · Standing water</small></button>
+    </div>
+    <div class="pitstation-divider"></div>
+    <div class="pitstation-section-head"><div><span class="eyebrow">02 / TRACK CONDITIONS</span><h2>Weather & track</h2></div></div>
+    <div class="pit-weather-grid">
+     <button class="pit-weather-card active" data-pit-weather="clear"><span>☀</span><b>CLEAR</b><small>Dry racing line</small></button>
+     <button class="pit-weather-card" data-pit-weather="cloudy"><span>☁</span><b>CLOUDY</b><small>Overcast skies</small></button>
+     <button class="pit-weather-card" data-pit-weather="rain"><span>☂</span><b>RAIN</b><small>Wet conditions</small></button>
+     <button class="pit-weather-card" data-pit-weather="fog"><span>≋</span><b>MIST</b><small>Reduced visibility</small></button>
+     <button class="pit-weather-card" data-pit-weather="heat"><span>♨</span><b>HOT</b><small>High track temperature</small></button>
+    </div>
+    <div class="pit-range-grid">
+     <label><span>RAIN INTENSITY <b id="pitRainValue">0%</b></span><input id="pitRainRange" type="range" min="0" max="100" value="0"></label>
+     <label><span>AIR TEMPERATURE <b id="pitTempValue">22°C</b></span><input id="pitTempRange" type="range" min="5" max="42" value="22"></label>
+    </div>
+    <div class="pitstation-readout"><span class="pit-readout-dot"></span><div><b id="pitRecommendation">MEDIUM · BALANCED RACE PACE</b><small id="pitRecommendationNote">A versatile compound for a dry practice run.</small></div><span class="pitstation-ready">READY</span></div>
+   </section>
+  </div>
+  <footer class="pitstation-footer">
+   <div><span class="eyebrow">PIT WALL AUTHORISATION</span><b>CAR SYSTEMS CHECK COMPLETE</b><small>W / ↑ throttle · S / ↓ brake · A/D steer · C camera · Esc pause</small></div>
+   <button class="action pit-drive-button" id="pitDriveOutBtn"><span>START ENGINE · DRIVE OUT</span><b>→</b></button>
+  </footer>
+ </section>
 </div>
+
 <div id="hud">
   <div id="topHud">
     <div id="brandHud" class="hudbrand panel"><b>APEX MOTORSPORTS</b><small>FORMULA RACING · PRACTICE</small></div>
@@ -266,7 +404,7 @@ input[type=range]{accent-color:#ff765e}
     </div>
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
-  <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div></div>
+  <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
   <div id="bottomHud"><div id="controlsLegend" class="panel"><span class="key">W</span> THROTTLE <span class="key">S</span> BRAKE <span class="key">A</span><span class="key">D</span> STEER<br><span class="key">E</span> UPSHIFT <span class="key">Q</span> DOWNSHIFT <span class="key">R</span> REVERSE <span class="key">H</span> HALO <span class="key">C</span> CAMERA <span class="key">ESC</span> PAUSE</div><div id="tireHud" class="panel">
  <div class="hudtitle">Vehicle telemetry</div>
@@ -3255,11 +3393,15 @@ let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromis
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[];
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
 const ROUTE_GRID_CELL=40;
+const PIT_LANE_WIDTH=8.4,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
+let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map();
+let pitDriveRoute=[],pitDriveRouteLength=0,pitLaneDriving=false;
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
  routeSpatialGrid=new Map();
- for(let i=0;i<route.length;i+=2){
+ const limit=pitLaneDriving?Math.max(0,route.length-1):route.length;
+ for(let i=0;i<limit;i+=2){
   const sample=route[i],gx=Math.floor(sample.p.x/ROUTE_GRID_CELL),gz=Math.floor(sample.p.z/ROUTE_GRID_CELL),key=routeGridKey(gx,gz);
   let bucket=routeSpatialGrid.get(key);if(!bucket){bucket=[];routeSpatialGrid.set(key,bucket);}
   bucket.push(i);
@@ -3720,6 +3862,7 @@ function buildTerrain(def){
  const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=true;environmentGroup.add(mesh);
 }
 function createTrack(){
+ restoreCircuitRoute();pitLaneDriving=false;
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
@@ -3777,6 +3920,8 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  posts.count=pi;trackGroup.add(posts);
  addStartFinish();
  buildScenery();addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();addCircuitFacilities();addCircuitLandmarks();
+ circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
+ buildPitLane();
  positionCarAtStart();
  updateWeather();
  updatePreview();drawMiniMap();
@@ -3812,7 +3957,7 @@ function addCircuitFacilities(){
  }
  const sample=route[8]||route[0],p=safeTracksidePoint(sample,1,roadWidth/2+38,18),ground=terrainHeightAt(p.x,p.z),pit=new THREE.Group();
  pit.position.set(p.x,ground,p.z);pit.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
- const wall=makeMat(0x87939a,.75,.08),roofMat=makeMat(0x263540,.52,.16),glassMat=new THREE.MeshStandardMaterial({color:0x7eabbc,metalness:.2,roughness:.22,emissive:0x182c35,emissiveIntensity:.16});
+ const wall=makeMat(0x25384b,.75,.08),roofMat=makeMat(0x102b49,.52,.16),glassMat=new THREE.MeshStandardMaterial({color:0x7eabbc,metalness:.2,roughness:.22,emissive:0x182c35,emissiveIntensity:.16});
  const base=new THREE.Mesh(new THREE.BoxGeometry(16,5.2,64),wall);base.position.y=2.6;base.castShadow=true;pit.add(base);
  const upperGlass=new THREE.Mesh(new THREE.BoxGeometry(16.08,1.35,63.8),glassMat);upperGlass.position.set(0,4.0,0);pit.add(upperGlass);
  const roof=new THREE.Mesh(new THREE.BoxGeometry(17,.42,66),roofMat);roof.position.y=5.25;roof.castShadow=true;pit.add(roof);
@@ -3824,7 +3969,7 @@ function addCircuitFacilities(){
  }
  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.15,.85,64),makeMat(0x15222c,.5,.15));fascia.position.set(frontX-.08,4.78,0);pit.add(fascia);
  const logoCanvas=document.createElement("canvas");logoCanvas.width=1024;logoCanvas.height=128;
- const lc=logoCanvas.getContext("2d");lc.fillStyle="#14212a";lc.fillRect(0,0,1024,128);lc.fillStyle="#f5f5ef";lc.font="900 72px system-ui";lc.textAlign="center";lc.textBaseline="middle";lc.fillText("APEX MOTORSPORTS  •  RACE CONTROL",512,65);
+ const lc=logoCanvas.getContext("2d");lc.fillStyle="#14212a";lc.fillRect(0,0,1024,128);lc.fillStyle="#f5f5ef";lc.font="900 72px system-ui";lc.textAlign="center";lc.textBaseline="middle";lc.font="900 57px system-ui";lc.fillText("RED BULL RACING  •  PIT STATION",512,65);
  const logoTex=new THREE.CanvasTexture(logoCanvas);logoTex.colorSpace=THREE.SRGBColorSpace;
  const logo=new THREE.Mesh(new THREE.PlaneGeometry(14,.95),new THREE.MeshBasicMaterial({map:logoTex,side:THREE.DoubleSide}));logo.position.set(frontX-.18,4.78,0);logo.rotation.y=-Math.PI/2;pit.add(logo);
  environmentGroup.add(pit);
@@ -3839,6 +3984,99 @@ function addCircuitFacilities(){
  }
 }
 
+
+
+function makePitPathSamples(points,count=180){
+ const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.42);
+ const length=horizontalLength(curve,Math.max(400,count*2)),samples=[];
+ for(let i=0;i<count;i++){
+  const t=i/(count-1),p=curve.getPointAt(t),tan=curve.getTangentAt(t).normalize();
+  samples.push({t,p,tan,roadHalfWidth:PIT_LANE_WIDTH*.5,roadShoulderExtra:0});
+ }
+ return {samples,length};
+}
+function addPitRibbon(samples,width,material,yOffset=.07){
+ if(!samples||samples.length<2)return;
+ const positions=[],uvs=[],indices=[];
+ for(let i=0;i<samples.length;i++){
+  const sample=samples[i],length=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/length,rz=-sample.tan.x/length;
+  positions.push(sample.p.x-rx*width*.5,sample.p.y+yOffset,sample.p.z-rz*width*.5,sample.p.x+rx*width*.5,sample.p.y+yOffset,sample.p.z+rz*width*.5);
+  uvs.push(0,i*.7,1,i*.7);
+ }
+ for(let i=0;i<samples.length-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d);}
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));
+ geometry.setIndex(indices);geometry.computeVertexNormals();
+ const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=false;trackGroup.add(mesh);
+}
+function addPitEdgeLine(samples,side,distance,color=0xf0eee5,radius=.055){
+ const points=samples.map(sample=>{
+  const len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
+  return new THREE.Vector3(sample.p.x+rx*side*distance,sample.p.y+.145,sample.p.z+rz*side*distance);
+ });
+ const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.35);
+ const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,samples.length),radius,5,false),makeMat(color,.72));
+ mesh.receiveShadow=true;trackGroup.add(mesh);
+}
+function addPitStationMarker(sample,label){
+ const marker=new THREE.Group();marker.position.copy(sample.p);marker.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
+ const postMat=makeMat(0x263747,.55,.25),boardMat=makeMat(0x102942,.6,.15);
+ for(const x of [-3.8,3.8]){const post=new THREE.Mesh(new THREE.BoxGeometry(.18,3.6,.18),postMat);post.position.set(x,1.8,0);marker.add(post);}
+ const board=new THREE.Mesh(new THREE.BoxGeometry(8,1.15,.25),boardMat);board.position.y=3.25;marker.add(board);
+ const canvas=document.createElement("canvas");canvas.width=768;canvas.height=128;
+ const ctx=canvas.getContext("2d");ctx.fillStyle="#102942";ctx.fillRect(0,0,768,128);
+ ctx.fillStyle="#f4f5f1";ctx.font="900 62px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,384,65);ctx.fillStyle="#e8473f";ctx.fillRect(0,116,768,12);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(7.65,1.1),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+ sign.position.set(0,3.25,.15);marker.add(sign);environmentGroup.add(marker);
+}
+function buildPitLane(){
+ pitDriveRoute=[];pitDriveRouteLength=0;if(!route.length)return;
+ const n=route.length,point=(index,offset)=>stableTrackOffset(route,((index%n)+n)%n,1,offset,.11);
+ const laneStartOffset=roadWidth*.5+15.5;
+ const driveControls=[
+  point(0,laneStartOffset),
+  point(Math.round(n*.012),laneStartOffset-3.0),
+  point(Math.round(n*.030),laneStartOffset-8.5),
+  point(Math.round(n*.050),laneStartOffset-13.0),
+  point(Math.round(n*.070),0)
+ ];
+ const drive=makePitPathSamples(driveControls,220);pitDriveRoute=drive.samples;pitDriveRouteLength=drive.length;
+ const entryControls=[
+  point(Math.round(n*.925),roadWidth*.5+1.6),
+  point(Math.round(n*.945),roadWidth*.5+7.5),
+  point(Math.round(n*.965),roadWidth*.5+13.5),
+  point(Math.round(n*.986),roadWidth*.5+17.5),
+  point(0,laneStartOffset)
+ ];
+ const entry=makePitPathSamples(entryControls,90),visualPath=entry.samples.concat(pitDriveRoute.slice(1));
+ const pitAsphalt=new THREE.MeshStandardMaterial({color:0x353c42,roughness:.9,metalness:.015,side:THREE.DoubleSide});
+ addPitRibbon(visualPath,PIT_LANE_WIDTH,pitAsphalt,.075);
+ addPitEdgeLine(visualPath,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
+ addPitEdgeLine(visualPath,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
+ addPitEdgeLine(pitDriveRoute,1,PIT_LANE_WIDTH*.5+.28,0xe8c84d,.045);
+ const stall=pitDriveRoute[0],stallYaw=Math.atan2(stall.tan.x,stall.tan.z),stallGroup=new THREE.Group();stallGroup.position.copy(stall.p);stallGroup.rotation.y=stallYaw;
+ const stallLine=makeMat(0xf0eee4,.72),bayParts=[[0,.13,-3.1,3.4,.045,.12],[0,.13,3.1,3.4,.045,.12],[-1.7,.13,0,.12,.045,6.2],[1.7,.13,0,.12,.045,6.2]];
+ for(const [x,y,z,w,h,d] of bayParts){const line=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),stallLine);line.position.set(x,y,z);stallGroup.add(line);}
+ environmentGroup.add(stallGroup);
+ addPitStationMarker(pitDriveRoute[pitDriveRoute.length-1],"PIT EXIT  /  MERGE");
+ addPitStationMarker(entry.samples[0],"PIT ENTRY");
+}
+function restoreCircuitRoute(){
+ if(circuitRoute.length){route=circuitRoute;routeLength=circuitRouteLength;roadWidth=circuitRoadWidth;routeSpatialGrid=circuitRouteSpatialGrid;}
+ pitLaneDriving=false;
+}
+function activatePitLaneRoute(){
+ if(!pitDriveRoute.length)throw new Error("The selected circuit pit lane is not ready.");
+ route=pitDriveRoute;routeLength=pitDriveRouteLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;buildRouteSpatialGrid();
+}
+function mergeOntoCircuit(){
+ if(!pitLaneDriving)return;
+ const x=car.x,z=car.z,y=car.y;restoreCircuitRoute();
+ nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
+ $("trackState").textContent="ON CIRCUIT";$("trackState").style.color="#63dfa6";
+ if(opponentCount>0){try{spawnOpponents();}catch(error){console.warn("AI release delayed after pit exit.",error);}}
+}
 
 function addMonacoHarbour(){
  const sample=route[Math.floor(.31*route.length)]||route[0],side=-1;
@@ -4984,32 +5222,38 @@ function drawDashboard(){
  wheelShiftLedMeshes.forEach((mesh,i)=>{const on=(i+1)/wheelShiftLedMeshes.length<rpm;mesh.material.color.setHex(on?ledColours[Math.min(i,15)]:0x25343b);if(mesh.material.emissive)mesh.material.emissive.setHex(on?ledColours[Math.min(i,15)]:0x000000);mesh.material.emissiveIntensity=on?.65:0;});
  wheelControlMeshes.forEach(mesh=>{const control=mesh.userData.wheelControl,active=control==="ERS"?car.ersDeploy:control==="DRS"?car.drsArmed:false;mesh.material.color.setHex(active?0x75e3a7:mesh.userData.baseColor);});
 }
-function positionCarAtStart(){
+function positionCarAtStart(fromPitBox=false){
  if(!carRoot)buildCar();
- const sample=route[6]||route[0];if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
+ const startIndex=fromPitBox?0:6,sample=route[startIndex]||route[0];
+ if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
  carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);carRoot.rotation.set(-slope,yaw,0);
  car={x:sample.p.x,z:sample.p.z,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
   wear:1,tempF:88,tempR:90,engineTemp:92,gearboxTemp:82,brakeTempF:180,brakeTempR:160,
   wheelHealth:{FL:100,FR:100,RL:100,RR:100},slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
   pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
-  drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false,routeIndex:6};
+  drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false,routeIndex:startIndex};
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;
- elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;updateHud(getGrip(),1);
+ elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;
+ $("trackState").textContent=fromPitBox?"PIT LANE · 80 KM/H":"GARAGE";$("trackState").style.color=fromPitBox?"#f0c75c":"#a9bac6";
+ updateHud(getGrip(),1);
 }
 function findNearest(x,z,yHint=null,routeHint=null){
  const n=route.length;let best=Infinity;
  let out={index:0,progress:0,point:route[0]?.p||new THREE.Vector3(),tangent:route[0]?.tan||new THREE.Vector3(0,0,1),offset:0,distance:Infinity};
  if(!n)return out;
+ const openRoute=pitLaneDriving,maxSegment=openRoute?n-1:n;
  const scoreSegment=i=>{
-  const index=(i+n)%n,next=(index+1)%n,a=route[index],b=route[next],dx=b.p.x-a.p.x,dz=b.p.z-a.p.z;
+  const index=openRoute?i:(i+n)%n;
+  if(index<0||index>=maxSegment)return;
+  const next=openRoute?index+1:(index+1)%n,a=route[index],b=route[next],dx=b.p.x-a.p.x,dz=b.p.z-a.p.z;
   const lengthSq=dx*dx+dz*dz,t=lengthSq?clamp(((x-a.p.x)*dx+(z-a.p.z)*dz)/lengthSq,0,1):0;
   const px=lerp(a.p.x,b.p.x,t),py=lerp(a.p.y,b.p.y,t),pz=lerp(a.p.z,b.p.z,t),ox=x-px,oz=z-pz,dy=yHint==null?0:yHint-py;
   const score=ox*ox+oz*oz+dy*dy*4.5;
   if(score<best){
    best=score;const tangent=new THREE.Vector3(lerp(a.tan.x,b.tan.x,t),lerp(a.tan.y,b.tan.y,t),lerp(a.tan.z,b.tan.z,t)).normalize();
    const rx=tangent.z,rz=-tangent.x,len=Math.hypot(rx,rz)||1;
-   out={index,progress:(index+t)/n,point:new THREE.Vector3(px,py,pz),tangent,offset:ox*rx/len+oz*rz/len,distance:Math.hypot(ox,oz)};
+   out={index,progress:(index+t)/(openRoute?Math.max(1,n-1):n),point:new THREE.Vector3(px,py,pz),tangent,offset:ox*rx/len+oz*rz/len,distance:Math.hypot(ox,oz)};
   }
  };
  if(Number.isInteger(routeHint)){
@@ -5063,7 +5307,7 @@ function drawMiniCar(){
  if(!nearestInfo||!route.length||!miniMapBaseCanvas||!miniMapProjection)return;
  const ctx=miniCtx,w=miniCanvas.width,h=miniCanvas.height,projection=miniMapProjection;
  ctx.clearRect(0,0,w,h);ctx.drawImage(miniMapBaseCanvas,0,0);
- const p=route[Math.floor(nearestInfo.progress*route.length)%route.length].p;
+ const p=pitLaneDriving&&car?{x:car.x,z:car.z}:route[Math.floor(nearestInfo.progress*route.length)%route.length].p;
  const px=(p.x-projection.minX)*projection.scale+projection.offsetX;
  const py=(p.z-projection.minZ)*projection.scale+projection.offsetY;
  ctx.fillStyle="#ff684e";ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
@@ -5109,6 +5353,7 @@ function updatePhysics(dt){
  }else if(!keys.KeyR)keys._r=false;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
+ const pitAutoBrake=pitLaneDriving?clamp((speed-PIT_LANE_LIMIT)/3.2,0,.62):0;
  const previousDrsState=!!car.drsActive;
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
  if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
@@ -5149,9 +5394,10 @@ function updatePhysics(dt){
  let engineForce=(car.reverse?-1:1)*throttle*launchMap*torque*ratioForCurrentGear()*finalDrive*.91/wheelRadius*(car.shiftTimer>0?.16:1)*clutchFactor*(1-vehicleDamage*.20)*(.35+.65*vehicleHealth.engine/100)*(.45+.55*vehicleHealth.gearbox/100)*powerMap*ersBoost*(car.reverse?.32*reverseTaper:1);
  const frontBrakeFade=clamp(1-Math.max(0,(car.brakeTempF||180)-650)/550*.42,.55,1);
  const rearBrakeFade=clamp(1-Math.max(0,(car.brakeTempR||160)-650)/550*.42,.55,1);
- const brakeForce=brake*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
+ const brakeForce=Math.min(1,brake+pitAutoBrake)*Math.min(42000,600*mass)*brakeStrength,frontBrakeShare=clamp(car.brakeBias||.58,.52,.68);
  const brakeDirection=Math.abs(car.u)>.12?Math.sign(car.u):0;
  let drag=.5*airDensity*(.86+downforceScale*.22)*car.u*Math.abs(car.u)+26*car.u;if(car.drsActive)drag*=.78;
+ if(pitLaneDriving&&speed>PIT_LANE_LIMIT&&!car.reverse)engineForce*=.06;
  let rearFx=engineForce-brakeForce*(1-frontBrakeShare)*rearBrakeFade*brakeDirection-drag*.55;
  let frontFx=-brakeForce*frontBrakeShare*frontBrakeFade*brakeDirection-drag*.45;
  const cornerDemand=clamp(Math.abs(car.steer)/Math.max(.05,steerLimit),0,1);
@@ -5319,8 +5565,9 @@ function updatePhysics(dt){
   car.y=surfaceY+.035;car.vy=0;car.airborne=false;
   for(const corner of wheelCornerPivots)corner.springVelocity=0;
  }
+ if(pitLaneDriving&&nearestInfo.progress>=.985)mergeOntoCircuit();
  const progress=nearestInfo.progress;
- if(previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
+ if(!pitLaneDriving&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
   const completed=elapsed-lapStart;if(completed>15)bestLap=Math.min(bestLap,completed);
   lap++;lapStart=elapsed;
   if(lap>raceLaps){
@@ -5675,22 +5922,75 @@ function toggleSound(){
  if(!soundEnabled)silenceAudio();
  else if(running&&!paused)startEngineLoops();
 }
-function startSession(){
+
+function updatePitStationUI(){
+ document.querySelectorAll("[data-pit-tyre]").forEach(button=>button.classList.toggle("active",button.dataset.pitTyre===tyreCompound));
+ document.querySelectorAll("[data-pit-weather]").forEach(button=>button.classList.toggle("active",button.dataset.pitWeather===weather.kind));
+ $("pitRainRange").value=weather.rain;$("pitTempRange").value=weather.temp;
+ $("pitRainValue").textContent=weather.rain+"%";$("pitTempValue").textContent=weather.temp+"°C";
+ const weatherLabel=weather.kind==="rain"?"RAIN":weather.kind==="fog"?"MIST":weather.kind==="heat"?"HOT":weather.kind==="cloudy"?"CLOUDY":"CLEAR";
+ $("pitWeatherSummary").textContent=weatherLabel+" · "+(trackWetness>.55?"WET TRACK":trackWetness>.15?"DAMP TRACK":"DRY TRACK");
+ const details={
+  soft:["SOFT · MAXIMUM GRIP","Best for short runs and quick tyre warm-up."],
+  medium:["MEDIUM · BALANCED RACE PACE","A versatile compound for a dry practice run."],
+  hard:["HARD · LONG STINT","Lower wear for longer sessions and consistent pace."],
+  intermediate:["INTERMEDIATE · MIXED CONDITIONS","Designed for a damp or drying circuit."],
+  wet:["FULL WET · HEAVY RAIN","Choose this compound for a very wet track."]
+ };
+ const recommendation=details[tyreCompound]||details.medium;
+ $("pitRecommendation").textContent=recommendation[0];$("pitRecommendationNote").textContent=recommendation[1];
+ $("pitTrackName").textContent=trackDefs[activeTrack].short+" · "+trackDefs[activeTrack].country.toUpperCase();
+}
+function openPitStation(){
+ playMenuUiSound("tap");syncWeatherInputs();updatePitStationUI();$("pitStationOverlay").classList.add("open");
+}
+function closePitStation(){playMenuUiSound("close");$("pitStationOverlay").classList.remove("open");}
+function setPitTyre(compound){
+ if(!tireSpecs[compound])return;tyreCompound=compound;$("tyreSelect").value=compound;updatePitStationUI();
+}
+function setPitWeather(kind){
+ if(!["clear","cloudy","rain","fog","heat"].includes(kind))return;
+ weather.kind=kind;
+ if(kind==="clear"){weather.rain=0;weather.cloud=12;weather.fog=0;}
+ if(kind==="cloudy"){weather.rain=Math.min(weather.rain,12);weather.cloud=82;weather.fog=8;}
+ if(kind==="rain"){weather.rain=Math.max(weather.rain,68);weather.cloud=94;weather.fog=12;}
+ if(kind==="fog"){weather.rain=0;weather.cloud=72;weather.fog=58;}
+ if(kind==="heat"){weather.rain=0;weather.cloud=8;weather.fog=0;weather.temp=Math.max(weather.temp,34);}
+ syncWeatherInputs();updateWeather();updatePitStationUI();
+}
+function bindPitStation(){
+ document.querySelectorAll("[data-pit-tyre]").forEach(button=>button.addEventListener("click",()=>setPitTyre(button.dataset.pitTyre)));
+ document.querySelectorAll("[data-pit-weather]").forEach(button=>button.addEventListener("click",()=>setPitWeather(button.dataset.pitWeather)));
+ $("pitRainRange").addEventListener("input",event=>{
+  weather.rain=Number(event.target.value);
+  if(weather.rain>12&&weather.kind==="clear")weather.kind="rain";
+  if(weather.rain===0&&weather.kind==="rain")weather.kind="cloudy";
+  syncWeatherInputs();updateWeather();updatePitStationUI();
+ });
+ $("pitTempRange").addEventListener("input",event=>{weather.temp=Number(event.target.value);syncWeatherInputs();updateWeather();updatePitStationUI();});
+ $("pitBackBtn").addEventListener("click",closePitStation);
+ $("pitDriveOutBtn").addEventListener("click",()=>startSession(true));
+}
+
+function startSession(startInPit=false){
  playMenuUiSound("race");const menuElement=$("menu");menuElement.classList.add("leaving");setTimeout(()=>{menuElement.style.display="none";menuElement.classList.remove("leaving");},360);
+ $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
- if(!car)positionCarAtStart();
+ if(startInPit){activatePitLaneRoute();positionCarAtStart(true);}
+ else{restoreCircuitRoute();if(!car)positionCarAtStart();}
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;previousFrame=performance.now();camera.userData.ready=false;
- try{spawnOpponents();}catch(error){console.error("Opponent setup failed; continuing in solo practice.",error);try{clearOpponents();}catch(_){}}
+ if(!pitLaneDriving){try{spawnOpponents();}catch(error){console.error("Opponent setup failed; continuing in solo practice.",error);try{clearOpponents();}catch(_){}}}
+ else{clearOpponents();$("opponentValue").textContent="00";$("trackState").textContent="PIT EXIT · 80 KM/H";$("trackState").style.color="#f0c75c";}
  try{applyUISettings();}catch(error){console.warn("HUD settings could not be applied.",error);}
  try{worldCanvas.focus({preventScroll:true});}catch(_){}
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){clearCrashEffects();buildCar();positionCarAtStart();spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart();spawnOpponents();resumeGame();}
+function returnToMenu(){running=false;paused=false;silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.72:graphicsQuality==="high"?1.3:1;
@@ -5939,7 +6239,8 @@ function bindControls(){
  safeBind("race settings",bindSettings);
  safeBind("camera look",bindCameraLook);
  const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
- safeClick("startBtn",startSession);
+ safeBind("pit station controls",bindPitStation);
+ safeClick("startBtn",openPitStation);
  safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
  safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
  safeClick("pauseBtn",pauseGame);safeClick("resumeBtn",resumeGame);
