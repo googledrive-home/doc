@@ -95,12 +95,20 @@ input[type=range]{accent-color:#ff765e}
 .race-start-lamps.green .race-start-lamp{background:radial-gradient(circle at 35% 30%,#caffdf,#19dc80 55%,#08783f);border-color:#6fffb1;box-shadow:0 0 16px #13ed83aa}
 .race-control-banner{position:fixed;z-index:16;top:70px;left:50%;transform:translateX(-50%);display:none;min-width:170px;padding:8px 15px;border:1px solid #ffffff30;border-radius:8px;background:#10261b;color:#7ff0b0;text-align:center;font-size:10px;font-weight:1000;letter-spacing:.16em;box-shadow:0 10px 28px #0008;pointer-events:none}
 .race-control-banner.open{display:block}.race-control-banner.yellow{background:#5a4511;color:#ffe08a;border-color:#ffd66e}.race-control-banner.vsc{background:#5a3012;color:#ffd0a0;border-color:#ffad63}.race-control-banner.penalty{background:#551c20;color:#ffb6ae;border-color:#ff7169}.race-control-banner.info{background:#17354a;color:#b7e5ff;border-color:#6bcaff}
+.championship-overlay{position:fixed;inset:0;z-index:38;display:none;place-items:center;padding:14px;background:#02060beF;backdrop-filter:blur(10px)}.championship-overlay.open{display:grid}
+.championship-card{width:min(900px,97vw);max-height:94dvh;overflow:auto;padding:20px;border:1px solid #ffffff30;border-radius:17px;background:linear-gradient(145deg,#162633,#08121c);box-shadow:0 26px 90px #000c}
+.championship-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:14px;border-bottom:1px solid #ffffff1b}.championship-head h2{margin:5px 0;font-size:25px;letter-spacing:.04em}.championship-head p{margin:0;color:#ffd27a;font-size:10px;font-weight:900;letter-spacing:.12em}
+.championship-calendar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:14px 0}.championship-round{min-width:0;padding:8px 6px;border:1px solid #ffffff18;border-radius:8px;background:#ffffff06;color:#93a4b2;font-size:8px;line-height:1.4}.championship-round b{display:block;color:#e9eff3;font-size:9px}.championship-round.done{border-color:#316f55;background:#153628;color:#8ce0ad}.championship-round.current{border-color:#ff956f;background:#43261f;color:#ffd0b9}
+.championship-tables{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.championship-tables h3{margin:0 0 8px;color:#ff987b;font-size:10px;letter-spacing:.16em}.championship-table{overflow:auto;border:1px solid #ffffff19;border-radius:9px}
+.championship-table table{width:100%;border-collapse:collapse;font-size:10px}.championship-table th,.championship-table td{padding:8px 9px;text-align:left;border-bottom:1px solid #ffffff12;white-space:nowrap}.championship-table th{background:#ffffff08;color:#91a4b4;font-size:8px;letter-spacing:.1em}.championship-table td:last-child,.championship-table th:last-child{text-align:right}.championship-table tr:last-child td{border-bottom:0}.championship-table .you-row td{color:#ffd18a;font-weight:900}
+.championship-latest{display:flex;gap:12px;align-items:center;margin-top:14px;padding:10px 12px;border:1px solid #ffffff19;border-radius:8px;background:#ffffff06;font-size:10px}.championship-latest b{color:#ff987b;font-size:8px;letter-spacing:.15em}.championship-latest span{color:#d5e0e7}
+.championship-footer{display:flex;justify-content:space-between;gap:8px;margin-top:14px}#championshipHudBtn{display:none}
 .pit-service-overlay{position:fixed;inset:0;z-index:28;display:none;place-items:center;padding:16px;background:#02060bd9;backdrop-filter:blur(10px)}.pit-service-overlay.open{display:grid}
 .pit-service-card{width:min(540px,96vw);padding:22px;border:1px solid #ffffff30;border-radius:16px;background:linear-gradient(145deg,#172a38,#09131d);box-shadow:0 26px 90px #000b}
 .pit-service-card h2{margin:5px 0 7px;font-size:24px;letter-spacing:.04em}.pit-service-card p{margin:0;color:#9cabb8;font-size:11px;line-height:1.6}
 .pit-service-tyres{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:17px 0}.pit-service-tyres button{min-width:0;padding:10px 3px;border:1px solid #ffffff22;border-radius:8px;background:#ffffff08;color:#eaf0f4;font-size:9px;font-weight:950}
 .pit-service-tyres button.active{border-color:#ff8c70;background:#ff765e22;color:#ffd1c4}.pit-service-actions{display:flex;gap:8px;margin-top:14px}.pit-service-actions button{flex:1}.pit-service-status{min-height:18px;margin-top:10px;color:#ffd16e;font-size:10px;font-weight:900;letter-spacing:.08em}
-@media(max-width:760px){.race-start-overlay{top:58px}.race-start-panel{min-width:220px;padding:8px 12px}.race-start-lamp{width:21px;height:21px}.race-control-banner{top:52px}.pit-service-card{padding:17px}.pit-service-tyres{gap:4px}.pit-service-tyres button{font-size:8px;padding:9px 1px}}
+@media(max-width:760px){.race-start-overlay{top:58px}.race-start-panel{min-width:220px;padding:8px 12px}.race-start-lamp{width:21px;height:21px}.race-control-banner{top:52px}.pit-service-card{padding:17px}.pit-service-tyres{gap:4px}.pit-service-tyres button{font-size:8px;padding:9px 1px}.championship-card{padding:13px}.championship-head h2{font-size:18px}.championship-calendar{grid-template-columns:repeat(3,minmax(0,1fr))}.championship-tables{grid-template-columns:1fr}.championship-footer{flex-direction:column}.championship-footer button{width:100%}}
 .settings-overlay{display:none;z-index:35;padding:12px;background:#03070bd9;backdrop-filter:blur(10px)}
 .settings-overlay.open{display:grid}
 .settings-card{width:min(940px,97vw);max-height:94dvh;display:flex;flex-direction:column;background:linear-gradient(145deg,#152230,#0a111a);border:1px solid #ffffff2c;border-radius:18px;box-shadow:0 28px 100px #000c;overflow:hidden}
@@ -322,7 +330,8 @@ input[type=range]{accent-color:#ff765e}
     </div>
     <div class="menuright">
       <div class="menu-section-head"><div><div class="eyebrow">RACE WEEKEND</div><h2>Grid configuration</h2></div><button class="secondary" id="menuSettingsBtn">⚙ SETTINGS</button></div>
-      <div class="field"><label for="trackSelect">Select Grand Prix circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div>
+      <div class="field"><label for="gameModeSelect">Game mode</label><select id="gameModeSelect"><option value="quick" selected>Quick race · single event</option><option value="championship">World championship · 6 rounds</option></select></div>
+      <div class="two"><div class="field"><label for="trackSelect">Select Grand Prix circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div><div class="field"><label>Season standings</label><button class="secondary" id="championshipOpenBtn" type="button">VIEW CHAMPIONSHIP</button></div></div>
       <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
       <div class="two">
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="intermediate">Intermediate</option><option value="wet">Full wet</option></select></div>
@@ -423,7 +432,7 @@ input[type=range]{accent-color:#ff765e}
       <div class="statbox panel"><label>GEAR</label><strong id="gearValue">N</strong><small id="rpmValue">4,500 RPM</small></div>
       <div class="statbox panel"><label>LAP</label><strong id="lapValue">01</strong><small id="lapTime">00:00.000</small></div>
     </div>
-    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
+    <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM: COCKPIT</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="pitStopBtn">PIT STOP</button><button class="hudbtn" id="championshipHudBtn">SEASON</button><button class="hudbtn" id="soundBtn">SOUND ON</button><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit data</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Track grip</span><b id="gripValue">100%</b></div><div class="bar"><i id="gripBar"></i></div><div class="hudrow"><span>Tyre wear</span><b id="wearValue">100%</b></div><div class="bar"><i id="wearBar"></i></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
@@ -470,6 +479,7 @@ input[type=range]{accent-color:#ff765e}
 <div id="raceStartOverlay" class="race-start-overlay" aria-live="polite"><div class="race-start-panel"><small>APEX GRAND PRIX · START PROCEDURE</small><div id="raceStartLamps" class="race-start-lamps"><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i></div><strong id="raceStartLabel">GET READY</strong></div></div>
 <div id="raceControlBanner" class="race-control-banner" aria-live="polite">GREEN FLAG</div>
 <div id="pitServiceOverlay" class="pit-service-overlay" aria-label="Pit stop service"><section class="pit-service-card"><div class="eyebrow">APEX PIT WALL · SERVICE BAY</div><h2>CHANGE TYRES & REPAIR</h2><p>Stop inside the marked pit box, choose a compound and start the crew service. The crew replaces the tyres and reattaches damaged parts before releasing the car.</p><div class="pit-service-tyres"><button data-service-tyre="soft">SOFT</button><button data-service-tyre="medium">MEDIUM</button><button data-service-tyre="hard">HARD</button><button data-service-tyre="intermediate">INTER</button><button data-service-tyre="wet">WET</button></div><div id="pitServiceStatus" class="pit-service-status">SELECT A COMPOUND · READY FOR CREW</div><div class="pit-service-actions"><button class="action" id="pitServiceStartBtn">START SERVICE</button><button class="secondary" id="pitServiceCancelBtn">CANCEL</button></div></section></div>
+<div id="championshipOverlay" class="championship-overlay" aria-label="World championship standings"><section class="championship-card"><header class="championship-head"><div><div class="eyebrow">APEX WORLD TOUR · SEASON TABLE</div><h2>WORLD CHAMPIONSHIP</h2><p id="championshipProgress">ROUND 1 OF 6 · SPA-FRANCORCHAMPS</p></div><button class="secondary" id="championshipCloseBtn">CLOSE ✕</button></header><div class="championship-calendar" id="championshipCalendar"></div><div class="championship-tables"><section><h3>DRIVERS' STANDINGS</h3><div id="driverStandings" class="championship-table"></div></section><section><h3>CONSTRUCTORS' STANDINGS</h3><div id="teamStandings" class="championship-table"></div></section></div><div class="championship-latest"><b>LAST RACE</b><span id="championshipLatest">No rounds completed yet.</span></div><footer class="championship-footer"><button class="secondary" id="newChampionshipBtn">START NEW SEASON</button><button class="action" id="championshipDoneBtn">BACK TO GARAGE</button></footer></section></div>
 <div id="settingsOverlay" class="overlay settings-overlay">
  <section class="settings-card">
   <header class="settings-head"><div><div class="eyebrow">APEX MOTORSPORTS · PERSONALISATION</div><h2>GAME SETTINGS</h2><p>Configure the cockpit, camera, interface and driving feel.</p></div><button class="secondary" id="settingsCloseBtn">CLOSE ✕</button></header>
@@ -3471,6 +3481,119 @@ let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulat
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium";
+const CHAMPIONSHIP_STORAGE_KEY="apexFormulaWorldTourV1";
+const CHAMPIONSHIP_TRACK_ORDER=["spa","monza","silverstone","monaco","suzuka","laguna"];
+const CHAMPIONSHIP_TRACK_LABELS=["SPA","MONZA","SILVERSTONE","MONACO","SUZUKA","LAGUNA SECA"];
+const CHAMPIONSHIP_POINTS=[25,18,15,12,10,8,6,4,2,1];
+const CHAMPIONSHIP_AI_DRIVERS=[
+ {id:"ai1",name:"Alex Carter",team:"SILVER ARROW"},
+ {id:"ai2",name:"Noah Hayes",team:"PAPAYA RACING"},
+ {id:"ai3",name:"Luca Moretti",team:"SCUDERIA ROSSO"},
+ {id:"ai4",name:"Ethan Brooks",team:"GREENWORKS"},
+ {id:"ai5",name:"Oliver Reed",team:"SILVER ARROW"},
+ {id:"ai6",name:"Mateo Rossi",team:"PAPAYA RACING"},
+ {id:"ai7",name:"Leo Martin",team:"SCUDERIA ROSSO"},
+ {id:"ai8",name:"Kai Tanaka",team:"GREENWORKS"}
+];
+const CHAMPIONSHIP_TEAMS=["APEX GP","SILVER ARROW","PAPAYA RACING","SCUDERIA ROSSO","GREENWORKS"];
+let gameMode="quick",quickTrackSelection="spa",championshipState=null;
+function makeEmptyChampionship(){
+ const driverPoints={player:0},teamPoints={};
+ CHAMPIONSHIP_AI_DRIVERS.forEach(driver=>driverPoints[driver.id]=0);
+ CHAMPIONSHIP_TEAMS.forEach(team=>teamPoints[team]=0);
+ return {round:0,driverPoints,teamPoints,results:[]};
+}
+function loadChampionship(){
+ const fresh=makeEmptyChampionship();
+ try{
+  const saved=JSON.parse(localStorage.getItem(CHAMPIONSHIP_STORAGE_KEY)||"null");
+  if(!saved||typeof saved!=="object")return fresh;
+  const round=Number.isInteger(saved.round)?clamp(saved.round,0,CHAMPIONSHIP_TRACK_ORDER.length):0;
+  return {...fresh,...saved,round,
+   driverPoints:{...fresh.driverPoints,...(saved.driverPoints&&typeof saved.driverPoints==="object"?saved.driverPoints:{})},
+   teamPoints:{...fresh.teamPoints,...(saved.teamPoints&&typeof saved.teamPoints==="object"?saved.teamPoints:{})},
+   results:Array.isArray(saved.results)?saved.results.slice(-CHAMPIONSHIP_TRACK_ORDER.length):[]
+  };
+ }catch(_){return fresh;}
+}
+function saveChampionship(){
+ try{localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY,JSON.stringify(championshipState));}
+ catch(error){console.warn("Championship save unavailable.",error);}
+}
+function renderChampionship(){
+ if(!championshipState)championshipState=loadChampionship();
+ const round=championshipState.round,complete=round>=CHAMPIONSHIP_TRACK_ORDER.length;
+ $("championshipProgress").textContent=complete?"SEASON COMPLETE · ALL 6 ROUNDS FINISHED":"ROUND "+(round+1)+" OF 6 · "+CHAMPIONSHIP_TRACK_LABELS[round];
+ $("championshipCalendar").innerHTML=CHAMPIONSHIP_TRACK_ORDER.map((track,i)=>{
+  const state=i<round?"done":i===round&&!complete?"current":"";
+  const status=i<round?"COMPLETED":i===round&&!complete?"NEXT ROUND":"UPCOMING";
+  return '<div class="championship-round '+state+'"><b>R'+(i+1)+' · '+CHAMPIONSHIP_TRACK_LABELS[i]+'</b>'+status+'</div>';
+ }).join("");
+ const drivers=[{id:"player",name:"YOU",team:"APEX GP"}].concat(CHAMPIONSHIP_AI_DRIVERS)
+  .map(driver=>({...driver,points:Number(championshipState.driverPoints[driver.id])||0}))
+  .sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
+ $("driverStandings").innerHTML='<table><thead><tr><th>POS</th><th>DRIVER</th><th>TEAM</th><th>PTS</th></tr></thead><tbody>'+
+  drivers.map((driver,i)=>'<tr class="'+(driver.id==="player"?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+driver.name+'</td><td>'+driver.team+'</td><td>'+driver.points+'</td></tr>').join("")+
+  '</tbody></table>';
+ const teams=CHAMPIONSHIP_TEAMS.map(team=>({team,points:Number(championshipState.teamPoints[team])||0}))
+  .sort((a,b)=>b.points-a.points||a.team.localeCompare(b.team));
+ $("teamStandings").innerHTML='<table><thead><tr><th>POS</th><th>CONSTRUCTOR</th><th>PTS</th></tr></thead><tbody>'+
+  teams.map((team,i)=>'<tr class="'+(team.team==="APEX GP"?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+team.team+'</td><td>'+team.points+'</td></tr>').join("")+
+  '</tbody></table>';
+ const latest=championshipState.results[championshipState.results.length-1];
+ $("championshipLatest").textContent=latest?("Round "+latest.round+" · "+latest.track+" · Winner: "+latest.winner+" · Your finish: P"+latest.playerPosition+" · "+latest.playerPoints+" points"):"No rounds completed yet.";
+ $("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
+}
+function openChampionship(){renderChampionship();$("championshipOverlay").classList.add("open");}
+function closeChampionship(){$("championshipOverlay").classList.remove("open");}
+function startNewChampionship(){
+ championshipState=makeEmptyChampionship();saveChampionship();
+ if(gameMode==="championship"){activeTrack=CHAMPIONSHIP_TRACK_ORDER[0];$("trackSelect").value=activeTrack;createTrack();}
+ renderChampionship();
+}
+function applyGameModeSelection(){
+ const nextMode=$("gameModeSelect").value==="championship"?"championship":"quick";
+ if(gameMode!=="championship"&&nextMode==="championship")quickTrackSelection=activeTrack;
+ if(gameMode==="championship"&&nextMode==="quick"){
+  activeTrack=quickTrackSelection||"spa";$("trackSelect").value=activeTrack;
+ }
+ gameMode=nextMode;
+ const inSeason=gameMode==="championship";
+ $("trackSelect").disabled=inSeason;$("opponentCountSelect").disabled=inSeason;
+ if(inSeason){
+  opponentCount=8;$("opponentCountSelect").value="8";
+  activeTrack=CHAMPIONSHIP_TRACK_ORDER[Math.min(championshipState.round,CHAMPIONSHIP_TRACK_ORDER.length-1)];
+  $("trackSelect").value=activeTrack;
+ }
+ createTrack();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
+ renderChampionship();
+}
+function completeChampionshipRound(){
+ if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return null;
+ const playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
+ const participants=[{id:"player",name:"YOU",team:"APEX GP",distance:raceLaps+playerProgress-raceStartPenalty/120,isPlayer:true}];
+ for(const bot of opponents){
+  const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
+  if(!driver)continue;
+  participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,(bot.laps-1)+bot.progress)});
+ }
+ participants.sort((a,b)=>b.distance-a.distance);
+ const playerPosition=participants.findIndex(item=>item.isPlayer)+1;
+ const resultRows=participants.map((item,index)=>{
+  const points=CHAMPIONSHIP_POINTS[index]||0;
+  championshipState.driverPoints[item.id]=(Number(championshipState.driverPoints[item.id])||0)+points;
+  championshipState.teamPoints[item.team]=(Number(championshipState.teamPoints[item.team])||0)+points;
+  return {name:item.name,team:item.team,position:index+1,points};
+ });
+ const playerPoints=CHAMPIONSHIP_POINTS[playerPosition-1]||0;
+ const winner=resultRows[0]?.name||"—",completedRound=championshipState.round+1;
+ championshipState.results.push({round:completedRound,track:trackDefs[activeTrack]?.short||activeTrack,winner,playerPosition,playerPoints,order:resultRows});
+ championshipState.round=Math.min(CHAMPIONSHIP_TRACK_ORDER.length,completedRound);
+ saveChampionship();renderChampionship();
+ const remaining=CHAMPIONSHIP_TRACK_ORDER.length-championshipState.round;
+ return " Championship: P"+playerPosition+" · +"+playerPoints+" points. "+(remaining>0?remaining+" rounds remain.":"Season complete — final standings saved.");
+}
+
 let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
@@ -4681,7 +4804,8 @@ function spawnOpponents(){
   const wheels=[],frontPivots=[];
   root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
   const baseOffset=(i%2?1:-1)*(1.25+(i%3)*.35),pace=base+(i%3-1)*1.7;
-  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,wheels,frontPivots,wheelSpin:0,laps:1,passCommitment:0};
+  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
+  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:driver.team,wheels,frontPivots,wheelSpin:0,laps:1,passCommitment:0};
   const sample=route[Math.floor(progress*route.length)%route.length];
   const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
   root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
@@ -5847,9 +5971,10 @@ function updatePhysics(dt){
   lap++;lapStart=elapsed;
   if(lap>raceLaps){
    running=false;paused=true;silenceAudio();
-   document.querySelector(".pausecard .eyebrow").textContent="Chequered flag";
+   const championshipResult=currentSessionMode==="championship"?completeChampionshipRound():"";
+   document.querySelector(".pausecard .eyebrow").textContent=currentSessionMode==="championship"?"Championship round complete":"Chequered flag";
    document.querySelector(".pausecard h2").textContent="FINISH";
-   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+".";
+   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+"."+(raceStartPenalty>0?" False-start penalty: +"+raceStartPenalty.toFixed(1)+" seconds.":"")+(championshipResult||"");
    $("pauseOverlay").style.display="grid";
   }
  }
@@ -6267,7 +6392,11 @@ function bindPitService(){
  $("pitServiceStartBtn").addEventListener("click",startPitService);$("pitServiceCancelBtn").addEventListener("click",cancelPitService);
 }
 function openPitStation(){
- playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();$("pitStationOverlay").classList.add("open");
+ playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();
+ $("pitDriveOutBtn").style.display=gameMode==="championship"?"none":"";
+ $("pitRaceBtn").disabled=gameMode==="championship"&&championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length;
+ $("pitRaceBtn").innerHTML=gameMode==="championship"?(championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length?"<span>SEASON COMPLETE · VIEW STANDINGS</span><b>✓</b>":"<span>CHAMPIONSHIP · START ROUND "+(championshipState.round+1)+" OF 6</span><b>→</b>"):"<span>RACE · START ON TRACK</span><b>→</b>";
+ $("pitStationOverlay").classList.add("open");
 }
 function closePitStation(){playMenuUiSound("close");$("pitStationOverlay").classList.remove("open");}
 function setPitTyre(compound){
@@ -6299,7 +6428,7 @@ function bindPitStation(){
  $("pitTempRange").addEventListener("input",event=>{weather.temp=Number(event.target.value);syncWeatherInputs();updateWeather();updatePitStationUI();});
  $("pitBackBtn").addEventListener("click",closePitStation);
  $("pitDriveOutBtn").addEventListener("click",()=>startSession("practice"));
- $("pitRaceBtn").addEventListener("click",()=>startSession("race"));
+ $("pitRaceBtn").addEventListener("click",()=>{if(gameMode==="championship"&&championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length){openChampionship();return;}startSession(gameMode==="championship"?"championship":"race");});
 }
 
 function startSession(sessionMode="practice"){
@@ -6323,8 +6452,13 @@ function startSession(sessionMode="practice"){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart();raceStartState=currentSessionMode==="race"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;raceStartState="none";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function restartLap(){clearCrashEffects();restoreCircuitRoute();buildCar();positionCarAtStart();raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");spawnOpponents();resumeGame();}
+function returnToMenu(){running=false;paused=false;raceStartState="none";pitServiceOpen=false;pitServiceActive=false;$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
+ if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
+  activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();
+ }
+ $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode==="championship";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
+ startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function applyGraphicsQuality(){
  if(!renderer)return;
  const ratio=graphicsQuality==="low"?.68:graphicsQuality==="high"?1.12:.88;
@@ -6540,6 +6674,7 @@ function bindControls(){
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
   if(e.code==="KeyP"){e.preventDefault();requestPitService();}
+  if(e.code==="KeyB"){e.preventDefault();openChampionship();}
   if(e.code==="Escape"){
    if($("settingsOverlay").classList.contains("open"))closeSettings();
    else if(running&&!paused)pauseGame();else if(paused)resumeGame();
@@ -6561,7 +6696,11 @@ function bindControls(){
   const key=btn.dataset.key;const down=e=>{e.preventDefault();keys[key]=true;btn.classList.add("down");},up=e=>{e.preventDefault();keys[key]=false;btn.classList.remove("down");};
   btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);
  });
- $("trackSelect").addEventListener("change",()=>{activeTrack=$("trackSelect").value;createTrack();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";});
+ $("trackSelect").addEventListener("change",()=>{activeTrack=$("trackSelect").value;quickTrackSelection=activeTrack;createTrack();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";});
+ $("gameModeSelect").addEventListener("change",applyGameModeSelection);
+ $("championshipOpenBtn").addEventListener("click",openChampionship);$("championshipHudBtn").addEventListener("click",openChampionship);
+ $("championshipCloseBtn").addEventListener("click",closeChampionship);$("championshipDoneBtn").addEventListener("click",closeChampionship);
+ $("newChampionshipBtn").addEventListener("click",startNewChampionship);
  $("liveryPalette").addEventListener("click",e=>{const b=e.target.closest(".swatch");if(!b)return;document.querySelectorAll(".swatch").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedLivery=b.dataset.color;buildCar();if(car)positionCarAtStart();});
  $("tyreSelect").addEventListener("change",()=>{tyreCompound=$("tyreSelect").value;});
  $("assistSelect").addEventListener("change",()=>{assistMode=$("assistSelect").value;});
@@ -6588,7 +6727,8 @@ function bindControls(){
 }
 async function boot(){
  try{
-  loadGameSettings();
+  loadGameSettings();championshipState=loadChampionship();quickTrackSelection=activeTrack;
+  $("championshipHudBtn").style.display="none";$("trackSelect").disabled=false;$("opponentCountSelect").disabled=false;
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
   initRenderer();applyGraphicsQuality();setLoad(34,"Building smooth circuit geometry");await new Promise(r=>requestAnimationFrame(r));
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
