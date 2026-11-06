@@ -4800,19 +4800,52 @@ function activatePitLaneRoute(useEntryRoute=false){
  if(!selected.length)throw new Error("The selected circuit pit lane is not ready.");
  route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
 }
-function tryEnterPitLane(){
- if(pitLaneDriving||!pitEntryRoute.length||!car||!nearestInfo||car.reverse)return false;
- const progress=nearestInfo.progress,localHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
- const entryDelta=(progress-pitEntryCircuitProgress+1)%1;
- if((entryDelta>.024&&entryDelta<.976)||nearestInfo.offset<Math.max(3.6,localHalf*.64)||nearestInfo.offset>localHalf+18||Math.abs(car.u)<2.5)return false;
+function pitEntryProgressDelta(progress){
+ return (progress-pitEntryCircuitProgress+1)%1;
+}
+function pitEntryMergeWindow(progress){
+ const delta=pitEntryProgressDelta(progress);
+ return delta<=.035||delta>=.985;
+}
+function pitEntryApproachAvailable(){
+ if(pitLaneDriving||!pitEntryRoute.length||!car||!nearestInfo||car.reverse||Math.abs(car.u)<2.5)return false;
+ if(!pitEntryMergeWindow(nearestInfo.progress))return false;
+ const localHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
+ // The pit branch is on the right-hand side. Being on the normal racing line
+ // must never silently select the pit route.
+ if(nearestInfo.offset<Math.max(2.5,localHalf*.34)||nearestInfo.offset>localHalf+7.5)return false;
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
- if(headingDot<.42)return false;
+ if(headingDot<.50)return false;
+ let nearestEntryDistance=Infinity;
+ for(let i=0;i<pitEntryRoute.length;i+=2){
+  const point=pitEntryRoute[i].p,dx=car.x-point.x,dz=car.z-point.z;
+  const distance=Math.hypot(dx,dz);
+  if(distance<nearestEntryDistance)nearestEntryDistance=distance;
+ }
+ return nearestEntryDistance<=9.5;
+}
+function updatePitButtonPrompt(){
+ if(pitLaneDriving){setPitButtonAvailable(true);return;}
+ setPitButtonAvailable(pitEntryApproachAvailable());
+}
+function requestPitEntry(){
+ if(!running||paused||pitLaneDriving)return false;
+ if(!pitEntryApproachAvailable()){
+  showRaceControlMessage("PIT ENTRY OPTIONAL · FOLLOW THE RIGHT-HAND ENTRY LINE","info",2.8);
+  return false;
+ }
  const x=car.x,z=car.z,y=car.y;
  activatePitLaneRoute(true);
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
- $("trackState").textContent="PIT LANE · 80 KM/H";$("trackState").style.color="#f0c75c";
+ $("trackState").textContent="PIT ENTRY · 80 KM/H";$("trackState").style.color="#f0c75c";
  setPitButtonAvailable(true);
+ showRaceControlMessage("PIT ENTRY SELECTED · FOLLOW THE PIT LANE","info",2.8);
+ showTeamRadio("Pit entry confirmed. Follow the line to the pit lane. Box when you're ready for service.");
  return true;
+}
+function handlePitButtonAction(){
+ if(pitLaneDriving)requestPitService();
+ else requestPitEntry();
 }
 function mergeOntoCircuit(){
  if(!pitLaneDriving)return;
@@ -6336,10 +6369,13 @@ function updatePhysics(dt){
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
- if(!pitLaneDriving&&tryEnterPitLane())nearestInfo=findNearest(car.x,car.z,car.y,null);
-  // Guardrails are collision surfaces, not teleport triggers. Resolve only outward normal velocity.
+ if(!pitLaneDriving)updatePitButtonPrompt();
+  // Pit entry is an explicit branch; the normal circuit remains driveable through its opening.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
- const side=Math.sign(nearestInfo.offset)||1,railDistance=pitLaneDriving?PIT_LANE_WIDTH*.5+2.7:roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8,bodyHalfWidth=.92;
+ const side=Math.sign(nearestInfo.offset)||1;
+ const pitEntryOpening=!pitLaneDriving&&side===1&&pitEntryMergeWindow(nearestInfo.progress);
+ const railDistance=pitLaneDriving?PIT_LANE_WIDTH*.5+2.7:pitEntryOpening?Infinity:roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8;
+ const bodyHalfWidth=.92;
  const vx=car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw);
  const vz=car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw);
  const normalVelocity=vx*right.x+vz*right.z,outwardVelocity=normalVelocity*side;
@@ -6967,9 +7003,10 @@ function updatePitStationUI(){
 }
 function setPitButtonAvailable(available){
  const button=$("pitStopBtn");if(!button)return;
+ const label=pitLaneDriving?"BOX":"PIT IN";
  button.style.display=available?"inline-flex":"none";
- button.textContent=available?"BOX":"PIT";
- button.setAttribute("aria-label",available?"Call the pit crew":"Pit stop unavailable");
+ button.textContent=label;
+ button.setAttribute("aria-label",pitLaneDriving?"Call the pit crew":"Choose the optional pit entry");
 }
 function pitRouteSampleAt(progress){
  const count=route.length;if(count<2)return null;
@@ -7605,7 +7642,7 @@ function bindControls(){
  window.addEventListener("keydown",e=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
-  if(e.code==="KeyP"){e.preventDefault();requestPitService();}
+  if(e.code==="KeyP"&&!e.repeat){e.preventDefault();handlePitButtonAction();}
   if(e.code==="KeyB"){e.preventDefault();openChampionship();}
   if(e.code==="KeyV"){e.preventDefault();toggleBroadcast();}
   if(e.code==="KeyG"){e.preventDefault();toggleTimeTrialGhost();}
@@ -7653,7 +7690,7 @@ function bindControls(){
  safeBind("camera look",bindCameraLook);
  const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
  safeBind("pit station controls",bindPitStation);safeBind("pit service controls",bindPitService);
- safeClick("startBtn",openPitStation);safeClick("pitStopBtn",requestPitService);safeClick("broadcastBtn",toggleBroadcast);safeClick("ghostToggleBtn",toggleTimeTrialGhost);
+ safeClick("startBtn",openPitStation);safeClick("pitStopBtn",handlePitButtonAction);safeClick("broadcastBtn",toggleBroadcast);safeClick("ghostToggleBtn",toggleTimeTrialGhost);
  safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
  safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
  safeClick("pauseBtn",pauseGame);safeClick("resumeBtn",resumeGame);
