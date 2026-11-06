@@ -3623,7 +3623,7 @@ let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulat
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false;
-let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"};
+let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
 let pitCinematic={active:false,phase:"idle",elapsed:0,duration:0,startProgress:0,targetProgress:.60,serviceDuration:6.4,boxY:0,releaseHold:0,previousProgress:0};
 let pitCrewRoot=null,pitCrewActors=[],pitCrewJacks=[],pitSavedWheelVisibility=[],pitWheelSwapStates=[];
 const CHAMPIONSHIP_STORAGE_KEY="apexFormulaWorldTourV1";
@@ -5426,11 +5426,13 @@ function updateOpponents(dt){
  const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
  const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
+  bot.contactCooldown=Math.max(0,(bot.contactCooldown||0)-dt);
+  bot.incidentTimer=Math.max(0,(bot.incidentTimer||0)-dt);
   let index=Math.floor(bot.progress*count)%count;
   const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
-  let desiredOffset=bot.baseOffset,blocked=false;
+  let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
   const laneIsClear=candidate=>{
    for(const item of traffic){
     if(item.bot===bot)continue;
@@ -5459,6 +5461,7 @@ function updateOpponents(dt){
    else target*=.78;
   }else if(bot.passCommitment>0){bot.passCommitment=Math.max(0,bot.passCommitment-dt);desiredOffset=bot.targetOffset;}
   bot.targetOffset=desiredOffset;
+  if(bot.incidentTimer>0)target=Math.min(target,Math.max(24,bot.baseSpeed*.58));
   if(raceFlag==="VSC")target=Math.min(target,42);else if(raceFlag==="YELLOW")target=Math.min(target,58);
   bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
   const oldProgress=bot.progress;bot.progress=(bot.progress+bot.speed*dt/aiLength)%1;
@@ -5474,6 +5477,34 @@ function updateOpponents(dt){
   const aiSteer=clamp(headingDelta*.62,-.18,.18)+(bot.targetOffset-bot.offset)*.012;
   bot.frontPivots.forEach(p=>p.rotation.y=aiSteer);bot.wheelSpin+=bot.speed*dt/wheelRadius;bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);
  });
+ resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt);
+}
+function resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt){
+ aiIncidentRadioCooldown=Math.max(0,aiIncidentRadioCooldown-dt);
+ if(currentSessionMode==="practice"||pitLaneDriving||opponents.length<2)return;
+ for(let i=0;i<opponents.length;i++){
+  const a=opponents[i];if((a.contactCooldown||0)>0)continue;
+  for(let j=i+1;j<opponents.length;j++){
+   const b=opponents[j];if((b.contactCooldown||0)>0)continue;
+   let delta=b.progress-a.progress;if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
+   const longitudinal=delta*aiLength,lateral=b.offset-a.offset;
+   if(Math.abs(longitudinal)>4.7||Math.abs(lateral)>2.25)continue;
+   a.speed*=.72;b.speed*=.72;a.contactCooldown=b.contactCooldown=3.2;
+   a.incidentTimer=b.incidentTimer=1.35;
+   const away=lateral>=0?-1:1;
+   a.incidentTargetOffset=clamp(a.offset+away*1.15,-laneLimit,laneLimit);
+   b.incidentTargetOffset=clamp(b.offset-away*1.15,-laneLimit,laneLimit);
+   const index=Math.floor((((a.progress+b.progress)*.5)%1)*aiRoute.length)%aiRoute.length;
+   const impact=aiRoute[index].p.clone();impact.y+=.58;spawnCrashParticles(impact,Math.sign(lateral)||1,.48);
+   if(aiIncidentRadioCooldown<=0){
+    setRaceFlag("YELLOW",5.2);
+    showRaceControlMessage("AI CONTACT · YELLOW FLAG","yellow",4.2);
+    showTeamRadio(a.driverName+" and "+b.driverName+" have made contact. Yellow flag — watch for debris.");
+    aiIncidentRadioCooldown=8;
+   }
+   break;
+  }
+ }
 }
 
 function inferDamageZone(name){
