@@ -368,6 +368,33 @@ input[type=range]{accent-color:#ff765e}
 @media(max-width:430px){.pit-tyre-grid,.pit-weather-grid{gap:4px}.pit-tyre-card{padding:7px 2px}.pit-tyre-card small,.pit-weather-card small{font-size:6px}.pitstation-bay{height:160px}.pitstation-footer>div>small{line-height:1.5}}
 </style>
 
+<style id="apexUpgradeStyles">
+ #menu{padding:clamp(6px,1vw,14px)}#menu .menu{width:min(1180px,96vw);max-height:90dvh;grid-template-columns:.82fr 1.18fr;border-radius:16px}
+ #menu .menuleft{padding:17px 19px}#menu .menuleft h1{font-size:clamp(46px,5.4vw,72px);margin:10px 0}
+ #menu .menu-roundline{margin-top:9px;font-size:8px}#menu .menu-tagline{font-size:10px;line-height:1.5}
+ #menu #trackPreview{height:clamp(94px,14vh,145px);margin:10px 0 7px}#menu .chips{gap:5px;margin-top:8px}
+ #menu .chip{padding:6px 7px;font-size:8px}#menu .menuright{padding:12px 14px;gap:6px}
+ #menu .menuright h2{font-size:14px}#menu .field{gap:4px}#menu .field label{font-size:7px}
+ #menu .field select{min-height:33px;padding:6px 8px}#menu .two{gap:7px}
+ #menu .team-livery-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+ #menu .team-swatch{display:flex;align-items:center;justify-content:center;min-width:0;min-height:36px;padding:4px 2px;border:1px solid #ffffff25;border-radius:7px;background:linear-gradient(90deg,var(--p) 0 70%,var(--a) 70%);color:#fff;text-shadow:0 1px 3px #000;font-size:7px;font-weight:950;line-height:1.1;text-align:center}
+ #menu .team-swatch.active{outline:2px solid #ffd17a;outline-offset:1px;box-shadow:0 0 12px #ffba5b33}
+ #menu .team-livery-note{display:block;margin-top:4px;color:#758899;font-size:7px}#menu .action.race-action{min-height:43px;font-size:13px;letter-spacing:.14em}
+ #menu .note{font-size:7px;line-height:1.35}
+ @media(max-width:760px){#menu .menu{max-height:98dvh}#menu .menuleft{padding:12px 14px 9px}#menu .menuleft h1{font-size:46px;margin:8px 0}#menu #trackPreview{height:86px;margin:7px 0 5px}#menu .menuright{padding:9px 12px;gap:5px}#menu .team-livery-grid{gap:3px}#menu .team-swatch{min-height:33px;font-size:6px}}
+ </style>
+<style id="pitStrategyStyles">
+ .pit-plan-overlay{position:fixed;inset:0;z-index:41;display:none;place-items:center;padding:14px;background:#02070bdf;backdrop-filter:blur(9px)}
+ .pit-plan-overlay.open{display:grid}.pit-plan-card{width:min(560px,96vw);padding:21px;border:1px solid #ffffff2d;border-radius:16px;background:linear-gradient(145deg,#172a38,#09131d);box-shadow:0 26px 90px #000b}
+ .pit-plan-card h2{margin:6px 0 7px;font-size:25px}.pit-plan-card>p{margin:0;color:#9cabb8;font-size:11px;line-height:1.6}
+ .pit-plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+ .pit-plan-grid label{display:grid;gap:7px;color:#9aabba;font-size:8px;font-weight:950;letter-spacing:.1em}
+ .pit-plan-grid select{width:100%;min-width:0;padding:10px;border:1px solid #ffffff24;border-radius:8px;background:#121e29;color:#f1f5f7;font:inherit;letter-spacing:normal}
+ .pit-plan-grid input{width:100%;accent-color:#ff765e}.pit-plan-grid output{color:#ffd166;text-align:right}
+ .pit-plan-grid small{color:#7f91a0;font-size:8px;font-weight:500;letter-spacing:normal}
+ .pit-plan-note{margin-top:13px;color:#8395a4;font-size:8px}.pit-plan-actions{display:flex;gap:8px;margin-top:16px}.pit-plan-actions button{flex:1;min-height:42px}
+ @media(max-width:760px){.pit-plan-card{padding:15px}.pit-plan-grid{gap:8px}.pit-plan-actions{flex-direction:column}}
+ </style>
 </head>
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
@@ -385,7 +412,7 @@ input[type=range]{accent-color:#ff765e}
       <div class="eyebrow">APEX GRAND PRIX · WORLD TOUR</div>
       <div class="menu-roundline"><span>RACE WEEKEND</span><b>LIGHTS OUT AWAITS</b><i>01 / 06</i></div>
       <h1>APEX<br><span>FORMULA</span></h1>
-      <p class="menu-tagline">THE GRID IS YOURS. Six legendary circuits. One Red Bull-inspired open-wheel machine. Build your setup, pick your line and race for the flag.</p>
+      <p class="menu-tagline">THE GRID IS YOURS. Choose your team-inspired colours, build your setup and race a full field across six legendary circuits.</p>
       <canvas id="trackPreview" width="760" height="380"></canvas>
       <div class="previewcaption"><strong id="previewName">CIRCUIT DE SPA-FRANCORCHAMPS</strong><span id="previewLength">7.004 KM · 19 TURNS</span></div>
       <div class="chips"><span class="chip"><b>06</b> CIRCUITS</span><span class="chip"><b>05</b> CAMERA VIEWS</span><span class="chip"><b>V6</b> HYBRID SOUND</span><span class="chip"><b>LIVE</b> TELEMETRY</span></div>
@@ -394,14 +421,25 @@ input[type=range]{accent-color:#ff765e}
       <div class="menu-section-head"><div><div class="eyebrow">RACE WEEKEND</div><h2>Grid configuration</h2></div><button class="secondary" id="menuSettingsBtn">⚙ SETTINGS</button></div>
       <div class="field"><label for="gameModeSelect">Game mode</label><select id="gameModeSelect"><option value="quick" selected>Quick race · single event</option><option value="timeTrial">Time Trial · personal best ghost</option><option value="championship">World championship · 6 rounds</option></select></div>
       <div class="two"><div class="field"><label for="trackSelect">Select Grand Prix circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div><div class="field"><label>Season standings</label><button class="secondary" id="championshipOpenBtn" type="button">VIEW CHAMPIONSHIP</button></div></div>
-      <div class="field"><label>Car livery</label><div class="palette" id="liveryPalette"><button class="swatch active" data-color="#e7473e" style="--swatch:#e7473e" aria-label="Racing red"></button><button class="swatch" data-color="#e8e9e6" style="--swatch:#e8e9e6" aria-label="Silver"></button><button class="swatch" data-color="#1884ed" style="--swatch:#1884ed" aria-label="Blue"></button><button class="swatch" data-color="#f1c442" style="--swatch:#f1c442" aria-label="Gold"></button><button class="swatch" data-color="#44bd8a" style="--swatch:#44bd8a" aria-label="Green"></button></div></div>
+      <div class="field"><label>Choose your team livery</label><div class="team-livery-grid" id="liveryPalette">
+<button class="team-swatch active" data-team-id="redbull" style="--p:#142c56;--a:#e7bf45">Red Bull</button>
+<button class="team-swatch" data-team-id="ferrari" style="--p:#dc0000;--a:#f5eee1">Ferrari</button>
+<button class="team-swatch" data-team-id="mercedes" style="--p:#00a19b;--a:#e7ecec">Mercedes</button>
+<button class="team-swatch" data-team-id="mclaren" style="--p:#ff8700;--a:#202020">McLaren</button>
+<button class="team-swatch" data-team-id="astonmartin" style="--p:#00665e;--a:#c7a56a">Aston Martin</button>
+<button class="team-swatch" data-team-id="alpine" style="--p:#0878d1;--a:#f28caf">Alpine</button>
+<button class="team-swatch" data-team-id="williams" style="--p:#0755c9;--a:#f0f3f7">Williams</button>
+<button class="team-swatch" data-team-id="haas" style="--p:#e5e7e8;--a:#d71920">Haas</button>
+<button class="team-swatch" data-team-id="racingbulls" style="--p:#18345f;--a:#48c3df">Racing Bulls</button>
+<button class="team-swatch" data-team-id="sauber" style="--p:#009b68;--a:#f1f1eb">Sauber</button>
+</div><small class="team-livery-note">Team-inspired liveries; no official logos.</small></div>
       <div class="two">
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="intermediate">Intermediate</option><option value="wet">Full wet</option></select></div>
         <div class="field"><label for="assistSelect">Driving aids</label><select id="assistSelect"><option value="sport">Sport</option><option value="assisted" selected>Assisted</option><option value="simulation">Simulation</option></select></div>
       </div>
       <div class="two">
         <div class="field"><label for="transmissionSelect">Transmission</label><select id="transmissionSelect"><option value="automatic" selected>Automatic · 8-speed</option><option value="sequential">Sequential paddles</option><option value="manual">Manual + clutch</option></select></div>
-        <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="2">2 cars</option><option value="4" selected>4 cars</option><option value="6">6 cars</option><option value="8">8 cars</option></select></div>
+        <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="4">4 cars</option><option value="8" selected>8 cars</option><option value="12">12 cars</option><option value="16">16 cars</option><option value="19">19 cars · full grid</option></select></div>
       </div>
       <div class="two">
         <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="easy">Relaxed</option><option value="balanced" selected>Balanced</option><option value="fast">Fast</option></select></div>
@@ -431,7 +469,7 @@ input[type=range]{accent-color:#ff765e}
 <div id="pitStationOverlay" class="overlay pitstation-overlay" aria-label="Red Bull Racing pit station">
  <section class="pitstation-shell">
   <header class="pitstation-header">
-   <div class="pitstation-brand"><span class="pitstation-mark">RB</span><div><b>RED BULL RACING</b><small>APEX GRAND PRIX · TEAM GARAGE</small></div></div>
+   <div class="pitstation-brand"><span class="pitstation-mark" id="pitTeamMark">RB</span><div><b id="pitTeamName">ORACLE RED BULL RACING</b><small>APEX GRAND PRIX · TEAM GARAGE</small></div></div>
    <div class="pitstation-head-meta"><span id="pitTrackName">SPA-FRANCORCHAMPS</span><small>GARAGE BAY 01 · PRACTICE RELEASE</small></div>
    <button class="secondary" id="pitBackBtn">← GARAGE</button>
   </header>
@@ -446,7 +484,7 @@ input[type=range]{accent-color:#ff765e}
       <div class="pitcar-wing pitcar-front-wing"></div><div class="pitcar-wing pitcar-rear-wing"></div>
       <i class="pitcar-wheel pitcar-wheel-a"></i><i class="pitcar-wheel pitcar-wheel-b"></i><i class="pitcar-wheel pitcar-wheel-c"></i><i class="pitcar-wheel pitcar-wheel-d"></i>
      </div>
-     <div class="pitstation-floorline"></div><div class="pitstation-floorlabel">RB · 26</div>
+     <div class="pitstation-floorline"></div><div class="pitstation-floorlabel" id="pitStationFloorLabel">RB · APEX</div>
     </div>
     <div class="pitstation-telemetry">
      <div><small>CAR</small><b>RB FORMULA · V6 HYBRID</b></div>
@@ -487,6 +525,21 @@ input[type=range]{accent-color:#ff765e}
     <button class="secondary pit-race-button" id="pitRaceBtn"><span>RACE · START ON TRACK</span><b>→</b></button>
    </div>
   </footer>
+ </section>
+</div>
+
+<div id="pitPlanOverlay" class="pit-plan-overlay" aria-label="Pit stop strategy">
+ <section class="pit-plan-card">
+  <div class="eyebrow">APEX PIT WALL · LIVE STRATEGY</div><h2>BOX THIS LAP</h2>
+  <p>Choose your service before the crew releases you. Your garage and pit box match your selected team.</p>
+  <div class="pit-plan-grid">
+   <label>TYRE COMPOUND<select id="pitPlanTyreSelect"><option value="soft">Soft · maximum grip</option><option value="medium">Medium · balanced</option><option value="hard">Hard · long stint</option><option value="intermediate">Intermediate · damp</option><option value="wet">Full wet · heavy rain</option></select></label>
+   <label>REPAIRS<select id="pitPlanRepairSelect"><option value="none">Tyres only · no repairs</option><option value="aero">Aero package · wings and floor</option><option value="full" selected>Full repair · all systems</option></select></label>
+   <label>FRONT WING <output id="pitPlanWingValue">0 clicks</output><input id="pitPlanWingRange" type="range" min="-2" max="2" step="1" value="0"><small>More clicks add downforce; fewer reduce drag.</small></label>
+   <label>CAR RELEASE<select id="pitPlanReleaseSelect"><option value="manual" selected>Manual · hold accelerator</option><option value="automatic">Automatic · when ready</option></select></label>
+  </div>
+  <div class="pit-plan-note">Tyres and repairs only — no refuelling.</div>
+  <div class="pit-plan-actions"><button class="secondary" id="pitPlanCancelBtn">CANCEL · STAY OUT</button><button class="action" id="pitPlanConfirmBtn">CONFIRM PIT STRATEGY →</button></div>
  </section>
 </div>
 
@@ -3565,29 +3618,34 @@ function nearestTerrainSample(x,z){
  }
  return {sample:nearest,distance:Math.sqrt(best)};
 }
-let shiftMode="automatic",aiSkill="balanced",opponentCount=4,raceLaps=3,graphicsQuality="medium",opponents=[];
+let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
-let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium";
+let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false;
+let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
 let pitCinematic={active:false,phase:"idle",elapsed:0,duration:0,startProgress:0,targetProgress:.60,serviceDuration:6.4,boxY:0,releaseHold:0,previousProgress:0};
 let pitCrewRoot=null,pitCrewActors=[],pitCrewJacks=[],pitSavedWheelVisibility=[],pitWheelSwapStates=[];
 const CHAMPIONSHIP_STORAGE_KEY="apexFormulaWorldTourV1";
 const CHAMPIONSHIP_TRACK_ORDER=["spa","monza","silverstone","monaco","suzuka","laguna"];
 const CHAMPIONSHIP_TRACK_LABELS=["SPA","MONZA","SILVERSTONE","MONACO","SUZUKA","LAGUNA SECA"];
 const CHAMPIONSHIP_POINTS=[25,18,15,12,10,8,6,4,2,1];
-const CHAMPIONSHIP_AI_DRIVERS=[
- {id:"ai1",name:"Alex Carter",team:"SILVER ARROW"},
- {id:"ai2",name:"Noah Hayes",team:"PAPAYA RACING"},
- {id:"ai3",name:"Luca Moretti",team:"SCUDERIA ROSSO"},
- {id:"ai4",name:"Ethan Brooks",team:"GREENWORKS"},
- {id:"ai5",name:"Oliver Reed",team:"SILVER ARROW"},
- {id:"ai6",name:"Mateo Rossi",team:"PAPAYA RACING"},
- {id:"ai7",name:"Leo Martin",team:"SCUDERIA ROSSO"},
- {id:"ai8",name:"Kai Tanaka",team:"GREENWORKS"}
+const TEAM_LIVERIES=[
+{id:"redbull",name:"ORACLE RED BULL RACING",mark:"RB",primary:"#142c56",accent:"#e7bf45"},
+{id:"ferrari",name:"SCUDERIA FERRARI",mark:"SF",primary:"#dc0000",accent:"#f5eee1"},
+{id:"mercedes",name:"MERCEDES-AMG PETRONAS",mark:"AMG",primary:"#00a19b",accent:"#e7ecec"},
+{id:"mclaren",name:"MCLAREN",mark:"MCL",primary:"#ff8700",accent:"#202020"},
+{id:"astonmartin",name:"ASTON MARTIN",mark:"AM",primary:"#00665e",accent:"#c7a56a"},
+{id:"alpine",name:"BWT ALPINE",mark:"A",primary:"#0878d1",accent:"#f28caf"},
+{id:"williams",name:"WILLIAMS RACING",mark:"W",primary:"#0755c9",accent:"#f0f3f7"},
+{id:"haas",name:"MONEYGRAM HAAS",mark:"H",primary:"#e5e7e8",accent:"#d71920"},
+{id:"racingbulls",name:"RACING BULLS",mark:"VCARB",primary:"#18345f",accent:"#48c3df"},
+{id:"sauber",name:"KICK SAUBER",mark:"KICK",primary:"#009b68",accent:"#f1f1eb"}
 ];
-const CHAMPIONSHIP_TEAMS=["APEX GP","SILVER ARROW","PAPAYA RACING","SCUDERIA ROSSO","GREENWORKS"];
-let gameMode="quick",quickTrackSelection="spa",quickOpponentSelection=4,championshipState=null;
+const CHAMPIONSHIP_AI_NAMES=["Alex Carter","Noah Hayes","Luca Moretti","Ethan Brooks","Oliver Reed","Mateo Rossi","Leo Martin","Kai Tanaka","Daniel Novak","Theo Laurent","Carlos Silva","Jack Evans","Finn Walker","Hugo Meyer","Arjun Patel","Oscar Lind","Max Turner","Samir Khan","Ben Foster"];
+const CHAMPIONSHIP_AI_DRIVERS=CHAMPIONSHIP_AI_NAMES.map((name,index)=>{const team=TEAM_LIVERIES[index%TEAM_LIVERIES.length];return {id:"ai"+(index+1),name,team:team.name,teamId:team.id};});
+const CHAMPIONSHIP_TEAMS=["APEX GP",...TEAM_LIVERIES.map(team=>team.name)];
+let gameMode="quick",quickTrackSelection="spa",quickOpponentSelection=8,championshipState=null;
 const TIME_TRIAL_STORAGE_KEY="apexFormulaTimeTrialV1";
 let timeTrialBest=Infinity,timeTrialGhostData=[],ghostRoot=null,ghostEnabled=true,lapRecording=[],lapRecordAccumulator=0;
 let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0,broadcastCircuitProgress=0,teamRadioTimer=0,tyreWearRadioLap=-1;
@@ -3768,7 +3826,7 @@ function applyGameModeSelection(){
  const inSeason=gameMode==="championship",inTimeTrial=gameMode==="timeTrial";
  $("trackSelect").disabled=inSeason;$("opponentCountSelect").disabled=inSeason||inTimeTrial;
  if(inSeason){
-  opponentCount=8;$("opponentCountSelect").value="8";
+  opponentCount=19;$("opponentCountSelect").value="19";
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[Math.min(championshipState.round,CHAMPIONSHIP_TRACK_ORDER.length-1)];
   $("trackSelect").value=activeTrack;
  }else if(inTimeTrial){opponentCount=0;$("opponentCountSelect").value="0";}
@@ -3802,7 +3860,7 @@ function completeChampionshipRound(){
  return " Championship: P"+playerPosition+" · +"+playerPoints+" points. "+(remaining>0?remaining+" rounds remain.":"Season complete — final standings saved.");
 }
 
-let selectedLivery="#e7473e",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
+let selectedTeamId="redbull",selectedLivery="#142c56",selectedAccent="#e7bf45",tyreCompound="medium",assistMode="assisted",weather={kind:"clear",rain:0,temp:22,cloud:20,fog:0};
 let timeOfDay=14,daylightLevel=1,nightLevel=0,weatherEvolutionEnabled=false,weatherForecastTimer=0,weatherForecastRefresh=0,weatherRainWarningSent=false,trackRubber=0;
 let trackWetness=0,wetnessVisualTimer=0,lastWetnessVisual=-1;
 let soundEnabled=true,audioCtx=null,engineOsc=null,engineOsc2=null,engineLowOsc=null,engineWhineOsc=null,enginePulseOsc=null,enginePulseGain=null,engineFilter=null,engineWhineFilter=null,engineGain=null,engine2Gain=null,engineLowGain=null,engineWhineGain=null,intakeSource=null,intakeFilter=null,intakeGain=null,skidOsc=null,skidGain=null,windSource=null,windGain=null,roadNoiseSource=null,roadNoiseFilter=null,roadNoiseGain=null,rainSource=null,rainGain=null;
@@ -4669,26 +4727,40 @@ function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples
  posts.count=index;posts.castShadow=true;trackGroup.add(posts);
 }
 function addPitPaddockBuildings(){
- const buildingGlass=new THREE.MeshStandardMaterial({color:0x7392a2,metalness:.18,roughness:.24,emissive:0x1b2c38,emissiveIntensity:.12});
- const bodyColors=[0x1d3041,0x263746,0x37434a,0x263f4e,0x303b49,0x1c3444];
- const labels=["TEAM HOSPITALITY","ENGINEERING","RACE CONTROL","PIT EQUIPMENT","TYRE CENTRE","PADDOCK CLUB"];
- for(let i=0;i<6;i++){
-  const progress=.012+i*.0105,routeSample=route[Math.floor(progress*route.length)%route.length],side=i%3===1?-1:1;
-  const extra=side>0?48+(i%2)*5:46+(i%2)*6;
-  const width=17+(i%3)*2,length=26+(i%2)*7,height=5.6+(i%3)*.6;
-  const p=safeTracksidePoint(routeSample,side,roadWidth/2+extra,8,Math.hypot(width,length)*.5),ground=terrainHeightAt(p.x,p.z),building=new THREE.Group();
-  building.position.set(p.x,ground,p.z);
-  building.rotation.y=Math.atan2(routeSample.tan.x,routeSample.tan.z)+(side>0?0:Math.PI);
-  const shell=new THREE.Mesh(new THREE.BoxGeometry(width,height,length),makeMat(bodyColors[i],.72,.14));shell.position.y=height/2;shell.castShadow=true;building.add(shell);
-  const glassBand=new THREE.Mesh(new THREE.BoxGeometry(.12,1.55,length*.84),buildingGlass);glassBand.position.set(-width/2-.08,3.0,0);building.add(glassBand);
-  const roof=new THREE.Mesh(new THREE.BoxGeometry(width+1,.34,length+1),makeMat(i%2?0xd0d5d5:0x162633,.58,.2));roof.position.y=height+.18;roof.castShadow=true;building.add(roof);
-  const signCanvas=document.createElement("canvas");signCanvas.width=768;signCanvas.height=128;
-  const signCtx=signCanvas.getContext("2d");signCtx.fillStyle="#112335";signCtx.fillRect(0,0,768,128);signCtx.fillStyle="#f4f4ee";signCtx.font="900 48px system-ui";signCtx.textAlign="center";signCtx.textBaseline="middle";signCtx.fillText(labels[i],384,63);signCtx.fillStyle="#e34b42";signCtx.fillRect(0,117,768,11);
-  const signTexture=new THREE.CanvasTexture(signCanvas);signTexture.colorSpace=THREE.SRGBColorSpace;
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(width*.78,1.55),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));
-  sign.position.set(-width/2-.17,4.65,0);sign.rotation.y=-Math.PI/2;building.add(sign);
-  const ventsMat=makeMat(0x87939a,.7,.35);
-  for(let v=0;v<2;v++){const vent=new THREE.Mesh(new THREE.BoxGeometry(3.2,.65,2.5),ventsMat);vent.position.set((v?1:-1)*width*.25,height+.65,0);building.add(vent);}
+ if(!pitLaneSamples.length||!environmentGroup)return;
+ const glass=new THREE.MeshStandardMaterial({color:0x7392a2,metalness:.22,roughness:.22,emissive:0x182c38,emissiveIntensity:.18});
+ const concrete=makeMat(0x515b63,.94,.02),dark=makeMat(0x101820,.7,.12),metal=makeMat(0x84919b,.48,.55);
+ const garageWidth=17,garageLength=18.5,garageHeight=7.2;
+ for(let i=0;i<TEAM_LIVERIES.length;i++){
+  const team=TEAM_LIVERIES[i],fraction=.12+(i/(TEAM_LIVERIES.length-1))*.76;
+  const sample=pitLaneSamples[Math.floor(fraction*(pitLaneSamples.length-1))]||pitLaneSamples[0];
+  const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  const centre=sample.p.clone().addScaledVector(right,PIT_LANE_WIDTH*.5+17.5);
+  const ground=terrainHeightAt(centre.x,centre.z),building=new THREE.Group();
+  building.position.set(centre.x,ground,centre.z);building.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
+  const primary=makeMat(parseInt(team.primary.slice(1),16),.48,.25),accent=makeMat(parseInt(team.accent.slice(1),16),.5,.22);
+  const shell=new THREE.Mesh(new THREE.BoxGeometry(garageWidth,garageHeight,garageLength),makeMat(0x1a2732,.7,.12));
+  shell.position.y=garageHeight/2;shell.castShadow=true;shell.receiveShadow=true;building.add(shell);
+  const windows=new THREE.Mesh(new THREE.BoxGeometry(.09,1.55,garageLength*.82),glass);windows.position.set(-garageWidth/2-.07,5,0);building.add(windows);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(garageWidth+1,.38,garageLength+1),dark);roof.position.y=garageHeight+.18;building.add(roof);
+  const roofStripe=new THREE.Mesh(new THREE.BoxGeometry(.34,.42,garageLength+.7),accent);roofStripe.position.set(-garageWidth/2-.12,garageHeight+.2,0);building.add(roofStripe);
+  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.16,.55,garageLength*.9),primary);fascia.position.set(-garageWidth/2-.12,6.35,0);building.add(fascia);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(.18,4.25,6.8),dark);door.position.set(-garageWidth/2-.12,2.35,0);building.add(door);
+  for(let slat=0;slat<10;slat++){const line=new THREE.Mesh(new THREE.BoxGeometry(.045,.045,6.65),metal);line.position.set(-garageWidth/2-.23,.45+slat*.39,0);building.add(line);}
+  const canvas=document.createElement("canvas");canvas.width=768;canvas.height=160;const ctx=canvas.getContext("2d");
+  ctx.fillStyle=team.primary;ctx.fillRect(0,0,768,160);ctx.fillStyle=team.accent;ctx.fillRect(0,137,768,23);ctx.fillStyle="#fff";
+  ctx.font="900 39px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(team.name,384,68);
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(8,1.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+  sign.position.set(-garageWidth/2-.26,5.68,0);sign.rotation.y=-Math.PI/2;building.add(sign);
+  for(const z of [-garageLength/2+.45,garageLength/2-.45]){const post=new THREE.Mesh(new THREE.BoxGeometry(.3,garageHeight,.3),primary);post.position.set(-garageWidth/2-.08,garageHeight/2,z);building.add(post);}
+  for(let v=0;v<2;v++){const vent=new THREE.Mesh(new THREE.BoxGeometry(2.8,.34,2.1),metal);vent.position.set((v?1:-1)*garageWidth*.25,garageHeight+.42,0);building.add(vent);}
+  const apron=new THREE.Mesh(new THREE.BoxGeometry(10,.14,garageLength+2),concrete);apron.position.set(-garageWidth/2-4.15,.04,0);apron.receiveShadow=true;building.add(apron);
+  const paint=makeMat(0xe9ece8,.82,.04);
+  for(let slot=0;slot<3;slot++){const z=-6+slot*6;
+   for(const x of [-garageWidth/2-8.9,-garageWidth/2+.45]){const stripe=new THREE.Mesh(new THREE.BoxGeometry(.075,.045,3.8),paint);stripe.position.set(x,.13,z);building.add(stripe);}
+   for(const edge of [-1,1]){const stripe=new THREE.Mesh(new THREE.BoxGeometry(4.3,.045,.075),paint);stripe.position.set(-garageWidth/2-4.2,.13,z+edge*1.9);building.add(stripe);}
+  }
   environmentGroup.add(building);
  }
 }
@@ -4763,6 +4835,9 @@ function buildPitLane(){
  pitEntryRoute=visualRoute;pitEntryRouteLength=polylineLength(pitEntryRoute);
  pitDriveRoute=join(driveway.samples,lane.samples,exit.samples);
  pitDriveRouteLength=polylineLength(pitDriveRoute);
+ const fractions=TEAM_LIVERIES.map((team,index)=>.12+(index/(TEAM_LIVERIES.length-1))*.76);
+ pitDriveServiceBoxProgresses=fractions.map(f=>clamp((driveway.samples.length-1+Math.round(f*(lane.samples.length-1)))/Math.max(1,pitDriveRoute.length-1),0,1));
+ pitEntryServiceBoxProgresses=fractions.map(f=>clamp((pitEntryApproachSamples.length-1+Math.round(f*(lane.samples.length-1)))/Math.max(1,pitEntryRoute.length-1),0,1));
  const pitLengthTarget=def.pitLaneLengthM||entryBefore+exitAfter;
  const pitAudit={circuit:def.name,targetPitLaneLengthM:pitLengthTarget,modelPitEntryToExitM:+pitEntryRouteLength.toFixed(1),entryReferenceBeforeStartM:entryBefore,exitReferenceAfterStartM:exitAfter,pitLaneWidthM:PIT_LANE_WIDTH,deltaPercent:+(100*(pitEntryRouteLength-pitLengthTarget)/pitLengthTarget).toFixed(1)};
  console.info("APEX PIT-LANE DIMENSION AUDIT",pitAudit);
@@ -5325,39 +5400,25 @@ function updateRaceStart(dt){
  }else overlay.classList.remove("open");
 }
 function spawnOpponents(){
- clearOpponents();
- const colors=[0x1689e8,0xf1c446,0x39b875,0xd9dfe5,0x9b62d4,0xf07936,0x4eabb4,0xb7c0c9];
+ clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
  for(let i=0;i<opponentCount;i++){
   const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);
-  const playerLights=[];root.traverse(o=>{if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)playerLights.push(o);});playerLights.forEach(o=>o.parent?.remove(o));
-  const color=new THREE.Color(colors[i%colors.length]);
-  root.traverse(o=>{
-   if(!o.isMesh||!o.material)return;
-   const paintMaterial=mat=>{
-    if(!mat||!mat.color)return mat;
-    if(mat.color.getHexString()===selectedLivery.replace("#","").toLowerCase()){
-     const cloned=mat.clone();cloned.color.copy(color);return cloned;
-    }
-    return mat;
-   };
-   o.material=Array.isArray(o.material)?o.material.map(paintMaterial):paintMaterial(o.material);
-  });
-  const gridDistance=14+Math.floor(i/2)*14+(i%2)*1.5;
-  const progress=(1-gridDistance/routeLength+1)%1;
-  const wheels=[],frontPivots=[];
-  root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
-  const baseOffset=(i%2?1:-1)*(1.25+(i%3)*.35),pace=base+(i%3-1)*1.7;
-  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
-  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:driver.team,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0};
-  const sample=route[Math.floor(progress*route.length)%route.length];
-  const right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
-  root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
-  root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);
+  const lights=[];root.traverse(o=>{if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)lights.push(o);});lights.forEach(o=>o.parent?.remove(o));
+  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length],team=TEAM_LIVERIES.find(x=>x.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
+  const primary=new THREE.Color(team.primary),accent=new THREE.Color(team.accent),playerHex=selectedLivery.replace("#","").toLowerCase(),accentHex=selectedAccent.replace("#","").toLowerCase();
+  root.traverse(o=>{if(!o.isMesh||!o.material)return;const paint=mat=>{if(!mat||!mat.color)return mat;const hex=mat.color.getHexString().toLowerCase();if(hex===playerHex){const c=mat.clone();c.color.copy(primary);return c;}if(hex===accentHex){const c=mat.clone();c.color.copy(accent);return c;}return mat;};o.material=Array.isArray(o.material)?o.material.map(paint):paint(o.material);});
+  const gridDistance=8+Math.floor(i/2)*8.2+(i%2)*.9,progress=(1-gridDistance/routeLength+1)%1;
+  const wheels=[],frontPivots=[];root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
+  const baseOffset=(i%2?1:-1)*2,pace=base+(i%3-1)*1.7;
+  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
+  const sample=route[Math.floor(progress*route.length)%route.length],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);
   scene.add(root);opponents.push(bot);
  }
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
 }
+
 function updateOpponents(dt){
  if(!opponents.length||raceStartState==="countdown")return;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
@@ -5365,11 +5426,13 @@ function updateOpponents(dt){
  const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
  const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
+  bot.contactCooldown=Math.max(0,(bot.contactCooldown||0)-dt);
+  bot.incidentTimer=Math.max(0,(bot.incidentTimer||0)-dt);
   let index=Math.floor(bot.progress*count)%count;
   const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
-  let desiredOffset=bot.baseOffset,blocked=false;
+  let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
   const laneIsClear=candidate=>{
    for(const item of traffic){
     if(item.bot===bot)continue;
@@ -5398,6 +5461,7 @@ function updateOpponents(dt){
    else target*=.78;
   }else if(bot.passCommitment>0){bot.passCommitment=Math.max(0,bot.passCommitment-dt);desiredOffset=bot.targetOffset;}
   bot.targetOffset=desiredOffset;
+  if(bot.incidentTimer>0)target=Math.min(target,Math.max(24,bot.baseSpeed*.58));
   if(raceFlag==="VSC")target=Math.min(target,42);else if(raceFlag==="YELLOW")target=Math.min(target,58);
   bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
   const oldProgress=bot.progress;bot.progress=(bot.progress+bot.speed*dt/aiLength)%1;
@@ -5413,6 +5477,34 @@ function updateOpponents(dt){
   const aiSteer=clamp(headingDelta*.62,-.18,.18)+(bot.targetOffset-bot.offset)*.012;
   bot.frontPivots.forEach(p=>p.rotation.y=aiSteer);bot.wheelSpin+=bot.speed*dt/wheelRadius;bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);
  });
+ resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt);
+}
+function resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt){
+ aiIncidentRadioCooldown=Math.max(0,aiIncidentRadioCooldown-dt);
+ if(currentSessionMode==="practice"||pitLaneDriving||opponents.length<2)return;
+ for(let i=0;i<opponents.length;i++){
+  const a=opponents[i];if((a.contactCooldown||0)>0)continue;
+  for(let j=i+1;j<opponents.length;j++){
+   const b=opponents[j];if((b.contactCooldown||0)>0)continue;
+   let delta=b.progress-a.progress;if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
+   const longitudinal=delta*aiLength,lateral=b.offset-a.offset;
+   if(Math.abs(longitudinal)>4.7||Math.abs(lateral)>2.25)continue;
+   a.speed*=.72;b.speed*=.72;a.contactCooldown=b.contactCooldown=3.2;
+   a.incidentTimer=b.incidentTimer=1.35;
+   const away=lateral>=0?-1:1;
+   a.incidentTargetOffset=clamp(a.offset+away*1.15,-laneLimit,laneLimit);
+   b.incidentTargetOffset=clamp(b.offset-away*1.15,-laneLimit,laneLimit);
+   const index=Math.floor((((a.progress+b.progress)*.5)%1)*aiRoute.length)%aiRoute.length;
+   const impact=aiRoute[index].p.clone();impact.y+=.58;spawnCrashParticles(impact,Math.sign(lateral)||1,.48);
+   if(aiIncidentRadioCooldown<=0){
+    setRaceFlag("YELLOW",5.2);
+    showRaceControlMessage("AI CONTACT · YELLOW FLAG","yellow",4.2);
+    showTeamRadio(a.driverName+" and "+b.driverName+" have made contact. Yellow flag — watch for debris.");
+    aiIncidentRadioCooldown=8;
+   }
+   break;
+  }
+ }
 }
 
 function inferDamageZone(name){
@@ -5858,7 +5950,7 @@ function buildCar(){
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
  const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
- const yellow=makeMat(0xffd45e,.4,.2),white=makeMat(0xf4f1e8,.48,.18);
+ const yellow=makeMat(parseInt(selectedAccent.slice(1),16),.4,.2),white=makeMat(0xf4f1e8,.48,.18);
  const bodyMat=paint;
  const box=(w,h,d,mat,x,y,z,group=carRoot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
  const loft=(sections,mat,xOffset=0,segments=18)=>{
@@ -7007,6 +7099,8 @@ function updatePitStationUI(){
  const recommendation=details[tyreCompound]||details.medium;
  $("pitRecommendation").textContent=recommendation[0];$("pitRecommendationNote").textContent=recommendation[1];
  $("pitTrackName").textContent=trackDefs[activeTrack].short+" · "+trackDefs[activeTrack].country.toUpperCase();
+ const team=TEAM_LIVERIES.find(x=>x.id===selectedTeamId)||TEAM_LIVERIES[0];
+ $("pitTeamName").textContent=team.name;$("pitTeamMark").textContent=team.mark;$("pitStationFloorLabel").textContent=team.mark+" · APEX";
 }
 function setPitButtonAvailable(available){
  const button=$("pitStopBtn");if(!button)return;
@@ -7218,28 +7312,36 @@ function animatePitCrew(){
 
 function completePitService(){
  tyreCompound=pitServiceSelectedTyre;$("tyreSelect").value=tyreCompound;
+ const mode=pitServicePlan.repairMode||"full",repaired=new Set();
  for(const part of damageParts){
-  if(!part.detached||!part.mesh)continue;
+  const selected=mode==="full"||(mode==="aero"&&["frontAero","rearAero","floor"].includes(part.system));
+  if(!selected||!part.detached||!part.mesh)continue;
   const parent=part.originalParent||carRoot;if(!parent)continue;
   parent.add(part.mesh);
   if(part.originalPosition)part.mesh.position.copy(part.originalPosition);
   if(part.originalQuaternion)part.mesh.quaternion.copy(part.originalQuaternion);
   if(part.originalScale)part.mesh.scale.copy(part.originalScale);
-  part.detached=false;part.originalParent=null;part.originalPosition=null;part.originalQuaternion=null;part.originalScale=null;
+  part.detached=false;part.originalParent=null;part.originalPosition=null;part.originalQuaternion=null;part.originalScale=null;repaired.add(part.mesh);
  }
- looseDamageParts=[];crashDebris.forEach(item=>{if(item.mesh)scene.remove(item.mesh);});crashDebris=[];
- if(car){car.wear=1;car.tempF=weather.temp+58;car.tempR=weather.temp+59;car.wheelHealth={FL:100,FR:100,RL:100,RR:100};car.u=0;car.v=0;car.throttle=0;car.brake=1;car.y=pitCinematic.boxY;}
- Object.keys(vehicleHealth).forEach(key=>vehicleHealth[key]=100);vehicleDamage=0;
+ if(mode!=="none")looseDamageParts=looseDamageParts.filter(item=>!repaired.has(item.mesh));
+ if(mode==="full"){
+  crashDebris.forEach(item=>{if(item.mesh)scene.remove(item.mesh);});crashDebris=[];
+  Object.keys(vehicleHealth).forEach(key=>vehicleHealth[key]=100);vehicleDamage=0;
+  if(car)car.wheelHealth={FL:100,FR:100,RL:100,RR:100};
+ }else if(mode==="aero"){
+  vehicleHealth.frontAero=100;vehicleHealth.rearAero=100;vehicleHealth.floor=100;
+  vehicleDamage=clamp((100-Math.min(...Object.values(vehicleHealth)))/100*.72,0,.92);
+ }
+ downforceScale=clamp(downforceScale+pitServicePlan.frontWingClicks*.025,.72,1.28);
+ if(car){car.wear=1;car.tempF=weather.temp+58;car.tempR=weather.temp+59;car.u=0;car.v=0;car.throttle=0;car.brake=1;car.y=pitCinematic.boxY;}
  pitServiceActive=false;pitServiceTimer=0;if(carRoot)carRoot.position.y=car.y;
  animatePitWheelChanges(1);pitWheelSwapStates.forEach(state=>{if(state)state.completed=true;});
  pitCinematic.phase="release";pitCinematic.elapsed=0;pitCinematic.releaseHold=0;
  $("trackState").textContent="PIT EXIT · READY TO RELEASE";$("trackState").style.color="#f0c75c";
- setPitCinematicUI("APEX GP · PIT WALL","GREEN LIGHT","SERVICE COMPLETE",
-  "Fresh tyres fitted. Repairs complete. The pit lane is clear — take control and launch when ready.",
-  100,"FRESH SET FITTED · CAR RELEASED","HOLD ACCELERATE TO RELEASE");
+ const message=mode==="full"?"FULL REPAIRS COMPLETE":mode==="aero"?"AERO REPAIRS COMPLETE":"TYRES ONLY · NO REPAIRS";
+ setPitCinematicUI("APEX PIT WALL","GREEN LIGHT","SERVICE COMPLETE","Fresh tyres fitted. "+message+". Release when the pit lane is clear.",100,"FRESH SET · "+message,"HOLD ACCELERATE TO RELEASE");
  showRaceControlMessage("PIT SERVICE COMPLETE · RELEASE","info",3.6);
- showTeamRadio("Four fresh tyres on. Repairs complete. Release on your signal — build speed and rejoin safely.");
- playMenuUiSound("race");
+ showTeamRadio("Fresh tyres fitted. "+message+". Watch the pit exit and rejoin safely.");playMenuUiSound("race");
 }
 
 function updatePitService(dt){
@@ -7284,10 +7386,10 @@ function updatePitService(dt){
   return;
  }
  if(pitCinematic.phase==="release"){
-  const held=!!(keys.KeyW||keys.ArrowUp);pitCinematic.releaseHold=held?pitCinematic.releaseHold+dt:0;
+  const automatic=pitServicePlan.release==="automatic",held=automatic||!!(keys.KeyW||keys.ArrowUp);pitCinematic.releaseHold=held?pitCinematic.releaseHold+dt:0;
   const percent=clamp(pitCinematic.releaseHold/.42*100,0,100);
   $("pitCinematicProgress").style.width=percent+"%";$("pitCinematicClock").textContent="PIT RELEASE";
-  $("pitCinematicInstruction").textContent=held?"HOLD TO RELEASE · "+Math.ceil(Math.max(0,.42-pitCinematic.releaseHold)*10)/10+"s":"HOLD ACCELERATE TO RELEASE";
+  $("pitCinematicInstruction").textContent=automatic?"AUTOMATIC RELEASE":held?"HOLD TO RELEASE · "+Math.ceil(Math.max(0,.42-pitCinematic.releaseHold)*10)/10+"s":"HOLD ACCELERATE TO RELEASE";
   if(pitCinematic.releaseHold>=.42){
    pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";
    $("pitServiceOverlay").classList.remove("open");cleanupPitCrew();
@@ -7299,28 +7401,53 @@ function updatePitService(dt){
   }
  }
 }
+function selectedPitServiceBoxProgress(){
+ const index=Math.max(0,TEAM_LIVERIES.findIndex(x=>x.id===selectedTeamId));
+ const values=pitRoutePurpose==="entry"?pitEntryServiceBoxProgresses:pitDriveServiceBoxProgresses;
+ return values[index]??.60;
+}
+function openPitServicePlan(){
+ pitServiceSelectedTyre=tyreCompound;$("pitPlanTyreSelect").value=tyreCompound;
+ $("pitPlanRepairSelect").value=pitServicePlan.repairMode;
+ $("pitPlanWingRange").value=String(pitServicePlan.frontWingClicks);$("pitPlanWingValue").textContent=pitServicePlan.frontWingClicks+" clicks";
+ $("pitPlanReleaseSelect").value=pitServicePlan.release;
+ pitPlanOpen=true;paused=true;if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;}
+ silenceAudio();$("pitPlanOverlay").classList.add("open");showTeamRadio("Pit wall ready. Confirm tyres, repairs and front-wing balance.");
+}
+function cancelPitServicePlan(){
+ if(!pitPlanOpen)return;pitPlanOpen=false;$("pitPlanOverlay").classList.remove("open");
+ paused=false;previousFrame=performance.now();if(soundEnabled)startEngineLoops();
+}
+function confirmPitServicePlan(){
+ if(!pitPlanOpen)return;
+ pitServicePlan={repairMode:$("pitPlanRepairSelect").value,frontWingClicks:Number($("pitPlanWingRange").value)||0,release:$("pitPlanReleaseSelect").value==="automatic"?"automatic":"manual"};
+ pitServiceSelectedTyre=$("pitPlanTyreSelect").value;tyreCompound=pitServiceSelectedTyre;$("tyreSelect").value=tyreCompound;
+ pitPlanOpen=false;$("pitPlanOverlay").classList.remove("open");paused=false;previousFrame=performance.now();
+ if(soundEnabled)startEngineLoops();beginPitService();
+}
+function beginPitService(){
+ if(!nearestInfo||!pitLaneDriving)return;
+ const startProgress=clamp(nearestInfo.progress,0,.98),targetProgress=selectedPitServiceBoxProgress();
+ if(startProgress>=targetProgress-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.5);return;}
+ keys.KeyW=false;keys.ArrowUp=false;
+ const distance=pitRouteDistanceBetween(startProgress,targetProgress),duration=clamp(distance/20.5,2.6,18);
+ const serviceDuration=pitServicePlan.repairMode==="none"?6.4:pitServicePlan.repairMode==="aero"?7.7:9.2;
+ pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
+ pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,serviceDuration,boxY:car.y,releaseHold:0,previousProgress:startProgress};
+ car.u=0;car.v=0;car.throttle=0;car.brake=1;
+ setPitCinematicUI("APEX PIT WALL","BOX · BOX · BOX","YOUR TEAM'S SERVICE BOX","Pit limiter engaged. Following the marked lane into your team's garage box.",0,"PIT ENTRY · LIMITER ACTIVE","GUIDED APPROACH");
+ $("pitServiceOverlay").classList.add("open");
+ showRaceControlMessage("BOX BOX BOX · PIT SEQUENCE ACTIVE","yellow",3.8);
+ showTeamRadio("Box, box. Follow the marked line into your garage pit box.");playMenuUiSound("race");
+}
 function requestPitService(){
  if(!running||paused||pitCinematic.active)return;
  if(!pitLaneDriving){showRaceControlMessage("PIT STOP · ENTER THE PIT LANE FIRST","info",2.8);return;}
- if(!nearestInfo||nearestInfo.progress>.78){showRaceControlMessage("PIT STOP · SERVICE BOX ALREADY PASSED","yellow",3.2);return;}
- pitServiceSelectedTyre=tyreCompound;
- // Require a new accelerator hold after service; a pre-existing input must not auto-release the car.
- keys.KeyW=false;keys.ArrowUp=false;
- const startProgress=clamp(nearestInfo.progress,0,.72);
- const targetProgress=clamp(Math.max(.59,startProgress+.04),.59,.72);
- const distance=pitRouteDistanceBetween(startProgress,targetProgress);
- const duration=clamp(distance/20.5,2.8,18);
- pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
- pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,
-  serviceDuration:9.2,boxY:car.y,releaseHold:0,previousProgress:startProgress};
- car.u=0;car.v=0;car.throttle=0;car.brake=1;
- setPitCinematicUI("APEX GP · PIT ENTRY","BOX · BOX · BOX","PIT CREW STANDING BY",
-  "Guided pit entry activated. The car is heading to its service box.",
-  0,"PIT ENTRY · LIMITER ACTIVE","AUTOMATED APPROACH");
- $("pitServiceOverlay").classList.add("open");
- showRaceControlMessage("BOX BOX BOX · PIT SEQUENCE ACTIVE","yellow",3.8);
- showTeamRadio("Box, box. Pit sequence active — follow the guided line to the crew.");playMenuUiSound("race");
+ if(!nearestInfo){showRaceControlMessage("PIT STOP · PIT POSITION NOT AVAILABLE","yellow",3.2);return;}
+ if(nearestInfo.progress>=selectedPitServiceBoxProgress()-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.2);return;}
+ openPitServicePlan();
 }
+
 function startPitService(){requestPitService();}
 function cancelPitService(){
  if(pitCinematic.active&&pitCinematic.phase!=="release")return;
@@ -7328,6 +7455,12 @@ function cancelPitService(){
  $("pitServiceOverlay").classList.remove("open");cleanupPitCrew();
 }
 function bindPitService(){}
+function bindPitPlan(){
+ $("pitPlanWingRange").addEventListener("input",e=>{$("pitPlanWingValue").textContent=Number(e.target.value)+" clicks";});
+ $("pitPlanCancelBtn").addEventListener("click",cancelPitServicePlan);
+ $("pitPlanConfirmBtn").addEventListener("click",confirmPitServicePlan);
+ $("pitPlanOverlay").addEventListener("click",e=>{if(e.target.id==="pitPlanOverlay")cancelPitServicePlan();});
+}
 
 function openPitStation(){
  playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();
@@ -7394,9 +7527,9 @@ function startSession(sessionMode="practice"){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew(true);$("pitServiceOverlay").classList.remove("open");setPitButtonAvailable(false);clearCrashEffects();clearGhostCar();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");
+function restartLap(){pitPlanOpen=false;$("pitPlanOverlay").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew(true);$("pitServiceOverlay").classList.remove("open");setPitButtonAvailable(false);clearCrashEffects();clearGhostCar();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");
  if(currentSessionMode==="timeTrial"){lapRecording=[];lapRecordAccumulator=0;loadTimeTrialRecord();bestLap=timeTrialBest;buildGhostCar();updateGhostToggleUI();clearOpponents();}else spawnOpponents();resumeGame();}
-function returnToMenu(){running=false;paused=false;raceStartState="none";clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];$("ghostToggleBtn").style.display="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew(true);setPitButtonAvailable(false);$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
+function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanOverlay").classList.remove("open");raceStartState="none";clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];$("ghostToggleBtn").style.display="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew(true);setPitButtonAvailable(false);$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();
  }
@@ -7655,7 +7788,7 @@ function bindControls(){
   if(e.code==="KeyG"){e.preventDefault();toggleTimeTrialGhost();}
   if(e.code==="Escape"){
    if($("settingsOverlay").classList.contains("open"))closeSettings();
-   else if(running&&!paused)pauseGame();else if(paused)resumeGame();
+   else if(pitPlanOpen)cancelPitServicePlan();else if(running&&!paused)pauseGame();else if(paused)resumeGame();
   }
   if(e.code==="KeyC")cycleCamera();
   if(e.code==="KeyH"){showHaloColumn=!showHaloColumn;applyCockpitPreferences();saveGameSettings();setCamera(0);}
@@ -7683,7 +7816,11 @@ function bindControls(){
  $("championshipOpenBtn").addEventListener("click",openChampionship);$("championshipHudBtn").addEventListener("click",openChampionship);
  $("championshipCloseBtn").addEventListener("click",closeChampionship);$("championshipDoneBtn").addEventListener("click",closeChampionship);
  $("newChampionshipBtn").addEventListener("click",startNewChampionship);
- $("liveryPalette").addEventListener("click",e=>{const b=e.target.closest(".swatch");if(!b)return;document.querySelectorAll(".swatch").forEach(x=>x.classList.remove("active"));b.classList.add("active");selectedLivery=b.dataset.color;buildCar();if(car)positionCarAtStart();});
+ $("liveryPalette").addEventListener("click",e=>{
+ const b=e.target.closest("[data-team-id]");if(!b)return;const team=TEAM_LIVERIES.find(x=>x.id===b.dataset.teamId);if(!team)return;
+ document.querySelectorAll(".team-swatch").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ selectedTeamId=team.id;selectedLivery=team.primary;selectedAccent=team.accent;buildCar();if(car)positionCarAtStart();updatePitStationUI();
+});
  $("tyreSelect").addEventListener("change",()=>{tyreCompound=$("tyreSelect").value;});
  $("assistSelect").addEventListener("change",()=>{assistMode=$("assistSelect").value;});
  $("transmissionSelect").addEventListener("change",()=>{shiftMode=$("transmissionSelect").value;});
@@ -7696,7 +7833,7 @@ function bindControls(){
  safeBind("race settings",bindSettings);
  safeBind("camera look",bindCameraLook);
  const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
- safeBind("pit station controls",bindPitStation);safeBind("pit service controls",bindPitService);
+ safeBind("pit station controls",bindPitStation);safeBind("pit service controls",bindPitService);safeBind("pit strategy controls",bindPitPlan);
  safeClick("startBtn",openPitStation);safeClick("pitStopBtn",handlePitButtonAction);safeClick("broadcastBtn",toggleBroadcast);safeClick("ghostToggleBtn",toggleTimeTrialGhost);
  safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
  safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
