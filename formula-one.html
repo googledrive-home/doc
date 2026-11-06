@@ -7011,11 +7011,17 @@ function findTyreInWheel(roll){
 function preparePitWheelSwap(){
  return pitWheelCorners().map(corner=>{
   const oldRoll=corner.roll,parent=oldRoll?.parent;if(!oldRoll||!parent)return null;
-  const newRoll=oldRoll.clone(true);
+  const oldParts=[],damageRecords=[];
+  oldRoll.traverse(node=>{oldParts.push(node);damageRecords.push(node.userData?.apexDamagePart||null);});
+  // Three.js serialises userData during clone; temporarily remove the circular
+  // damage-part back-reference, then restore it before the wheel is used again.
+  oldParts.forEach(node=>{if(node.userData)delete node.userData.apexDamagePart;});
+  let newRoll;
+  try{newRoll=oldRoll.clone(true);}
+  finally{oldParts.forEach((node,index)=>{if(damageRecords[index])node.userData.apexDamagePart=damageRecords[index];});}
   newRoll.name=(oldRoll.name||"wheel assembly")+" · fresh wheel";
-  newRoll.userData={...oldRoll.userData,pitReplacement:true};
-  const oldParts=[],newParts=[];
-  oldRoll.traverse(node=>oldParts.push(node));newRoll.traverse(node=>newParts.push(node));
+  newRoll.userData={...newRoll.userData,...oldRoll.userData,pitReplacement:true};
+  const newParts=[];newRoll.traverse(node=>newParts.push(node));
   const originalPosition=oldRoll.position.clone(),originalQuaternion=oldRoll.quaternion.clone(),originalScale=oldRoll.scale.clone();
   const stripeColor=({soft:0xd83d38,medium:0xe6c34c,hard:0xe9e9e2,intermediate:0x40b477,wet:0x398bce})[pitServiceSelectedTyre]||0xe6c34c;
   return {...corner,oldRoll,newRoll,parent,oldParts,newParts,originalPosition,originalQuaternion,originalScale,
@@ -7081,6 +7087,10 @@ function restorePitWheelChanges(){
    state.oldRoll.position.copy(state.originalPosition);state.oldRoll.quaternion.copy(state.originalQuaternion);state.oldRoll.scale.copy(state.originalScale);
   }
   wheelMeshes[state.index]=state.oldRoll;
+  for(let i=0;i<Math.min(state.oldParts.length,state.newParts.length);i++){
+   const damagePart=state.newParts[i].userData?.apexDamagePart;
+   if(damagePart)damagePart.mesh=state.oldParts[i];
+  }
   if(state.assembly){
    const {tyre,brakeDisk}=findTyreInWheel(state.oldRoll);
    state.assembly.roll=state.oldRoll;state.assembly.tyreMesh=tyre;state.assembly.brakeDisk=brakeDisk;
