@@ -4817,7 +4817,8 @@ function pitEntryApproachAvailable(){
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
  if(headingDot<.50)return false;
  let nearestEntryDistance=Infinity;
- for(let i=0;i<pitEntryRoute.length;i+=2){
+ const entrySampleStep=Math.max(1,Math.floor(pitEntryRoute.length/80));
+ for(let i=0;i<pitEntryRoute.length;i+=entrySampleStep){
   const point=pitEntryRoute[i].p,dx=car.x-point.x,dz=car.z-point.z;
   const distance=Math.hypot(dx,dz);
   if(distance<nearestEntryDistance)nearestEntryDistance=distance;
