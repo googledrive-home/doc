@@ -3572,7 +3572,7 @@ const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=12.5,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
 let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
-let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitEntryApproachSamples=[],pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
+let pitDriveRoute=[],pitDriveRouteLength=0,pitDriveServiceBoxProgresses=[],pitEntryServiceBoxProgresses=[],pitEntryRoute=[],pitEntryRouteLength=0,pitEntryApproachSamples=[],pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
  routeSpatialGrid=new Map();
