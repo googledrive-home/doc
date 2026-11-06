@@ -3519,7 +3519,7 @@ const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=12.5,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
 let circuitRoute=[],circuitRouteLength=0,circuitRoadWidth=13,circuitRouteSpatialGrid=new Map(),circuitAsphaltMaterial=null;
-let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
+let pitDriveRoute=[],pitDriveRouteLength=0,pitEntryRoute=[],pitEntryRouteLength=0,pitEntryApproachSamples=[],pitLaneSamples=[],pitLaneDriving=false,pitRoutePurpose="out",pitEntryCircuitProgress=.925,pitExitCircuitProgress=.105;
 function routeGridKey(x,z){return x+","+z;}
 function buildRouteSpatialGrid(){
  routeSpatialGrid=new Map();
@@ -4711,7 +4711,7 @@ function addPitStationMarker(sample,label){
 }
 
 function buildPitLane(){
- pitDriveRoute=[];pitDriveRouteLength=0;pitEntryRoute=[];pitEntryRouteLength=0;pitLaneSamples=[];
+ pitDriveRoute=[];pitDriveRouteLength=0;pitEntryRoute=[];pitEntryRouteLength=0;pitEntryApproachSamples=[];pitLaneSamples=[];
  if(!route.length)return;
  const n=route.length,def=trackDefs[activeTrack];
  const entryBefore=clamp(def.pitEntryBeforeM??100,55,180);
@@ -4738,6 +4738,7 @@ function buildPitLane(){
   return at(progress,lerp(edgeOffset,laneOffset,smoothStep(0,1,t)));
  });
  const entry=makePitPathSamples(entryControls,Math.max(72,Math.ceil(entryBefore/2.2)));
+ pitEntryApproachSamples=entry.samples;
  const exitControls=Array.from({length:10},(_,i)=>{
   const t=i/9,progress=laneEndProgress+(exitProgress-laneEndProgress)*t;
   return at(progress,laneOffset*(1-smoothStep(0,1,t)));
@@ -4800,6 +4801,18 @@ function activatePitLaneRoute(useEntryRoute=false){
  if(!selected.length)throw new Error("The selected circuit pit lane is not ready.");
  route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
 }
+function pitEntryConnectorDistance(x,z){
+ if(!pitEntryApproachSamples.length)return Infinity;
+ let nearest=Infinity;
+ const samples=pitEntryApproachSamples,step=Math.max(1,Math.floor(samples.length/120));
+ for(let i=0;i<samples.length;i+=step){
+  const p=samples[i].p,d=Math.hypot(x-p.x,z-p.z);
+  if(d<nearest)nearest=d;
+ }
+ const last=samples[samples.length-1]?.p;
+ if(last)nearest=Math.min(nearest,Math.hypot(x-last.x,z-last.z));
+ return nearest;
+}
 function pitEntryProgressDelta(progress){
  return (progress-pitEntryCircuitProgress+1)%1;
 }
@@ -4808,22 +4821,12 @@ function pitEntryMergeWindow(progress){
  return delta<=.035||delta>=.985;
 }
 function pitEntryApproachAvailable(){
- if(pitLaneDriving||!pitEntryRoute.length||!car||!nearestInfo||car.reverse||Math.abs(car.u)<2.5)return false;
- if(!pitEntryMergeWindow(nearestInfo.progress))return false;
- const localHalf=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
- // The pit branch is on the right-hand side. Being on the normal racing line
- // must never silently select the pit route.
- if(nearestInfo.offset<Math.max(2.5,localHalf*.34)||nearestInfo.offset>localHalf+7.5)return false;
+ if(pitLaneDriving||!pitEntryApproachSamples.length||!car||!nearestInfo||car.reverse||Math.abs(car.u)<2.5)return false;
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
- if(headingDot<.50)return false;
- let nearestEntryDistance=Infinity;
- const entrySampleStep=Math.max(1,Math.floor(pitEntryRoute.length/80));
- for(let i=0;i<pitEntryRoute.length;i+=entrySampleStep){
-  const point=pitEntryRoute[i].p,dx=car.x-point.x,dz=car.z-point.z;
-  const distance=Math.hypot(dx,dz);
-  if(distance<nearestEntryDistance)nearestEntryDistance=distance;
- }
- return nearestEntryDistance<=9.5;
+ if(headingDot<.40)return false;
+ // Make the pits available from the normal racing line as well as the outer edge.
+ // Route selection still requires the driver's explicit PIT button / P key.
+ return pitEntryConnectorDistance(car.x,car.z)<=19.5;
 }
 function updatePitButtonPrompt(){
  if(pitLaneDriving){setPitButtonAvailable(true);return;}
@@ -6374,7 +6377,10 @@ function updatePhysics(dt){
   // Pit entry is an explicit branch; the normal circuit remains driveable through its opening.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
  const side=Math.sign(nearestInfo.offset)||1;
- const pitEntryOpening=!pitLaneDriving&&side===1&&pitEntryMergeWindow(nearestInfo.progress);
+ const nearPitEntryConnector=!pitLaneDriving&&side===1&&pitEntryConnectorDistance(car.x,car.z)<=18.5;
+ const pitEntryOpening=!pitLaneDriving&&side===1&&(nearPitEntryConnector||pitEntryMergeWindow(nearestInfo.progress));
+ // The pit split is a physical opening, not a one-way guide wall. The racing
+ // surface remains driveable; the pit branch is selected only by PIT / P.
  const railDistance=pitLaneDriving?PIT_LANE_WIDTH*.5+2.7:pitEntryOpening?Infinity:roadHalfWidthAt(route[nearestInfo.index]||route[0])+5.8;
  const bodyHalfWidth=.92;
  const vx=car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw);
