@@ -4264,7 +4264,7 @@ function terrainHeightFromSample(sample,x,z,distance){
 }
 function terrainVisualHeightFromSample(sample,x,z,distance){
  const fallback=terrainHeightFromSample(sample,x,z,distance);
- if(!route.length||distance>420)return fallback;
+ if(!route.length||distance>220)return fallback;
  const near=findNearest(x,z,sample.p.y);
  if(!Number.isFinite(near.distance)||near.distance>420)return fallback;
  const local=route[near.index]||sample;
