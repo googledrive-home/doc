@@ -3986,35 +3986,44 @@ function applySafeTrackWidths(samples,nominalWidth){
  }
 }
 
-function ensureOffTrackPoint(point,preferredSide=1,clearance=5){
+function ensureOffTrackPoint(point,preferredSide=1,clearance=5,footprintRadius=0){
  const p=point.clone();if(!route.length)return p;
- let near=findNearest(p.x,p.z,null);
- for(let attempt=0;attempt<3;attempt++){
-  const offset=Math.abs(near.offset),localHalf=roadHalfWidthAt(route[near.index]||route[0]),minimum=localHalf+clearance;
-  if(offset>=minimum)return p;
+ for(let attempt=0;attempt<6;attempt++){
+  const near=findNearest(p.x,p.z,null),localHalf=roadHalfWidthAt(route[near.index]||route[0]);
+  const required=localHalf+clearance+footprintRadius+1;
+  if(near.distance>=required)return p;
   const right=new THREE.Vector3(near.tangent.z,0,-near.tangent.x).normalize();
   const side=Math.abs(near.offset)>.12?Math.sign(near.offset):preferredSide;
-  p.addScaledVector(right,side*(minimum-offset+1.6));near=findNearest(p.x,p.z,null);
+  p.addScaledVector(right,side*(required-near.distance+1.5));
  }
  return p;
 }
-function safeTracksidePoint(sample,side,distance,clearance=5){
- let p=ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance);
- for(const samples of [pitDriveRoute,pitEntryRoute]){
-  let nearest=null,nearestDistance=Infinity;
-  for(let i=0;i<samples.length;i+=3){
-   const item=samples[i],d=Math.hypot(p.x-item.p.x,p.z-item.p.z);
-   if(d<nearestDistance){nearestDistance=d;nearest=item;}
+let tracksidePlacementAudit=[];
+function safeTracksidePoint(sample,side,distance,clearance=5,footprintRadius=0){
+ let p=ensureOffTrackPoint(offsetPoint(sample,side,distance,0),side,clearance,footprintRadius);
+ // Check the complete pit-lane and pit-entry paths as well as the main circuit.
+ for(let attempt=0;attempt<5;attempt++){
+  let pushed=false;
+  for(const samples of [pitDriveRoute,pitEntryRoute]){
+   let nearest=null,nearestDistance=Infinity;
+   for(let i=0;i<samples.length;i++){
+    const item=samples[i],d=Math.hypot(p.x-item.p.x,p.z-item.p.z);
+    if(d<nearestDistance){nearestDistance=d;nearest=item;}
+   }
+   const required=PIT_LANE_WIDTH*.5+clearance+footprintRadius+1.2;
+   if(nearest&&nearestDistance<required){
+    const rightX=nearest.tan.z,rightZ=-nearest.tan.x;
+    const sideDot=(p.x-nearest.p.x)*rightX+(p.z-nearest.p.z)*rightZ;
+    const away=Math.abs(sideDot)>.15?Math.sign(sideDot):(side>0?1:-1);
+    p.add(new THREE.Vector3(rightX,0,rightZ).multiplyScalar(away*(required-nearestDistance+1.5)));
+    pushed=true;
+   }
   }
-  const required=PIT_LANE_WIDTH*.5+Math.max(5,clearance)+2;
-  if(nearest&&nearestDistance<required){
-   const rightX=nearest.tan.z,rightZ=-nearest.tan.x;
-   const sideDot=(p.x-nearest.p.x)*rightX+(p.z-nearest.p.z)*rightZ;
-   const away=sideDot>=0?1:-1;
-   p.add(new THREE.Vector3(rightX,0,rightZ).multiplyScalar(away*(required-nearestDistance+2)));
-   p=ensureOffTrackPoint(p,side,clearance);
-  }
+  const before=p.clone();
+  p=ensureOffTrackPoint(p,side,clearance,footprintRadius);
+  if(!pushed&&p.distanceToSquared(before)<.01)break;
  }
+ tracksidePlacementAudit.push({x:p.x,y:p.y,z:p.z,radius:footprintRadius,margin:clearance});
  return p;
 }
 function horizontalLength(curve,n=1200){let len=0,prev=curve.getPoint(0);for(let i=1;i<=n;i++){const p=curve.getPoint(i/n);len+=Math.hypot(p.x-prev.x,p.z-prev.z);prev=p;}return len;}
@@ -4245,16 +4254,29 @@ function terrainNoise(x,z){
  return Math.sin(x*.0010+z*.0012)*1.0+Math.cos(z*.0018-x*.0014)*.55+Math.sin((x-z)*.003)*.25;
 }
 function terrainHeightFromSample(sample,x,z,distance){
- // Collision terrain retains real circuit elevation and blends smoothly into the landscape.
- const blend=smoothStep(52,260,distance);
+ // Follow the real centreline height nearby, then blend into the landscape over
+ // a broad distance. Monaco needs a wider blend so city blocks do not form
+ // steep artificial ridges beside the elevated street sections.
+ const start=activeTrack==="monaco"?78:52;
+ const end=activeTrack==="monaco"?360:260;
+ const blend=smoothStep(start,end,distance);
  return lerp(sample.p.y-.16,terrainBaseY+terrainNoise(x,z),blend);
 }
 function terrainVisualHeightFromSample(sample,x,z,distance){
- const natural=terrainHeightFromSample(sample,x,z,distance);
- if(!route.length||distance>145)return natural;
- const near=findNearest(x,z,sample.p.y),local=route[near.index]||sample,edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
- const blend=smoothStep(edge+3.5,edge+34,lateral),clearance=near.point.y-.92;
- return Math.min(natural,lerp(clearance,natural,blend));
+ const fallback=terrainHeightFromSample(sample,x,z,distance);
+ if(!route.length||distance>420)return fallback;
+ const near=findNearest(x,z,sample.p.y);
+ if(!Number.isFinite(near.distance)||near.distance>420)return fallback;
+ const local=route[near.index]||sample;
+ const edge=roadHalfWidthAt(local),lateral=Math.abs(near.offset);
+ // Exact local segment height removes the bumps caused by sparse route samples.
+ const natural=terrainHeightFromSample({p:near.point},x,z,near.distance);
+ // Cut a small, continuous road bed under the asphalt, then blend smoothly to
+ // the real surrounding ground. Never allow terrain to poke through the road.
+ const roadBed=near.point.y-.14;
+ const shoulderEnd=edge+(activeTrack==="monaco"?54:44);
+ const blend=smoothStep(edge+1.3,shoulderEnd,lateral);
+ return Math.min(natural,lerp(roadBed,natural,blend));
 }
 function terrainHeightAt(x,z,yHint=null,routeHint=null){
  if(route.length&&Number.isInteger(routeHint)){
@@ -4316,12 +4338,12 @@ function buildTerrain(def){
  for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
  minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
  const width=maxX-minX,depth=maxZ-minZ;
- const nx=graphicsQuality==="low"?128:graphicsQuality==="high"?256:184;
+ const nx=graphicsQuality==="low"?256:graphicsQuality==="high"?512:384;
  const nz=Math.max(112,Math.round(nx*depth/width));
- const coarseStep=Math.max(1,Math.floor(route.length/180)),samples=[];
+ const coarseStep=Math.max(1,Math.floor(route.length/640)),samples=[];
  for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
  terrainSamples=samples;
- buildTerrainNearestLookup(samples,minX,minZ,width,depth,80);
+ buildTerrainNearestLookup(samples,minX,minZ,width,depth,36);
  const positions=[],colors=[],uvs=[],indices=[];
  const terrainColors={laguna:0xbca477,monaco:0xa6a39c,monza:0x718b55,suzuka:0x6e8d54,silverstone:0x718655,spa:0x6b8152};
  const baseColor=new THREE.Color(terrainColors[activeTrack]||0x70845a);
@@ -4364,8 +4386,55 @@ function buildRunoffAreas(){
   patch.position.set(p.x,ground+.035,p.z);patch.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);patch.scale.set(length*.5,1,width*.5);patch.receiveShadow=true;environmentGroup.add(patch);
  });
 }
+function auditTrackTerrainAndObjects(){
+ const stride=Math.max(1,Math.floor(route.length/720));
+ let terrainSamplesChecked=0,terrainOverlaps=0,minTerrainClearance=Infinity;
+ for(let i=0;i<route.length;i+=stride){
+  const sample=route[i],half=roadHalfWidthAt(sample);
+  for(const side of [-1,0,1]){
+   const p=side===0?sample.p.clone():offsetPoint(sample,side,half*.88,0);
+   const near=findNearest(p.x,p.z,sample.p.y);
+   const visual=terrainVisualHeightFromSample({p:near.point},p.x,p.z,near.distance);
+   const clearance=near.point.y-visual;
+   minTerrainClearance=Math.min(minTerrainClearance,clearance);
+   if(clearance<.08)terrainOverlaps++;
+   terrainSamplesChecked++;
+  }
+ }
+ let objectOverlaps=0,minObjectGap=Infinity,minPitGap=Infinity;
+ for(const placement of tracksidePlacementAudit){
+  const near=findNearest(placement.x,placement.z,null);
+  const roadGap=near.distance-roadHalfWidthAt(route[near.index])-placement.radius;
+  minObjectGap=Math.min(minObjectGap,roadGap);
+  if(roadGap<.35)objectOverlaps++;
+  for(const samples of [pitDriveRoute,pitEntryRoute]){
+   let nearest=Infinity;
+   for(let i=0;i<samples.length;i+=2){
+    const item=samples[i],d=Math.hypot(placement.x-item.p.x,placement.z-item.p.z);
+    if(d<nearest)nearest=d;
+   }
+   if(Number.isFinite(nearest)){
+    const gap=nearest-PIT_LANE_WIDTH*.5-placement.radius;
+    minPitGap=Math.min(minPitGap,gap);
+    if(gap<.35)objectOverlaps++;
+   }
+  }
+ }
+ const report={
+  circuit:trackDefs[activeTrack].name,
+  terrainSamplesChecked,terrainOverlaps,
+  minimumRoadBedClearanceM:Number.isFinite(minTerrainClearance)?+minTerrainClearance.toFixed(2):null,
+  tracksidePlacementsChecked:tracksidePlacementAudit.length,
+  objectClearanceWarnings:objectOverlaps,
+  minimumTracksideClearanceM:Number.isFinite(minObjectGap)?+minObjectGap.toFixed(2):null,
+  minimumPitLaneClearanceM:Number.isFinite(minPitGap)?+minPitGap.toFixed(2):null
+ };
+ console.info("APEX TERRAIN / OBJECT CLEARANCE AUDIT",report);
+ if(terrainOverlaps||objectOverlaps)console.warn("APEX found terrain or trackside placement clearances to review",report);
+ return report;
+}
 function createTrack(){
- restoreCircuitRoute();pitLaneDriving=false;
+ restoreCircuitRoute();pitLaneDriving=false;tracksidePlacementAudit=[];
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
@@ -4447,6 +4516,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  buildRunoffAreas();
  if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
  addCircuitFacilities();addCircuitLandmarks();buildCircuitFloodlights();
+ auditTrackTerrainAndObjects();
  positionCarAtStart();
  updateWeather();
  updatePreview();drawMiniMap();
@@ -4500,7 +4570,7 @@ function addCircuitFacilities(){
   for(const x of [-2.55,2.55]){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2.5,.12),postMat);post.position.set(x,1.25,0);g.add(post);}
   environmentGroup.add(g);
  }
- const sample=route[0],p=safeTracksidePoint(sample,1,roadWidth/2+38,18),ground=terrainHeightAt(p.x,p.z),pit=new THREE.Group();
+ const sample=route[0],p=safeTracksidePoint(sample,1,roadWidth/2+38,8,9),ground=terrainHeightAt(p.x,p.z),pit=new THREE.Group();
  pit.position.set(p.x,ground,p.z);pit.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);
  const wall=makeMat(0x25384b,.75,.08),roofMat=makeMat(0x102b49,.52,.16),glassMat=new THREE.MeshStandardMaterial({color:0x7eabbc,metalness:.2,roughness:.22,emissive:0x182c35,emissiveIntensity:.16});
  const rearWall=new THREE.Mesh(new THREE.BoxGeometry(.42,5.2,64),wall);rearWall.position.set(7.8,2.6,0);rearWall.castShadow=true;pit.add(rearWall);
@@ -4605,10 +4675,10 @@ function addPitPaddockBuildings(){
  for(let i=0;i<6;i++){
   const progress=.012+i*.0105,routeSample=route[Math.floor(progress*route.length)%route.length],side=i%3===1?-1:1;
   const extra=side>0?48+(i%2)*5:46+(i%2)*6;
-  const p=safeTracksidePoint(routeSample,side,roadWidth/2+extra,17),ground=terrainHeightAt(p.x,p.z),building=new THREE.Group();
+  const width=17+(i%3)*2,length=26+(i%2)*7,height=5.6+(i%3)*.6;
+  const p=safeTracksidePoint(routeSample,side,roadWidth/2+extra,8,Math.hypot(width,length)*.5),ground=terrainHeightAt(p.x,p.z),building=new THREE.Group();
   building.position.set(p.x,ground,p.z);
   building.rotation.y=Math.atan2(routeSample.tan.x,routeSample.tan.z)+(side>0?0:Math.PI);
-  const width=17+(i%3)*2,length=26+(i%2)*7,height=5.6+(i%3)*.6;
   const shell=new THREE.Mesh(new THREE.BoxGeometry(width,height,length),makeMat(bodyColors[i],.72,.14));shell.position.y=height/2;shell.castShadow=true;building.add(shell);
   const glassBand=new THREE.Mesh(new THREE.BoxGeometry(.12,1.55,length*.84),buildingGlass);glassBand.position.set(-width/2-.08,3.0,0);building.add(glassBand);
   const roof=new THREE.Mesh(new THREE.BoxGeometry(width+1,.34,length+1),makeMat(i%2?0xd0d5d5:0x162633,.58,.2));roof.position.y=height+.18;roof.castShadow=true;building.add(roof);
@@ -4756,7 +4826,7 @@ function mergeOntoCircuit(){
 
 function addMonacoHarbour(){
  const sample=route[Math.floor(.31*route.length)]||route[0],side=-1;
- const centre=safeTracksidePoint(sample,side,roadWidth/2+205,58),ground=terrainHeightAt(centre.x,centre.z);
+ const centre=safeTracksidePoint(sample,side,roadWidth/2+205,12,90),ground=terrainHeightAt(centre.x,centre.z);
  const harbour=new THREE.Group();
  harbour.position.set(centre.x,ground-.9,centre.z);
  harbour.rotation.y=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
@@ -4845,15 +4915,17 @@ function addCircuitLandmarks(){
    return new THREE.MeshStandardMaterial({map:texture,roughness:.88,metalness:.02});
   });
   const roofMats=[0x9c564a,0x59636b,0x75877f,0x3c454d].map(color=>makeMat(color,.88,.02));
-  const buildingCount=168,unitBox=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
+  const buildingCount=132,unitBox=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D();
   const facadeMeshes=facadeMaterials.map(material=>new THREE.InstancedMesh(unitBox,material,buildingCount/facadeMaterials.length));
   const roofMeshes=roofMats.map(material=>new THREE.InstancedMesh(unitBox,material,buildingCount/roofMats.length));
   const facadeCounts=facadeMaterials.map(()=>0),roofCounts=roofMats.map(()=>0);
   const rooftopMesh=new THREE.InstancedMesh(unitBox,makeMat(0xb9b7ae,.86,.02),34);let rooftopCount=0;
   for(let i=0;i<buildingCount;i++){
    const progress=(i+.5)/buildingCount,sample=route[Math.floor(progress*route.length)%route.length],side=i%2?1:-1;
-   const distance=roadWidth*.5+34+(i%5)*3.5,p=safeTracksidePoint(sample,side,distance,20),ground=terrainHeightAt(p.x,p.z);
    const width=15+(i%5)*2.1,depth=13+(i%4)*1.9,height=23+(i%10)*3.8;
+   const distance=roadWidth*.5+44+(i%5)*3.5;
+   const footprintRadius=Math.hypot(width,depth)*.5;
+   const p=safeTracksidePoint(sample,side,distance,8,footprintRadius),ground=terrainHeightAt(p.x,p.z);
    const heading=Math.atan2(sample.tan.x,sample.tan.z)+(side>0?Math.PI/2:-Math.PI/2);
    const paletteIndex=i%facadeMaterials.length;
    dummy.position.set(p.x,ground+height/2,p.z);dummy.scale.set(width,height,depth);dummy.rotation.set(0,heading,0);dummy.updateMatrix();
