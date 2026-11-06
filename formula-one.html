@@ -6168,7 +6168,12 @@ function temperatureGrip(temp){
  return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
 }
 function updatePhysics(dt){
- if(pitServiceOpen){car.u=0;car.v=0;car.throttle=0;car.brake=1;elapsed+=dt;return;}
+ if(pitServiceOpen){
+  // The scripted pit approach owns position and speed. Freeze normal physics
+  // without erasing its displayed pit-limiter speed.
+  if(!(pitCinematic.active&&pitCinematic.phase==="approach")){car.u=0;car.v=0;car.throttle=0;car.brake=1;}
+  elapsed+=dt;return;
+ }
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
  const throttleHeld=!!(keys.KeyW||keys.ArrowUp),throttleRequest=throttleHeld&&raceStartState!=="countdown"?1:0;
@@ -6974,7 +6979,7 @@ function animatePitCrew(){
  }
  pitCrewJacks.forEach((jack,index)=>{jack.position.y=.02+Math.sin(elapsed*8+index)*.035;});
  const wheelsOff=progress>.24&&progress<.56;
- wheelMeshes.forEach(wheel=>wheel.visible=!wheelsOff);
+ wheelMeshes.forEach((wheel,index)=>{wheel.visible=wheelsOff?false:pitSavedWheelVisibility[index]!==false;});
  const lift=progress>.14&&progress<.72?.13:0;car.y=pitCinematic.boxY+lift;carRoot.position.y=car.y;carRoot.updateMatrixWorld(true);
 }
 function completePitService(){
@@ -6997,7 +7002,7 @@ function completePitService(){
  $("trackState").textContent="PIT EXIT · READY TO RELEASE";$("trackState").style.color="#f0c75c";
  setPitCinematicUI("APEX GP · PIT WALL","GREEN LIGHT","SERVICE COMPLETE",
   "Fresh tyres fitted. Repairs complete. The pit lane is clear — take control and launch when ready.",
-  100,"FRESH SET FITTED · CAR RELEASED","HOLD W / ACCELERATE TO RELEASE");
+  100,"FRESH SET FITTED · CAR RELEASED","HOLD ACCELERATE TO RELEASE");
  showRaceControlMessage("PIT SERVICE COMPLETE · RELEASE","info",3.6);
  showTeamRadio("Four fresh tyres on. Repairs complete. Release on your signal — build speed and rejoin safely.");
  playMenuUiSound("race");
@@ -7047,7 +7052,7 @@ function updatePitService(dt){
   const held=!!(keys.KeyW||keys.ArrowUp);pitCinematic.releaseHold=held?pitCinematic.releaseHold+dt:0;
   const percent=clamp(pitCinematic.releaseHold/.42*100,0,100);
   $("pitCinematicProgress").style.width=percent+"%";$("pitCinematicClock").textContent="PIT RELEASE";
-  $("pitCinematicInstruction").textContent=held?"HOLD TO RELEASE · "+Math.ceil(Math.max(0,.42-pitCinematic.releaseHold)*10)/10+"s":"HOLD W / ACCELERATE TO RELEASE";
+  $("pitCinematicInstruction").textContent=held?"HOLD TO RELEASE · "+Math.ceil(Math.max(0,.42-pitCinematic.releaseHold)*10)/10+"s":"HOLD ACCELERATE TO RELEASE";
   if(pitCinematic.releaseHold>=.42){
    pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";
    $("pitServiceOverlay").classList.remove("open");cleanupPitCrew();
@@ -7064,6 +7069,8 @@ function requestPitService(){
  if(!pitLaneDriving){showRaceControlMessage("PIT STOP · ENTER THE PIT LANE FIRST","info",2.8);return;}
  if(!nearestInfo||nearestInfo.progress>.78){showRaceControlMessage("PIT STOP · SERVICE BOX ALREADY PASSED","yellow",3.2);return;}
  pitServiceSelectedTyre=tyreCompound;
+ // Require a new accelerator hold after service; a pre-existing input must not auto-release the car.
+ keys.KeyW=false;keys.ArrowUp=false;
  const startProgress=clamp(nearestInfo.progress,0,.72);
  const targetProgress=clamp(Math.max(.59,startProgress+.04),.59,.72);
  const distance=pitRouteDistanceBetween(startProgress,targetProgress);
@@ -7152,7 +7159,7 @@ function startSession(sessionMode="practice"){
 }
 function pauseGame(){if(!running)return;paused=true;silenceAudio();$("pauseOverlay").style.display="grid";$("weatherPanel").classList.remove("open");}
 function resumeGame(){paused=false;$("pauseOverlay").style.display="none";previousFrame=performance.now();if(soundEnabled)startEngineLoops();}
-function restartLap(){clearCrashEffects();clearGhostCar();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");
+function restartLap(){pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew();$("pitServiceOverlay").classList.remove("open");setPitButtonAvailable(false);clearCrashEffects();clearGhostCar();restoreCircuitRoute();buildCar();positionCarAtStart(false,currentSessionMode!=="practice");trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;raceStartState=currentSessionMode!=="practice"?"countdown":"none";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;$("raceStartOverlay").classList.toggle("open",raceStartState==="countdown");
  if(currentSessionMode==="timeTrial"){lapRecording=[];lapRecordAccumulator=0;loadTimeTrialRecord();bestLap=timeTrialBest;buildGhostCar();updateGhostToggleUI();clearOpponents();}else spawnOpponents();resumeGame();}
 function returnToMenu(){running=false;paused=false;raceStartState="none";clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];$("ghostToggleBtn").style.display="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew();setPitButtonAvailable(false);$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
