@@ -1,0 +1,84 @@
+name: Export Ferrari steering wheel
+
+on:
+  push:
+    branches:
+      - feature/apex-ferrari-steering-wheel
+    paths:
+      - ".github/workflows/export-ferrari-wheel.yml"
+      - ".github/scripts/export_f1_steering_wheel.py"
+      - "F1_steering_wheel.blend (1).part0*"
+
+permissions:
+  contents: write
+
+jobs:
+  export-wheel:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+
+      - name: Rebuild original Blender source and verify it
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root = Path(".")
+          parts = [
+              root / f"F1_steering_wheel.blend (1).part{i:02d}"
+              for i in range(1, 6)
+          ]
+          expected_size = 111376972
+          expected_sha = "bbdd5c2676993fffa8e2ee7ce50a8b7bf0f28f9ea82205b73dee185898863113"
+          digest = hashlib.sha256()
+          output = Path("/tmp/F1_steering_wheel.blend")
+          total = 0
+          with output.open("wb") as out:
+              for part in parts:
+                  if not part.is_file():
+                      raise SystemExit(f"Missing uploaded part: {part}")
+                  with part.open("rb") as src:
+                      while block := src.read(1024 * 1024):
+                          out.write(block)
+                          digest.update(block)
+                          total += len(block)
+          if total != expected_size or digest.hexdigest() != expected_sha:
+              output.unlink(missing_ok=True)
+              raise SystemExit("Rebuilt Blender source failed size or SHA-256 verification.")
+          print(f"Verified original source: {total:,} bytes")
+          PY
+
+      - name: Export optimised game-ready GLB and mesh manifest
+        env:
+          APEX_WHEEL_BLEND: /tmp/F1_steering_wheel.blend
+          APEX_WHEEL_OUTPUT: assets
+        run: |
+          mkdir -p assets
+          blender --background --factory-startup --python .github/scripts/export_f1_steering_wheel.py
+
+      - name: Commit exported wheel to feature branch
+        run: |
+          test -s assets/F1_steering_wheel.glb
+          test -s assets/F1_steering_wheel_manifest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/F1_steering_wheel.glb assets/F1_steering_wheel_manifest.json
+          git commit -m "Export optimised Ferrari F1 steering wheel model"
+          git push origin HEAD:feature/apex-ferrari-steering-wheel
+
+      - name: Save export as downloadable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-ferrari-steering-wheel
+          path: |
+            assets/F1_steering_wheel.glb
+            assets/F1_steering_wheel_manifest.json
+          if-no-files-found: error
+          retention-days: 14
