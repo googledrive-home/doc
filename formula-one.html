@@ -5830,8 +5830,10 @@ function ensureWheelDashboardCanvas(){
   dashContext=dashCanvas.getContext("2d",{alpha:false,desynchronized:true});
   dashTexture=new THREE.CanvasTexture(dashCanvas);
   dashTexture.colorSpace=THREE.SRGBColorSpace;
-  dashTexture.generateMipmaps=true;
-  dashTexture.minFilter=THREE.LinearMipmapLinearFilter;
+  // Keep the LCD on its full-resolution 2048x1152 image. Mipmaps were
+  // selecting softer low-resolution levels on the close cockpit display.
+  dashTexture.generateMipmaps=false;
+  dashTexture.minFilter=THREE.LinearFilter;
   dashTexture.magFilter=THREE.LinearFilter;
   dashTexture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
  }
@@ -5938,31 +5940,34 @@ function styleFerrariWheelMaterials(meshes){
    const name=String(material.name||"").toLowerCase();
    if(name.includes("carbon fiber")){
     if(!material.map)material.map=carbonTexture;
-    material.color?.setHex(0xffffff);
-    material.metalness=.28;material.roughness=.34;
-    if("clearcoat" in material)material.clearcoat=.32;
-    if("clearcoatRoughness" in material)material.clearcoatRoughness=.22;
+    material.color?.setHex(0x89939c);
+    material.metalness=.14;material.roughness=.52;
+    if("clearcoat" in material)material.clearcoat=.12;
+    if("clearcoatRoughness" in material)material.clearcoatRoughness=.42;
    }else if(name.includes("rubber")){
-    material.color?.setHex(0x171b20);material.metalness=.02;material.roughness=.82;
+    material.color?.setHex(0x11161b);material.metalness=.01;material.roughness=.9;
    }else if(name.includes("black plastic")){
-    material.color?.setHex(0x151a20);material.metalness=.16;material.roughness=.36;
+    material.color?.setHex(0x10161d);material.metalness=.06;material.roughness=.5;
    }else if(name.includes("anodizedmetal")){
-    material.color?.setHex(0x68737d);material.metalness=.82;material.roughness=.27;
+    material.color?.setHex(0x4e5963);material.metalness=.58;material.roughness=.38;
    }else if(name.includes("bmd_brass")){
-    material.color?.setHex(0xb28a43);material.metalness=.78;material.roughness=.3;
+    material.color?.setHex(0x8b6a3b);material.metalness=.52;material.roughness=.43;
    }else if(name.includes("mat_plastic")){
-    material.color?.setHex(0x252c34);material.metalness=.12;material.roughness=.42;
+    material.color?.setHex(0x1a2229);material.metalness=.04;material.roughness=.56;
    }else if(name.includes("plastic_white")){
-    material.color?.setHex(0xdce2e5);material.metalness=.12;material.roughness=.34;
+    // The source white plastic was clipping under the cockpit's bright sun,
+    // hemi and environment lighting. Keep it a muted satin grey instead.
+    material.color?.setHex(0x687681);material.metalness=.08;material.roughness=.56;
    }else if(name.includes("translucent plastic_green")){
-    material.color?.setHex(0x52dda4);material.roughness=.28;
+    material.color?.setHex(0x36b886);material.roughness=.42;
    }else if(name.includes("translucent plastic_blue")){
-    material.color?.setHex(0x4daee8);material.roughness=.28;
+    material.color?.setHex(0x3989bd);material.roughness=.42;
    }else if(name.includes("translucent plastic_red")){
-    material.color?.setHex(0xe85c52);material.roughness=.28;
+    material.color?.setHex(0xbd4e49);material.roughness=.42;
    }else if(name.includes("translucent plastic_yellow")){
-    material.color?.setHex(0xf2c84b);material.roughness=.28;
+    material.color?.setHex(0xc6a43d);material.roughness=.42;
    }
+   if("envMapIntensity" in material)material.envMapIntensity=Math.min(material.envMapIntensity??1,.58);
    if(material.map){
     material.map.colorSpace=THREE.SRGBColorSpace;
     material.map.anisotropy=anisotropy;
@@ -6005,9 +6010,11 @@ async function loadFerrariSteeringWheel(pivot,generation){
   }
   const visualRoot=new THREE.Group();visualRoot.name="Ferrari F1 steering wheel";
   visualRoot.add(coreAsset.scene);visualRoot.add(controlsAsset.scene);
-  const wheelScale=clamp(.235/Math.max(.001,bodySize.x),.68,.82);
+  const wheelScale=clamp(.225/Math.max(.001,bodySize.x),.65,.80);
   visualRoot.scale.setScalar(wheelScale);
-  visualRoot.position.set(-bodyCentre.x*wheelScale,-bodyCentre.y*wheelScale,-bodyCentre.z*wheelScale);
+  // The cockpit camera faces +Z; move the whole assembled wheel 25 mm
+  // forward along the steering column, without changing its pivot/controls.
+  visualRoot.position.set(-bodyCentre.x*wheelScale,-bodyCentre.y*wheelScale,-bodyCentre.z*wheelScale+.025);
   pivot.add(visualRoot);visualRoot.updateMatrixWorld(true);
 
   const allMeshes=[];
@@ -6542,7 +6549,7 @@ function drawDashboard(){
   c.fillStyle=color;c.font=weight+" "+size+"px Arial,Helvetica,sans-serif";
   c.textAlign=align;c.textBaseline="alphabetic";c.fillText(String(value),x,y);
  };
- const label=(value,x,y,align="left")=>txt(value,x,y,15,muted,800,align);
+ const label=(value,x,y,align="left")=>txt(value,x,y,20,muted,800,align);
  const panel=(x,y,bw,bh,accent=null)=>{
   rounded(x,y,bw,bh,10,"#0a1721","#2a3d49");
   if(accent){c.fillStyle=accent;c.fillRect(x+12,y+12,4,bh-24);}
@@ -6559,8 +6566,8 @@ function drawDashboard(){
  const header=()=>{
   rounded(18,14,988,60,10,"#07121b","#30434e");
   txt("APEX",38,52,25,green,900);
-  txt("RACE DISPLAY",118,50,15,muted,800);
-  txt(pages[page],505,50,17,blue,900,"center");
+  txt("RACE DISPLAY",118,50,19,muted,800);
+  txt(pages[page],505,50,21,blue,900,"center");
   txt("LAP "+String(lap).padStart(2,"0"),780,50,17,ink,900,"right");
   txt(lapTime,985,50,23,ink,900,"right");
   c.fillStyle="#213541";c.fillRect(28,84,968,2);
