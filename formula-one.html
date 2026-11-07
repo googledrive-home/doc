@@ -5871,11 +5871,21 @@ async function loadFerrariSteeringWheel(pivot,generation){
    loader.loadAsync(controlsUrl.href)
   ]);
   if(generation!==carBuildGeneration||!pivot.parent)return;
-  const bodyMesh=coreAsset.scene.getObjectByName("steering_wheel_body.001")||
-   coreAsset.scene.children.find(o=>o.isMesh&&/steering_wheel_body/i.test(o.name));
-  if(!bodyMesh)throw new Error("Ferrari wheel body mesh is missing from the GLTF export.");
   coreAsset.scene.updateMatrixWorld(true);controlsAsset.scene.updateMatrixWorld(true);
-  const bodyBounds=new THREE.Box3().setFromObject(bodyMesh),bodyCentre=bodyBounds.getCenter(new THREE.Vector3());
+  // Blender exports the wheel body as a named parent group with several child
+  // meshes, rather than as one mesh named "steering_wheel_body.001".
+  // Measure the complete core scene so this works with the real hierarchy.
+  let coreMeshCount=0;
+  coreAsset.scene.traverse(object=>{
+   if(object.isMesh&&object.geometry)coreMeshCount++;
+  });
+  if(coreMeshCount===0)throw new Error("Ferrari core glTF loaded but contains no mesh geometry.");
+  const bodyBounds=new THREE.Box3().setFromObject(coreAsset.scene);
+  if(bodyBounds.isEmpty())throw new Error("Ferrari core glTF has no measurable geometry bounds.");
+  const bodyCentre=bodyBounds.getCenter(new THREE.Vector3());
+  if(![bodyCentre.x,bodyCentre.y,bodyCentre.z].every(Number.isFinite)){
+   throw new Error("Ferrari core glTF has invalid geometry bounds.");
+  }
   const visualRoot=new THREE.Group();visualRoot.name="Ferrari F1 steering wheel";
   visualRoot.add(coreAsset.scene);visualRoot.add(controlsAsset.scene);
   visualRoot.scale.set(1.17,1,1);
