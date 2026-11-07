@@ -5766,7 +5766,6 @@ function createImportedSteeringWheel(modelRoot,parts){
   const hub=new THREE.Mesh(new THREE.BoxGeometry(.16,.10,.045),new THREE.MeshStandardMaterial({color:0x263441,roughness:.45,metalness:.25}));
   hub.position.z=.018;pivot.add(hub);cockpitVisibleMeshes.push(hub);
   steeringPivot=pivot;handGroup=null;wheelControlMeshes=[];wheelShiftLedMeshes=[];
-  ferrariWheelLoadPromise=loadFerrariSteeringWheel(pivot,carBuildGeneration);
   console.warn("Red Bull FBX has no named steering-wheel control; a cockpit wheel placeholder was fitted.");
   return pivot;
  }
@@ -5820,7 +5819,6 @@ function createImportedSteeringWheel(modelRoot,parts){
   glove.scale.set(.76,.62,.72);glove.position.set(side*wheelWidth*.36,-wheelHeight*.40,.035);handGroup.add(glove);cockpitVisibleMeshes.push(glove);
  }
  pivot.userData.nativeWheelSize={x:nativeSize.x,y:nativeSize.y,z:nativeSize.z};
- ferrariWheelLoadPromise=loadFerrariSteeringWheel(pivot,carBuildGeneration);
  return pivot;
 }
 
@@ -5862,6 +5860,8 @@ async function loadFerrariSteeringWheel(pivot,generation){
    return resourceUrl;
   });
   const loader=new GLTFLoader(manager);
+  loader.setResourcePath(base.href);
+  manager.onError=url=>console.error("[APEX] Ferrari wheel asset request failed:",url);
   const coreUrl=new URL("F1_steering_wheel_core.gltf",base);
   const controlsUrl=new URL("F1_steering_wheel_controls.gltf",base);
   coreUrl.searchParams.set("build",wheelBuild);
@@ -5956,12 +5956,19 @@ async function loadFerrariSteeringWheel(pivot,generation){
   keepFerrariWheelAsOnlyVisibleCockpitWheel();
   wheelDisplayPage=0;
   drawDashboard();
+  if(generation===carBuildGeneration){
+   const modelLabel=$("vehicleModelState")?.textContent||"RED BULL 2022";
+   updateVehicleModelStatus("active",modelLabel.replace(/ · FERRARI WHEEL.*$/,"")+" · FERRARI WHEEL LOADED");
+  }
   console.info("Ferrari steering wheel installed:",{
    meshes:allMeshes.length,screen:screen.name,controls:wheelControlMeshes.map(mesh=>mesh.name)
   });
  }catch(error){
   if(generation===carBuildGeneration){
-   console.warn("Ferrari steering wheel could not be installed; retaining the existing cockpit wheel.",error);
+   const message=String(error?.message||error).replace(/\s+/g," ").slice(0,150);
+   const modelLabel=$("vehicleModelState")?.textContent||"RED BULL 2022";
+   updateVehicleModelStatus("error",modelLabel.replace(/ · FERRARI WHEEL.*$/,"")+" · WHEEL ERROR: "+message);
+   console.error("[APEX] Ferrari steering wheel installation failed:",error);
   }
  }
 }
@@ -6017,10 +6024,14 @@ async function loadRedBullCarModel(targetRoot,generation){
    if(/^(control|switch|shifter|control shaft)$/i.test(name)){} 
   }
   createImportedSteeringWheel(modelRoot,parts);
-  // The imported FBX already contains the Red Bull halo. Do not add a duplicate.
+  // Mount the full imported car before starting the separate Ferrari wheel load.
+  // This gives the wheel loader a stable, final parent transform and cockpit anchor.
   targetRoot.add(modelRoot);
   modelRoot.updateMatrixWorld(true);
   targetRoot.updateMatrixWorld(true);
+  if(steeringPivot){
+   ferrariWheelLoadPromise=loadFerrariSteeringWheel(steeringPivot,generation);
+  }
   // FBX mesh bounds are obtained in world space, then converted into car-local space.
   // This keeps camera anchors correct after the car has been placed and rotated on the circuit.
   const boundsInCarSpace=mesh=>{
