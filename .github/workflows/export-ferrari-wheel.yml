@@ -58,18 +58,30 @@ jobs:
       - name: Export optimised game-ready GLB and mesh manifest
         env:
           APEX_WHEEL_BLEND: /tmp/F1_steering_wheel.blend
-          APEX_WHEEL_OUTPUT: assets
+          APEX_WHEEL_OUTPUT: assets/f1-steering-wheel
         run: |
-          mkdir -p assets
+          mkdir -p assets/f1-steering-wheel
           blender --background --factory-startup --python .github/scripts/export_f1_steering_wheel.py
 
       - name: Commit exported wheel to feature branch
         run: |
-          test -s assets/F1_steering_wheel.glb
-          test -s assets/F1_steering_wheel_manifest.json
+          test -s assets/f1-steering-wheel/F1_steering_wheel_core.gltf
+          test -s assets/f1-steering-wheel/F1_steering_wheel_controls.gltf
+          test -s assets/f1-steering-wheel/F1_steering_wheel_manifest.json
+          python3 - <<'PY'
+          from pathlib import Path
+          limit = 24 * 1024 * 1024
+          files = [p for p in Path("assets/f1-steering-wheel").iterdir() if p.is_file()]
+          oversized = [(p.name, p.stat().st_size) for p in files if p.stat().st_size > limit]
+          if oversized:
+              raise SystemExit(f"Files exceed the 24 MiB repository limit: {oversized}")
+          print("Verified every wheel file is below 24 MiB:")
+          for p in sorted(files):
+              print(f"  {p.name}: {p.stat().st_size:,} bytes")
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/F1_steering_wheel.glb assets/F1_steering_wheel_manifest.json
+          git add assets/f1-steering-wheel
           git commit -m "Export optimised Ferrari F1 steering wheel model"
           git push origin HEAD:feature/apex-ferrari-steering-wheel
 
@@ -78,7 +90,6 @@ jobs:
         with:
           name: apex-ferrari-steering-wheel
           path: |
-            assets/F1_steering_wheel.glb
-            assets/F1_steering_wheel_manifest.json
+            assets/f1-steering-wheel/*
           if-no-files-found: error
           retention-days: 14
