@@ -196,18 +196,21 @@ export_paths = {}
 for group, objects in groups.items():
     export_paths[group] = export_group(group, objects)
 
-# If an individual binary asset crosses the per-file repository limit, make
-# a mild decimation pass only on that group. Textures remain full resolution.
+# If an individual binary asset crosses the per-file repository limit,
+# reload the exact source and try progressively mild geometry reduction for
+# that group only. The original .blend and source textures remain untouched.
+original_names = {group: [obj.name for obj in objects] for group, objects in groups.items()}
 for group, path in export_paths.items():
     bin_path = path.with_suffix(".bin")
     if bin_path.exists() and bin_path.stat().st_size > max_file_bytes:
         for ratio in (0.90, 0.82, 0.74):
-            # Re-open a clean copy from the source before each pass to avoid
-            # compounding mesh simplification across retries.
-            if bpy.data.filepath != str(blend_path):
-                bpy.ops.wm.open_mainfile(filepath=str(blend_path))
-            objects = groups[group]
-            export_group(group, objects, decimate_ratio=ratio)
+            bpy.ops.wm.open_mainfile(filepath=str(blend_path))
+            mesh_objects = [bpy.data.objects[name] for name in
+                            sorted({n for names in original_names.values() for n in names})
+                            if name in bpy.data.objects]
+            groups[group] = [bpy.data.objects[name] for name in original_names[group]
+                             if name in bpy.data.objects]
+            export_group(group, groups[group], decimate_ratio=ratio)
             quality_steps[group] = "geometry decimated to " + str(ratio)
             if bin_path.exists() and bin_path.stat().st_size <= max_file_bytes:
                 break
