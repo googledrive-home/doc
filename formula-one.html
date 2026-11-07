@@ -5836,9 +5836,6 @@ function ensureWheelDashboardCanvas(){
   dashTexture.minFilter=THREE.LinearFilter;
   dashTexture.magFilter=THREE.LinearFilter;
   dashTexture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
-  dashTexture.generateMipmaps=false;
-  dashTexture.minFilter=THREE.LinearFilter;
-  dashTexture.magFilter=THREE.LinearFilter;
  }
  return dashTexture;
 }
