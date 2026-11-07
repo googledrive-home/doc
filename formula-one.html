@@ -168,16 +168,12 @@ input[type=range]{accent-color:#ff765e}
 .model-state b{font-size:8px;letter-spacing:.04em;color:#e7c76b;text-align:right}
 .model-state b[data-state="active"]{color:#43d69a}
 .model-state b[data-state="error"]{color:#ff8b7d}
-#desktopDrivePads{position:fixed;z-index:12;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
-#desktopDrivePads button{min-width:116px;height:42px;padding:0 14px;border:1px solid #ffffff30;border-radius:10px;background:#0b1722eF;color:#eaf0f5;font-size:10px;font-weight:950;letter-spacing:.09em;box-shadow:0 8px 25px #0007;touch-action:none;user-select:none}
-#desktopDrivePads #driveGo{background:linear-gradient(120deg,#ff684e,#ffad56);color:#1c1210;border-color:#ffb17c}
-#desktopDrivePads button.down{filter:brightness(1.25);transform:translateY(1px)}
 .menu-model-state{width:100%;margin-top:-4px;padding:8px 10px}
 .menu-model-state b{font-size:9px}
 .menu-model-state button{display:none;flex:0 0 auto;padding:7px 9px}
 #menuModelStatusRow[data-state="error"] button{display:block}
 #menuModelStatusRow[data-state="active"] button{display:none}
-@media(max-width:760px){#desktopDrivePads{display:none}.menu-model-state{gap:6px}.menu-model-state b{font-size:8px}}
+@media(max-width:760px){.menu-model-state{gap:6px}.menu-model-state b{font-size:8px}}
 <style>
 #menu{isolation:isolate;overflow:hidden;padding:clamp(10px,2vw,24px);background:linear-gradient(112deg,#06101be8 0%,#07111bd4 50%,#030912e8 100%)}
 .menu-race-backdrop{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.62}
@@ -684,11 +680,7 @@ input[type=range]{accent-color:#ff765e}
    </section>
   <footer class="settings-footer"><span>Changes apply immediately · Each camera keeps its own profile</span><button class="action" id="settingsDoneBtn">APPLY & CLOSE</button></footer>
  </section>
-</div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="ArrowDown">BRAKE</button><button class="touchbtn" data-key="ArrowUp">GO</button><button class="touchbtn" data-key="KeyR">R</button></div></div>
-<div id="desktopDrivePads" aria-label="Driving controls">
- <button id="driveBrake" type="button">BRAKE · HOLD</button>
- <button id="driveGo" type="button">ACCELERATE · HOLD</button>
-</div>
+</div><div id="touchControls"><div class="touchgroup"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="touchgroup"><button class="touchbtn" data-key="KeyR">R</button></div></div>
 <pre id="errorBox"></pre>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
@@ -5847,14 +5839,36 @@ function ferrariSourcePointToThree(point){
 function ferrariControlCenters(rows,actions){
  return rows.map((point,index)=>({point:ferrariSourcePointToThree(point),action:actions[index]}));
 }
+function keepFerrariWheelAsOnlyVisibleCockpitWheel(){
+ if(!steeringPivot||!ferrariWheelRoot||ferrariWheelRoot.parent!==steeringPivot)return;
+ for(const child of steeringPivot.children){
+  if(child!==ferrariWheelRoot)child.visible=false;
+ }
+}
 async function loadFerrariSteeringWheel(pivot,generation){
  try{
   ensureWheelDashboardCanvas();
-  const loader=new GLTFLoader();
-  const base=new URL("assets/f1-steering-wheel/",document.baseURI);
+  const base=new URL("./assets/f1-steering-wheel/",window.location.href);
+  const wheelBuild=new URLSearchParams(window.location.search).get("build")||"apex-ferrari-wheel-20261107-v16";
+  const manager=new THREE.LoadingManager();
+  manager.setURLModifier(resourceUrl=>{
+   try{
+    const resolved=new URL(resourceUrl,base);
+    if(resolved.origin===base.origin&&resolved.pathname.startsWith(base.pathname)){
+     resolved.searchParams.set("build",wheelBuild);
+     return resolved.href;
+    }
+   }catch(_){}
+   return resourceUrl;
+  });
+  const loader=new GLTFLoader(manager);
+  const coreUrl=new URL("F1_steering_wheel_core.gltf",base);
+  const controlsUrl=new URL("F1_steering_wheel_controls.gltf",base);
+  coreUrl.searchParams.set("build",wheelBuild);
+  controlsUrl.searchParams.set("build",wheelBuild);
   const [coreAsset,controlsAsset]=await Promise.all([
-   loader.loadAsync(new URL("F1_steering_wheel_core.gltf",base).href),
-   loader.loadAsync(new URL("F1_steering_wheel_controls.gltf",base).href)
+   loader.loadAsync(coreUrl.href),
+   loader.loadAsync(controlsUrl.href)
   ]);
   if(generation!==carBuildGeneration||!pivot.parent)return;
   const bodyMesh=coreAsset.scene.getObjectByName("steering_wheel_body.001")||
@@ -5937,9 +5951,9 @@ async function loadFerrariSteeringWheel(pivot,generation){
   allMeshes.filter(mesh=>/steering_wheel_top_leds|steering_wheel_top_panel_leds/i.test(mesh.name))
    .forEach(mesh=>wheelShiftLedMeshes.push(mesh));
   ferrariWheelRoot=visualRoot;
-  // Hide all procedural/Red Bull wheel pieces only after the imported Ferrari
-  // wheel and its actual LCD are fully ready. No extra visible controls remain.
-  pivot.children.forEach(child=>{if(child!==visualRoot)child.visible=false;});
+  // Hide the old cockpit wheel after the imported model and LCD are ready.
+  // setCamera also reapplies this after any camera-visibility refresh.
+  keepFerrariWheelAsOnlyVisibleCockpitWheel();
   wheelDisplayPage=0;
   drawDashboard();
   console.info("Ferrari steering wheel installed:",{
@@ -6963,6 +6977,7 @@ function setCamera(frameDt=.016){
   }
   carRoot.userData.cameraVisibilityMode=cameraMode;
  }
+ keepFerrariWheelAsOnlyVisibleCockpitWheel();
  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
   const eye=camera.userData.importedCockpitEye||{x:0,y:.86,z:.04};
@@ -8048,15 +8063,7 @@ function bindControls(){
   if(e.code==="KeyH"){showHaloColumn=!showHaloColumn;applyCockpitPreferences();saveGameSettings();setCamera(0);}
  });
  window.addEventListener("keyup",e=>{keys[e.code]=false;});
- window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;document.querySelectorAll("#desktopDrivePads button").forEach(b=>b.classList.remove("down"));});
- const bindHold=(id,key)=>{
-  const button=$(id);if(!button)return;
-  const down=e=>{e.preventDefault();keys[key]=true;button.classList.add("down");try{button.setPointerCapture(e.pointerId);}catch(_){}};
-  const up=e=>{e.preventDefault();keys[key]=false;button.classList.remove("down");};
-  button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);
-  button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
- };
- bindHold("driveGo","KeyW");bindHold("driveBrake","KeyS");
+ window.addEventListener("blur",()=>{for(const key of Object.keys(keys))keys[key]=false;});
  document.querySelectorAll(".touchbtn").forEach(btn=>{
   const key=btn.dataset.key;const down=e=>{e.preventDefault();keys[key]=true;btn.classList.add("down");},up=e=>{e.preventDefault();keys[key]=false;btn.classList.remove("down");};
   btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointercancel",up);btn.addEventListener("pointerleave",up);
