@@ -174,6 +174,7 @@ input[type=range]{accent-color:#ff765e}
 #menuModelStatusRow[data-state="error"] button{display:block}
 #menuModelStatusRow[data-state="active"] button{display:none}
 @media(max-width:760px){.menu-model-state{gap:6px}.menu-model-state b{font-size:8px}}
+</style>
 <style>
 #menu{isolation:isolate;overflow:hidden;padding:clamp(10px,2vw,24px);background:linear-gradient(112deg,#06101be8 0%,#07111bd4 50%,#030912e8 100%)}
 .menu-race-backdrop{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.62}
@@ -278,6 +279,10 @@ input[type=range]{accent-color:#ff765e}
  .pit-cinematic-action{font-size:9px}.pit-cinematic-overlay:before,.pit-cinematic-overlay:after{height:3.5vh}
 }
 
+
+/* Consistent pointer and touch input for game interface controls. */
+button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointer-events:auto!important;touch-action:manipulation}
+.btn:before,.btn::before{pointer-events:none!important}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}

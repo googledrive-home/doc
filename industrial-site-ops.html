@@ -33,6 +33,10 @@
 #siteMap{display:block;width:100%;height:auto;margin-top:8px;border:1px solid #8fc3ad2b;border-radius:8px;background:#0e1a1d}
 .mapfoot{margin-top:7px;color:#9db5b2;font:10px ui-monospace,Consolas,monospace;text-align:center}
 @media(max-width:700px){.topbar{flex-direction:column}.metrics{justify-content:flex-start}.side{top:118px;width:175px}.side.right{width:165px;top:auto;bottom:62px}.controls{bottom:12px;left:12px;transform:none;white-space:normal;max-width:calc(100vw - 24px);font-size:9px}.actions{right:12px;top:12px;bottom:auto}.actions .btn{padding:8px}.menu{grid-template-columns:1fr}.menuleft{padding:23px}.menuright{padding:23px}}
+
+/* Consistent pointer and touch input for game interface controls. */
+button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointer-events:auto!important;touch-action:manipulation}
+.btn:before,.btn::before{pointer-events:none!important}
 </style>
 </head>
 <body>
