@@ -28,5 +28,5 @@ The game also has a procedural industrial preview layout so it remains playable 
 
 Controls:
 ON FOOT: WASD move, mouse look, Shift run, Space jump, E scan, F inspection light.
-FPV DRONE: W/S pitch, A/D roll, Q/E yaw, Space thrust, Shift descend, mouse look, V switch ACRO/STAB.
-TAB switches between on-foot and FPV drone modes. R resets the current mode. E scans survey targets in either mode.
+FPV DRONE: W/S pitch, A/D roll, Q/E yaw, Space thrust, Shift descend, mouse look, V switch ACRO/STAB, C scan.
+TAB switches between on-foot and FPV drone modes. R resets the current mode. E scans on foot; C scans in drone mode so E remains available for yaw.
