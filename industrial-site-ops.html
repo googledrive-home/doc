@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#09131a">
+<title>Industrial Site Ops | Field Simulator</title>
+<style>
+:root{color-scheme:dark;--bg:#071016;--panel:rgba(8,19,27,.88);--edge:#8db5c02b;--txt:#edf5f4;--muted:#9db0b4;--cyan:#70e2dd;--lime:#c5ec82;--orange:#ffb36d;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt)}button,select{font:inherit}button{cursor:pointer}
+#view{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none;background:linear-gradient(#718f9b,#c0c5b8)}
+.panel{background:var(--panel);border:1px solid var(--edge);backdrop-filter:blur(12px);box-shadow:0 14px 42px #0005;border-radius:13px}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 45%,#02080da8 100%)}
+#hud{position:fixed;inset:0;z-index:3;pointer-events:none;display:none}
+#hud button{pointer-events:auto}
+.topbar{position:absolute;left:14px;right:14px;top:13px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.brand{display:flex;gap:10px;align-items:center;padding:9px 12px}.brandmark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(145deg,#b7d6b0,#5e8a7d);color:#14201d;font-size:20px;font-weight:900}.brand b{font-size:11px;letter-spacing:.15em}.brand small{display:block;color:#91a9aa;font-size:9px;letter-spacing:.13em;margin-top:3px}
+.metrics{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.metric{min-width:84px;padding:8px 11px}.metric label{display:block;color:#8ea7a9;font-size:8px;letter-spacing:.14em}.metric strong{display:block;font:700 19px ui-monospace,Consolas,monospace;margin-top:3px}.metric em{font-style:normal;font-size:9px;color:#90aaa9}
+.side{position:absolute;top:82px;left:14px;width:214px;padding:13px}.side.right{left:auto;right:14px;width:202px}
+.kicker{font-size:9px;font-weight:900;letter-spacing:.16em;color:var(--cyan);text-transform:uppercase}.rowstat{display:flex;justify-content:space-between;gap:8px;margin-top:11px;font-size:10px;color:#a8bdbe}.rowstat b{color:#f3f7f3;font:700 11px ui-monospace,Consolas,monospace}
+.progress{height:5px;border-radius:8px;background:#ffffff17;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--lime));transition:width .15s}
+.objective{margin-top:12px;padding-top:11px;border-top:1px solid #ffffff16;font-size:10px;color:#b7c8c8;line-height:1.5}
+.controls{position:absolute;left:50%;bottom:13px;transform:translateX(-50%);padding:8px 13px;font-size:10px;color:#aebfbe;white-space:nowrap;max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
+.actions{position:absolute;right:14px;bottom:14px;display:flex;gap:7px;pointer-events:auto}.btn{border:1px solid #91b3aa35;border-radius:9px;padding:9px 12px;color:#eef5f0;background:#14242a;font-size:9px;font-weight:900;letter-spacing:.08em}.btn:hover{border-color:#8fe4d5;background:#1a3235}.btn.primary{background:linear-gradient(120deg,#5dcdbd,#b8e183);border:0;color:#10201c}.btn.subtle{background:#0e1a20}.btn.warn{border-color:#ffbf6c55;color:#ffd3a6}
+.reticle{position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);opacity:.75}.reticle:before,.reticle:after{content:"";position:absolute;background:var(--cyan);box-shadow:0 0 7px #70e2dd}.reticle:before{width:1px;height:22px;left:11px;top:1px}.reticle:after{height:1px;width:22px;left:1px;top:11px}
+.message{position:absolute;top:22%;left:50%;transform:translate(-50%,-50%);padding:10px 15px;border:1px solid #70e2dd55;border-radius:9px;background:#07161ce8;color:#dffff9;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .2s;pointer-events:none}.message.show{opacity:1}
+.overlay{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:18px;background:linear-gradient(135deg,#071016ed,#0c1b20f2)}.menu{width:min(920px,96vw);max-height:94vh;overflow:auto;display:grid;grid-template-columns:1.05fr .95fr;border:1px solid #90c5b62d;border-radius:18px;background:linear-gradient(145deg,#102128,#09131a);box-shadow:0 30px 90px #0009}.menuleft{padding:clamp(22px,4vw,46px);background:radial-gradient(circle at 20% 20%,#3c83712b,transparent 56%),linear-gradient(150deg,#142a2c,#0b171d)}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.2em;color:var(--cyan)}h1{margin:20px 0 14px;font-size:clamp(34px,5vw,58px);line-height:.98;letter-spacing:-.04em}h1 span{color:var(--lime)}.menuleft p{max-width:410px;color:#a8bbbb;line-height:1.6;font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:25px}.chip{border:1px solid #a1c6bd25;background:#0b191e;padding:8px 10px;border-radius:8px;color:#a9c0bd;font-size:10px}.chip b{color:#ecf8ee;margin-right:4px}
+.menuright{padding:clamp(22px,4vw,38px)}.tag{font-size:9px;font-weight:900;letter-spacing:.18em;color:var(--lime)}h2{margin:7px 0 21px;font-size:20px}.formlabel{display:block;margin:14px 0 6px;color:#adc0c0;font-size:10px;font-weight:800;letter-spacing:.06em}select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #a9c9c035;background:#0a171c;color:#eef5f0;font-size:12px}.preview{margin-top:10px;border:1px solid #81bba22e;border-radius:10px;padding:12px;background:linear-gradient(120deg,#17352f,#10232a);font-size:10px;color:#9fb8b2;line-height:1.5}.preview b{display:block;color:#dff5e8;letter-spacing:.1em;margin-bottom:4px}.menuactions{display:grid;gap:8px;margin-top:18px}.menuactions .btn{padding:13px}.smallnote{font-size:9px;color:#78918f;line-height:1.5;margin-top:13px}
+#pauseOverlay{display:none}.pausebox{width:min(480px,94vw);padding:28px;border-radius:16px;border:1px solid #8bb8a72e;background:#0b191f;box-shadow:0 30px 100px #000b}.pausebox h2{font-size:25px;margin:8px 0}.pausebox p{font-size:12px;color:#a5b7b5;line-height:1.6}.pausebox .menuactions{margin-top:22px}
+@media(max-width:700px){.topbar{flex-direction:column}.metrics{justify-content:flex-start}.side{top:118px;width:175px}.side.right{width:165px;top:auto;bottom:62px}.controls{bottom:12px;left:12px;transform:none;white-space:normal;max-width:calc(100vw - 24px);font-size:9px}.actions{right:12px;top:12px;bottom:auto}.actions .btn{padding:8px}.menu{grid-template-columns:1fr}.menuleft{padding:23px}.menuright{padding:23px}}
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="Industrial Site Ops first-person field simulator"></canvas>
+<div id="vignette"></div>
+<div id="hud">
+ <div class="topbar">
+  <div class="brand panel"><div class="brandmark">IS</div><div><b>INDUSTRIAL SITE OPS</b><small id="modeTag">ON-FOOT FIELD VIEW</small></div></div>
+  <div class="metrics">
+   <div class="metric panel"><label id="metricOneLabel">POSITION</label><strong id="metricOne">READY</strong><em id="metricOneUnit">FIELD</em></div>
+   <div class="metric panel"><label id="metricTwoLabel">SURVEY</label><strong id="metricTwo">0/5</strong><em>SCANNED</em></div>
+   <div class="metric panel"><label id="metricThreeLabel">TIME</label><strong id="metricThree">00:00</strong><em>SESSION</em></div>
+  </div>
+ </div>
+ <div class="side panel">
+  <div class="kicker">Site operations</div>
+  <div class="rowstat"><span>Mode</span><b id="modeRead">ON FOOT</b></div>
+  <div class="rowstat"><span>Survey points</span><b id="scanRead">0 / 5</b></div>
+  <div class="progress"><span id="scanBar"></span></div>
+  <div class="objective" id="objectiveText">Locate the marked equipment stations and scan them with your field scanner.</div>
+ </div>
+ <div class="side right panel">
+  <div class="kicker">FPV telemetry</div>
+  <div class="rowstat"><span>Air speed</span><b id="airSpeed">0 km/h</b></div>
+  <div class="rowstat"><span>Altitude</span><b id="airAlt">1.7 m</b></div>
+  <div class="rowstat"><span>Handling</span><b id="handlingRead">ACRO</b></div>
+  <div class="rowstat"><span>Battery</span><b id="batteryRead">100%</b></div>
+  <div class="progress"><span id="batteryBar" style="width:100%"></span></div>
+ </div>
+ <div class="reticle"></div>
+ <div class="controls panel" id="controlHelp">WASD move · Mouse look · SHIFT run · SPACE jump · E scan · F light · TAB switch to FPV drone · ESC pause</div>
+ <div class="message" id="message"></div>
+ <div class="actions">
+  <button class="btn" id="modeBtn">FPV DRONE</button>
+  <button class="btn" id="lightBtn">LIGHT: ON</button>
+  <button class="btn" id="pauseBtn">Ⅱ PAUSE</button>
+ </div>
+</div>
+<div class="overlay" id="startOverlay">
+ <div class="menu">
+  <div class="menuleft">
+   <div class="eyebrow">APEX FIELD SIMULATION / 01</div>
+   <h1>INDUSTRIAL<br><span>SITE OPS.</span></h1>
+   <p>Explore a large industrial complex on foot, switch into a first-person FPV quadcopter, and survey equipment stations while maintenance robots patrol the site.</p>
+   <div class="chips">
+    <div class="chip"><b>WASD</b> On-foot movement</div>
+    <div class="chip"><b>MOUSE</b> Look / steer</div>
+    <div class="chip"><b>TAB</b> Switch mode</div>
+    <div class="chip"><b>E</b> Scanner pulse</div>
+   </div>
+  </div>
+  <div class="menuright">
+   <div class="tag">FIELD DEPLOYMENT</div><h2>MISSION SETUP</h2>
+   <label class="formlabel" for="startMode">Deployment mode</label>
+   <select id="startMode">
+    <option value="foot">On foot · First-person</option>
+    <option value="drone">FPV drone · First-person flight</option>
+   </select>
+   <label class="formlabel" for="startMission">Objective</label>
+   <select id="startMission">
+    <option value="survey">Equipment survey · Scan all stations</option>
+    <option value="free">Free exploration · No time pressure</option>
+   </select>
+   <div class="preview" id="siteStatus"><b>INDUSTRIAL RECONSTRUCTION</b>Checking for a reconstructed GLB site in assets/industrial-site/…</div>
+   <div class="menuactions">
+    <button class="btn primary" id="startBtn">START FIELD SESSION ↗</button>
+    <button class="btn subtle" id="backBtn">← BACK TO GAME LIBRARY</button>
+   </div>
+   <div class="smallnote">The FPV mode uses the same simulator-style manual flight controls. This is a non-combat survey game with a scanner and inspection light.</div>
+  </div>
+ </div>
+</div>
+<div class="overlay" id="pauseOverlay">
+ <div class="pausebox">
+  <div class="eyebrow">FIELD SESSION PAUSED</div><h2>MISSION HOLD</h2>
+  <p id="pauseSummary">Your session is paused. Resume or return to the deployment screen.</p>
+  <div class="menuactions">
+   <button class="btn primary" id="resumeBtn">RESUME SESSION</button>
+   <button class="btn" id="pauseModeBtn">SWITCH MOVEMENT MODE</button>
+   <button class="btn subtle" id="menuBtn">RETURN TO DEPLOYMENT</button>
+  </div>
+ </div>
+</div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/GLTFLoader.js";
+
+const $ = id => document.getElementById(id);
+const canvas = $("view");
+const keys = new Set();
+const raycaster = new THREE.Raycaster();
+const groundRay = new THREE.Raycaster();
+const clock = new THREE.Clock();
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#9aadb0");
+scene.fog = new THREE.Fog("#9aadb0", 180, 620);
+const camera = new THREE.PerspectiveCamera(76, innerWidth/innerHeight, .08, 1400);
+camera.rotation.order = "YXZ";
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));
+renderer.setSize(innerWidth,innerHeight,false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+scene.add(new THREE.HemisphereLight("#dcebe7","#34443e",1.7));
+const sun = new THREE.DirectionalLight("#ffe6c3",2.1);
+sun.position.set(-95,150,75);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-240;sun.shadow.camera.right=240;sun.shadow.camera.top=240;sun.shadow.camera.bottom=-240;scene.add(sun);
+const fill = new THREE.DirectionalLight("#9ec9d0",.55);fill.position.set(120,65,-130);scene.add(fill);
+const siteRoot = new THREE.Group();siteRoot.name="Industrial reconstruction";scene.add(siteRoot);
+const detailRoot = new THREE.Group();detailRoot.name="Survey targets and service robots";scene.add(detailRoot);
+const flashlight = new THREE.SpotLight("#fff1d2",5,42,Math.PI/7,.34,1.4);
+flashlight.position.set(0,0,0);flashlight.target.position.set(0,0,-1);camera.add(flashlight);camera.add(flashlight.target);
+scene.add(camera);
+const loader = new GLTFLoader();
+let colliderMeshes = [], scanTargets = [], patrolBots = [], siteBounds = new THREE.Box3();
+let siteReady = false, siteSource = "procedural preview", siteLoadPromise = null;
+let active = false, paused = false, gameMode = "foot", mission = "survey";
+let pointerLocked = false, yaw = 0, pitch = 0, footVerticalVelocity = 0, grounded = true;
+let elapsed = 0, lastHud = 0, messageTimer = 0, scannedCount = 0;
+let flashlightOn = true;
+const footPosition = new THREE.Vector3(0,1.7,35);
+const drone = {
+ position:new THREE.Vector3(0,5,30),
+ velocity:new THREE.Vector3(),
+ yaw:0,pitch:0,roll:0,battery:100,handling:"acro",throttle:0
+};
+const droneTuning = {pitchRollRate:520,yawRate:320,maxSpeedKmh:82,motorPower:26,mouseSensitivity:1.0};
+let pendingMouseYaw=0,pendingMousePitch=0,pendingMouseRoll=0;
+let lastFrame=performance.now();
+let startPosition = new THREE.Vector3(0,1.7,35);
+
+function mat(color,roughness=.82,extra={}){return new THREE.MeshStandardMaterial({color,roughness,...extra});}
+function addBox(parent,x,y,z,w,h,d,material,collide=true){
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+ mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);
+ if(collide)colliderMeshes.push(mesh);
+ return mesh;
+}
+function addCylinder(parent,x,y,z,rt,rb,height,material,segments=18,collide=true){
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,height,segments),material);
+ mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);
+ if(collide)colliderMeshes.push(mesh);
+ return mesh;
+}
+function addTarget(name,x,y,z){
+ const group=new THREE.Group();group.position.set(x,y,z);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,8,36),new THREE.MeshBasicMaterial({color:"#73e6d8"}));
+ ring.rotation.x=Math.PI/2;group.add(ring);
+ const core=new THREE.Mesh(new THREE.OctahedronGeometry(.22,0),new THREE.MeshStandardMaterial({color:"#c6ed86",emissive:"#3d754b",emissiveIntensity:.9}));
+ group.add(core);
+ detailRoot.add(group);
+ scanTargets.push({name,group,scanned:false});
+}
+function addServiceBot(x,z,index){
+ const group=new THREE.Group();group.position.set(x,0,z);
+ const shell=mat("#71827e",.55,{metalness:.48}),dark=mat("#1b2829",.58,{metalness:.36}),lamp= new THREE.MeshStandardMaterial({color:"#8bf0d0",emissive:"#4bdeb9",emissiveIntensity:1.1});
+ addCylinder(group,0,.55,0,.42,.42,.72,shell,10,false);
+ addBox(group,0,1.08,0,.54,.42,.48,dark,false);
+ for(const side of [-1,1]){
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),lamp);eye.position.set(side*.14,1.15,-.25);group.add(eye);
+  addCylinder(group,side*.38,.25,0,.09,.12,.42,dark,8,false);
+ }
+ detailRoot.add(group);
+ patrolBots.push({group,homeX:x,homeZ:z,phase:index*2.1,speed:.45+index*.12,range:4+index*1.5});
+}
+function buildPreviewSite(){
+ siteRoot.clear();detailRoot.clear();colliderMeshes=[];scanTargets=[];patrolBots=[];
+ const concrete=mat("#697577",.95),asphalt=mat("#303c40",.98),paint=mat("#b2b8af",.88),steel=mat("#52666b",.52,{metalness:.55}),rust=mat("#856849",.78,{metalness:.28}),roof=mat("#27373c",.65,{metalness:.28}),glass=mat("#36565a",.3,{metalness:.35});
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(440,360),concrete);floor.rotation.x=-Math.PI/2;floor.position.y=0;floor.receiveShadow=true;siteRoot.add(floor);colliderMeshes.push(floor);
+ const road=new THREE.Mesh(new THREE.PlaneGeometry(440,28),asphalt);road.rotation.x=-Math.PI/2;road.position.set(0,.012,70);siteRoot.add(road);
+ for(let x=-210;x<220;x+=16)addBox(siteRoot,x,.03,70,.12,.02,7,paint,false);
+ // Main warehouse with open front and support bays.
+ addBox(siteRoot,0,11,-100,150,2,72,roof);
+ addBox(siteRoot,-74,5,-100,2,10,72,steel);addBox(siteRoot,74,5,-100,2,10,72,steel);
+ addBox(siteRoot,0,5,-136,148,10,2,steel);addBox(siteRoot,-35,5,-64,2,10,72,steel);addBox(siteRoot,35,5,-64,2,10,72,steel);
+ for(let x=-65;x<=65;x+=26){addBox(siteRoot,x,5,-100,.75,10,70,steel);addBox(siteRoot,x,10.5,-100,1,1,70,roof);}
+ // Warehouses and maintenance halls.
+ for(const [x,z,w,d,h] of [[-135,-35,58,64,16],[133,-50,62,78,19],[-135,116,78,66,13],[142,130,66,84,15]]){
+  addBox(siteRoot,x,h/2,z,w,h,d,concrete);addBox(siteRoot,x,h,z,w+.8,.65,d+.8,roof);
+  for(let dx=-w*.34;dx<=w*.34;dx+=w*.34){
+   addBox(siteRoot,x+dx,2.9,z+d/2+.55,w*.18,5.6,.22,glass,false);
+  }
+  addBox(siteRoot,x,1.4,z+d/2+.75,w*.58,2.8,.38,steel);
+ }
+ // Process tanks, pipes and elevated pipe racks.
+ for(const [x,z,r,h] of [[-63,35,9,22],[ -30,33,7,18],[35,35,8,24],[73,28,6,15],[178,10,10,20]]){
+  addCylinder(siteRoot,x,h/2,z,r,r,h,steel,24);
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(r,20,10,0,Math.PI*2,0,Math.PI/2),steel);dome.position.set(x,h,z);siteRoot.add(dome);
+  addCylinder(siteRoot,x,h+1,z,r*.78,r*.78,1.8,rust,20,false);
+ }
+ for(let z=-15;z<=48;z+=12){
+  addBox(siteRoot,0,13,z,200,.7,.7,steel);
+  addBox(siteRoot,0,10.4,z+1,200,.42,.42,rust);
+  for(const x of [-92,-60,-28,28,60,92])addBox(siteRoot,x,7.8,z,.55,15,.55,steel);
+ }
+ // Pipework, ventilation, stacks and rooftop details.
+ for(const [x,z,h] of [[-180,-90,28],[-164,-90,22],[112,-105,31],[135,-105,25]]){
+  addCylinder(siteRoot,x,h/2,z,2.3,3.2,h,rust,18);
+  addCylinder(siteRoot,x,h,z,3.1,3.1,.65,roof,18,false);
+ }
+ // Tank farm berms, drums and containers.
+ for(let i=0;i<14;i++){
+  const x=-205+(i%7)*15,z=18+Math.floor(i/7)*19;
+  addCylinder(siteRoot,x,.9,z,.95,.95,1.8,i%3===0?rust:steel,12);
+ }
+ const containerColors=["#647a78","#7a7464","#4a686b","#8b765b"];
+ for(let i=0;i<12;i++){
+  const x=-190+(i%6)*18,z=158+Math.floor(i/6)*13;
+  const c=mat(containerColors[i%containerColors.length],.82);
+  addBox(siteRoot,x,2.7,z,15,5.4,11,c);
+  for(let k=-6;k<=6;k+=1.5)addBox(siteRoot,x+k,2.7,z+5.52,.045,5.25,.04,steel,false);
+ }
+ // Fences and perimeter gates.
+ for(const z of [-178,190]){
+  addBox(siteRoot,0,2.0,z,420,.18,.18,steel);
+  for(let x=-210;x<=210;x+=8)addBox(siteRoot,x,1,z,.12,2,.12,steel,false);
+ }
+ for(const x of [-215,215]){
+  addBox(siteRoot,x,2,0,.18,.18,360,steel);
+  for(let z=-175;z<=175;z+=8)addBox(siteRoot,x,1,z,.12,2,.12,steel,false);
+ }
+ // Survey beacons and maintenance robots.
+ const targets=[[-100,2.2,-32],[92,2.2,-78],[-46,2.2,60],[158,2.2,112],[-170,2.2,152]];
+ targets.forEach((p,i)=>addTarget("Equipment station "+(i+1),p[0],p[1],p[2]));
+ addServiceBot(-105,5,0);addServiceBot(94,-38,1);addServiceBot(142,145,2);
+ const b=new THREE.Box3().setFromObject(siteRoot);siteBounds.copy(b);
+}
+function disposeChildren(group){
+ while(group.children.length){const child=group.children.pop();child.parent=null;}
+}
+async function loadIndustrialReconstruction(){
+ if(siteLoadPromise)return siteLoadPromise;
+ siteLoadPromise=(async()=>{
+  const base="assets/industrial-site/";
+  detailRoot.clear();scanTargets=[];patrolBots=[];
+  let loaded=false,loadedFiles=[];
+  try{
+   const manifestResponse=await fetch(base+"manifest.json",{cache:"no-store"});
+   if(manifestResponse.ok){
+    const manifest=await manifestResponse.json();
+    const entries=manifest.models||manifest.chunks||manifest.files||[];
+    if(!Array.isArray(entries)||!entries.length)throw new Error("manifest.json has no models/chunks/files array");
+    siteRoot.clear();colliderMeshes=[];
+    for(const item of entries){
+     const file=typeof item==="string"?item:(item.file||item.src||item.url);
+     if(!file||!/\.(glb|gltf)$/i.test(file))continue;
+     const asset=await loader.loadAsync(new URL(file,location.href.replace(/[^/]*$/,"")+base).href);
+     const model=asset.scene;
+     if(item&&typeof item==="object"){
+      if(Array.isArray(item.position))model.position.set(item.position[0]||0,item.position[1]||0,item.position[2]||0);
+      if(Array.isArray(item.rotation))model.rotation.set(item.rotation[0]||0,item.rotation[1]||0,item.rotation[2]||0);
+      if(Array.isArray(item.scale))model.scale.set(item.scale[0]||1,item.scale[1]||1,item.scale[2]||1);
+     }
+     model.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;colliderMeshes.push(obj);}});
+     siteRoot.add(model);loadedFiles.push(file);
+    }
+    loaded=loadedFiles.length>0;
+   }
+  }catch(error){console.warn("[Industrial Site] Manifest loading failed:",error);}
+  if(!loaded){
+   for(const file of ["industrial-site.glb","IndustrialSite.glb","industrial-reconstruction.glb"]){
+    try{
+     const asset=await loader.loadAsync(base+file);
+     siteRoot.clear();colliderMeshes=[];
+     asset.scene.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;colliderMeshes.push(obj);}});
+     siteRoot.add(asset.scene);loadedFiles=[file];loaded=true;break;
+    }catch(_){}
+   }
+  }
+  if(loaded){
+   const bounds=new THREE.Box3().setFromObject(siteRoot);
+   if(!bounds.isEmpty()){
+    const size=bounds.getSize(new THREE.Vector3()),centre=bounds.getCenter(new THREE.Vector3());
+    if(size.x>0&&size.z>0){
+     siteRoot.position.x-=centre.x;siteRoot.position.z-=centre.z;siteRoot.position.y-=bounds.min.y;
+    }
+   }
+   siteBounds.setFromObject(siteRoot);
+   const width=siteBounds.max.x-siteBounds.min.x,depth=siteBounds.max.z-siteBounds.min.z;
+   const stationPoints=[
+    [siteBounds.min.x+width*.22,siteBounds.min.z+depth*.25],
+    [siteBounds.min.x+width*.72,siteBounds.min.z+depth*.22],
+    [siteBounds.min.x+width*.47,siteBounds.min.z+depth*.48],
+    [siteBounds.min.x+width*.78,siteBounds.min.z+depth*.77],
+    [siteBounds.min.x+width*.20,siteBounds.min.z+depth*.78]
+   ];
+   stationPoints.forEach((p,i)=>addTarget("Equipment station "+(i+1),p[0],Math.max(1.3,siteBounds.min.y+2),p[1]));
+   addServiceBot(siteBounds.min.x+width*.25,siteBounds.min.z+depth*.35,0);
+   addServiceBot(siteBounds.max.x-width*.25,siteBounds.min.z+depth*.62,1);
+   siteSource=loadedFiles.join(", ");
+   return {loaded:true,files:loadedFiles};
+  }
+  buildPreviewSite();
+  siteSource="procedural industrial preview";
+  return {loaded:false,files:[]};
+ })();
+ return siteLoadPromise;
+}
+function showMessage(text){
+ const box=$("message");box.textContent=text;box.classList.add("show");
+ clearTimeout(messageTimer);messageTimer=setTimeout(()=>box.classList.remove("show"),2100);
+}
+function updateHud(now){
+ if(now-lastHud<100)return;lastHud=now;
+ const elapsedText=String(Math.floor(elapsed/60)).padStart(2,"0")+":"+String(Math.floor(elapsed%60)).padStart(2,"0");
+ $("metricThree").textContent=elapsedText;
+ $("scanRead").textContent=scannedCount+" / 5";
+ $("scanBar").style.width=(scannedCount/5*100)+"%";
+ $("metricTwo").textContent=scannedCount+"/5";
+ $("modeRead").textContent=gameMode==="foot"?"ON FOOT":"FPV DRONE";
+ $("modeTag").textContent=gameMode==="foot"?"ON-FOOT FIELD VIEW":"FPV DRONE / FLIGHT VIEW";
+ $("modeBtn").textContent=gameMode==="foot"?"FPV DRONE":"RETURN ON FOOT";
+ $("airSpeed").textContent=Math.round(drone.velocity.length()*3.6)+" km/h";
+ $("airAlt").textContent=drone.position.y.toFixed(1)+" m";
+ $("handlingRead").textContent=drone.handling.toUpperCase();
+ $("batteryRead").textContent=Math.round(drone.battery)+"%";
+ $("batteryBar").style.width=drone.battery+"%";
+ if(gameMode==="foot"){
+  $("metricOneLabel").textContent="POSITION";$("metricOne").textContent="FIELD";$("metricOneUnit").textContent="ON FOOT";
+  $("controlHelp").textContent="WASD move · Mouse look · SHIFT run · SPACE jump · E scan · F light · TAB switch to FPV drone · ESC pause";
+ }else{
+  $("metricOneLabel").textContent="AIR SPEED";$("metricOne").textContent=String(Math.round(drone.velocity.length()*3.6)).padStart(3,"0");$("metricOneUnit").textContent="KM/H";
+  $("controlHelp").textContent="FPV: W/S pitch · A/D roll · Q/E yaw · SPACE thrust · SHIFT descend · Mouse look · V ACRO/STAB · C scan · TAB on foot";
+ }
+}
+function makeFallbackFloorMaterial(){return mat("#687576",.97);}
+function setCameraFromFoot(){
+ camera.position.copy(footPosition);
+ camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0,"YXZ");
+}
+function setCameraFromDrone(){
+ camera.position.copy(drone.position);
+ camera.rotation.order="YXZ";
+ camera.rotation.set(-drone.pitch,-drone.yaw,-drone.roll,"YXZ");
+}
+function tryMoveFoot(direction,distance){
+ if(direction.lengthSq()<1e-7)return;
+ direction.normalize();
+ const origin=footPosition.clone();origin.y-=.45;
+ raycaster.set(origin,direction);raycaster.far=distance+.55;
+ const hits=raycaster.intersectObjects(colliderMeshes,false);
+ if(hits.length&&hits[0].distance<distance+.45)return;
+ footPosition.addScaledVector(direction,distance);
+}
+function updateFoot(dt){
+ const fwd=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw));
+ const right=new THREE.Vector3(Math.cos(yaw),0,Math.sin(yaw));
+ const move=new THREE.Vector3();
+ if(keys.has("w"))move.add(fwd);
+ if(keys.has("s"))move.sub(fwd);
+ if(keys.has("d"))move.add(right);
+ if(keys.has("a"))move.sub(right);
+ const speed=keys.has("shift")?8.2:4.6;
+ const wasGrounded=grounded;
+ if(move.lengthSq()>0){
+  move.normalize();
+  const step=speed*dt;
+  tryMoveFoot(move,step);
+ }
+ if(keys.has("space")&&grounded){footVerticalVelocity=6.2;grounded=false;}
+ footVerticalVelocity-=18*dt;
+ footPosition.y+=footVerticalVelocity*dt;
+ const groundY=Math.max(0,siteBounds.min.y)+1.7;
+ if(footPosition.y<=groundY){footPosition.y=groundY;footVerticalVelocity=0;grounded=true;}
+ setCameraFromFoot();
+}
+function updateDrone(dt){
+ const pitchInput=(keys.has("w")?1:0)-(keys.has("s")?1:0);
+ const rollInput=(keys.has("a")?1:0)-(keys.has("d")?1:0);
+ const yawInput=(keys.has("e")?1:0)-(keys.has("q")?1:0);
+ if(drone.handling==="stab"){
+  const targetPitch=pitchInput*.54,targetRoll=rollInput*.54;
+  drone.pitch+=(targetPitch-drone.pitch)*Math.min(1,dt*10);
+  drone.roll+=(targetRoll-drone.roll)*Math.min(1,dt*10);
+ }else{
+  const rate=THREE.MathUtils.degToRad(droneTuning.pitchRollRate)*dt;
+  drone.pitch+=pitchInput*rate;drone.roll+=rollInput*rate;
+ }
+ drone.yaw+=yawInput*THREE.MathUtils.degToRad(droneTuning.yawRate)*dt;
+ const thrustInput=keys.has("space")?1:(keys.has("shift")?-.22:0);
+ drone.throttle=thrustInput;
+ const thrust=thrustInput*droneTuning.motorPower;
+ const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
+ const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));
+ drone.velocity.addScaledVector(forward,Math.sin(drone.pitch)*thrust*dt);
+ drone.velocity.addScaledVector(right,-Math.sin(drone.roll)*Math.cos(drone.pitch)*thrust*dt);
+ drone.velocity.y+=(thrust*Math.cos(drone.pitch)*Math.cos(drone.roll)-9.81)*dt;
+ const drag=Math.exp(-.13*dt);
+ drone.velocity.x*=drag;drone.velocity.z*=drag;drone.velocity.y*=Math.exp(-.05*dt);
+ const horizontal=Math.hypot(drone.velocity.x,drone.velocity.z),max=droneTuning.maxSpeedKmh/3.6;
+ if(horizontal>max){drone.velocity.x*=max/horizontal;drone.velocity.z*=max/horizontal;}
+ drone.velocity.y=THREE.MathUtils.clamp(drone.velocity.y,-20,20);
+ const previous=drone.position.clone();
+ drone.position.addScaledVector(drone.velocity,dt);
+ const delta=drone.position.clone().sub(previous),distance=delta.length();
+ if(distance>.001&&colliderMeshes.length){
+  raycaster.set(previous,delta.normalize());raycaster.far=distance+.32;
+  const hits=raycaster.intersectObjects(colliderMeshes,false);
+  if(hits.length){drone.position.copy(previous);drone.velocity.multiplyScalar(-.18);showMessage("DRONE CONTACT / COURSE CORRECTED");}
+ }
+ const floorY=Math.max(0,siteBounds.min.y)+.75;
+ if(drone.position.y<floorY){drone.position.y=floorY;drone.velocity.y=Math.max(0,drone.velocity.y)*.2;}
+ const maxY=Math.max(65,siteBounds.max.y+35);
+ if(drone.position.y>maxY){drone.position.y=maxY;drone.velocity.y=0;}
+ if(Math.abs(drone.throttle)>.05)drone.battery=Math.max(0,drone.battery-dt*.38);
+ if(drone.battery<=0){drone.velocity.multiplyScalar(.985);showMessage("DRONE BATTERY LOW / RETURN TO FOOT MODE");}
+ setCameraFromDrone();
+}
+function updateBots(dt,now){
+ for(const bot of patrolBots){
+  bot.phase+=dt*bot.speed;
+  bot.group.position.x=bot.homeX+Math.sin(bot.phase)*bot.range;
+  bot.group.position.z=bot.homeZ+Math.cos(bot.phase*.75)*bot.range*.55;
+  bot.group.rotation.y=Math.sin(bot.phase*.75)*.45;
+  bot.group.children.forEach(child=>{if(child.material?.emissiveIntensity!==undefined)child.material.emissiveIntensity=.65+.35*Math.sin(now*.003+bot.phase);});
+ }
+ for(const item of scanTargets){if(!item.scanned)item.group.rotation.y+=dt*.55;}
+}
+function scanAhead(){
+ const origin=camera.position.clone();const forward=new THREE.Vector3();camera.getWorldDirection(forward);
+ let best=null,bestDistance=Infinity;
+ for(const item of scanTargets){
+  if(item.scanned)continue;
+  const point=new THREE.Vector3();item.group.getWorldPosition(point);
+  const offset=point.sub(origin),distance=offset.length();
+  if(distance> (gameMode==="drone"?34:13))continue;
+  const alignment=offset.normalize().dot(forward);
+  if(alignment>.88&&distance<bestDistance){best=item;bestDistance=distance;}
+ }
+ if(!best){showMessage("NO EQUIPMENT TARGET IN SCAN RANGE");return;}
+ best.scanned=true;best.group.traverse(obj=>{if(obj.material?.color)obj.material.color.set("#8fa0a0");if(obj.material?.emissive)obj.material.emissive.set("#6bd7a9");});
+ scannedCount++;
+ showMessage("SURVEY SAVED / "+best.name.toUpperCase());
+ $("objectiveText").textContent=scannedCount===5?"ALL STATIONS SURVEYED. FIELD SESSION COMPLETE.":"Scanned "+best.name+". Continue to the next marked equipment station.";
+ if(scannedCount>=5)showMessage("SITE SURVEY COMPLETE");
+}
+function switchMode(to){
+ const next=to|| (gameMode==="foot"?"drone":"foot");
+ if(next===gameMode)return;
+ if(next==="drone"){
+  drone.position.copy(footPosition).add(new THREE.Vector3(0,2.4,0));
+  drone.velocity.set(0,0,0);drone.yaw=yaw;drone.pitch=0;drone.roll=0;
+  gameMode="drone";showMessage("FPV DRONE LINK ACTIVE");
+ }else{
+  footPosition.copy(drone.position);footPosition.y=Math.max(footPosition.y,Math.max(0,siteBounds.min.y)+1.7);
+  yaw=drone.yaw;pitch=0;footVerticalVelocity=0;grounded=true;
+  gameMode="foot";showMessage("ON-FOOT CONTROL RESTORED");
+ }
+ keys.clear();pendingMouseYaw=0;pendingMousePitch=0;
+ updateHud(performance.now());
+}
+function resetCurrentMode(){
+ keys.clear();pendingMouseYaw=0;pendingMousePitch=0;
+ if(gameMode==="drone"){
+  drone.position.copy(startPosition).add(new THREE.Vector3(0,4,0));
+  drone.velocity.set(0,0,0);drone.yaw=0;drone.pitch=0;drone.roll=0;drone.battery=100;
+  showMessage("FPV DRONE RESET");
+ }else{
+  footPosition.copy(startPosition);yaw=0;pitch=0;footVerticalVelocity=0;grounded=true;showMessage("FIELD POSITION RESET");
+ }
+}
+function pauseGame(){
+ if(!active)return;
+ paused=!paused;keys.clear();
+ if(paused&&pointerLocked&&document.exitPointerLock)document.exitPointerLock();
+ $("pauseOverlay").style.display=paused?"grid":"none";
+}
+function startGame(){
+ mission=$("startMission").value;scannedCount=0;elapsed=0;
+ gameMode=$("startMode").value;
+ startPosition.set(0,Math.max(0,siteBounds.min.y)+1.7,Math.min(siteBounds.max.z-8,siteBounds.min.z+(siteBounds.max.z-siteBounds.min.z)*.72));
+ footPosition.copy(startPosition);yaw=0;pitch=0;footVerticalVelocity=0;grounded=true;
+ drone.position.copy(startPosition).add(new THREE.Vector3(0,3,0));drone.velocity.set(0,0,0);drone.yaw=0;drone.pitch=0;drone.roll=0;drone.battery=100;
+ active=true;paused=false;keys.clear();
+ $("startOverlay").style.display="none";$("pauseOverlay").style.display="none";$("hud").style.display="block";
+ $("objectiveText").textContent=mission==="survey"?"Locate the five glowing equipment stations. Aim the centre reticle at a marker and press E to record a scan.":"Free exploration. Switch between on-foot and FPV drone modes at any time.";
+ updateHud(performance.now());
+ showMessage(gameMode==="drone"?"FPV DRONE READY / CLICK VIEW TO CAPTURE":"FIELD READY / CLICK VIEW TO CAPTURE");
+}
+async function prepareSite(){
+ $("siteStatus").innerHTML="<b>INDUSTRIAL RECONSTRUCTION</b>Loading assets/industrial-site/…";
+ try{
+  const result=await loadIndustrialReconstruction();
+  $("siteStatus").innerHTML=result.loaded
+   ?"<b>RECONSTRUCTION READY</b>"+result.files.length+" GLB model file(s) loaded from the asset folder."
+   :"<b>PREVIEW SITE READY</b>No GLB reconstruction found yet. The procedural industrial layout is active.";
+ }catch(error){
+  console.warn(error);buildPreviewSite();
+  $("siteStatus").innerHTML="<b>PREVIEW SITE READY</b>The uploaded reconstruction was not available, so the procedural layout is active.";
+ }
+}
+function onMouseMove(e){
+ if(!pointerLocked||!active||paused)return;
+ const sensitivity=.0022*droneTuning.mouseSensitivity;
+ if(gameMode==="foot"){
+  yaw-=e.movementX*sensitivity;pitch-=e.movementY*sensitivity;
+  pitch=THREE.MathUtils.clamp(pitch,-1.48,1.48);
+ }else{
+  drone.yaw+=e.movementX*sensitivity;
+  drone.pitch+=e.movementY*sensitivity;
+  drone.pitch=THREE.MathUtils.clamp(drone.pitch,-1.35,1.35);
+ }
+}
+function normalKey(e){if(e.code==="Space")return "space";if(e.key==="Shift")return "shift";return e.key.toLowerCase();}
+function setupEvents(){
+ canvas.addEventListener("click",()=>{if(active&&!paused&&canvas.requestPointerLock)canvas.requestPointerLock();});
+ canvas.addEventListener("contextmenu",e=>e.preventDefault());
+ document.addEventListener("pointerlockchange",()=>{pointerLocked=document.pointerLockElement===canvas;});
+ document.addEventListener("mousemove",onMouseMove);
+ window.addEventListener("keydown",e=>{
+  const key=normalKey(e);
+  if(["space","arrowup","arrowdown","arrowleft","arrowright"].includes(key))e.preventDefault();
+  if(key==="escape"&&active&&!paused){pauseGame();return;}
+  if(key==="tab"&&active&&!paused){e.preventDefault();switchMode();return;}
+  if(key==="p"&&active){pauseGame();return;}
+  if(key==="r"&&active){resetCurrentMode();return;}
+  if(key==="e"&&active&&!paused&&gameMode==="foot"){scanAhead();return;}
+  if(key==="c"&&active&&!paused&&gameMode==="drone"){scanAhead();return;}
+  if(key==="f"&&active&&!paused){flashlightOn=!flashlightOn;flashlight.visible=flashlightOn;$("lightBtn").textContent=flashlightOn?"LIGHT: ON":"LIGHT: OFF";return;}
+  if(key==="v"&&active&&!paused&&gameMode==="drone"){drone.handling=drone.handling==="acro"?"stab":"acro";showMessage("FPV "+drone.handling.toUpperCase()+" MODE");return;}
+  keys.add(key);
+ },{passive:false});
+ window.addEventListener("keyup",e=>keys.delete(normalKey(e)));
+ window.addEventListener("blur",()=>keys.clear());
+ $("startBtn").addEventListener("click",()=>{
+  $("startBtn").disabled=true;$("startBtn").textContent="LOADING SITE…";
+  prepareSite().then(()=>{startGame();$("startBtn").disabled=false;$("startBtn").textContent="START FIELD SESSION ↗";});
+ });
+ $("backBtn").addEventListener("click",()=>location.href="index.html");
+ $("pauseBtn").addEventListener("click",pauseGame);
+ $("resumeBtn").addEventListener("click",pauseGame);
+ $("pauseModeBtn").addEventListener("click",()=>{switchMode();pauseGame();});
+ $("modeBtn").addEventListener("click",()=>switchMode());
+ $("lightBtn").addEventListener("click",()=>{flashlightOn=!flashlightOn;flashlight.visible=flashlightOn;$("lightBtn").textContent=flashlightOn?"LIGHT: ON":"LIGHT: OFF";});
+ $("menuBtn").addEventListener("click",()=>{
+  active=false;paused=false;keys.clear();
+  if(pointerLocked&&document.exitPointerLock)document.exitPointerLock();
+  $("pauseOverlay").style.display="none";$("hud").style.display="none";$("startOverlay").style.display="grid";
+ });
+ window.addEventListener("resize",()=>{
+  renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ });
+}
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.04,(now-lastFrame)/1000||.016);lastFrame=now;
+ if(active&&!paused){
+  elapsed+=dt;
+  if(gameMode==="foot")updateFoot(dt);else updateDrone(dt);
+  updateBots(dt,now);updateHud(now);
+ }else{
+  if(gameMode==="foot")setCameraFromFoot();else setCameraFromDrone();
+ }
+ renderer.render(scene,camera);
+}
+async function boot(){
+ buildPreviewSite();
+ $("siteStatus").innerHTML="<b>INDUSTRIAL RECONSTRUCTION</b>Checking asset folder…";
+ setupEvents();
+ try{
+  // Preload the reconstructed scene while the deployment menu is available.
+  await prepareSite();
+ }catch(error){console.warn("[Industrial Site] Preview mode:",error);}
+ $("startBtn").disabled=false;
+ lastFrame=performance.now();requestAnimationFrame(animate);
+}
+boot();
+</script>
+</body>
+</html>
