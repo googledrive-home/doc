@@ -27,6 +27,11 @@
 .overlay{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:18px;background:linear-gradient(135deg,#071016ed,#0c1b20f2)}.menu{width:min(920px,96vw);max-height:94vh;overflow:auto;display:grid;grid-template-columns:1.05fr .95fr;border:1px solid #90c5b62d;border-radius:18px;background:linear-gradient(145deg,#102128,#09131a);box-shadow:0 30px 90px #0009}.menuleft{padding:clamp(22px,4vw,46px);background:radial-gradient(circle at 20% 20%,#3c83712b,transparent 56%),linear-gradient(150deg,#142a2c,#0b171d)}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.2em;color:var(--cyan)}h1{margin:20px 0 14px;font-size:clamp(34px,5vw,58px);line-height:.98;letter-spacing:-.04em}h1 span{color:var(--lime)}.menuleft p{max-width:410px;color:#a8bbbb;line-height:1.6;font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:25px}.chip{border:1px solid #a1c6bd25;background:#0b191e;padding:8px 10px;border-radius:8px;color:#a9c0bd;font-size:10px}.chip b{color:#ecf8ee;margin-right:4px}
 .menuright{padding:clamp(22px,4vw,38px)}.tag{font-size:9px;font-weight:900;letter-spacing:.18em;color:var(--lime)}h2{margin:7px 0 21px;font-size:20px}.formlabel{display:block;margin:14px 0 6px;color:#adc0c0;font-size:10px;font-weight:800;letter-spacing:.06em}select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #a9c9c035;background:#0a171c;color:#eef5f0;font-size:12px}.preview{margin-top:10px;border:1px solid #81bba22e;border-radius:10px;padding:12px;background:linear-gradient(120deg,#17352f,#10232a);font-size:10px;color:#9fb8b2;line-height:1.5}.preview b{display:block;color:#dff5e8;letter-spacing:.1em;margin-bottom:4px}.menuactions{display:grid;gap:8px;margin-top:18px}.menuactions .btn{padding:13px}.smallnote{font-size:9px;color:#78918f;line-height:1.5;margin-top:13px}
 #pauseOverlay{display:none}.pausebox{width:min(480px,94vw);padding:28px;border-radius:16px;border:1px solid #8bb8a72e;background:#0b191f;box-shadow:0 30px 100px #000b}.pausebox h2{font-size:25px;margin:8px 0}.pausebox p{font-size:12px;color:#a5b7b5;line-height:1.6}.pausebox .menuactions{margin-top:22px}
+#mapPanel{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);width:min(320px,calc(100vw - 28px));padding:11px;display:none;pointer-events:auto;z-index:5}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#d9eeea;font-size:9px;font-weight:900;letter-spacing:.14em}
+.maphead span:last-child{color:#88aaa6;font-weight:700;letter-spacing:.06em}
+#siteMap{display:block;width:100%;height:auto;margin-top:8px;border:1px solid #8fc3ad2b;border-radius:8px;background:#0e1a1d}
+.mapfoot{margin-top:7px;color:#9db5b2;font:10px ui-monospace,Consolas,monospace;text-align:center}
 @media(max-width:700px){.topbar{flex-direction:column}.metrics{justify-content:flex-start}.side{top:118px;width:175px}.side.right{width:165px;top:auto;bottom:62px}.controls{bottom:12px;left:12px;transform:none;white-space:normal;max-width:calc(100vw - 24px);font-size:9px}.actions{right:12px;top:12px;bottom:auto}.actions .btn{padding:8px}.menu{grid-template-columns:1fr}.menuleft{padding:23px}.menuright{padding:23px}}
 </style>
 </head>
@@ -45,6 +50,7 @@
  <div class="side panel">
   <div class="kicker">Site operations</div>
   <div class="rowstat"><span>Mode</span><b id="modeRead">ON FOOT</b></div>
+  <div class="rowstat"><span>Stance</span><b id="stanceRead">STANDING</b></div>
   <div class="rowstat"><span>Survey points</span><b id="scanRead">0 / 5</b></div>
   <div class="progress"><span id="scanBar"></span></div>
   <div class="objective" id="objectiveText">Locate the marked equipment stations and scan them with your field scanner.</div>
@@ -58,12 +64,18 @@
   <div class="progress"><span id="batteryBar" style="width:100%"></span></div>
  </div>
  <div class="reticle"></div>
- <div class="controls panel" id="controlHelp">WASD move · Mouse look · SHIFT run · SPACE jump · E scan · F light · TAB switch to FPV drone · ESC pause</div>
+ <div class="controls panel" id="controlHelp">WASD move · C crouch · Z prone/crawl · SHIFT sprint · SPACE jump · E scan · M map · TAB integrated FPV drone · ESC pause</div>
  <div class="message" id="message"></div>
  <div class="actions">
   <button class="btn" id="modeBtn">FPV DRONE</button>
+  <button class="btn" id="mapBtn">MAP</button>
   <button class="btn" id="lightBtn">LIGHT: ON</button>
   <button class="btn" id="pauseBtn">Ⅱ PAUSE</button>
+ </div>
+ <div id="mapPanel" class="panel" aria-label="Live industrial site map">
+  <div class="maphead"><span>LIVE SITE MAP</span><span id="mapModeLabel">NORTH UP</span></div>
+  <canvas id="siteMap" width="520" height="340"></canvas>
+  <div class="mapfoot" id="mapCoords">X 0.0 · Z 0.0</div>
  </div>
 </div>
 <div class="overlay" id="startOverlay">
@@ -71,21 +83,17 @@
   <div class="menuleft">
    <div class="eyebrow">APEX FIELD SIMULATION / 01</div>
    <h1>INDUSTRIAL<br><span>SITE OPS.</span></h1>
-   <p>Explore a large industrial complex on foot, switch into a first-person FPV quadcopter, and survey equipment stations while maintenance robots patrol the site.</p>
+   <p>Explore a large industrial complex, survey equipment stations, and switch into the built-in first-person FPV drone at any time. Maintenance robots patrol the site.</p>
    <div class="chips">
-    <div class="chip"><b>WASD</b> On-foot movement</div>
-    <div class="chip"><b>MOUSE</b> Look / steer</div>
-    <div class="chip"><b>TAB</b> Switch mode</div>
-    <div class="chip"><b>E</b> Scanner pulse</div>
+    <div class="chip"><b>WASD</b> Move / crawl</div>
+    <div class="chip"><b>C / Z</b> Crouch / prone</div>
+    <div class="chip"><b>SHIFT</b> Sprint</div>
+    <div class="chip"><b>TAB</b> Built-in drone</div>
    </div>
   </div>
   <div class="menuright">
    <div class="tag">FIELD DEPLOYMENT</div><h2>MISSION SETUP</h2>
-   <label class="formlabel" for="startMode">Deployment mode</label>
-   <select id="startMode">
-    <option value="foot">On foot · First-person</option>
-    <option value="drone">FPV drone · First-person flight</option>
-   </select>
+   <div class="preview"><b>INTEGRATED FPV DRONE</b>The drone is built into every session. Press TAB or use the FPV DRONE button in-game to switch between walking and flight — there is no separate deployment choice.</div>
    <label class="formlabel" for="startMission">Objective</label>
    <select id="startMission">
     <option value="survey">Equipment survey · Scan all stations</option>
@@ -96,7 +104,7 @@
     <button class="btn primary" id="startBtn">START FIELD SESSION ↗</button>
     <button class="btn subtle" id="backBtn">← BACK TO GAME LIBRARY</button>
    </div>
-   <div class="smallnote">The FPV mode uses the same simulator-style manual flight controls. This is a non-combat survey game with a scanner and inspection light.</div>
+   <div class="smallnote">On foot: C crouch, Z lie prone and crawl, SHIFT sprint, SPACE jump. The built-in FPV drone is always available. This is a non-combat exploration and survey game.</div>
   </div>
  </div>
 </div>
@@ -150,6 +158,8 @@ let active = false, paused = false, gameMode = "foot", mission = "survey";
 let pointerLocked = false, yaw = 0, pitch = 0, footVerticalVelocity = 0, grounded = true;
 let elapsed = 0, lastHud = 0, messageTimer = 0, scannedCount = 0;
 let flashlightOn = true;
+let stance = "stand", cameraHeight = 1.7;
+let mapOpen = false, mapFootprints = [];
 const footPosition = new THREE.Vector3(0,1.7,35);
 const drone = {
  position:new THREE.Vector3(0,5,30),
@@ -255,7 +265,7 @@ function buildPreviewSite(){
  const targets=[[-100,2.2,-32],[92,2.2,-78],[-46,2.2,60],[158,2.2,112],[-170,2.2,152]];
  targets.forEach((p,i)=>addTarget("Equipment station "+(i+1),p[0],p[1],p[2]));
  addServiceBot(-105,5,0);addServiceBot(94,-38,1);addServiceBot(142,145,2);
- const b=new THREE.Box3().setFromObject(siteRoot);siteBounds.copy(b);
+ const b=new THREE.Box3().setFromObject(siteRoot);siteBounds.copy(b);rebuildMapGeometry();
 }
 function disposeChildren(group){
  while(group.children.length){const child=group.children.pop();child.parent=null;}
@@ -307,7 +317,7 @@ async function loadIndustrialReconstruction(){
      siteRoot.position.x-=centre.x;siteRoot.position.z-=centre.z;siteRoot.position.y-=bounds.min.y;
     }
    }
-   siteBounds.setFromObject(siteRoot);
+   siteBounds.setFromObject(siteRoot);rebuildMapGeometry();
    const width=siteBounds.max.x-siteBounds.min.x,depth=siteBounds.max.z-siteBounds.min.z;
    const stationPoints=[
     [siteBounds.min.x+width*.22,siteBounds.min.z+depth*.25],
@@ -328,6 +338,60 @@ async function loadIndustrialReconstruction(){
  })();
  return siteLoadPromise;
 }
+function rebuildMapGeometry(){
+ mapFootprints=[];
+ const spanX=Math.max(1,siteBounds.max.x-siteBounds.min.x),spanZ=Math.max(1,siteBounds.max.z-siteBounds.min.z);
+ for(const mesh of colliderMeshes){
+  if(!mesh||!mesh.isMesh)continue;
+  const box=new THREE.Box3().setFromObject(mesh);if(box.isEmpty())continue;
+  const size=box.getSize(new THREE.Vector3());
+  if(size.y<.12||(size.x<.3&&size.z<.3))continue;
+  if(size.x>spanX*.82&&size.z>spanZ*.82)continue;
+  mapFootprints.push({x:box.min.x,z:box.min.z,w:size.x,d:size.z});
+  if(mapFootprints.length>=900)break;
+ }
+}
+function drawSiteMap(){
+ if(!mapOpen)return;
+ const canvasMap=$("siteMap"),ctx=canvasMap.getContext("2d");if(!ctx)return;
+ const w=canvasMap.width,h=canvasMap.height;
+ ctx.clearRect(0,0,w,h);ctx.fillStyle="#132328";ctx.fillRect(0,0,w,h);
+ if(siteBounds.isEmpty())return;
+ const minX=siteBounds.min.x,maxX=siteBounds.max.x,minZ=siteBounds.min.z,maxZ=siteBounds.max.z;
+ const spanX=Math.max(1,maxX-minX),spanZ=Math.max(1,maxZ-minZ),scale=Math.min((w-34)/spanX,(h-34)/spanZ);
+ const cx=(minX+maxX)/2,cz=(minZ+maxZ)/2;
+ const px=x=>w/2+(x-cx)*scale,py=z=>h/2+(z-cz)*scale;
+ ctx.strokeStyle="#45636a";ctx.lineWidth=1;ctx.setLineDash([4,5]);
+ for(let i=1;i<5;i++){const gx=w*i/5,gy=h*i/5;ctx.beginPath();ctx.moveTo(gx,10);ctx.lineTo(gx,h-10);ctx.stroke();ctx.beginPath();ctx.moveTo(10,gy);ctx.lineTo(w-10,gy);ctx.stroke();}
+ ctx.setLineDash([]);
+ ctx.fillStyle="#a8b7ad";ctx.fillRect(px(minX),py(minZ),spanX*scale,spanZ*scale);
+ ctx.strokeStyle="#8ad4c3";ctx.lineWidth=2;ctx.strokeRect(px(minX),py(minZ),spanX*scale,spanZ*scale);
+ for(const b of mapFootprints){
+  const rw=Math.max(1,b.w*scale),rh=Math.max(1,b.d*scale);
+  ctx.fillStyle="#52666a";ctx.fillRect(px(b.x),py(b.z),rw,rh);
+  ctx.strokeStyle="#34494e";ctx.lineWidth=.8;ctx.strokeRect(px(b.x),py(b.z),rw,rh);
+ }
+ for(const target of scanTargets){
+  const p=target.group.position;ctx.beginPath();ctx.arc(px(p.x),py(p.z),target.scanned?4:6,0,Math.PI*2);
+  ctx.fillStyle=target.scanned?"#879793":"#72f0d9";ctx.fill();
+  if(!target.scanned){ctx.strokeStyle="#173a39";ctx.lineWidth=1.5;ctx.stroke();}
+ }
+ for(const bot of patrolBots){ctx.fillStyle="#f5b477";ctx.fillRect(px(bot.group.position.x)-3,py(bot.group.position.z)-3,6,6);}
+ const player=gameMode==="drone"?drone.position:footPosition;
+ const heading=gameMode==="drone"?drone.yaw:yaw;
+ ctx.save();ctx.translate(px(player.x),py(player.z));ctx.rotate(heading);
+ ctx.fillStyle=gameMode==="drone"?"#fff0a2":"#f5fff4";ctx.strokeStyle="#10292d";ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(7,8);ctx.lineTo(0,5);ctx.lineTo(-7,8);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+ ctx.fillStyle="#f2f7ec";ctx.font="bold 12px ui-monospace,Consolas,monospace";ctx.fillText("N",w-20,18);
+ $("mapCoords").textContent="X "+player.x.toFixed(1)+" · Z "+player.z.toFixed(1)+" · "+(gameMode==="drone"?"FPV":"FOOT");
+ $("mapModeLabel").textContent=gameMode==="drone"?"FPV POSITION":"NORTH UP";
+}
+function toggleMap(force){
+ mapOpen=typeof force==="boolean"?force:!mapOpen;
+ $("mapPanel").style.display=mapOpen?"block":"none";
+ $("mapBtn").textContent=mapOpen?"MAP: ON":"MAP";
+ if(mapOpen)drawSiteMap();
+}
 function showMessage(text){
  const box=$("message");box.textContent=text;box.classList.add("show");
  clearTimeout(messageTimer);messageTimer=setTimeout(()=>box.classList.remove("show"),2100);
@@ -342,17 +406,19 @@ function updateHud(now){
  $("modeRead").textContent=gameMode==="foot"?"ON FOOT":"FPV DRONE";
  $("modeTag").textContent=gameMode==="foot"?"ON-FOOT FIELD VIEW":"FPV DRONE / FLIGHT VIEW";
  $("modeBtn").textContent=gameMode==="foot"?"FPV DRONE":"RETURN ON FOOT";
+ $("stanceRead").textContent=stance==="stand"?"STANDING":stance==="crouch"?"CROUCHING":"PRONE / CRAWL";
  $("airSpeed").textContent=Math.round(drone.velocity.length()*3.6)+" km/h";
  $("airAlt").textContent=drone.position.y.toFixed(1)+" m";
  $("handlingRead").textContent=drone.handling.toUpperCase();
  $("batteryRead").textContent=Math.round(drone.battery)+"%";
  $("batteryBar").style.width=drone.battery+"%";
+ drawSiteMap();
  if(gameMode==="foot"){
   $("metricOneLabel").textContent="POSITION";$("metricOne").textContent="FIELD";$("metricOneUnit").textContent="ON FOOT";
-  $("controlHelp").textContent="WASD move · Mouse look · SHIFT run · SPACE jump · E scan · F light · TAB switch to FPV drone · ESC pause";
+  $("controlHelp").textContent="WASD move · C crouch · Z prone/crawl · SHIFT sprint · SPACE jump · E scan · F light · M map · TAB built-in FPV · ESC pause";
  }else{
   $("metricOneLabel").textContent="AIR SPEED";$("metricOne").textContent=String(Math.round(drone.velocity.length()*3.6)).padStart(3,"0");$("metricOneUnit").textContent="KM/H";
-  $("controlHelp").textContent="FPV: W/S pitch · A/D roll · Q/E yaw · SPACE thrust · SHIFT descend · Mouse look · V ACRO/STAB · C scan · TAB on foot";
+  $("controlHelp").textContent="FPV: W/S pitch · A/D roll · Q/E yaw · SPACE thrust · SHIFT descend · Mouse look · V ACRO/STAB · C scan · M map · TAB on foot";
  }
 }
 function makeFallbackFloorMaterial(){return mat("#687576",.97);}
@@ -382,17 +448,18 @@ function updateFoot(dt){
  if(keys.has("s"))move.sub(fwd);
  if(keys.has("d"))move.add(right);
  if(keys.has("a"))move.sub(right);
- const speed=keys.has("shift")?8.2:4.6;
- const wasGrounded=grounded;
+ const targetHeight=stance==="prone"?.55:stance==="crouch"?1.05:1.7;
+ cameraHeight=THREE.MathUtils.lerp(cameraHeight,targetHeight,Math.min(1,dt*13));
+ const speed=stance==="prone"?1.15:stance==="crouch"?2.25:(keys.has("shift")?8.2:4.6);
  if(move.lengthSq()>0){
   move.normalize();
   const step=speed*dt;
   tryMoveFoot(move,step);
  }
- if(keys.has("space")&&grounded){footVerticalVelocity=6.2;grounded=false;}
+ if(keys.has("space")&&grounded&&stance==="stand"){footVerticalVelocity=6.2;grounded=false;}
  footVerticalVelocity-=18*dt;
  footPosition.y+=footVerticalVelocity*dt;
- const groundY=Math.max(0,siteBounds.min.y)+1.7;
+ const groundY=Math.max(0,siteBounds.min.y)+cameraHeight;
  if(footPosition.y<=groundY){footPosition.y=groundY;footVerticalVelocity=0;grounded=true;}
  setCameraFromFoot();
 }
@@ -470,10 +537,12 @@ function switchMode(to){
  const next=to|| (gameMode==="foot"?"drone":"foot");
  if(next===gameMode)return;
  if(next==="drone"){
+  stance="stand";cameraHeight=1.7;
   drone.position.copy(footPosition).add(new THREE.Vector3(0,2.4,0));
   drone.velocity.set(0,0,0);drone.yaw=yaw;drone.pitch=0;drone.roll=0;
   gameMode="drone";showMessage("FPV DRONE LINK ACTIVE");
  }else{
+  stance="stand";cameraHeight=1.7;
   footPosition.copy(drone.position);footPosition.y=Math.max(footPosition.y,Math.max(0,siteBounds.min.y)+1.7);
   yaw=drone.yaw;pitch=0;footVerticalVelocity=0;grounded=true;
   gameMode="foot";showMessage("ON-FOOT CONTROL RESTORED");
@@ -482,7 +551,7 @@ function switchMode(to){
  updateHud(performance.now());
 }
 function resetCurrentMode(){
- keys.clear();pendingMouseYaw=0;pendingMousePitch=0;
+ keys.clear();pendingMouseYaw=0;pendingMousePitch=0;stance="stand";cameraHeight=1.7;
  if(gameMode==="drone"){
   drone.position.copy(startPosition).add(new THREE.Vector3(0,4,0));
   drone.velocity.set(0,0,0);drone.yaw=0;drone.pitch=0;drone.roll=0;drone.battery=100;
@@ -499,7 +568,8 @@ function pauseGame(){
 }
 function startGame(){
  mission=$("startMission").value;scannedCount=0;elapsed=0;
- gameMode=$("startMode").value;
+ gameMode="foot";
+ stance="stand";cameraHeight=1.7;
  startPosition.set(0,Math.max(0,siteBounds.min.y)+1.7,Math.min(siteBounds.max.z-8,siteBounds.min.z+(siteBounds.max.z-siteBounds.min.z)*.72));
  footPosition.copy(startPosition);yaw=0;pitch=0;footVerticalVelocity=0;grounded=true;
  drone.position.copy(startPosition).add(new THREE.Vector3(0,3,0));drone.velocity.set(0,0,0);drone.yaw=0;drone.pitch=0;drone.roll=0;drone.battery=100;
@@ -548,6 +618,13 @@ function setupEvents(){
   if(key==="r"&&active){resetCurrentMode();return;}
   if(key==="e"&&active&&!paused&&gameMode==="foot"){scanAhead();return;}
   if(key==="c"&&active&&!paused&&gameMode==="drone"){scanAhead();return;}
+  if(key==="c"&&active&&!paused&&gameMode==="foot"){
+   stance=stance==="crouch"?"stand":"crouch";showMessage(stance==="crouch"?"CROUCHING":"STANDING");return;
+  }
+  if(key==="z"&&active&&!paused&&gameMode==="foot"){
+   stance=stance==="prone"?"stand":"prone";showMessage(stance==="prone"?"PRONE / CRAWL":"STANDING");return;
+  }
+  if(key==="m"&&active&&!paused){toggleMap();return;}
   if(key==="f"&&active&&!paused){flashlightOn=!flashlightOn;flashlight.visible=flashlightOn;$("lightBtn").textContent=flashlightOn?"LIGHT: ON":"LIGHT: OFF";return;}
   if(key==="v"&&active&&!paused&&gameMode==="drone"){drone.handling=drone.handling==="acro"?"stab":"acro";showMessage("FPV "+drone.handling.toUpperCase()+" MODE");return;}
   keys.add(key);
@@ -563,11 +640,12 @@ function setupEvents(){
  $("resumeBtn").addEventListener("click",pauseGame);
  $("pauseModeBtn").addEventListener("click",()=>{switchMode();pauseGame();});
  $("modeBtn").addEventListener("click",()=>switchMode());
+ $("mapBtn").addEventListener("click",()=>toggleMap());
  $("lightBtn").addEventListener("click",()=>{flashlightOn=!flashlightOn;flashlight.visible=flashlightOn;$("lightBtn").textContent=flashlightOn?"LIGHT: ON":"LIGHT: OFF";});
  $("menuBtn").addEventListener("click",()=>{
   active=false;paused=false;keys.clear();
   if(pointerLocked&&document.exitPointerLock)document.exitPointerLock();
-  $("pauseOverlay").style.display="none";$("hud").style.display="none";$("startOverlay").style.display="grid";
+  $("pauseOverlay").style.display="none";$("hud").style.display="none";$("startOverlay").style.display="grid";toggleMap(false);
  });
  window.addEventListener("resize",()=>{
   renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
