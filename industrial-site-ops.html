@@ -265,6 +265,7 @@ async function loadIndustrialReconstruction(){
  if(siteLoadPromise)return siteLoadPromise;
  siteLoadPromise=(async()=>{
   const base="assets/industrial-site/";
+  detailRoot.clear();scanTargets=[];patrolBots=[];
   let loaded=false,loadedFiles=[];
   try{
    const manifestResponse=await fetch(base+"manifest.json",{cache:"no-store"});
@@ -272,7 +273,6 @@ async function loadIndustrialReconstruction(){
     const manifest=await manifestResponse.json();
     const entries=manifest.models||manifest.chunks||manifest.files||[];
     if(!Array.isArray(entries)||!entries.length)throw new Error("manifest.json has no models/chunks/files array");
-    detailRoot.clear();scanTargets=[];patrolBots=[];
     siteRoot.clear();colliderMeshes=[];
     for(const item of entries){
      const file=typeof item==="string"?item:(item.file||item.src||item.url);
