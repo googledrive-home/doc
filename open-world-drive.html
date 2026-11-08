@@ -27,6 +27,10 @@ select{width:100%;padding:9px;border-radius:9px;border:1px solid #294b69;backgro
 #loading{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#050b12}.load{width:min(720px,92vw);padding:24px;border-radius:22px;background:#07111ce9;border:1px solid #ffffff16;text-align:center;box-shadow:0 30px 120px #000b}.load h1{font-size:clamp(44px,8vw,80px);margin:0 0 8px;letter-spacing:-4px}.load h1 span{color:var(--cyan)}.load p{color:#8ea8bb;font-size:10px}.loadbar{height:12px;background:#0b1e2d;border-radius:99px;overflow:hidden;margin-top:14px}.loadbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green))}
  .map-wrap.expanded{position:fixed;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(92vw,1000px);height:min(86vh,720px);z-index:35;background:#06101f;border:2px solid #49e3ff88;box-shadow:0 30px 100px #000d} .map-wrap.expanded canvas{width:100%;height:100%}.map-wrap.expanded #minimap{width:100%;height:100%;max-width:100%;max-height:100%}@media(max-width:900px){.left,.right{width:260px}.right{display:none}.left{width:280px}.bottom .notice{display:none}}
 @media(max-width:620px){.left{width:calc(100vw - 28px)}.top .pill{display:none}.speed{width:145px}.speedNum{font-size:28px}}
+
+/* Consistent pointer and touch input for game interface controls. */
+button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointer-events:auto!important;touch-action:manipulation}
+.btn:before,.btn::before{pointer-events:none!important}
 </style>
 </head>
 <body>
