@@ -26,7 +26,18 @@
 .message{position:absolute;top:22%;left:50%;transform:translate(-50%,-50%);padding:10px 15px;border:1px solid #70e2dd55;border-radius:9px;background:#07161ce8;color:#dffff9;font-size:11px;font-weight:900;letter-spacing:.08em;opacity:0;transition:opacity .2s;pointer-events:none}.message.show{opacity:1}
 .overlay{position:fixed;inset:0;z-index:8;display:grid;place-items:center;padding:18px;background:linear-gradient(135deg,#071016ed,#0c1b20f2)}.menu{width:min(920px,96vw);max-height:94vh;overflow:auto;display:grid;grid-template-columns:1.05fr .95fr;border:1px solid #90c5b62d;border-radius:18px;background:linear-gradient(145deg,#102128,#09131a);box-shadow:0 30px 90px #0009}.menuleft{padding:clamp(22px,4vw,46px);background:radial-gradient(circle at 20% 20%,#3c83712b,transparent 56%),linear-gradient(150deg,#142a2c,#0b171d)}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.2em;color:var(--cyan)}h1{margin:20px 0 14px;font-size:clamp(34px,5vw,58px);line-height:.98;letter-spacing:-.04em}h1 span{color:var(--lime)}.menuleft p{max-width:410px;color:#a8bbbb;line-height:1.6;font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:25px}.chip{border:1px solid #a1c6bd25;background:#0b191e;padding:8px 10px;border-radius:8px;color:#a9c0bd;font-size:10px}.chip b{color:#ecf8ee;margin-right:4px}
 .menuright{padding:clamp(22px,4vw,38px)}.tag{font-size:9px;font-weight:900;letter-spacing:.18em;color:var(--lime)}h2{margin:7px 0 21px;font-size:20px}.formlabel{display:block;margin:14px 0 6px;color:#adc0c0;font-size:10px;font-weight:800;letter-spacing:.06em}select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #a9c9c035;background:#0a171c;color:#eef5f0;font-size:12px}.preview{margin-top:10px;border:1px solid #81bba22e;border-radius:10px;padding:12px;background:linear-gradient(120deg,#17352f,#10232a);font-size:10px;color:#9fb8b2;line-height:1.5}.preview b{display:block;color:#dff5e8;letter-spacing:.1em;margin-bottom:4px}.menuactions{display:grid;gap:8px;margin-top:18px}.menuactions .btn{padding:13px}.smallnote{font-size:9px;color:#78918f;line-height:1.5;margin-top:13px}
-#pauseOverlay{display:none}.pausebox{width:min(480px,94vw);padding:28px;border-radius:16px;border:1px solid #8bb8a72e;background:#0b191f;box-shadow:0 30px 100px #000b}.pausebox h2{font-size:25px;margin:8px 0}.pausebox p{font-size:12px;color:#a5b7b5;line-height:1.6}.pausebox .menuactions{margin-top:22px}
+#pauseOverlay{display:none}
+.loading-overlay{z-index:30;background:radial-gradient(ellipse at 50% 35%,#19383bfa,#061016 72%);backdrop-filter:blur(18px)}
+.loading-card{width:min(510px,94vw);padding:clamp(24px,5vw,42px);border:1px solid #8fe1d44d;border-radius:18px;background:linear-gradient(145deg,#10262b,#08141a);box-shadow:0 28px 100px #000b;text-align:left}
+.loading-brand{display:flex;align-items:center;gap:11px;margin-bottom:28px;color:#a8c7c1;font-size:9px;font-weight:900;letter-spacing:.2em}
+.loading-spinner{width:26px;height:26px;border:2px solid #ffffff22;border-top-color:var(--cyan);border-radius:50%;animation:arenaSpin .85s linear infinite}
+.loading-card h2{margin:10px 0 9px;font-size:clamp(22px,4vw,30px);letter-spacing:-.03em}
+.loading-card p{min-height:38px;margin:0;color:#9bb3b2;font-size:12px;line-height:1.6}
+.loading-track{height:7px;margin-top:22px;overflow:hidden;border-radius:9px;background:#ffffff16}
+.loading-track span{display:block;width:0;height:100%;border-radius:9px;background:linear-gradient(90deg,#56cdbd,#c5ec82);transition:width .25s ease}
+.loading-meta{display:flex;justify-content:space-between;gap:12px;margin-top:9px;color:#87a4a2;font:10px ui-monospace,Consolas,monospace}
+.loading-retry{display:none;margin-top:20px;width:100%;padding:13px}
+@keyframes arenaSpin{to{transform:rotate(360deg)}}.pausebox{width:min(480px,94vw);padding:28px;border-radius:16px;border:1px solid #8bb8a72e;background:#0b191f;box-shadow:0 30px 100px #000b}.pausebox h2{font-size:25px;margin:8px 0}.pausebox p{font-size:12px;color:#a5b7b5;line-height:1.6}.pausebox .menuactions{margin-top:22px}
 #mapPanel{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);width:min(320px,calc(100vw - 28px));padding:11px;display:none;pointer-events:auto;z-index:5}
 .maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#d9eeea;font-size:9px;font-weight:900;letter-spacing:.14em}
 .maphead span:last-child{color:#88aaa6;font-weight:700;letter-spacing:.06em}
@@ -82,7 +93,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   <div class="mapfoot" id="mapCoords">X 0.0 · Z 0.0</div>
  </div>
 </div>
-<div class="overlay" id="startOverlay">
+<div class="overlay" id="startOverlay" style="display:none;">
  <div class="menu">
   <div class="menuleft">
    <div class="eyebrow">INDUSTRIAL ARENA / FREE-FOR-ALL</div>
@@ -108,6 +119,33 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   </div>
  </div>
 </div>
+<div class="overlay loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+ <div class="loading-card">
+  <div class="loading-brand"><div class="loading-spinner" id="loadingSpinner"></div><span>INDUSTRIAL SITE OPS / STARTUP</span></div>
+  <div class="eyebrow">INITIALISING FREE-FOR-ALL</div>
+  <h2 id="loadingTitle">LOADING GAME ENGINE</h2>
+  <p id="loadingDetail">Downloading the 3D engine and preparing the arena. The menu will appear when the scene is ready.</p>
+  <div class="loading-track"><span id="loadingBar"></span></div>
+  <div class="loading-meta"><span id="loadingStage">ENGINE CHECK</span><strong id="loadingPercent">0%</strong></div>
+  <button class="btn primary loading-retry" id="loadingRetry" type="button">RETRY STARTUP</button>
+ </div>
+</div>
+<script>
+window.__arenaBootReady=false;
+window.setArenaLoading=function(percent,title,detail){
+ const bar=document.getElementById("loadingBar"),heading=document.getElementById("loadingTitle"),copy=document.getElementById("loadingDetail"),pct=document.getElementById("loadingPercent"),stage=document.getElementById("loadingStage");
+ const value=Math.max(0,Math.min(100,Number(percent)||0));
+ if(bar)bar.style.width=value+"%";if(heading)heading.textContent=title||"LOADING ARENA";if(copy)copy.textContent=detail||"Preparing game resources…";if(pct)pct.textContent=Math.round(value)+"%";if(stage)stage.textContent=(title||"LOADING").toUpperCase();
+};
+window.failArenaLoading=function(message){
+ if(window.__arenaBootReady)return;
+ const overlay=document.getElementById("loadingOverlay"),heading=document.getElementById("loadingTitle"),copy=document.getElementById("loadingDetail"),bar=document.getElementById("loadingBar"),pct=document.getElementById("loadingPercent"),spinner=document.getElementById("loadingSpinner"),retry=document.getElementById("loadingRetry"),stage=document.getElementById("loadingStage");
+ if(overlay)overlay.style.display="grid";if(heading)heading.textContent="GAME COULD NOT FINISH LOADING";if(copy)copy.textContent=message||"The game could not initialise. Check your connection and retry.";if(bar)bar.style.width="100%";if(pct)pct.textContent="ERROR";if(stage)stage.textContent="STARTUP FAILED";if(spinner)spinner.style.display="none";if(retry){retry.style.display="block";retry.onclick=function(){window.location.reload();};}
+};
+window.addEventListener("error",function(event){if(!window.__arenaBootReady&&event&&event.error)window.failArenaLoading("Startup error: "+(event.error.message||"the game engine failed to initialise"));},true);
+window.addEventListener("unhandledrejection",function(event){if(!window.__arenaBootReady)window.failArenaLoading("Startup error: "+String(event.reason&&event.reason.message||event.reason||"a required resource failed"));});
+window.setTimeout(function(){if(!window.__arenaBootReady&&!document.getElementById("loadingRetry")?.style.display)window.failArenaLoading("Startup is taking too long. The game engine or map files may not be reachable. Retry to try loading them again.");},240000);
+</script>
 <div class="overlay" id="pauseOverlay">
  <div class="pausebox">
   <div class="eyebrow">ARENA PAUSED</div><h2>PAUSED</h2>
@@ -120,8 +158,17 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  </div>
 </div>
 <script type="module">
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/GLTFLoader.js";
+let engineModules;
+try{
+ window.setArenaLoading(8,"LOADING 3D ENGINE","Downloading the renderer and model loader from the game engine CDN.");
+ engineModules=await Promise.all([
+  import("https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"),
+  import("https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/GLTFLoader.js")
+ ]);
+}catch(error){window.failArenaLoading("The 3D engine could not be downloaded. Check your internet connection and retry.");throw error;}
+const THREE=engineModules[0];
+const GLTFLoader=engineModules[1].GLTFLoader;
+window.setArenaLoading(16,"3D ENGINE READY","The renderer and 3D model loader have loaded. Preparing the arena scene.");
 
 const $ = id => document.getElementById(id);
 const canvas = $("view");
@@ -207,6 +254,7 @@ function addServiceBot(x,z,index){
  patrolBots.push({group,homeX:x,homeZ:z,phase:index*2.1,speed:2.8+index*.14,range:4+index*1.5,tagCooldown:0,taggedUntil:0,tags:0,name:"AI RIVAL "+(index+1)});
 }
 function buildPreviewSite(){
+ siteReady=false;
  siteRoot.clear();detailRoot.clear();colliderMeshes=[];scanTargets=[];patrolBots=[];
  const concrete=mat("#697577",.95),asphalt=mat("#303c40",.98),paint=mat("#b2b8af",.88),steel=mat("#52666b",.52,{metalness:.55}),rust=mat("#856849",.78,{metalness:.28}),roof=mat("#27373c",.65,{metalness:.28}),glass=mat("#36565a",.3,{metalness:.35});
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(440,360),concrete);floor.rotation.x=-Math.PI/2;floor.position.y=0;floor.receiveShadow=true;siteRoot.add(floor);colliderMeshes.push(floor);
@@ -266,18 +314,33 @@ function buildPreviewSite(){
  const rivals=[[-175,70],[-125,105],[-75,55],[-25,115],[45,45],[105,105],[165,65]];
  rivals.forEach((p,i)=>addServiceBot(p[0],p[1],i));
  const b=new THREE.Box3().setFromObject(siteRoot);siteBounds.copy(b);rebuildMapGeometry();
+ siteReady=!siteBounds.isEmpty()&&colliderMeshes.length>0&&patrolBots.length>0;
 }
 function disposeChildren(group){
  while(group.children.length){const child=group.children.pop();child.parent=null;}
 }
+async function loadGLTFWithTimeout(url,label){
+ let timeoutId;
+ try{
+  return await Promise.race([
+   loader.loadAsync(url),
+   new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error("Timed out loading "+label)),45000);})
+  ]);
+ }finally{clearTimeout(timeoutId);}
+}
 async function loadIndustrialReconstruction(){
  if(siteLoadPromise)return siteLoadPromise;
  siteLoadPromise=(async()=>{
+  siteReady=false;
   const base="assets/industrial-site/";
   detailRoot.clear();scanTargets=[];patrolBots=[];
   let loaded=false,loadedFiles=[];
   try{
-   const manifestResponse=await fetch(base+"manifest.json",{cache:"no-store"});
+   const manifestController=new AbortController();
+   const manifestTimer=setTimeout(()=>manifestController.abort(),12000);
+   let manifestResponse;
+   try{manifestResponse=await fetch(base+"manifest.json",{cache:"no-store",signal:manifestController.signal});}
+   finally{clearTimeout(manifestTimer);}
    if(manifestResponse.ok){
     const manifest=await manifestResponse.json();
     const entries=manifest.models||manifest.chunks||manifest.files||[];
@@ -285,8 +348,8 @@ async function loadIndustrialReconstruction(){
     siteRoot.clear();colliderMeshes=[];
     for(const item of entries){
      const file=typeof item==="string"?item:(item.file||item.src||item.url);
-     if(!file||!/\.(glb|gltf)$/i.test(file))continue;
-     const asset=await loader.loadAsync(new URL(file,location.href.replace(/[^/]*$/,"")+base).href);
+     if(!file||!/\.(glb|gltf)$/i.test(file))throw new Error("Invalid GLB/GLTF entry in manifest: "+String(file||"missing file path"));
+     const asset=await loadGLTFWithTimeout(new URL(file,location.href.replace(/[^/]*$/,"")+base).href,file);
      const model=asset.scene;
      if(item&&typeof item==="object"){
       if(Array.isArray(item.position))model.position.set(item.position[0]||0,item.position[1]||0,item.position[2]||0);
@@ -296,13 +359,13 @@ async function loadIndustrialReconstruction(){
      model.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;colliderMeshes.push(obj);}});
      siteRoot.add(model);loadedFiles.push(file);
     }
-    loaded=loadedFiles.length>0;
+    loaded=loadedFiles.length===entries.length&&loadedFiles.length>0;
    }
   }catch(error){console.warn("[Industrial Site] Manifest loading failed:",error);}
   if(!loaded){
    for(const file of ["industrial-site.glb","IndustrialSite.glb","industrial-reconstruction.glb"]){
     try{
-     const asset=await loader.loadAsync(base+file);
+     const asset=await loadGLTFWithTimeout(base+file,file);
      siteRoot.clear();colliderMeshes=[];
      asset.scene.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;colliderMeshes.push(obj);}});
      siteRoot.add(asset.scene);loadedFiles=[file];loaded=true;break;
@@ -328,6 +391,8 @@ async function loadIndustrialReconstruction(){
     i
    ));
    siteSource=loadedFiles.join(", ");
+   siteReady=!siteBounds.isEmpty()&&colliderMeshes.length>0&&patrolBots.length>0;
+   if(!siteReady)throw new Error("The reconstructed site did not pass its scene readiness checks");
    return {loaded:true,files:loadedFiles};
   }
   buildPreviewSite();
@@ -609,6 +674,7 @@ function pauseGame(){
  $("pauseOverlay").style.display=paused?"grid":"none";
 }
 function startGame(){
+ if(!siteReady)throw new Error("The arena is not ready yet. Wait for the loading screen to finish.");
  playerTags=0;aiTags=0;elapsed=0;respawnIndex=0;
  gameMode="foot";stance="stand";cameraHeight=1.7;
  const points=getArenaSpawnPoints(),spawn=points[Math.floor(points.length/2)]||{x:0,z:70};
@@ -624,16 +690,24 @@ function startGame(){
  showMessage("FREE-FOR-ALL / AI RIVALS READY");
 }
 async function prepareSite(){
- $("siteStatus").innerHTML="<b>INDUSTRIAL RECONSTRUCTION</b>Loading assets/industrial-site/…";
+ $("siteStatus").innerHTML="<b>INDUSTRIAL RECONSTRUCTION</b>Checking assets/industrial-site/…";
+ window.setArenaLoading(38,"CHECKING INDUSTRIAL MAP","Looking for a manifest and complete GLB model files. The menu stays hidden while they are checked.");
  try{
   const result=await loadIndustrialReconstruction();
+  if(!siteReady)throw new Error("The loaded map did not pass arena readiness checks");
   $("siteStatus").innerHTML=result.loaded
-   ?"<b>RECONSTRUCTION READY</b>"+result.files.length+" GLB model file(s) loaded from the asset folder."
-   :"<b>PREVIEW SITE READY</b>No GLB reconstruction found yet. The procedural industrial layout is active.";
+   ?"<b>RECONSTRUCTION READY</b>"+result.files.length+" GLB model file(s) loaded and checked from the asset folder."
+   :"<b>PROCEDURAL PREVIEW READY</b>No reconstructed GLB map was found. The built-in industrial arena has been generated and checked.";
+  window.setArenaLoading(70,result.loaded?"RECONSTRUCTED MAP READY":"BUILT-IN ARENA READY",result.loaded?"The reconstructed map and its model resources finished loading.":"No GLB map files were found; the complete built-in preview arena is ready.");
+  return result;
  }catch(error){
-  console.warn(error);buildPreviewSite();
-  $("siteStatus").innerHTML="<b>PREVIEW SITE READY</b>The uploaded reconstruction was not available, so the procedural layout is active.";
- }
+  console.warn("[Industrial Site] Map load failed; building the verified preview arena:",error);
+  buildPreviewSite();
+  if(!siteReady)throw new Error("Neither the reconstructed map nor the built-in preview arena could be built");
+  $("siteStatus").innerHTML="<b>PROCEDURAL PREVIEW READY</b>The reconstructed map was unavailable, so the complete built-in industrial arena is active.";
+  window.setArenaLoading(70,"BUILT-IN ARENA READY","The reconstructed map could not be loaded. A complete built-in industrial arena was generated and checked instead.");
+  return {loaded:false,files:[],fallback:true};
+ } 
 }
 function onMouseMove(e){
  if(!pointerLocked||!active||paused)return;
@@ -676,15 +750,15 @@ function setupEvents(){
  window.addEventListener("keyup",e=>keys.delete(normalKey(e)));
  window.addEventListener("blur",()=>keys.clear());
  $("startBtn").addEventListener("click",()=>{
-  if(active)return;
+  if(active||!siteReady)return;
+  $("startBtn").disabled=true;
   try{
-   if(siteBounds.isEmpty())buildPreviewSite();
    startGame();
-   $("startBtn").disabled=false;$("startBtn").textContent="START FREE-FOR-ALL ↗";
+   $("startBtn").textContent="START FREE-FOR-ALL ↗";
   }catch(error){
    console.error("[Industrial Site] Could not start arena:",error);
-   $("siteStatus").innerHTML="<b>STARTUP ERROR</b>"+String(error.message||error);
-   $("startBtn").disabled=false;$("startBtn").textContent="TRY AGAIN ↗";
+   $("siteStatus").innerHTML="<b>START ERROR</b>"+String(error.message||error);
+   $("startBtn").disabled=false;
   }
  });
  $("backBtn").addEventListener("click",()=>location.href="index.html");
@@ -717,22 +791,32 @@ function animate(now){
 }
 async function boot(){
  try{
-  buildPreviewSite();
-  $("siteStatus").innerHTML="<b>ARENA READY</b>Preview arena is ready. Reconstructed map files can load in the background.";
+  window.setArenaLoading(20,"PREPARING ARENA","Registering controls and checking the industrial site assets.");
   setupEvents();
-  $("startBtn").disabled=false;$("startBtn").textContent="START FREE-FOR-ALL ↗";
-  lastFrame=performance.now();requestAnimationFrame(animate);
-  // Map loading never blocks the Start button or the first frame.
-  prepareSite().then(result=>{
-   if(result.loaded){
-    if(active)respawnPlayer("RECONSTRUCTED ARENA LOADED");
-    $("siteStatus").innerHTML="<b>RECONSTRUCTION READY</b>"+result.files.length+" GLB model file(s) loaded.";
-   }
-  }).catch(error=>console.warn("[Industrial Site] Background map loading failed:",error));
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const mapResult=await prepareSite();
+  if(!siteReady||siteBounds.isEmpty()||!patrolBots.length)throw new Error("The arena failed its final map and AI readiness checks");
+  window.setArenaLoading(78,"COMPILING ARENA GRAPHICS","Compiling materials, lighting and map geometry before opening the menu.");
+  if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  setCameraFromFoot();
+  if(typeof renderer.compileAsync==="function")await renderer.compileAsync(scene,camera);
+  else renderer.compile(scene,camera);
+  renderer.render(scene,camera);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(renderer.getContext().isContextLost())throw new Error("The graphics context was lost while preparing the arena");
+  renderer.render(scene,camera);
+  updateHud(performance.now());
+  window.setArenaLoading(100,mapResult.loaded?"RECONSTRUCTED SITE LOADED":"BUILT-IN ARENA LOADED",mapResult.loaded?"The map, AI rivals, controls and graphics are ready.":"The built-in arena, AI rivals, controls and graphics are ready. No GLB reconstruction was found.");
+  window.__arenaBootReady=true;
+  $("loadingOverlay").style.display="none";
+  $("startOverlay").style.display="grid";
+  $("startBtn").disabled=false;
+  $("startBtn").textContent="START FREE-FOR-ALL ↗";
+  lastFrame=performance.now();
+  requestAnimationFrame(animate);
  }catch(error){
   console.error("[Industrial Site] Boot failed:",error);
-  $("siteStatus").innerHTML="<b>STARTUP ERROR</b>"+String(error.message||error);
-  $("startBtn").disabled=false;$("startBtn").textContent="TRY AGAIN ↗";
+  window.failArenaLoading("The arena could not pass its startup checks: "+String(error.message||error));
  }
 }
 boot();
