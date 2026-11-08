@@ -144,7 +144,7 @@ window.failArenaLoading=function(message){
 };
 window.addEventListener("error",function(event){if(!window.__arenaBootReady&&event&&event.error)window.failArenaLoading("Startup error: "+(event.error.message||"the game engine failed to initialise"));},true);
 window.addEventListener("unhandledrejection",function(event){if(!window.__arenaBootReady)window.failArenaLoading("Startup error: "+String(event.reason&&event.reason.message||event.reason||"a required resource failed"));});
-window.setTimeout(function(){if(!window.__arenaBootReady&&!document.getElementById("loadingRetry")?.style.display)window.failArenaLoading("Startup is taking too long. The game engine or map files may not be reachable. Retry to try loading them again.");},120000);
+window.setTimeout(function(){if(!window.__arenaBootReady&&!document.getElementById("loadingRetry")?.style.display)window.failArenaLoading("Startup is taking too long. The game engine or map files may not be reachable. Retry to try loading them again.");},240000);
 </script>
 <div class="overlay" id="pauseOverlay">
  <div class="pausebox">
@@ -348,7 +348,7 @@ async function loadIndustrialReconstruction(){
     siteRoot.clear();colliderMeshes=[];
     for(const item of entries){
      const file=typeof item==="string"?item:(item.file||item.src||item.url);
-     if(!file||!/\.(glb|gltf)$/i.test(file))continue;
+     if(!file||!/\.(glb|gltf)$/i.test(file))throw new Error("Invalid GLB/GLTF entry in manifest: "+String(file||"missing file path"));
      const asset=await loadGLTFWithTimeout(new URL(file,location.href.replace(/[^/]*$/,"")+base).href,file);
      const model=asset.scene;
      if(item&&typeof item==="object"){
@@ -359,7 +359,7 @@ async function loadIndustrialReconstruction(){
      model.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;colliderMeshes.push(obj);}});
      siteRoot.add(model);loadedFiles.push(file);
     }
-    loaded=loadedFiles.length>0;
+    loaded=loadedFiles.length===entries.length&&loadedFiles.length>0;
    }
   }catch(error){console.warn("[Industrial Site] Manifest loading failed:",error);}
   if(!loaded){
