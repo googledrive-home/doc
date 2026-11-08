@@ -194,7 +194,6 @@ function addServiceBot(x,z,index){
  }
  detailRoot.add(group);
  patrolBots.push({group,homeX:x,homeZ:z,phase:index*2.1,speed:.45+index*.12,range:4+index*1.5});
- addTarget("Maintenance unit "+(index+1),x,1.8,z);
 }
 function buildPreviewSite(){
  siteRoot.clear();detailRoot.clear();colliderMeshes=[];scanTargets=[];patrolBots=[];
