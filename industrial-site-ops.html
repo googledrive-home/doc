@@ -272,6 +272,7 @@ async function loadIndustrialReconstruction(){
     const manifest=await manifestResponse.json();
     const entries=manifest.models||manifest.chunks||manifest.files||[];
     if(!Array.isArray(entries)||!entries.length)throw new Error("manifest.json has no models/chunks/files array");
+    detailRoot.clear();scanTargets=[];patrolBots=[];
     siteRoot.clear();colliderMeshes=[];
     for(const item of entries){
      const file=typeof item==="string"?item:(item.file||item.src||item.url);
@@ -352,7 +353,7 @@ function updateHud(now){
   $("controlHelp").textContent="WASD move · Mouse look · SHIFT run · SPACE jump · E scan · F light · TAB switch to FPV drone · ESC pause";
  }else{
   $("metricOneLabel").textContent="AIR SPEED";$("metricOne").textContent=String(Math.round(drone.velocity.length()*3.6)).padStart(3,"0");$("metricOneUnit").textContent="KM/H";
-  $("controlHelp").textContent="FPV: W/S pitch · A/D roll · Q/E yaw · SPACE thrust · SHIFT descend · Mouse look · V ACRO/STAB · E scan · TAB on foot";
+  $("controlHelp").textContent="FPV: W/S pitch · A/D roll · Q/E yaw · SPACE thrust · SHIFT descend · Mouse look · V ACRO/STAB · C scan · TAB on foot";
  }
 }
 function makeFallbackFloorMaterial(){return mat("#687576",.97);}
@@ -546,7 +547,8 @@ function setupEvents(){
   if(key==="tab"&&active&&!paused){e.preventDefault();switchMode();return;}
   if(key==="p"&&active){pauseGame();return;}
   if(key==="r"&&active){resetCurrentMode();return;}
-  if(key==="e"&&active&&!paused){scanAhead();return;}
+  if(key==="e"&&active&&!paused&&gameMode==="foot"){scanAhead();return;}
+  if(key==="c"&&active&&!paused&&gameMode==="drone"){scanAhead();return;}
   if(key==="f"&&active&&!paused){flashlightOn=!flashlightOn;flashlight.visible=flashlightOn;$("lightBtn").textContent=flashlightOn?"LIGHT: ON":"LIGHT: OFF";return;}
   if(key==="v"&&active&&!paused&&gameMode==="drone"){drone.handling=drone.handling==="acro"?"stab":"acro";showMessage("FPV "+drone.handling.toUpperCase()+" MODE");return;}
   keys.add(key);
