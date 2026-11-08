@@ -660,8 +660,8 @@ function setupEvents(){
   if(key==="tab"&&active&&!paused){e.preventDefault();switchMode();return;}
   if(key==="p"&&active){pauseGame();return;}
   if(key==="r"&&active){resetCurrentMode();return;}
-  if(key==="e"&&active&&!paused&&gameMode==="foot"){scanAhead();return;}
-  if(key==="c"&&active&&!paused&&gameMode==="drone"){scanAhead();return;}
+  if(key==="e"&&active&&!paused&&gameMode==="foot"){tagAhead();return;}
+  if(key==="c"&&active&&!paused&&gameMode==="drone"){tagAhead();return;}
   if(key==="c"&&active&&!paused&&gameMode==="foot"){
    stance=stance==="crouch"?"stand":"crouch";showMessage(stance==="crouch"?"CROUCHING":"STANDING");return;
   }
