@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#080c12">
-<meta name="apex-build" content="26.11.2-grid-formation">
+<meta name="apex-build" content="26.11.3-low-poly-tyres-grid">
 <title>APEX // Formula Racing</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080c12;color:#f4f6f8}
@@ -407,7 +407,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
 <div id="loading"><div class="loadcard">
- <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.2 · GRID FIX</span></div>
+ <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.3 · LOW-POLY / TYRE PHYSICS</span></div>
  <div class="load-emblem">A<span>P</span>X</div><div class="brandmark">FORMULA RACING · WORLD TOUR</div>
  <h1>PREPARE<br><span>FOR THE GRID.</span></h1><p id="loadText">Preparing the circuit and car...</p>
  <div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div>
@@ -571,6 +571,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  <div class="model-state"><span>CAR MODEL</span><b id="vehicleModelState" data-state="loading">LOADING RED BULL 2022…</b></div>
  <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
  <div class="tireline"><span>Rear tyre temperature</span><b id="rearTemp">78°C</b></div>
+ <div class="tireline"><span>Tyre grip</span><b id="tyreGripValue">100%</b></div>
+ <div class="tireline"><span>Track grip</span><b id="trackGripValue">100% · ASPHALT</b></div>
  <div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div>
  <div class="condition-title">Tyre wear <small id="tyreWearValue">100%</small></div>
  <div class="condition-meter tyre-wear-meter"><i id="tyreWearBar"></i></div>
@@ -3629,7 +3631,7 @@ let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphics
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
-let formationLapEnabled=true,formationLapActive=false,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
+let formationLapEnabled=true,formationLapActive=false,formationGridSettling=false,formationGridSettleTimer=0,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false,pitServiceCalledThisEntry=false;
 let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
@@ -5345,6 +5347,7 @@ function clearOpponents(){
  });
  opponents.forEach(bot=>{
   scene.remove(bot.root);
+  if(bot.nameTag?.material){bot.nameTag.material.map?.dispose();bot.nameTag.material.dispose();}
   const disposed=new Set();
   bot.root.traverse(object=>{
    if(!object.isMesh||!object.material)return;
@@ -5454,6 +5457,16 @@ function updateRaceStart(dt){
  const overlay=$("raceStartOverlay"),lamps=$("raceStartLamps"),label=$("raceStartLabel");
  if(!overlay||!lamps||!label)return;
  if(formationLapActive){overlay.classList.remove("open");updateFormationGuide();return;}
+ if(formationGridSettling){
+  overlay.classList.remove("open");formationGridSettleTimer+=dt;
+  if(opponents.every(bot=>bot.formationParked)){
+   formationGridSettling=false;formationGridSettleTimer=0;
+   opponents.forEach(bot=>{bot.laps=0;bot.speed=0;});
+   showRaceControlMessage("GRID COMPLETE · LIGHTS INCOMING","info",3.0);
+   showTeamRadio("All cars are in their grid slots. Stand by for lights out.");
+  }
+  return;
+ }
  $("formationGuide").classList.remove("open");
  if(raceStartState==="countdown"){
   overlay.classList.add("open");raceStartTimer+=dt;
@@ -5472,6 +5485,16 @@ function updateRaceStart(dt){
  }else overlay.classList.remove("open");
 }
 
+function makeDriverNameTag(driverName){
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=96;
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,512,96);
+ ctx.fillStyle="rgba(5,11,17,.88)";ctx.strokeStyle="rgba(242,247,250,.78)";ctx.lineWidth=4;
+ ctx.beginPath();ctx.roundRect(8,8,496,80,18);ctx.fill();ctx.stroke();
+ ctx.fillStyle="#f7fafc";ctx.font="900 42px system-ui, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(driverName||"DRIVER").toUpperCase(),256,49,470);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+ const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
+ sprite.name="AI driver name tag";sprite.position.set(0,2.65,0);sprite.scale.set(4.35,.82,1);sprite.renderOrder=20;return sprite;
+}
 function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
@@ -5481,13 +5504,19 @@ function spawnOpponents(){
  for(let i=0;i<count;i++){
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
   const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
-  const model=createLowPolyFormulaCar(team,"AI "+driver.name+" · "+team.mark),root=model.root;
-  root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}});
+  // Clone the active player's full low-poly 3D car. AI use the same body, cockpit, steering and wheels.
+  const root=(proceduralFallbackRoot||carRoot).clone(true);root.name="AI · "+driver.name;root.visible=true;
+  const wheels=[],frontPivots=[];
+  root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}
+   if(object.name==="wheel-roll")wheels.push(object);
+   if(object.name==="front-wheel-pivot")frontPivots.push(object);
+  });
+  const nameTag=makeDriverNameTag(driver.name);root.add(nameTag);
   const row=Math.floor(i/2),gridDistance=8+row*8.1,gridSlot=gridSlotBehindStartLine(gridDistance);
   if(!gridSlot)continue;
   const progress=gridSlot.progress,baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
   const initialGap=((progress-playerProgress+1)%1)*aiLength;
-  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels:model.wheels,frontPivots:model.frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
+  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationParked:false,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
   const sample=gridSlot,right=new THREE.Vector3(sample.tangent.z,0,-sample.tangent.x).normalize();
   const yaw=Math.atan2(sample.tangent.x,sample.tangent.z),slope=Math.atan2(sample.tangent.y,Math.hypot(sample.tangent.x,sample.tangent.z));
   root.position.set(sample.point.x+right.x*bot.offset,sample.point.y+.035,sample.point.z+right.z*bot.offset);
@@ -5497,10 +5526,10 @@ function spawnOpponents(){
 }
 
 function updateOpponents(dt){
- if(!opponents.length||raceStartState==="countdown")return;
+ if(!opponents.length||(raceStartState==="countdown"&&!formationGridSettling))return;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
  if(!count||!aiLength)return;
- const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null,formationPace=Math.min(38,Math.max(0,Math.abs(car?.u||0)+1.25));
+ const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null,formationPace=Math.max(0,Math.abs(car?.u||0)+.8);
  const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
   const wasAheadOfPlayer=bot.playerAheadOfYou===true;
@@ -5511,7 +5540,17 @@ function updateOpponents(dt){
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
   let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
-  if(formationLapActive){target=Math.min(target,formationPace);desiredOffset=bot.baseOffset;}
+  const inFormation=formationLapActive||formationGridSettling;
+  if(inFormation){
+   desiredOffset=bot.baseOffset;
+   if(bot.formationParked){target=0;bot.speed=0;}
+   else if(bot.laps>=1){
+    // Each AI completes one full circuit, then brakes back into its original box rather than being repositioned.
+    const remainingToGrid=((bot.gridProgress-bot.progress+1)%1)*aiLength;
+    if(remainingToGrid<.38&&bot.speed<.65){bot.progress=bot.gridProgress;bot.speed=0;bot.formationParked=true;target=0;}
+    else target=Math.min(target,Math.sqrt(Math.max(0,2*5.2*remainingToGrid)));
+   }else if(formationLapActive)target=Math.min(target,formationPace);
+  }
   const laneIsClear=candidate=>{
    for(const item of traffic){
     if(item.bot===bot)continue;
@@ -5529,11 +5568,11 @@ function updateOpponents(dt){
    const gap=(item.progress-bot.progress+1)%1*aiLength;
    if(gap>4&&gap<86&&Math.abs(item.offset-bot.offset)<3.0){blocked=true;break;}
   }
-  if(!formationLapActive&&!pitLaneDriving&&nearestInfo){
+  if(!inFormation&&!pitLaneDriving&&nearestInfo){
    const playerGap=(nearestInfo.progress-bot.progress+1)%1*aiLength;
    if(playerGap>4&&playerGap<86&&Math.abs(nearestInfo.offset-bot.offset)<3.1)blocked=true;
   }
-  if(blocked&&!formationLapActive){
+  if(blocked&&!inFormation){
    const preferred=bot.baseOffset>=0?-laneLimit:laneLimit;
    if(laneIsClear(preferred)){desiredOffset=preferred;bot.passCommitment=1.4;}
    else if(laneIsClear(-preferred)){desiredOffset=-preferred;bot.passCommitment=1.0;}
@@ -5547,7 +5586,7 @@ function updateOpponents(dt){
   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
   if(playerProgress!==null){
    const gapAhead=((bot.progress-playerProgress+1)%1)*aiLength,botAheadNow=gapAhead>3&&gapAhead<aiLength*.5,playerBehindGap=aiLength-gapAhead;
-   if(wasAheadOfPlayer&&!botAheadNow&&playerBehindGap<28&&(formationLapActive||raceFlag==="YELLOW")&&elapsed-(bot.lastRestrictedOvertakeAt??-Infinity)>1.2){
+   if(wasAheadOfPlayer&&!botAheadNow&&playerBehindGap<28&&!bot.formationParked&&(formationLapActive||raceFlag==="YELLOW")&&elapsed-(bot.lastRestrictedOvertakeAt??-Infinity)>1.2){
     bot.lastRestrictedOvertakeAt=elapsed;raceStartPenalty+=5;
     const restriction=formationLapActive?"FORMATION LAP":"YELLOW FLAG";
     showRaceControlMessage("RESTRICTED OVERTAKE · +5.0S PENALTY","penalty",4.8);
@@ -6119,7 +6158,7 @@ async function loadFerrariSteeringWheel(pivot,generation){
   const screenMaterials=Array.isArray(screen.material)?screen.material:[screen.material];
   ferrariDashboardBaseImage=screenMaterials.find(material=>material?.map?.image)?.map?.image||null;
   const texture=ensureWheelDashboardCanvas();
-  texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;
+  texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;texture.generateMipmaps=false;texture.minFilter=THREE.NearestFilter;texture.magFilter=THREE.NearestFilter;
   texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
   texture.needsUpdate=true;
   screen.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false});
@@ -6138,7 +6177,7 @@ async function loadFerrariSteeringWheel(pivot,generation){
    emitter.renderOrder=4;
   }
   const glass=allMeshes.find(mesh=>/display_glass/i.test(mesh.name));
-  if(glass)glass.renderOrder=6;
+  if(glass){glass.visible=false;glass.renderOrder=6;}
 
   // Use the model's individual, disconnected button islands as real hit
   // targets. Their component positions are from the uploaded Blender mesh.
@@ -6401,7 +6440,7 @@ function buildCar(){
  const yellow=makeMat(parseInt(selectedAccent.slice(1),16),.4,.2),white=makeMat(0xf4f1e8,.48,.18);
  const bodyMat=paint;
  const box=(w,h,d,mat,x,y,z,group=carRoot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
- const loft=(sections,mat,xOffset=0,segments=18)=>{
+ const loft=(sections,mat,xOffset=0,segments=8)=>{
   const vertices=[],uvs=[],indices=[];
   sections.forEach((section,i)=>{
    const [z,width,centreY,height]=section;
@@ -6418,15 +6457,15 @@ function buildCar(){
   const mesh=new THREE.Mesh(g,mat);mesh.castShadow=true;mesh.receiveShadow=true;carRoot.add(mesh);softBodyShells.push(mesh);return mesh;
  };
  // Sculpted carbon monocoque and tapered nose, built from smooth cross-sections.
- const monocoque=loft([[-2.68,.48,.56,.16],[-2.42,.61,.58,.22],[-2.02,.68,.62,.32],[-1.48,.73,.65,.4],[-.78,.76,.67,.43],[-.1,.68,.68,.39],[.62,.53,.66,.31],[1.28,.4,.63,.25],[1.92,.29,.6,.18],[2.46,.18,.58,.12],[2.82,.105,.57,.075]],bodyMat,0,24);
+ const monocoque=loft([[-2.68,.48,.56,.16],[-2.42,.61,.58,.22],[-2.02,.68,.62,.32],[-1.48,.73,.65,.4],[-.78,.76,.67,.43],[-.1,.68,.68,.39],[.62,.53,.66,.31],[1.28,.4,.63,.25],[1.92,.29,.6,.18],[2.46,.18,.58,.12],[2.82,.105,.57,.075]],bodyMat,0,8);
  cockpitHiddenMeshes.push(monocoque);
  box(.62,.25,.42,carbon,0,.54,-2.43);
  // Ground-effect floor, sculpted venturi tunnels and edge fences.
  box(1.8,.1,3.15,carbon,0,.33,-.18);
  for(const side of [-1,1]){
-  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
+  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,7),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
   const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);cockpitVisibleMeshes.push(podTop);
-   const cockpitSideShell=loft([[-1.95,.58,.78,.24],[-1.42,.72,.82,.28],[-.72,.78,.86,.30],[.02,.70,.87,.27],[.64,.48,.82,.18]],bodyMat,side*.67,22);cockpitVisibleMeshes.push(cockpitSideShell);
+   const cockpitSideShell=loft([[-1.95,.58,.78,.24],[-1.42,.72,.82,.28],[-.72,.78,.86,.30],[.02,.70,.87,.27],[.64,.48,.82,.18]],bodyMat,side*.67,8);cockpitVisibleMeshes.push(cockpitSideShell);
    const sidepodUpperDeck=box(.46,.075,1.72,paint,side*.68,.98,-.36);cockpitVisibleMeshes.push(sidepodUpperDeck);
    const sidepodLowerApron=box(.11,.23,1.68,carbon,side*.99,.64,-.38);cockpitVisibleMeshes.push(sidepodLowerApron);
    const cockpitFlankHighlight=box(.035,.035,1.46,white,side*1.045,.78,-.40);cockpitVisibleMeshes.push(cockpitFlankHighlight);
@@ -6515,7 +6554,7 @@ function buildCar(){
  const frontDashCowl=box(1.0,.13,.48,carbon,0,1.02,1.20);cockpitVisibleMeshes.push(frontDashCowl);
  const noseCowl=new THREE.Mesh(new THREE.ConeGeometry(.46,1.85,18),bodyMat);noseCowl.rotation.x=Math.PI/2;noseCowl.position.set(0,.72,2.06);noseCowl.scale.set(1,.42,1);noseCowl.castShadow=true;carRoot.add(noseCowl);cockpitVisibleMeshes.push(noseCowl);
  // A continuous raised nose deck creates a clear visual link from the steering column to the front wing.
- const cockpitNoseDeck=loft([[.58,.62,.69,.23],[.92,.56,.71,.22],[1.32,.47,.68,.19],[1.78,.36,.63,.15],[2.24,.25,.59,.12],[2.70,.15,.55,.08],[3.06,.075,.52,.045]],bodyMat,0,24);
+ const cockpitNoseDeck=loft([[.58,.62,.69,.23],[.92,.56,.71,.22],[1.32,.47,.68,.19],[1.78,.36,.63,.15],[2.24,.25,.59,.12],[2.70,.15,.55,.08],[3.06,.075,.52,.045]],bodyMat,0,8);
  cockpitVisibleMeshes.push(cockpitNoseDeck);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
@@ -6550,7 +6589,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
   const gripR=box(.13,.29,.12,rubber,.49,-.015,-.33,steeringPivot);
   const hubBadge=box(.22,.055,.025,makeMat(0xe64d43,.42,.18),0,-.178,-.365,steeringPivot);
   dashCanvas=document.createElement("canvas");dashCanvas.width=1024;dashCanvas.height=600;dashContext=dashCanvas.getContext("2d");
-  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
+  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;dashTexture.generateMipmaps=false;dashTexture.minFilter=THREE.NearestFilter;dashTexture.magFilter=THREE.NearestFilter;
   const dashMaterial=new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false});
   const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.46,.285),dashMaterial)
   wheelDisplay.position.set(0,.025,-.385);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
@@ -6563,7 +6602,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
   return new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,toneMapped:false});
  };
  const addWheelButton=(label,x,y,color,control)=>{
-  const button=new THREE.Mesh(new THREE.CylinderGeometry(.027,.031,.040,16),makeMat(color,.34,.12));
+  const button=new THREE.Mesh(new THREE.CylinderGeometry(.027,.031,.040,8),makeMat(color,.34,.12));
   button.rotation.x=-Math.PI/2;button.position.set(x,y,-.405);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
   const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.050,.020),makeWheelLabel(label));labelMesh.position.set(x,y,-.448);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
   wheelControlMeshes.push(button);
@@ -6615,16 +6654,16 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
    carRoot.add(steerPivot);wheelCornerPivots.push({pivot:steerPivot,side,z:axle==="front"?1.57:-1.48,restY:.39,springVelocity:0});
    const rollGroup=new THREE.Group();rollGroup.name="wheel-roll";steerPivot.add(rollGroup);
    const tireWidth=axle==="front"?.43:.51;
-   const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,40,1,false),rubber);
+   const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,10,1,false),rubber);
    tire.name="tyre-tread";tire.rotation.z=Math.PI/2;tire.castShadow=true;rollGroup.add(tire);
    const sideRingMat=makeMat(0x777e83,.65,.2);
    for(const xSide of [-1,1]){
-    const sideRing=new THREE.Mesh(new THREE.TorusGeometry(.305,.012,6,36),sideRingMat);
+    const sideRing=new THREE.Mesh(new THREE.TorusGeometry(.305,.012,6,10),sideRingMat);
     sideRing.rotation.y=Math.PI/2;sideRing.position.x=xSide*tireWidth*.47;rollGroup.add(sideRing);
    }
-   const rimDisc=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,tireWidth*.98,28),rim);
+   const rimDisc=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,tireWidth*.98,10),rim);
    rimDisc.rotation.z=Math.PI/2;rollGroup.add(rimDisc);
-   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,tireWidth*1.02,18),carbon);
+   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,tireWidth*1.02,8),carbon);
    hub.rotation.z=Math.PI/2;rollGroup.add(hub);
    for(let spoke=0;spoke<10;spoke++){
     const a=spoke*Math.PI/5;
@@ -6632,7 +6671,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
     spokeMesh.position.set(side*.19,Math.cos(a)*.13,Math.sin(a)*.13);
     spokeMesh.rotation.x=a;rollGroup.add(spokeMesh);
    }
-   const brakeDisc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.045,32),makeMat(0x6d7379,.38,.82));
+   const brakeDisc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.045,10),makeMat(0x6d7379,.38,.82));
    brakeDisc.rotation.z=Math.PI/2;brakeDisc.position.x=-side*.105;rollGroup.add(brakeDisc);
    for(let bolt=0;bolt<6;bolt++){
     const a=bolt*Math.PI/3,hubBolt=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),white);
@@ -6660,9 +6699,10 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  applyLivery(selectedLivery);
  const fallback=new THREE.Group();fallback.name="procedural-fallback-car";fallback.scale.x=.78;
  for(const child of [...carRoot.children])fallback.add(child);
- carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=false;
- const playerTeam=TEAM_LIVERIES.find(item=>item.id===selectedTeamId)||TEAM_LIVERIES[0];
- lowPolyPlayerVisual=createLowPolyFormulaCar(playerTeam,"Player low-poly Formula car");carRoot.add(lowPolyPlayerVisual.root);
+ // Keep the existing 3D chassis, cockpit, steering wheel and running gear; reduce polygon density and use flat faces.
+ fallback.traverse(object=>{if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>{if(material&&"flatShading" in material){material.flatShading=true;material.needsUpdate=true;}});});
+ carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=true;
+ lowPolyPlayerVisual=null;
  damageParts=[];
  redBullModelLoadPromise=Promise.resolve();importedCarActive=false;updateVehicleModelStatus("active","LOW-POLY CAR · PERFORMANCE MODEL");
  return redBullModelLoadPromise;
@@ -6995,19 +7035,21 @@ function pacejka(slip,peakB=10.8,shapeC=1.32,curvatureE=.96){
  return Math.sin(shapeC*Math.atan(bx-curvatureE*(bx-Math.atan(bx))));
 }
 function temperatureGrip(temp){
- const d=temp-98;
- if(Math.abs(d)<=12)return 1;
- return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
+ const d=Math.abs(temp-98);
+ if(d<=10)return 1;
+ return clamp(1-Math.pow((d-10)/50,1.35)*.42,.48,1);
 }
 function completeFormationLap(){
- formationLapActive=false;$("formationGuide").classList.remove("open");keys.KeyW=false;keys.ArrowUp=false;
- restoreCircuitRoute();positionCarAtStart(false,true,playerGridDistance());
- formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
+ formationLapActive=false;formationGridSettling=true;formationGridSettleTimer=0;
+ $("formationGuide").classList.remove("open");keys.KeyW=false;keys.ArrowUp=false;
+ restoreCircuitRoute();
+ // The player has completed the formation distance and is already back at the grid; hold here rather than repositioning the car.
+ if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;}
+ formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;previousProgress=nearestInfo?.progress??previousProgress;
  raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartJumpReported=false;
  raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
- $("raceStartOverlay").classList.add("open");
- showRaceControlMessage("FORMATION LAP COMPLETE · TAKE YOUR GRID SLOT","info",3.6);
- spawnOpponents();
+ $("raceStartOverlay").classList.remove("open");
+ showRaceControlMessage("FORMATION LAP COMPLETE · CARS RETURNING TO GRID","info",3.6);
 }
 function updatePhysics(dt){
  if(pitServiceOpen){
@@ -7061,8 +7103,8 @@ function updatePhysics(dt){
  const frontWheelCondition=((wheelHealth.FL??100)+(wheelHealth.FR??100))*.005;
  const rearWheelCondition=((wheelHealth.RL??100)+(wheelHealth.RR??100))*.005;
  const muFront=baseGrip*.97*tempF*lerp(.48,1,frontWheelCondition),muRear=baseGrip*1.10*tempR*lerp(.48,1,rearWheelCondition);
- const surfaceOffset=Math.abs(nearestInfo.offset),half=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
- car.surfaceGrip=surfaceOffset<=half?1:surfaceOffset<=half+5?.68:surfaceOffset<=half+12?.34:.14;
+ const surfaceOffset=Math.abs(nearestInfo.offset),half=roadHalfWidthAt(route[nearestInfo.index]||route[0]),runoffDistance=Math.max(0,surfaceOffset-half);
+ car.surfaceGrip=runoffDistance<=.45?1:runoffDistance<=1.4?lerp(1,.88,smoothStep(.45,1.4,runoffDistance)):runoffDistance<=4?lerp(.88,.48,smoothStep(1.4,4,runoffDistance)):lerp(.48,.20,smoothStep(4,11,runoffDistance));
  const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
  const torque=torqueAt(car.rpm),clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
  const launchMap=car.reverse?1:lerp(.48,1,clamp(speed/24,0,1));
@@ -7091,7 +7133,7 @@ function updatePhysics(dt){
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);if(formationLapActive&&!car.reverse&&car.u>42)car.u=42;car.v+=latAccel*dt;
+ car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);car.v+=latAccel*dt;
  const lateralDamping=assistMode==="assisted"?2.8:assistMode==="sport"?1.55:.78;
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
@@ -7242,9 +7284,13 @@ function updatePhysics(dt){
  }
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
- car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear)*.58,.18,1);
- car.tempF=lerp(car.tempF,weather.temp+58+stress*19,Math.min(1,dt*.12));
- car.tempR=lerp(car.tempR,weather.temp+59+stress*20,Math.min(1,dt*.12));
+ const tyreStress=clamp(stress+Math.abs(car.longAccel)/28+Math.max(0,car.slip-.10)*1.8,0,2.2);
+ const distanceWear=Math.abs(car.u)*.0000005;
+ car.wear=clamp(car.wear-dt*(.00012+tyreStress*.00018+distanceWear)*(tireSpecs[tyreCompound].wear),.10,1);
+ const speedHeat=clamp(Math.abs(car.u)/85,0,1.35),trackCooling=1+trackWetness*.65;
+ const targetFrontTemp=weather.temp+63+tyreStress*17+speedHeat*4,targetRearTemp=weather.temp+64+tyreStress*20+speedHeat*5;
+ car.tempF=lerp(car.tempF,targetFrontTemp,Math.min(1,dt*(.055+.025*speedHeat)*trackCooling));
+ car.tempR=lerp(car.tempR,targetRearTemp,Math.min(1,dt*(.052+.024*speedHeat)*trackCooling));
  importedThermalAccumulator+=dt;
  if(importedThermalAccumulator>=.1){updateImportedCarThermals(importedThermalAccumulator);importedThermalAccumulator=0;}
  car.wheelSpin+=car.u*dt/wheelRadius;
@@ -7363,7 +7409,12 @@ function updateVehicleCondition(){
 function updateHud(grip,offGrip){
  $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=car.reverse?"R":String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
- $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
+ $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";
+ const tyreGripPercent=clamp(((temperatureGrip(car.tempF)+temperatureGrip(car.tempR))*.5)*car.wear*100,0,100);
+ $("tyreGripValue").textContent=Math.round(tyreGripPercent)+"%";
+ const trackGripPercent=clamp((car.surfaceGrip??1)*100,0,100),surfaceName=trackGripPercent>94?"ASPHALT":trackGripPercent>68?"KERB":trackGripPercent>38?"GRAVEL":"RUNOFF";
+ $("trackGripValue").textContent=Math.round(trackGripPercent)+"% · "+surfaceName;
+ $("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
@@ -8080,7 +8131,7 @@ function beginPitService(){
  if(startProgress>=targetProgress-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.5);return;}
  keys.KeyW=false;keys.ArrowUp=false;
  const distance=pitRouteDistanceBetween(startProgress,targetProgress),duration=clamp(distance/20.5,2.6,18);
- const serviceDuration=pitServicePlan.repairMode==="none"?6.4:pitServicePlan.repairMode==="aero"?7.7:9.2;
+ const serviceDuration=pitServicePlan.repairMode==="none"?2.4:pitServicePlan.repairMode==="aero"?2.7:3.0;
  pitServiceCalledThisEntry=true;pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
  setPitButtonAvailable(false);
  pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,serviceDuration,boxY:car.y,releaseHold:0,previousProgress:startProgress};
@@ -8168,7 +8219,7 @@ function startSession(sessionMode="practice"){
  weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
- formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;
+ formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
  formationLapDistanceRemaining=circuitRouteLength||routeLength;formationLapDistanceTravelled=0;raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
  raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;aiUpdateAccumulator=0;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
@@ -8221,7 +8272,7 @@ function restartLap(){
   $("pitServiceOverlay").classList.remove("open");
   clearCrashEffects();clearGhostCar();clearOpponents();restoreCircuitRoute();
   buildCar();
-  formationLapActive=!startInPit&&session!=="timeTrial"&&formationLapEnabled;
+  formationLapActive=!startInPit&&session!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
   raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
   raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
   raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
