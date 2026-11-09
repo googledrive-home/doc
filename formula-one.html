@@ -3820,7 +3820,7 @@ function renderBroadcastTiming(){
  const participants=[{name:"YOU",team:"APEX GP",teamId:selectedTeamId,distance:playerDistance,speed:playerSpeed,isPlayer:true,status:pitLaneDriving?"PIT":"RACE"}];
  for(const bot of opponents)participants.push({
   name:bot.driverName||("DRIVER "+bot.number),team:bot.teamName||"AI TEAM",teamId:bot.teamId,
-  distance:bot.laps+bot.progress-(bot.penaltyTime||0)/120,speed:bot.speed||bot.baseSpeed||0,isPlayer:false,status:bot.pitPhase?"PIT":"RACE",
+  distance:bot.laps+bot.progress-(bot.penaltyTime||0)/120,speed:bot.speed||bot.baseSpeed||0,isPlayer:false,status:bot.pitPhase?"PIT":"RACE",penalty:bot.penaltyTime||0,
   tyre:bot.tyreCompound||"medium"
  });
  participants.sort((a,b)=>b.distance-a.distance);
@@ -3839,7 +3839,7 @@ function renderBroadcastTiming(){
    }
   }
   const team=teamById(item.teamId);
-  return '<div class="broadcast-row '+(item.isPlayer?"you":"")+' '+(item.status==="PIT"?"pitting":"")+'" style="--team-colour:'+team.primary+'"><span class="pos">'+String(index+1).padStart(2,"0")+'</span><span class="driver"><b>'+item.name+'</b><small>'+item.team+(item.status==="PIT"?" · PIT":"")+(item.tyre?" · "+item.tyre.toUpperCase():"")+'</small></span><span class="gap">'+gapText+'</span></div>';
+  return '<div class="broadcast-row '+(item.isPlayer?"you":"")+' '+(item.status==="PIT"?"pitting":"")+'" style="--team-colour:'+team.primary+'"><span class="pos">'+String(index+1).padStart(2,"0")+'</span><span class="driver"><b>'+item.name+'</b><small>'+item.team+(item.status==="PIT"?" · PIT":"")+(item.tyre?" · "+item.tyre.toUpperCase():"")+(item.penalty>0?" · +"+item.penalty.toFixed(0)+"S PENALTY":"")+'</small></span><span class="gap">'+gapText+'</span></div>';
  }).join("");
 }
 
@@ -7312,7 +7312,7 @@ function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
   drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false,routeIndex:startIndex};
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;
  elapsed=0;lap=1;lapStart=0;bestLap=Infinity;previousProgress=nearestInfo.progress;
- $("trackState").textContent=fromPitBox?"PIT LANE · 80 KM/H":gridSlot?"GRID · "+(Math.floor(Math.max(0,opponentCount))+1)+" / "+(Math.floor(Math.max(0,opponentCount))+1):"GARAGE";$("trackState").style.color=fromPitBox?"#f0c75c":gridSlot?"#ffd36f":"#a9bac6";
+ $("trackState").textContent=fromPitBox?"PIT LANE · 80 KM/H":gridSlot?"GRID · P"+(Math.floor(Math.max(0,opponentCount))+1)+" / "+(Math.floor(Math.max(0,opponentCount))+1):"GARAGE";$("trackState").style.color=fromPitBox?"#f0c75c":gridSlot?"#ffd36f":"#a9bac6";
  updateHud(getGrip(),1);
 }
 function findNearest(x,z,yHint=null,routeHint=null){
@@ -8744,7 +8744,7 @@ function animate(now){
  if(!running&&!looseDamageParts.length&&!crashDebris.length)return;
  if(running)monitorPerformance(now);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
- if(running&&!paused&&currentSessionMode!=="timeTrial"&&!opponents.length){
+ if(running&&!paused&&currentSessionMode!=="timeTrial"&&opponentCount>0&&!opponents.length){
   aiFieldRecoveryTimer+=frameDt;
   if(aiFieldRecoveryTimer>=2.2){
    aiFieldRecoveryTimer=0;
