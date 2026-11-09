@@ -6156,7 +6156,7 @@ async function loadFerrariSteeringWheel(pivot,generation){
   const screenMaterials=Array.isArray(screen.material)?screen.material:[screen.material];
   ferrariDashboardBaseImage=screenMaterials.find(material=>material?.map?.image)?.map?.image||null;
   const texture=ensureWheelDashboardCanvas();
-  texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;
+  texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;texture.generateMipmaps=false;texture.minFilter=THREE.NearestFilter;texture.magFilter=THREE.NearestFilter;
   texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
   texture.needsUpdate=true;
   screen.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false});
@@ -6175,7 +6175,7 @@ async function loadFerrariSteeringWheel(pivot,generation){
    emitter.renderOrder=4;
   }
   const glass=allMeshes.find(mesh=>/display_glass/i.test(mesh.name));
-  if(glass)glass.renderOrder=6;
+  if(glass){glass.visible=false;glass.renderOrder=6;}
 
   // Use the model's individual, disconnected button islands as real hit
   // targets. Their component positions are from the uploaded Blender mesh.
@@ -6438,7 +6438,7 @@ function buildCar(){
  const yellow=makeMat(parseInt(selectedAccent.slice(1),16),.4,.2),white=makeMat(0xf4f1e8,.48,.18);
  const bodyMat=paint;
  const box=(w,h,d,mat,x,y,z,group=carRoot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
- const loft=(sections,mat,xOffset=0,segments=18)=>{
+ const loft=(sections,mat,xOffset=0,segments=8)=>{
   const vertices=[],uvs=[],indices=[];
   sections.forEach((section,i)=>{
    const [z,width,centreY,height]=section;
@@ -6455,15 +6455,15 @@ function buildCar(){
   const mesh=new THREE.Mesh(g,mat);mesh.castShadow=true;mesh.receiveShadow=true;carRoot.add(mesh);softBodyShells.push(mesh);return mesh;
  };
  // Sculpted carbon monocoque and tapered nose, built from smooth cross-sections.
- const monocoque=loft([[-2.68,.48,.56,.16],[-2.42,.61,.58,.22],[-2.02,.68,.62,.32],[-1.48,.73,.65,.4],[-.78,.76,.67,.43],[-.1,.68,.68,.39],[.62,.53,.66,.31],[1.28,.4,.63,.25],[1.92,.29,.6,.18],[2.46,.18,.58,.12],[2.82,.105,.57,.075]],bodyMat,0,24);
+ const monocoque=loft([[-2.68,.48,.56,.16],[-2.42,.61,.58,.22],[-2.02,.68,.62,.32],[-1.48,.73,.65,.4],[-.78,.76,.67,.43],[-.1,.68,.68,.39],[.62,.53,.66,.31],[1.28,.4,.63,.25],[1.92,.29,.6,.18],[2.46,.18,.58,.12],[2.82,.105,.57,.075]],bodyMat,0,8);
  cockpitHiddenMeshes.push(monocoque);
  box(.62,.25,.42,carbon,0,.54,-2.43);
  // Ground-effect floor, sculpted venturi tunnels and edge fences.
  box(1.8,.1,3.15,carbon,0,.33,-.18);
  for(const side of [-1,1]){
-  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,18),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
+  const pod=registerDamagePart(loft([[-1.72,.2,.52,.12],[-1.42,.54,.57,.27],[-.98,.76,.64,.38],[-.4,.82,.68,.45],[.16,.72,.67,.38],[.58,.48,.62,.25]],bodyMat,side*.83,7),side<0?"left sidepod shell":"right sidepod shell",.46);cockpitVisibleMeshes.push(pod);
   const podTop=registerDamagePart(box(.68,.075,.82,paint,side*.83,.88,-.56),side<0?"left sidepod top panel":"right sidepod top panel",.54);cockpitVisibleMeshes.push(podTop);
-   const cockpitSideShell=loft([[-1.95,.58,.78,.24],[-1.42,.72,.82,.28],[-.72,.78,.86,.30],[.02,.70,.87,.27],[.64,.48,.82,.18]],bodyMat,side*.67,22);cockpitVisibleMeshes.push(cockpitSideShell);
+   const cockpitSideShell=loft([[-1.95,.58,.78,.24],[-1.42,.72,.82,.28],[-.72,.78,.86,.30],[.02,.70,.87,.27],[.64,.48,.82,.18]],bodyMat,side*.67,8);cockpitVisibleMeshes.push(cockpitSideShell);
    const sidepodUpperDeck=box(.46,.075,1.72,paint,side*.68,.98,-.36);cockpitVisibleMeshes.push(sidepodUpperDeck);
    const sidepodLowerApron=box(.11,.23,1.68,carbon,side*.99,.64,-.38);cockpitVisibleMeshes.push(sidepodLowerApron);
    const cockpitFlankHighlight=box(.035,.035,1.46,white,side*1.045,.78,-.40);cockpitVisibleMeshes.push(cockpitFlankHighlight);
@@ -6552,7 +6552,7 @@ function buildCar(){
  const frontDashCowl=box(1.0,.13,.48,carbon,0,1.02,1.20);cockpitVisibleMeshes.push(frontDashCowl);
  const noseCowl=new THREE.Mesh(new THREE.ConeGeometry(.46,1.85,18),bodyMat);noseCowl.rotation.x=Math.PI/2;noseCowl.position.set(0,.72,2.06);noseCowl.scale.set(1,.42,1);noseCowl.castShadow=true;carRoot.add(noseCowl);cockpitVisibleMeshes.push(noseCowl);
  // A continuous raised nose deck creates a clear visual link from the steering column to the front wing.
- const cockpitNoseDeck=loft([[.58,.62,.69,.23],[.92,.56,.71,.22],[1.32,.47,.68,.19],[1.78,.36,.63,.15],[2.24,.25,.59,.12],[2.70,.15,.55,.08],[3.06,.075,.52,.045]],bodyMat,0,24);
+ const cockpitNoseDeck=loft([[.58,.62,.69,.23],[.92,.56,.71,.22],[1.32,.47,.68,.19],[1.78,.36,.63,.15],[2.24,.25,.59,.12],[2.70,.15,.55,.08],[3.06,.075,.52,.045]],bodyMat,0,8);
  cockpitVisibleMeshes.push(cockpitNoseDeck);
  const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,16,12),yellow);helmet.position.set(0,1.53,-.35);carRoot.add(helmet);cockpitHiddenMeshes.push(helmet);
  const visor=new THREE.Mesh(new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI/2),glass);visor.rotation.x=Math.PI/2;visor.position.set(0,1.55,-.16);carRoot.add(visor);cockpitHiddenMeshes.push(visor);
@@ -6587,7 +6587,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
   const gripR=box(.13,.29,.12,rubber,.49,-.015,-.33,steeringPivot);
   const hubBadge=box(.22,.055,.025,makeMat(0xe64d43,.42,.18),0,-.178,-.365,steeringPivot);
   dashCanvas=document.createElement("canvas");dashCanvas.width=1024;dashCanvas.height=600;dashContext=dashCanvas.getContext("2d");
-  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;
+  dashTexture=new THREE.CanvasTexture(dashCanvas);dashTexture.colorSpace=THREE.SRGBColorSpace;dashTexture.generateMipmaps=false;dashTexture.minFilter=THREE.NearestFilter;dashTexture.magFilter=THREE.NearestFilter;
   const dashMaterial=new THREE.MeshBasicMaterial({map:dashTexture,side:THREE.DoubleSide,toneMapped:false});
   const wheelDisplay=new THREE.Mesh(new THREE.PlaneGeometry(.46,.285),dashMaterial)
   wheelDisplay.position.set(0,.025,-.385);wheelDisplay.rotation.y=Math.PI;steeringPivot.add(wheelDisplay);
@@ -6600,7 +6600,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
   return new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,toneMapped:false});
  };
  const addWheelButton=(label,x,y,color,control)=>{
-  const button=new THREE.Mesh(new THREE.CylinderGeometry(.027,.031,.040,16),makeMat(color,.34,.12));
+  const button=new THREE.Mesh(new THREE.CylinderGeometry(.027,.031,.040,8),makeMat(color,.34,.12));
   button.rotation.x=-Math.PI/2;button.position.set(x,y,-.405);button.userData.wheelControl=control;button.userData.baseColor=color;steeringPivot.add(button);
   const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.050,.020),makeWheelLabel(label));labelMesh.position.set(x,y,-.448);labelMesh.rotation.y=Math.PI;steeringPivot.add(labelMesh);
   wheelControlMeshes.push(button);
@@ -6652,16 +6652,16 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
    carRoot.add(steerPivot);wheelCornerPivots.push({pivot:steerPivot,side,z:axle==="front"?1.57:-1.48,restY:.39,springVelocity:0});
    const rollGroup=new THREE.Group();rollGroup.name="wheel-roll";steerPivot.add(rollGroup);
    const tireWidth=axle==="front"?.43:.51;
-   const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,40,1,false),rubber);
+   const tire=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,tireWidth,10,1,false),rubber);
    tire.name="tyre-tread";tire.rotation.z=Math.PI/2;tire.castShadow=true;rollGroup.add(tire);
    const sideRingMat=makeMat(0x777e83,.65,.2);
    for(const xSide of [-1,1]){
-    const sideRing=new THREE.Mesh(new THREE.TorusGeometry(.305,.012,6,36),sideRingMat);
+    const sideRing=new THREE.Mesh(new THREE.TorusGeometry(.305,.012,6,10),sideRingMat);
     sideRing.rotation.y=Math.PI/2;sideRing.position.x=xSide*tireWidth*.47;rollGroup.add(sideRing);
    }
-   const rimDisc=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,tireWidth*.98,28),rim);
+   const rimDisc=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,tireWidth*.98,10),rim);
    rimDisc.rotation.z=Math.PI/2;rollGroup.add(rimDisc);
-   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,tireWidth*1.02,18),carbon);
+   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,tireWidth*1.02,8),carbon);
    hub.rotation.z=Math.PI/2;rollGroup.add(hub);
    for(let spoke=0;spoke<10;spoke++){
     const a=spoke*Math.PI/5;
@@ -6669,7 +6669,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
     spokeMesh.position.set(side*.19,Math.cos(a)*.13,Math.sin(a)*.13);
     spokeMesh.rotation.x=a;rollGroup.add(spokeMesh);
    }
-   const brakeDisc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.045,32),makeMat(0x6d7379,.38,.82));
+   const brakeDisc=new THREE.Mesh(new THREE.CylinderGeometry(.205,.205,.045,10),makeMat(0x6d7379,.38,.82));
    brakeDisc.rotation.z=Math.PI/2;brakeDisc.position.x=-side*.105;rollGroup.add(brakeDisc);
    for(let bolt=0;bolt<6;bolt++){
     const a=bolt*Math.PI/3,hubBolt=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),white);
@@ -6697,9 +6697,10 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  applyLivery(selectedLivery);
  const fallback=new THREE.Group();fallback.name="procedural-fallback-car";fallback.scale.x=.78;
  for(const child of [...carRoot.children])fallback.add(child);
- carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=false;
- const playerTeam=TEAM_LIVERIES.find(item=>item.id===selectedTeamId)||TEAM_LIVERIES[0];
- lowPolyPlayerVisual=createLowPolyFormulaCar(playerTeam,"Player low-poly Formula car");carRoot.add(lowPolyPlayerVisual.root);
+ // Keep the existing 3D chassis, cockpit, steering wheel and running gear; reduce polygon density and use flat faces.
+ fallback.traverse(object=>{if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>{if(material&&"flatShading" in material){material.flatShading=true;material.needsUpdate=true;}});});
+ carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=true;
+ lowPolyPlayerVisual=null;
  damageParts=[];
  redBullModelLoadPromise=Promise.resolve();importedCarActive=false;updateVehicleModelStatus("active","LOW-POLY CAR · PERFORMANCE MODEL");
  return redBullModelLoadPromise;
