@@ -3620,6 +3620,7 @@ function nearestTerrainSample(x,z){
 }
 let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
+let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false;
@@ -3943,8 +3944,8 @@ function createRacingEnvironment(){
 }
 
 function initRenderer(){
- renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:true,alpha:false,powerPreference:"high-performance"});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.8));
+ renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:false,alpha:false,powerPreference:"high-performance"});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.0));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
  renderer.shadowMap.enabled=graphicsQuality!=='low';renderer.shadowMap.type=THREE.PCFShadowMap;renderer.toneMappingExposure=1.22;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
@@ -4396,7 +4397,7 @@ function buildTerrain(def){
  for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
  minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
  const width=maxX-minX,depth=maxZ-minZ;
- const nx=graphicsQuality==="low"?256:graphicsQuality==="high"?512:384;
+ const nx=graphicsQuality==="low"?192:graphicsQuality==="high"?384:288;
  const nz=Math.max(112,Math.round(nx*depth/width));
  const coarseStep=Math.max(1,Math.floor(route.length/640)),samples=[];
  for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
@@ -5184,7 +5185,7 @@ function buildGrandstandsAndCrowd(){
   activeTrack==="monza"?[.045,.25,.52,.79]:[.08,.33,.59,.86];
  const palette=[0x263d8c,0xc83e37,0xe5e6dd,0x273b31,0xd3a23b,0x683d9c,0x1d91a8,0xededeb];
  const torsoGeo=new THREE.CapsuleGeometry(.17,.34,3,6),headGeo=new THREE.SphereGeometry(.115,7,6);
- const max=positions.length*6*(graphicsQuality==='low'?12:graphicsQuality==='high'?34:22);
+ const max=positions.length*6*(graphicsQuality==='low'?8:graphicsQuality==='high'?28:14);
  const torsoMesh=new THREE.InstancedMesh(torsoGeo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9}),max);
  const headMesh=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:0xd8b28d,roughness:.96}),max);
  const dummy=new THREE.Object3D();let people=0;
@@ -5213,8 +5214,8 @@ function buildGrandstandsAndCrowd(){
   }
   environmentGroup.add(stand);
   // Every spectator is placed at the exact sampled terrain height below their row.
-  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?12:graphicsQuality==='high'?34:22);col++){
-   const along=(col-(graphicsQuality==='low'?5.5:graphicsQuality==='high'?16.5:10.5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
+  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?8:graphicsQuality==='high'?28:14);col++){
+   const along=(col-(graphicsQuality==='low'?3.5:graphicsQuality==='high'?13.5:6.5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
    const p=offsetPoint(sample,side,lateral,0),safe=ensureOffTrackPoint(new THREE.Vector3(p.x+sample.tan.x*along,0,p.z+sample.tan.z*along),side,14),x=safe.x,z=safe.z;
    const y=terrainHeightAt(x,z)+1.0+row*.47;
    dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
@@ -7986,13 +7987,43 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  }
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
+function qualityPixelRatio(){
+ return graphicsQuality==="low"?.62:graphicsQuality==="high"?1.0:.80;
+}
+function applyAdaptiveResolutionScale(){
+ if(!renderer)return;
+ const cap=qualityPixelRatio();
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,cap*adaptiveResolutionScale));
+ renderer.setSize(window.innerWidth,window.innerHeight,false);
+}
+function monitorPerformance(now){
+ performanceSampleFrames++;
+ if(!performanceSampleStart){performanceSampleStart=now;return;}
+ const span=now-performanceSampleStart;
+ if(span<1400)return;
+ const fps=performanceSampleFrames*1000/span;
+ performanceSampleFrames=0;performanceSampleStart=now;
+ if(fps<43){
+  adaptiveSlowSamples++;adaptiveFastSamples=0;
+ }else if(fps>58){
+  adaptiveFastSamples++;adaptiveSlowSamples=0;
+ }else{
+  adaptiveSlowSamples=0;adaptiveFastSamples=0;
+ }
+ if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.58){
+  adaptiveResolutionScale=Math.max(.58,adaptiveResolutionScale-.12);
+  applyAdaptiveResolutionScale();adaptiveSlowSamples=0;
+ }else if(adaptiveFastSamples>=5&&adaptiveResolutionScale<1){
+  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.05);
+  applyAdaptiveResolutionScale();adaptiveFastSamples=0;
+ }
+}
 function applyGraphicsQuality(){
  if(!renderer)return;
- const ratio=graphicsQuality==="low"?.68:graphicsQuality==="high"?1.12:.88;
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,ratio));
+ adaptiveResolutionScale=1;performanceSampleStart=0;performanceSampleFrames=0;adaptiveSlowSamples=0;adaptiveFastSamples=0;
+ applyAdaptiveResolutionScale();
  renderer.shadowMap.enabled=graphicsQuality!=="low";renderer.shadowMap.type=THREE.PCFShadowMap;
- if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1024:768;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
- renderer.setSize(window.innerWidth,window.innerHeight,false);
+ if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1024:512;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
 }
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.zoom=1;camera.fov=66;camera.updateProjectionMatrix();}
 function updatePitCinematicCamera(dt){
@@ -8009,6 +8040,7 @@ function updatePitCinematicCamera(dt){
 
 function animate(now){
  requestAnimationFrame(animate);
+ if(running)monitorPerformance(now);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(running&&!paused){
   updateRaceStart(frameDt);updateRaceControl(frameDt);updatePitService(frameDt);
@@ -8040,7 +8072,7 @@ function animate(now){
  if(running&&!paused)updateTrafficRadio(frameDt);
  updateTimeTrialGhost();
  if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
- if(renderer&&scene&&camera)renderer.render(scene,camera);
+ if(renderer&&scene&&camera&&(running||looseDamageParts.length||crashDebris.length))renderer.render(scene,camera);
 }
 
 let settingsResumeAfterClose=false;
