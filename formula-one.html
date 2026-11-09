@@ -6330,6 +6330,20 @@ function createLowPolyFormulaCar(team,label="Low-poly Formula car"){
  const box=(sx,sy,sz,x,y,z,material)=>{
   const mesh=new THREE.Mesh(geo.box,material);mesh.scale.set(sx,sy,sz);mesh.position.set(x,y,z);root.add(mesh);return mesh;
  };
+ const simpleAI=label.startsWith("AI ");
+ if(simpleAI){
+  box(1.18,.32,2.85,0,.48,-.12,mat.body);
+  const nose=new THREE.Mesh(geo.nose,mat.body);nose.rotation.x=Math.PI/2;nose.position.set(0,.43,1.55);root.add(nose);
+  box(1.98,.11,.28,0,.25,2.20,mat.accent);box(1.68,.13,.25,0,.78,-1.78,mat.body);
+  const cockpit=new THREE.Mesh(geo.helmet,mat.carbon);cockpit.scale.set(1.1,1.25,1.65);cockpit.position.set(0,.80,-.16);root.add(cockpit);
+  for(const z of [1.12,-1.12])for(const side of [-1,1]){
+   const front=z>0,pivot=new THREE.Group();pivot.position.set(side*.82,.39,z);root.add(pivot);
+   const tyre=new THREE.Mesh(geo.tyre,mat.tyre);tyre.rotation.z=Math.PI/2;pivot.add(tyre);
+   wheels.push(tyre);if(front)frontPivots.push(pivot);
+  }
+  root.traverse(object=>{object.visible=true;if(object.isMesh){object.castShadow=false;object.receiveShadow=false;object.frustumCulled=false;}});
+  return {root,wheels,frontPivots,steeringWheel:null};
+ }
  const bar=(start,end,material)=>{
   const a=new THREE.Vector3(...start),b=new THREE.Vector3(...end),delta=b.sub(a),mesh=new THREE.Mesh(geo.halo,material);
   mesh.position.copy(a.addScaledVector(delta,.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
