@@ -7086,8 +7086,8 @@ function updatePhysics(dt){
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
- if(!pitLaneDriving)updatePitButtonPrompt();
-  // Pit entry is an explicit branch; the normal circuit remains driveable through its opening.
+ updatePitButtonPrompt();
+  // The right-hand connector selects the pit route; the main racing surface stays open.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
  const side=Math.sign(nearestInfo.offset)||1;
  const nearPitEntryConnector=!pitLaneDriving&&side===1&&pitEntryConnectorDistance(car.x,car.z)<=18.5;
