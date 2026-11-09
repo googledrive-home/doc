@@ -6056,7 +6056,10 @@ function damageSystemForPart(name){
  return "chassis";
 }
 function registerDamagePart(mesh,name,threshold,zone=null){
- const part={mesh,name,threshold,system:damageSystemForPart(name),zone:zone||inferDamageZone(name),detached:false};
+ const part={name,threshold,system:damageSystemForPart(name),zone:zone||inferDamageZone(name),detached:false};
+ // Three.js Object3D.clone() JSON-copies userData. Keep the live mesh pointer
+ // readable and writable, but non-enumerable so it cannot create a circular JSON reference.
+ Object.defineProperty(part,"mesh",{value:mesh,writable:true,configurable:true,enumerable:false});
  damageParts.push(part);mesh.userData.apexDamagePart=part;return mesh;
 }
 function spawnCrashParticles(origin,side,severity){
