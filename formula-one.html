@@ -3821,7 +3821,7 @@ function syncActiveTrackLabels(){
 }
 function startNewChampionship(){
  championshipState=makeEmptyChampionship();saveChampionship();
- if(gameMode==="championship"){activeTrack=CHAMPIONSHIP_TRACK_ORDER[0];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();}
+ if(gameMode==="championship"){activeTrack=CHAMPIONSHIP_TRACK_ORDER[0];$("trackSelect").value=activeTrack;builtTrackId=null;const firstTrack=trackDefs[activeTrack],firstOfficial=OFFICIAL_F1_TRACK_POINTS[activeTrack];activeTrackPoints=firstOfficial?firstOfficial.map(([x,z])=>[x,z,0]):firstTrack.points.slice();updatePreview();syncActiveTrackLabels();}
  renderChampionship();
 }
 function applyGameModeSelection(){
@@ -3841,7 +3841,7 @@ function applyGameModeSelection(){
   $("trackSelect").value=activeTrack;
  }else if(inTimeTrial){opponentCount=0;$("opponentCountSelect").value="0";}
  clearGhostCar();timeTrialBest=Infinity;timeTrialGhostData=[];$("ghostToggleBtn").style.display="none";
- createTrack();syncActiveTrackLabels();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
+ builtTrackId=null;const chosenTrack=trackDefs[activeTrack],chosenOfficial=OFFICIAL_F1_TRACK_POINTS[activeTrack];activeTrackPoints=chosenOfficial?chosenOfficial.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():chosenTrack.points.slice();updatePreview();syncActiveTrackLabels();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
  renderChampionship();
 }
 function completeChampionshipRound(){
@@ -8128,7 +8128,7 @@ function restartLap(){
 
 function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanOverlay").classList.remove("open");raceStartState="none";formationLapActive=false;$("formationGuide").classList.remove("open");clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];$("ghostToggleBtn").style.display="none";if(broadcastActive){cameraMode=broadcastReturnCamera;broadcastActive=false;}$("broadcastPanel").classList.remove("open");$("broadcastBtn").textContent="BROADCAST";teamRadioTimer=0;$("teamRadioBanner").classList.remove("open");pitServiceOpen=false;pitServiceActive=false;pitCinematic.active=false;pitCinematic.phase="idle";cleanupPitCrew(true);setPitButtonAvailable(false);$("pitServiceOverlay").classList.remove("open");$("raceStartOverlay").classList.remove("open");$("raceControlBanner").classList.remove("open");silenceAudio();clearCrashEffects();clearOpponents();restoreCircuitRoute();buildCar();positionCarAtStart();$("pauseOverlay").style.display="none";$("weatherPanel").classList.remove("open");$("hud").style.display="none";$("menu").style.display="grid";$("menu").classList.remove("leaving");
  if(gameMode==="championship"&&championshipState.round<CHAMPIONSHIP_TRACK_ORDER.length){
-  activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;createTrack();syncActiveTrackLabels();
+  activeTrack=CHAMPIONSHIP_TRACK_ORDER[championshipState.round];$("trackSelect").value=activeTrack;builtTrackId=null;const nextTrack=trackDefs[activeTrack],nextOfficial=OFFICIAL_F1_TRACK_POINTS[activeTrack];activeTrackPoints=nextOfficial?nextOfficial.map(([x,z])=>[x,z,0]):nextTrack.points.slice();updatePreview();syncActiveTrackLabels();
  }
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
@@ -8490,7 +8490,7 @@ function bindControls(){
  $("aiSkillSelect").addEventListener("change",()=>{aiSkill=$("aiSkillSelect").value;});
  $("raceLapsSelect").addEventListener("change",()=>{raceLaps=Number($("raceLapsSelect").value);});
   $("formationLapSelect").addEventListener("change",()=>{formationLapEnabled=$("formationLapSelect").checked;});
- $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();if(!running)createTrack();});
+ $("graphicsSelect").addEventListener("change",()=>{graphicsQuality=$("graphicsSelect").value;applyGraphicsQuality();if(!running)builtTrackId=null;});
  const safeBind=(label,fn)=>{try{fn();}catch(error){console.error("Could not bind "+label+".",error);showError(error);}};
  safeBind("weather settings",()=>{bindWeather("");bindWeather("live");});
  safeBind("race settings",bindSettings);
