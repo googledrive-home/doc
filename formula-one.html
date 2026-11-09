@@ -4811,7 +4811,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
   trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(360,Math.floor(route.length*.55)),.055,5,true),edgeMat));
  }
  circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
- buildPitLane();buildRacingLineVisual();
+ buildPitLane();
  const pitGaps=pitTrackConnectionGaps();
  const railTop=makeBarrierMaterial(.52,.36);railTop.userData.radius=.085;
  const railMid=makeBarrierMaterial(.68,.22);railMid.userData.radius=.065;
@@ -4842,6 +4842,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  auditTrackTerrainAndObjects();
  positionCarAtStart();
  updateWeather();
+ buildRacingLineVisual();
  updatePreview();drawMiniMap();builtTrackId=activeTrack;
 }
 function buildCircuitFloodlights(){
