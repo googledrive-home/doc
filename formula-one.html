@@ -5541,15 +5541,15 @@ function updateOpponents(dt){
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
   let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
   const inFormation=formationLapActive||formationGridSettling;
-  if(inFormation){desiredOffset=bot.baseOffset;if(formationLapActive)target=Math.min(target,formationPace);
-   if(formationGridSettling){
-    if(bot.formationParked){target=0;bot.speed=0;}
-    else if(bot.laps>=1){
-     const remainingToGrid=((bot.gridProgress-bot.progress+1)%1)*aiLength;
-     if(remainingToGrid<.38&&bot.speed<.65){bot.progress=bot.gridProgress;bot.speed=0;bot.formationParked=true;target=0;}
-     else target=Math.min(target,Math.sqrt(Math.max(0,2*5.2*remainingToGrid)));
-    }
-   }
+  if(inFormation){
+   desiredOffset=bot.baseOffset;
+   if(bot.formationParked){target=0;bot.speed=0;}
+   else if(bot.laps>=1){
+    // Each AI completes one full circuit, then brakes back into its original box rather than being repositioned.
+    const remainingToGrid=((bot.gridProgress-bot.progress+1)%1)*aiLength;
+    if(remainingToGrid<.38&&bot.speed<.65){bot.progress=bot.gridProgress;bot.speed=0;bot.formationParked=true;target=0;}
+    else target=Math.min(target,Math.sqrt(Math.max(0,2*5.2*remainingToGrid)));
+   }else if(formationLapActive)target=Math.min(target,formationPace);
   }
   const laneIsClear=candidate=>{
    for(const item of traffic){
@@ -5586,7 +5586,7 @@ function updateOpponents(dt){
   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
   if(playerProgress!==null){
    const gapAhead=((bot.progress-playerProgress+1)%1)*aiLength,botAheadNow=gapAhead>3&&gapAhead<aiLength*.5,playerBehindGap=aiLength-gapAhead;
-   if(wasAheadOfPlayer&&!botAheadNow&&playerBehindGap<28&&(formationLapActive||raceFlag==="YELLOW")&&elapsed-(bot.lastRestrictedOvertakeAt??-Infinity)>1.2){
+   if(wasAheadOfPlayer&&!botAheadNow&&playerBehindGap<28&&!bot.formationParked&&(formationLapActive||raceFlag==="YELLOW")&&elapsed-(bot.lastRestrictedOvertakeAt??-Infinity)>1.2){
     bot.lastRestrictedOvertakeAt=elapsed;raceStartPenalty+=5;
     const restriction=formationLapActive?"FORMATION LAP":"YELLOW FLAG";
     showRaceControlMessage("RESTRICTED OVERTAKE · +5.0S PENALTY","penalty",4.8);
