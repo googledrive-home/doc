@@ -4505,7 +4505,7 @@ function addStartGridMarkings(){
  if(!trackGroup||route.length<8||routeLength<=0)return;
  const vertices=[],halfSlotWidth=1.34,halfSlotLength=2.85;
  for(let row=0;row<10;row++){
-  const distance=5+row*8.1,progress=((1-distance/routeLength)%1+1)%1;
+  const distance=8+row*8.1,progress=((1-distance/routeLength)%1+1)%1;
   const sample=route[Math.floor(progress*route.length)%route.length];
   const horizontal=Math.hypot(sample.tan.x,sample.tan.z)||1,tx=sample.tan.x/horizontal,tz=sample.tan.z/horizontal,rx=tz,rz=-tx;
   for(const side of [-1,1]){
@@ -5497,7 +5497,7 @@ function spawnOpponents(){
    };
    o.material=Array.isArray(o.material)?o.material.map(paint):paint(o.material);
   });
-  const row=Math.floor(i/2),gridDistance=5+row*8.1,progress=((1-gridDistance/aiLength)%1+1)%1;
+  const row=Math.floor(i/2),gridDistance=8+row*8.1,progress=((1-gridDistance/aiLength)%1+1)%1;
   const wheels=[],frontPivots=[];
   root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
   const baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
