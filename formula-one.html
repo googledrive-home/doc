@@ -8421,8 +8421,9 @@ function restartLap(){
   if(session==="timeTrial"){
    lapRecording=[];lapRecordAccumulator=0;loadTimeTrialRecord();bestLap=timeTrialBest;
    buildGhostCar();updateGhostToggleUI();
-  }else if(!startInPit)spawnOpponents();
-  else{clearOpponents();$("opponentValue").textContent="00";}
+  }else{
+   aiFieldRecoveryTimer=0;spawnOpponents();
+  }
   $("pauseOverlay").style.display="none";physicsAccumulator=0;hudAccumulator=0;audioAccumulator=0;resumeGame();
  }catch(error){
   running=false;paused=true;silenceAudio();showError(error);
@@ -8491,6 +8492,14 @@ function animate(now){
  if(!running&&!looseDamageParts.length&&!crashDebris.length)return;
  if(running)monitorPerformance(now);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
+ if(running&&!paused&&currentSessionMode!=="timeTrial"&&!opponents.length){
+  aiFieldRecoveryTimer+=frameDt;
+  if(aiFieldRecoveryTimer>=2.2){
+   aiFieldRecoveryTimer=0;
+   try{spawnOpponents();showTeamRadio(opponents.length+" AI cars are now on track.",3.5);}
+   catch(error){console.error("AI grid recovery failed.",error);}
+  }
+ }else aiFieldRecoveryTimer=0;
  if(running&&!paused){
   updateRaceStart(frameDt);updateRaceControl(frameDt);updatePitService(frameDt);
   if(pitCinematic.active){
