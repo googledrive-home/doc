@@ -3923,7 +3923,7 @@ function applyGameModeSelection(){
 function completeChampionshipRound(){
  if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return null;
  const playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
- const participants=[{id:"player",name:"YOU",team:"APEX GP",distance:raceLaps-1+playerProgress-raceStartPenalty/120,isPlayer:true}];
+ const participants=[{id:"player",name:"YOU",team:"APEX GP",distance:raceLaps+playerProgress-raceStartPenalty/120,isPlayer:true}];
  for(const bot of opponents){
   const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
   if(!driver)continue;
@@ -5476,14 +5476,15 @@ function updateTrafficRadio(dt){
   if(!closest||Math.abs(metres)<Math.abs(closest.metres))closest={bot,metres};
  }
  if(!closest)return;
- const driver=closest.bot.driverName||("car "+closest.bot.number),gap=Math.round(Math.abs(closest.metres));
- if(gap<22){
+ const driver=closest.bot.driverName||("car "+closest.bot.number);
+ const gapSeconds=Math.abs(closest.metres)/Math.max(18,(Math.abs(car.u||0)+Math.abs(closest.bot.speed||0))*.5);
+ if(gapSeconds<.72){
   const side=closest.bot.offset>nearestInfo.offset?"right":"left";
   showTeamRadio(driver+" is alongside on your "+side+". Leave racing room.");
  }else if(closest.metres>0){
-  showTeamRadio(driver+" is "+gap+" metres ahead. You're closing — choose your moment.");
+  showTeamRadio(driver+" is "+gapSeconds.toFixed(2)+" seconds ahead. You're closing — choose your moment.");
  }else{
-  showTeamRadio(driver+" is "+gap+" metres behind. Watch your mirrors.");
+  showTeamRadio(driver+" is "+gapSeconds.toFixed(2)+" seconds behind. Watch your mirrors.");
  }
  trafficRadioCooldown=8.5;
 }
@@ -5788,7 +5789,7 @@ function updateOpponents(dt){
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
  if(!count||!aiLength)return;
  const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null;
- const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
+ const traffic=opponents.filter(bot=>!bot.pitPhase).map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
   const wasAheadOfPlayer=bot.playerAheadOfYou===true;
   bot.contactCooldown=Math.max(0,(bot.contactCooldown||0)-dt);
@@ -5895,9 +5896,9 @@ function resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt){
  aiIncidentRadioCooldown=Math.max(0,aiIncidentRadioCooldown-dt);
  if(currentSessionMode==="practice"||pitLaneDriving||opponents.length<2)return;
  for(let i=0;i<opponents.length;i++){
-  const a=opponents[i];if((a.contactCooldown||0)>0)continue;
+  const a=opponents[i];if(a.pitPhase||(a.contactCooldown||0)>0)continue;
   for(let j=i+1;j<opponents.length;j++){
-   const b=opponents[j];if((b.contactCooldown||0)>0)continue;
+   const b=opponents[j];if(b.pitPhase||(b.contactCooldown||0)>0)continue;
    let delta=b.progress-a.progress;if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
    const longitudinal=delta*aiLength,lateral=b.offset-a.offset;
    if(Math.abs(longitudinal)>4.7||Math.abs(lateral)>2.25)continue;
@@ -6712,6 +6713,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  // Keep the existing 3D chassis, cockpit, steering wheel and running gear; reduce polygon density and use flat faces.
  fallback.traverse(object=>{if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>{if(material&&"flatShading" in material){material.flatShading=true;material.needsUpdate=true;}});});
  carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=true;
+ applyTeamSpecificLivery(fallback,selectedTeamId,"01");
  lowPolyPlayerVisual=null;
  damageParts=[];
  redBullModelLoadPromise=loadRedBullCarModel(carRoot,modelGeneration);
