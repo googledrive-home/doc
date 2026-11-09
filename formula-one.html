@@ -5654,8 +5654,8 @@ function setRaceFlag(flag,duration=8){
  else{if(raceFlag==="VSC"&&flag==="YELLOW")return;raceFlag=flag;raceFlagTimer=Math.max(raceFlagTimer,duration);}
  const label=raceFlag==="VSC"?"VIRTUAL SAFETY CAR":raceFlag==="YELLOW"?"YELLOW FLAG":"GREEN FLAG";
  showRaceControlMessage(label,raceFlag==="VSC"?"vsc":raceFlag==="YELLOW"?"yellow":"info",raceFlagTimer||2.4);
- if(flag==="YELLOW")showTeamRadio("Yellow flag ahead. Lift off and be ready to avoid the incident.");
- if(flag==="VSC")showTeamRadio("Virtual safety car deployed. Hold your speed delta and leave space.");
+ if(flag==="YELLOW")showTeamRadio("Yellow flag ahead. Maintain your pace, hold position and do not overtake.");
+ if(flag==="VSC")showTeamRadio("Virtual safety car deployed. Maintain position; overtaking is prohibited.");
 }
 function updateRaceControl(dt){
  if(raceFlag!=="GREEN"){
@@ -6098,8 +6098,7 @@ function updateOpponents(dt){
   bot.targetOffset=desiredOffset;
   if(bot.pendingPit&&toPitEntry<30&&toPitEntry>0&&bot.offset>laneLimit*.38&&!inFormation&&startOpponentPitPath(bot)){updateOpponentPitPath(bot,dt);return;}
   if(bot.incidentTimer>0)target=Math.min(target,Math.max(24,bot.baseSpeed*.58));
-  if(raceFlag==="VSC")target=Math.min(target,42);else if(raceFlag==="YELLOW")target=Math.min(target,58);
-  bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
+    bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
   const distanceThisStep=bot.speed*dt;
   const wearPerLap=bot.tyreCompound==="soft"?.24:bot.tyreCompound==="hard"?.105:bot.tyreCompound==="wet"?.17:bot.tyreCompound==="intermediate"?.19:.155;
   bot.tyreWear=clamp((bot.tyreWear??1)-(distanceThisStep/aiLength)*(wearPerLap/Math.max(.72,personality.tyreCare)),0,1);
@@ -7355,8 +7354,7 @@ function updatePhysics(dt){
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
  const pitAutoBrake=pitLaneDriving?clamp((speed-PIT_LANE_LIMIT)/3.2,0,.62):0;
- const cautionCap=raceFlag==="VSC"?42:raceFlag==="YELLOW"?58:Infinity;
- const cautionAutoBrake=Number.isFinite(cautionCap)?clamp((speed-cautionCap)/3.6,0,.72):0;
+ const cautionAutoBrake=0; // Flags restrict overtaking, not player speed.
  const previousDrsState=!!car.drsActive;
  car.drsActive=!car.reverse&&!!car.drsArmed&&speed>48&&throttle>.55&&Math.abs(car.steer)<.045;
  if(previousDrsState!==car.drsActive)playDrsSound(car.drsActive);
