@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#080c12">
-<meta name="apex-build" content="26.11.7-redbull-asset-loader-fixed">
+<meta name="apex-build" content="26.11.8-team-cars-ai-strategies-hud">
 <title>APEX // Formula Racing</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080c12;color:#f4f6f8}
@@ -404,11 +404,57 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  .pit-plan-note{margin-top:13px;color:#8395a4;font-size:8px}.pit-plan-actions{display:flex;gap:8px;margin-top:16px}.pit-plan-actions button{flex:1;min-height:42px}
  @media(max-width:760px){.pit-plan-card{padding:15px}.pit-plan-grid{gap:8px}.pit-plan-actions{flex-direction:column}}
  </style>
+<style id="immersiveRaceHudStyles">
+/* Compact glass cockpit HUD keeps the circuit visible and clears redundant panels. */
+#brandHud,#leftHud,#rightHud,#tireHud,#controlsLegend,#bottomHud{display:none!important}
+#topHud{left:15px;right:15px;top:11px;align-items:center;gap:12px}
+#telemetry{gap:5px;padding:0;background:none;border:0;box-shadow:none}
+#telemetry .statbox{min-width:85px;padding:9px 13px 8px;border:1px solid rgba(169,215,227,.27);border-bottom:2px solid rgba(255,158,112,.92);border-radius:6px 14px 6px 14px;background:linear-gradient(145deg,rgba(22,49,65,.78),rgba(7,18,31,.70));box-shadow:inset 0 1px rgba(255,255,255,.13),0 9px 24px rgba(0,0,0,.18);backdrop-filter:blur(10px)}
+#telemetry .statbox strong{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:23px;letter-spacing:.035em;text-shadow:0 0 15px rgba(130,214,232,.22);font-variant-numeric:tabular-nums}
+#telemetry .statbox label{color:#a9c5d2;font-size:7px;letter-spacing:.18em}
+#telemetry .statbox small{color:#ffc77e;font-size:8px;font-weight:850;letter-spacing:.10em}
+#hudActions .hudbtn{border:1px solid rgba(182,218,230,.25);border-radius:5px 12px 5px 12px;background:linear-gradient(130deg,rgba(23,47,62,.80),rgba(8,18,30,.78));box-shadow:inset 0 1px rgba(255,255,255,.10);backdrop-filter:blur(9px)}
+.broadcast-panel{position:absolute;top:80px;right:15px;width:min(258px,26vw);max-height:min(56vh,500px);overflow:hidden;padding:10px 12px 8px;border:1px solid rgba(177,220,235,.26);border-top:2px solid rgba(255,160,111,.85);border-radius:5px 15px 5px 15px;background:linear-gradient(145deg,rgba(21,45,60,.72),rgba(6,16,28,.66));box-shadow:0 13px 42px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.10);backdrop-filter:blur(12px);pointer-events:none}
+.broadcast-panel.open{display:block}
+.broadcast-panel header{padding-bottom:7px;border-bottom:1px solid rgba(194,220,231,.18)}
+.broadcast-panel header b{color:#ffad85;font-size:8px;letter-spacing:.16em}
+.broadcast-panel header span{color:#e5edf1;font-size:8px;font-variant-numeric:tabular-nums}
+#broadcastTimingRows{max-height:45vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(157,194,210,.35) transparent}
+.broadcast-row{grid-template-columns:23px minmax(0,1fr) 57px;gap:7px;padding:6px 3px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(90deg,color-mix(in srgb,var(--team-colour,#48677b) 16%,transparent),transparent 76%);font-size:8px}
+.broadcast-row .pos{color:#d6e6ed;font-family:ui-monospace,monospace;font-size:9px}
+.broadcast-row .driver b{font-size:8px;letter-spacing:.025em}
+.broadcast-row .driver small{color:#a3b5bf;font-size:6.5px;letter-spacing:.04em}
+.broadcast-row .gap{color:#ffd18a;font-family:ui-monospace,monospace;font-size:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.broadcast-row.you{outline:1px solid rgba(255,193,125,.23);background:linear-gradient(90deg,rgba(255,153,103,.19),rgba(255,153,103,.02))}
+.broadcast-row.pitting .gap{color:#8bd4e7}
+.broadcast-panel footer{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-top:7px;color:#a6bbc7;font-size:6px;letter-spacing:.08em}
+#aiFieldStatus{margin-left:auto;color:#9be0c1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.race-start-panel,.team-radio-banner,.race-control-banner{backdrop-filter:blur(12px);border-radius:5px 14px 5px 14px}
+.race-start-panel{border:1px solid rgba(190,221,235,.30);border-top:2px solid #ff9e72;background:linear-gradient(145deg,rgba(22,49,65,.82),rgba(5,14,25,.78));box-shadow:0 16px 48px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.10)}
+.team-radio-banner{background:linear-gradient(100deg,rgba(18,43,58,.88),rgba(8,18,30,.82));border-color:rgba(176,220,235,.23)}
+@media(max-width:760px){
+ #topHud{left:5px;right:5px;top:5px;gap:4px}
+ #telemetry{gap:3px}
+ #telemetry .statbox{min-width:52px;padding:6px 7px 5px;border-radius:5px 9px 5px 9px}
+ #telemetry .statbox strong{font-size:16px}
+ #telemetry .statbox label,#telemetry .statbox small{font-size:6px}
+ #hudActions{gap:3px}
+ #hudActions .hudbtn{padding:6px 6px;font-size:7px}
+ .broadcast-panel{top:59px;right:5px;width:min(205px,54vw);max-height:42vh;padding:7px 8px}
+ #broadcastTimingRows{max-height:32vh}
+ .broadcast-row{grid-template-columns:18px minmax(0,1fr) 48px;padding:4px 2px;gap:4px}
+ .broadcast-row .driver b{font-size:7px}
+ .broadcast-row .driver small{font-size:6px}
+ .broadcast-row .gap{font-size:7px}
+ .broadcast-panel footer{font-size:5px}
+ .team-radio-banner{bottom:12px;max-width:88vw}
+}
+</style>
 </head>
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
 <div id="loading"><div class="loadcard">
- <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.7 · RED BULL 3D / ASSET LOADER FIXED</span></div>
+ <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.8 · TEAM CARS / AI RACE ENGINEER</span></div>
  <div class="load-emblem">A<span>P</span>X</div><div class="brandmark">FORMULA RACING · WORLD TOUR</div>
  <h1>PREPARE<br><span>FOR THE GRID.</span></h1><p id="loadText">Preparing the circuit and car...</p>
  <div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div>
@@ -563,7 +609,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     </div>
     <div id="hudActions"><button class="hudbtn" id="cameraBtn">CAM</button><button class="hudbtn" id="settingsHudBtn">SETUP</button><button class="hudbtn pit-ready-btn" id="pitStopBtn" style="display:none">BOX</button><button class="hudbtn" id="moreHudBtn" aria-expanded="false">MORE ▾</button><div id="hudExtraActions"><button class="hudbtn" id="weatherBtn">WEATHER</button><button class="hudbtn" id="championshipHudBtn">SEASON</button><button class="hudbtn" id="ghostToggleBtn" style="display:none">GHOST: NO PB</button><button class="hudbtn" id="broadcastBtn">BROADCAST</button><button class="hudbtn" id="soundBtn">SOUND ON</button></div><button class="hudbtn" id="pauseBtn">PAUSE</button></div>
   </div>
-  <div id="broadcastPanel" class="broadcast-panel"><header><b>APEX TV · LIVE TIMING</b><span id="broadcastLapLabel">LAP 1 / 3</span></header><div id="broadcastTimingRows"></div><footer><span class="live-dot"></span> LIVE SESSION · <span id="broadcastCameraLabel">TRACKSIDE CAM 1 / 4</span></footer></div>
+  <div id="broadcastPanel" class="broadcast-panel"><header><b>LIVE CLASSIFICATION · TIME GAPS</b><span id="broadcastLapLabel">LAP 1 / 3</span></header><div id="broadcastTimingRows"></div><footer><span><span class="live-dot"></span> LIVE TIMING</span><span id="broadcastCameraLabel">ALL CAMERA VIEWS</span><span id="aiFieldStatus">08 AI CARS</span></footer></div>
   <div id="teamRadioBanner" class="team-radio-banner" aria-live="polite"><b>APEX ENGINEER</b><span id="teamRadioText">Radio check. We are ready when you are.</span></div>
   <div id="leftHud" class="panel"><div class="hudtitle">Circuit</div><div id="trackName">Spa-Francorchamps</div><div id="trackMeta">Belgium · 7.004 km</div><div class="hudrow"><span>Lap best</span><b id="bestLap">--:--.---</b></div><div class="hudrow"><span>Location</span><b id="trackState">GARAGE</b></div></div>
   <div id="rightHud" class="panel"><div class="hudtitle">Track map</div><canvas id="minimap" width="300" height="190"></canvas><div class="hudrow"><span>Weather</span><b id="weatherName">Clear</b></div><div class="hudrow"><span>Track surface</span><b id="surfaceWetnessValue">DRY</b></div><div class="bar"><i id="surfaceWetnessBar"></i></div><div class="hudrow"><span>Tyres</span><b id="tyreName">MEDIUM</b></div><div class="hudrow"><span>AI cars</span><b id="opponentValue">04</b></div><div class="hudrow"><span>Shift mode</span><b id="transmissionValue">SEQ</b></div><div class="hudrow"><span>Car damage</span><b id="damageValue">0%</b></div></div>
@@ -3655,7 +3701,17 @@ const TEAM_LIVERIES=[
 {id:"sauber",name:"KICK SAUBER",mark:"KICK",primary:"#009b68",accent:"#f1f1eb"}
 ];
 const CHAMPIONSHIP_AI_NAMES=["Alex Carter","Noah Hayes","Luca Moretti","Ethan Brooks","Oliver Reed","Mateo Rossi","Leo Martin","Kai Tanaka","Daniel Novak","Theo Laurent","Carlos Silva","Jack Evans","Finn Walker","Hugo Meyer","Arjun Patel","Oscar Lind","Max Turner","Samir Khan","Ben Foster"];
-const CHAMPIONSHIP_AI_DRIVERS=CHAMPIONSHIP_AI_NAMES.map((name,index)=>{const team=TEAM_LIVERIES[index%TEAM_LIVERIES.length];return {id:"ai"+(index+1),name,team:team.name,teamId:team.id};});
+const AI_PERSONALITIES=[
+ {id:"attacker",label:"Attacker",pace:1.018,aggression:.94,consistency:.78,tyreCare:.78,lineCommitment:1.12,pitTiming:.43},
+ {id:"smooth",label:"Smooth",pace:.995,aggression:.42,consistency:.97,tyreCare:1.24,lineCommitment:.82,pitTiming:.62},
+ {id:"defender",label:"Defender",pace:1.002,aggression:.70,consistency:.91,tyreCare:1.02,lineCommitment:.94,pitTiming:.54},
+ {id:"strategist",label:"Strategist",pace:1.012,aggression:.64,consistency:.93,tyreCare:1.10,lineCommitment:1.02,pitTiming:.50},
+ {id:"rain-specialist",label:"Rain specialist",pace:1.004,aggression:.72,consistency:.90,tyreCare:1.06,lineCommitment:1.08,pitTiming:.48}
+];
+const CHAMPIONSHIP_AI_DRIVERS=CHAMPIONSHIP_AI_NAMES.map((name,index)=>{
+ const team=TEAM_LIVERIES[index%TEAM_LIVERIES.length],personality=AI_PERSONALITIES[index%AI_PERSONALITIES.length];
+ return {id:"ai"+(index+1),name,team:team.name,teamId:team.id,personality};
+});
 const CHAMPIONSHIP_TEAMS=["APEX GP",...TEAM_LIVERIES.map(team=>team.name)];
 let gameMode="quick",quickTrackSelection="spa",quickOpponentSelection=8,championshipState=null;
 const TIME_TRIAL_STORAGE_KEY="apexFormulaTimeTrialV1";
@@ -3714,26 +3770,44 @@ function closeChampionship(){$("championshipOverlay").classList.remove("open");}
 function toggleBroadcast(){
  if(cameraMode===5){cameraMode=broadcastReturnCamera;broadcastActive=false;}
  else{broadcastReturnCamera=cameraMode;cameraMode=5;broadcastActive=true;broadcastShotIndex=0;broadcastShotTimer=0;}
- $("broadcastPanel").classList.toggle("open",broadcastActive);
  $("broadcastBtn").textContent=broadcastActive?"EXIT TV":"BROADCAST";
  if(!pitLaneDriving&&nearestInfo)broadcastCircuitProgress=nearestInfo.progress;
  renderBroadcastTiming();camera.userData.ready=false;setCamera(0);
 }
 function renderBroadcastTiming(){
- if(!car||!nearestInfo)return;
+ const panel=$("broadcastPanel");
+ if(!panel||!car||!nearestInfo)return;
  if(!pitLaneDriving)broadcastCircuitProgress=nearestInfo.progress;
- if(!broadcastActive)return;
+ const showTiming=running&&opponents.length>0&&currentSessionMode!=="timeTrial";
+ panel.classList.toggle("open",showTiming);panel.classList.toggle("broadcast-mode",broadcastActive);
+ if(!showTiming)return;
+ const trackLength=circuitRouteLength||routeLength;
  const playerDistance=lap-1+(pitLaneDriving?broadcastCircuitProgress:nearestInfo.progress);
- const participants=[{name:"YOU",team:"APEX GP",distance:playerDistance,isPlayer:true,status:pitLaneDriving?"PIT":"RACE"}];
- for(const bot of opponents)participants.push({name:bot.driverName||("DRIVER "+bot.number),team:bot.teamName||"AI TEAM",distance:(bot.laps-1)+bot.progress,isPlayer:false,status:"RACE"});
+ const playerSpeed=pitLaneDriving?PIT_LANE_LIMIT:Math.abs(car.u||0);
+ const participants=[{name:"YOU",team:"APEX GP",teamId:selectedTeamId,distance:playerDistance,speed:playerSpeed,isPlayer:true,status:pitLaneDriving?"PIT":"RACE"}];
+ for(const bot of opponents)participants.push({
+  name:bot.driverName||("DRIVER "+bot.number),team:bot.teamName||"AI TEAM",teamId:bot.teamId,
+  distance:(bot.laps||0)+bot.progress,speed:bot.speed||bot.baseSpeed||0,isPlayer:false,status:bot.pitPhase?"PIT":"RACE",
+  tyre:bot.tyreCompound||"medium"
+ });
  participants.sort((a,b)=>b.distance-a.distance);
- const leader=participants[0]?.distance||0,playerPosition=participants.findIndex(item=>item.isPlayer)+1;
+ const leader=participants[0],playerPosition=participants.findIndex(item=>item.isPlayer)+1;
  $("broadcastLapLabel").textContent="LAP "+Math.min(lap,raceLaps)+" / "+raceLaps+" · P"+playerPosition;
- $("broadcastCameraLabel").textContent="TRACKSIDE CAM "+(broadcastShotIndex+1)+" / 4";
+ $("broadcastCameraLabel").textContent=broadcastActive?"BROADCAST · CAM "+(broadcastShotIndex+1)+"/4":"ALL CAMERA VIEWS";
+ const fieldStatus=$("aiFieldStatus");
+ if(fieldStatus)fieldStatus.textContent=opponents.length+" AI CARS · "+opponents.filter(bot=>bot.pitPhase).length+" IN PIT LANE";
  $("broadcastTimingRows").innerHTML=participants.map((item,index)=>{
-  const gap=leader-item.distance;
-  const gapText=index===0?"LEADER":gap>=1?Math.floor(gap)+" L":Math.round(gap*(circuitRouteLength||routeLength))+"m";
-  return '<div class="broadcast-row '+(item.isPlayer?"you":"")+'"><span class="pos">'+(index+1)+'</span><span class="driver"><b>'+item.name+'</b><small>'+item.team+(item.status==="PIT"?" · PIT LANE":"")+'</small></span><span class="gap">'+gapText+'</span></div>';
+  const gapDistance=Math.max(0,leader.distance-item.distance),lapGap=Math.floor(gapDistance);
+  let gapText="LEADER";
+  if(index>0){
+   if(lapGap>=1)gapText="+"+lapGap+" LAP"+(lapGap===1?"":"S");
+   else{
+    const averageSpeed=Math.max(18,(Math.max(0,leader.speed)+Math.max(0,item.speed))*.5);
+    gapText="+"+(gapDistance*trackLength/averageSpeed).toFixed(3)+"s";
+   }
+  }
+  const team=teamById(item.teamId);
+  return '<div class="broadcast-row '+(item.isPlayer?"you":"")+' '+(item.status==="PIT"?"pitting":"")+'" style="--team-colour:'+team.primary+'"><span class="pos">'+String(index+1).padStart(2,"0")+'</span><span class="driver"><b>'+item.name+'</b><small>'+item.team+(item.status==="PIT"?" · PIT":"")+(item.tyre?" · "+item.tyre.toUpperCase():"")+'</small></span><span class="gap">'+gapText+'</span></div>';
  }).join("");
 }
 
@@ -3853,7 +3927,7 @@ function completeChampionshipRound(){
  for(const bot of opponents){
   const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
   if(!driver)continue;
-  participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,(bot.laps-1)+bot.progress)});
+  participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,bot.laps+bot.progress)});
  }
  participants.sort((a,b)=>b.distance-a.distance);
  const playerPosition=participants.findIndex(item=>item.isPlayer)+1;
@@ -5382,7 +5456,7 @@ function updateTrafficRadio(dt){
  trafficRadioScanTimer=0;
  const playerProgress=nearestInfo.progress,playerDistance=lap-1+playerProgress;
  const standings=[{id:"player",distance:playerDistance,isPlayer:true}];
- for(const bot of opponents)standings.push({id:bot.driverId,distance:(bot.laps-1)+bot.progress,isPlayer:false});
+ for(const bot of opponents)if(!bot.pitPhase)standings.push({id:bot.driverId,distance:bot.laps+bot.progress,isPlayer:false});
  standings.sort((a,b)=>b.distance-a.distance);
  const position=standings.findIndex(item=>item.isPlayer)+1;
  if(lastRadioRacePosition===0)lastRadioRacePosition=position;
@@ -5395,6 +5469,7 @@ function updateTrafficRadio(dt){
  const trackLength=circuitRouteLength||routeLength;
  let closest=null;
  for(const bot of opponents){
+  if(bot.pitPhase)continue;
   let delta=bot.progress-playerProgress;
   if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
   const metres=delta*trackLength;
@@ -5402,14 +5477,15 @@ function updateTrafficRadio(dt){
   if(!closest||Math.abs(metres)<Math.abs(closest.metres))closest={bot,metres};
  }
  if(!closest)return;
- const driver=closest.bot.driverName||("car "+closest.bot.number),gap=Math.round(Math.abs(closest.metres));
- if(gap<22){
+ const driver=closest.bot.driverName||("car "+closest.bot.number);
+ const gapSeconds=Math.abs(closest.metres)/Math.max(18,(Math.abs(car.u||0)+Math.abs(closest.bot.speed||0))*.5);
+ if(gapSeconds<.72){
   const side=closest.bot.offset>nearestInfo.offset?"right":"left";
   showTeamRadio(driver+" is alongside on your "+side+". Leave racing room.");
  }else if(closest.metres>0){
-  showTeamRadio(driver+" is "+gap+" metres ahead. You're closing — choose your moment.");
+  showTeamRadio(driver+" is "+gapSeconds.toFixed(2)+" seconds ahead. You're closing — choose your moment.");
  }else{
-  showTeamRadio(driver+" is "+gap+" metres behind. Watch your mirrors.");
+  showTeamRadio(driver+" is "+gapSeconds.toFixed(2)+" seconds behind. Watch your mirrors.");
  }
  trafficRadioCooldown=8.5;
 }
@@ -5486,15 +5562,20 @@ function updateRaceStart(dt){
  }else overlay.classList.remove("open");
 }
 
-function makeDriverNameTag(driverName){
- const canvas=document.createElement("canvas");canvas.width=512;canvas.height=96;
- const ctx=canvas.getContext("2d");ctx.clearRect(0,0,512,96);
- ctx.fillStyle="rgba(5,11,17,.88)";ctx.strokeStyle="rgba(242,247,250,.78)";ctx.lineWidth=4;
- ctx.beginPath();ctx.roundRect(8,8,496,80,18);ctx.fill();ctx.stroke();
- ctx.fillStyle="#f7fafc";ctx.font="900 42px system-ui, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(driverName||"DRIVER").toUpperCase(),256,49,470);
+function makeDriverNameTag(driverName,team,number,personality){
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=112;
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,512,112);
+ const primary=team?.primary||"#19385d",accent=team?.accent||"#ffc77e";
+ const rounded=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();};
+ rounded(5,5,502,102,16);const gradient=ctx.createLinearGradient(0,0,512,112);gradient.addColorStop(0,"rgba(19,39,55,.96)");gradient.addColorStop(1,"rgba(5,16,27,.96)");ctx.fillStyle=gradient;ctx.fill();ctx.strokeStyle=accent;ctx.lineWidth=3;ctx.stroke();
+ ctx.fillStyle=primary;ctx.fillRect(12,12,10,88);ctx.fillStyle=accent;ctx.fillRect(24,12,3,88);
+ ctx.fillStyle=accent;ctx.font="900 22px system-ui";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(String(team?.mark||"GP").toUpperCase(),38,36);
+ ctx.fillStyle="#f7fafc";ctx.font="900 31px system-ui, sans-serif";ctx.fillText(String(driverName||"DRIVER").toUpperCase(),38,74,365);
+ ctx.fillStyle="#a9bdc8";ctx.font="800 13px system-ui";ctx.fillText(String(team?.name||"CONSTRUCTOR")+" · "+String(personality?.label||"RACE DRIVER").toUpperCase(),38,99,365);
+ ctx.textAlign="right";ctx.font="1000 34px ui-monospace,monospace";ctx.fillStyle=accent;ctx.fillText(String(number||"").padStart(2,"0"),478,58);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
- const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
- sprite.name="AI driver name tag";sprite.position.set(0,2.65,0);sprite.scale.set(4.35,.82,1);sprite.renderOrder=20;return sprite;
+ const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false,toneMapped:false}));
+ sprite.name="AI team timing tag";sprite.position.set(0,2.65,0);sprite.scale.set(3.55,.78,1);sprite.renderOrder=12;return sprite;
 }
 function collectOpponentVehicleParts(root){
  const wheels=[],frontPivots=[];
@@ -5509,15 +5590,166 @@ function collectOpponentVehicleParts(root){
 function upgradeOpponentVisualsToImportedModel(){
  if(!importedCarActive||!importedCarModelRoot||!opponents.length)return;
  opponents.forEach(bot=>{
+  if(bot.pitPhase)return;
   const previous=bot.root,root=importedCarModelRoot.clone(true);
   root.name="AI · "+bot.driverName;root.visible=true;
   root.position.copy(previous.position);root.rotation.copy(previous.rotation);root.scale.copy(importedCarModelRoot.scale);
-  const parts=collectOpponentVehicleParts(root);
+  const parts=collectOpponentVehicleParts(root);applyTeamSpecificLivery(root,bot.teamId,String(bot.number).padStart(2,"0"));
   if(bot.nameTag){previous.remove(bot.nameTag);root.add(bot.nameTag);}
   scene.remove(previous);scene.add(root);
   bot.root=root;bot.wheels=parts.wheels;bot.frontPivots=parts.frontPivots;
  });
 }
+const originalTeamMaps=new WeakMap(),teamTextureVariants=new Map(),teamStickerVariants=new Map();
+function teamById(teamId){return TEAM_LIVERIES.find(team=>team.id===teamId)||TEAM_LIVERIES[0];}
+function createTeamTextureVariant(baseTexture,team){
+ const image=baseTexture?.image;
+ if(!image||!Number(image.width)||!Number(image.height))return null;
+ const imageKey=image.currentSrc||image.src||baseTexture.uuid||"texture";
+ const key=team.id+"|"+imageKey+"|"+baseTexture.offset.x+","+baseTexture.offset.y+"|"+baseTexture.repeat.x+","+baseTexture.repeat.y;
+ if(teamTextureVariants.has(key))return teamTextureVariants.get(key);
+ try{
+  const scale=Math.min(1,768/Math.max(image.width,image.height));
+  const width=Math.max(2,Math.round(image.width*scale)),height=Math.max(2,Math.round(image.height*scale));
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d",{alpha:true});ctx.drawImage(image,0,0,width,height);
+  ctx.save();ctx.globalCompositeOperation="color";ctx.globalAlpha=.56;ctx.fillStyle=team.primary;ctx.fillRect(0,0,width,height);ctx.restore();
+  ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=.22;ctx.fillStyle=team.accent;
+  ctx.beginPath();ctx.moveTo(width*.04,height*.12);ctx.lineTo(width*.24,height*.12);ctx.lineTo(width*.78,height*.91);ctx.lineTo(width*.58,height*.91);ctx.closePath();ctx.fill();
+  ctx.globalAlpha=.15;ctx.fillRect(0,height*.79,width,height*.045);ctx.restore();
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=baseTexture.colorSpace||THREE.SRGBColorSpace;
+  texture.flipY=baseTexture.flipY;texture.mapping=baseTexture.mapping;texture.wrapS=baseTexture.wrapS;texture.wrapT=baseTexture.wrapT;
+  texture.offset.copy(baseTexture.offset);texture.repeat.copy(baseTexture.repeat);texture.center.copy(baseTexture.center);texture.rotation=baseTexture.rotation;
+  texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
+  texture.anisotropy=Math.min(2,renderer?.capabilities?.getMaxAnisotropy?.()||1);texture.needsUpdate=true;
+  teamTextureVariants.set(key,texture);return texture;
+ }catch(error){console.warn("Team texture tint skipped for "+team.name,error);return null;}
+}
+function createTeamStickerTexture(team,number){
+ const key=team.id+"|"+String(number);if(teamStickerVariants.has(key))return teamStickerVariants.get(key);
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=144;const ctx=canvas.getContext("2d");
+ const rounded=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();};
+ rounded(8,8,496,128,18);ctx.fillStyle=team.primary;ctx.fill();ctx.strokeStyle=team.accent;ctx.lineWidth=8;ctx.stroke();
+ ctx.fillStyle=team.accent;ctx.fillRect(22,20,14,104);ctx.fillStyle="#fff";
+ ctx.font="1000 49px system-ui";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(String(team.mark||team.id).toUpperCase(),55,55);
+ ctx.font="900 18px system-ui";ctx.fillStyle="#eaf0f5";ctx.fillText(team.name.toUpperCase(),57,101,320);
+ ctx.textAlign="right";ctx.font="1000 61px ui-monospace,monospace";ctx.fillStyle=team.accent;ctx.fillText(String(number).padStart(2,"0"),480,76);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+ teamStickerVariants.set(key,texture);return texture;
+}
+function applyTeamSpecificLivery(root,teamId,number="01"){
+ if(!root)return;
+ const team=teamById(teamId),liveryKey=team.id+":"+number;
+ if(root.userData.apexTeamLiveryKey===liveryKey)return;
+ const excluded=/carbon|rubber|tyre|tire|wheel|rim|brake|disk|glass|visor|mirror glass|metal|steel|seat|halo|steer|switch|shifter|glove|helmet/i;
+ root.traverse(object=>{
+  if(!object.isMesh||!object.material)return;
+  const sourceName=String(object.userData.sourceName||object.name||"");
+  const materials=Array.isArray(object.material)?object.material:[object.material];
+  const replacements=materials.map(sourceMaterial=>{
+   if(!sourceMaterial)return sourceMaterial;
+   const materialName=String(sourceMaterial.name||"");
+   if(excluded.test(sourceName+" "+materialName))return sourceMaterial;
+   const baseMap=originalTeamMaps.get(sourceMaterial)||sourceMaterial.map||null;
+   const sourceColor=sourceMaterial.color?.getHexString?.()||"";
+   const isPaint=!!baseMap||/body|paint|panel|sidepod|nose|wing|engine cover|rear cover|front cover|livery|fairing/i.test(sourceName+" "+materialName)||sourceColor===String(selectedLivery).replace("#","");
+   if(!isPaint)return sourceMaterial;
+   const material=sourceMaterial.clone();
+   if(baseMap){originalTeamMaps.set(material,baseMap);const variant=createTeamTextureVariant(baseMap,team);if(variant)material.map=variant;material.color.set(0xffffff);}
+   else material.color.set(team.primary);
+   material.roughness=clamp(material.roughness??.48,.28,.74);material.needsUpdate=true;return material;
+  });
+  object.material=Array.isArray(object.material)?replacements:replacements[0];
+ });
+ const oldStickers=[];root.traverse(object=>{if(object.isMesh&&object.name==="Team identity sidepod sticker")oldStickers.push(object);});
+ oldStickers.forEach(sticker=>sticker.parent?.remove(sticker));
+ const stickerMap=createTeamStickerTexture(team,number);
+ const stickerMaterial=new THREE.MeshBasicMaterial({map:stickerMap,transparent:true,side:THREE.DoubleSide,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-1});
+ for(const side of [-1,1]){
+  const sticker=new THREE.Mesh(new THREE.PlaneGeometry(.96,.25),stickerMaterial);
+  sticker.name="Team identity sidepod sticker";sticker.position.set(side*1.04,.86,-.52);sticker.rotation.y=side*Math.PI/2;sticker.renderOrder=4;root.add(sticker);
+ }
+ root.userData.apexTeamLiveryKey=liveryKey;
+}
+function initialOpponentTyre(personality){
+ if(trackWetness>.72||weather.rain>82)return "wet";
+ if(trackWetness>.22||weather.rain>24)return "intermediate";
+ if(personality?.tyreCare>1.16)return "hard";
+ if(personality?.aggression>.84)return "soft";
+ return "medium";
+}
+function recommendedOpponentTyre(bot){
+ if(trackWetness>.72||weather.rain>82)return "wet";
+ if(trackWetness>.22||weather.rain>24)return "intermediate";
+ if(bot.tyreCompound==="wet"||bot.tyreCompound==="intermediate"){
+  if(trackWetness<.14&&weather.rain<10)return raceLaps-(bot.laps||0)>2?"hard":"medium";
+  return bot.tyreCompound;
+ }
+ if(raceLaps-(bot.laps||0)>3)return bot.personality?.tyreCare>1.12?"hard":"medium";
+ return bot.personality?.aggression>.82?"soft":"medium";
+}
+function opponentTyreMismatch(bot){
+ if(trackWetness>.72||weather.rain>82)return bot.tyreCompound!=="wet";
+ if(trackWetness>.28||weather.rain>32)return bot.tyreCompound!=="intermediate"&&bot.tyreCompound!=="wet";
+ if(trackWetness<.14&&weather.rain<8)return bot.tyreCompound==="wet"||bot.tyreCompound==="intermediate";
+ return false;
+}
+function shouldOpponentPit(bot){
+ const maxStops=raceLaps>=12?2:1;
+ if(bot.pitPhase||bot.pitStops>=maxStops||bot.pitCooldown>0||bot.laps>=raceLaps-1)return false;
+ const mismatch=opponentTyreMismatch(bot),wearLimit=bot.personality?.tyreCare>1.14?.28:.38;
+ return mismatch||bot.tyreWear<=wearLimit||(raceLaps>=5&&bot.laps>=bot.plannedPitLap&&bot.tyreWear<.72);
+}
+function opponentPitRouteDistance(samples){
+ let distance=0;for(let i=1;i<samples.length;i++)distance+=samples[i-1].p.distanceTo(samples[i].p);return distance;
+}
+function sampleOpponentPitPath(distance){
+ const samples=pitEntryRoute;if(samples.length<2)return null;
+ const target=clamp(distance,0,pitEntryRouteLength);let walked=0;
+ for(let i=1;i<samples.length;i++){
+  const a=samples[i-1],b=samples[i],segment=a.p.distanceTo(b.p);
+  if(walked+segment>=target||i===samples.length-1){
+   const t=segment>1e-6?clamp((target-walked)/segment,0,1):0;return {p:a.p.clone().lerp(b.p,t),tan:a.tan.clone().lerp(b.t,t).normalize()};
+  }
+  walked+=segment;
+ }
+ return {p:samples[samples.length-1].p.clone(),tan:samples[samples.length-1].tan.clone()};
+}
+function opponentPitServiceDistance(){
+ const entryLength=opponentPitRouteDistance(pitEntryApproachSamples),laneLength=opponentPitRouteDistance(pitLaneSamples);
+ return clamp(entryLength+laneLength*.54,Math.min(40,pitEntryRouteLength*.25),pitEntryRouteLength*.82);
+}
+function startOpponentPitPath(bot){
+ if(!pitEntryRoute.length||!pitEntryRouteLength)return false;
+ bot.pitPhase="lane";bot.pitPathDistance=0;bot.pitServiceDistance=opponentPitServiceDistance();
+ bot.pitStopDone=false;bot.pitStopTimer=0;bot.nextTyreCompound=recommendedOpponentTyre(bot);
+ bot.pendingPit=false;bot.pitEntryLap=bot.laps;bot.speed=22.2;return true;
+}
+function updateOpponentPitPath(bot,dt){
+ if(bot.pitPhase==="service"){
+  bot.pitStopTimer=Math.max(0,bot.pitStopTimer-dt);
+  const sample=sampleOpponentPitPath(bot.pitPathDistance);
+  if(sample){bot.root.position.copy(sample.p);bot.root.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);}
+  bot.speed=0;
+  if(bot.pitStopTimer<=0){
+   bot.tyreCompound=bot.nextTyreCompound||recommendedOpponentTyre(bot);bot.tyreWear=1;bot.pitPhase="lane";bot.pitStopDone=true;
+   if(aiIncidentRadioCooldown<=0){showTeamRadio(bot.driverName+" has fitted "+bot.tyreCompound.toUpperCase()+" tyres.",3.0);aiIncidentRadioCooldown=3.5;}
+  }
+  return;
+ }
+ bot.speed=22.2;bot.pitPathDistance=Math.min(pitEntryRouteLength,bot.pitPathDistance+bot.speed*dt);
+ const sample=sampleOpponentPitPath(bot.pitPathDistance);
+ if(sample){bot.root.position.copy(sample.p);bot.root.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);bot.wheelSpin+=bot.speed*dt/wheelRadius;bot.wheels.forEach(w=>w.rotation.x=bot.wheelSpin);}
+ if(!bot.pitStopDone&&bot.pitPathDistance>=bot.pitServiceDistance){bot.pitPhase="service";bot.pitStopTimer=2.7;bot.speed=0;return;}
+ if(bot.pitPathDistance>=pitEntryRouteLength-.1){
+  if(pitEntryCircuitProgress>pitExitCircuitProgress)bot.laps++;
+  bot.progress=(pitExitCircuitProgress+.001)%1;bot.formationLastProgress=bot.progress;
+  bot.offset=0;bot.targetOffset=0;bot.pitPhase="";bot.pitStops++;bot.lastPitLap=bot.laps;
+  bot.speed=bot.baseSpeed*.88;bot.tyreWear=1;bot.pitCooldown=18;
+  if(raceLaps>=12&&bot.pitStops<2)bot.plannedPitLap=Math.min(raceLaps-2,Math.max(bot.laps+2,bot.plannedPitLap+Math.ceil(raceLaps*.30)));
+ }
+}
+
 function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
@@ -5525,24 +5757,34 @@ function spawnOpponents(){
  if(!aiRoute.length||!aiLength){$("opponentValue").textContent="00";return;}
  const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0))),playerProgress=nearestInfo&&!pitLaneDriving?nearestInfo.progress:0;
  for(let i=0;i<count;i++){
-  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
-  const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
-  // Use the imported high-detail 3D car whenever it has finished loading; the procedural model is only a fallback.
-  const vehicleSource=importedCarActive&&importedCarModelRoot?importedCarModelRoot:(proceduralFallbackRoot||carRoot);
-  const root=vehicleSource.clone(true);root.name="AI · "+driver.name;root.visible=true;
-  const {wheels,frontPivots}=collectOpponentVehicleParts(root);
-  const nameTag=makeDriverNameTag(driver.name);root.add(nameTag);
+  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length],team=teamById(driver.teamId);
+  const personality=driver.personality||AI_PERSONALITIES[i%AI_PERSONALITIES.length];
   const row=Math.floor(i/2),gridDistance=8+row*8.1,gridSlot=gridSlotBehindStartLine(gridDistance);
   if(!gridSlot)continue;
-  const progress=gridSlot.progress,formationOffset=i%2===0?1.95:-1.95,lineBias=((i*0.6180339887498949)%1-.5)*2.8,linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08,pace=base+(i%3-1)*1.7;
-  const initialGap=((progress-playerProgress+1)%1)*aiLength;
-  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
+  const vehicleSource=importedCarActive&&importedCarModelRoot?importedCarModelRoot:(proceduralFallbackRoot||carRoot);
+  if(!vehicleSource)continue;
+  const root=vehicleSource.clone(true);root.name="AI · "+driver.name;root.visible=true;
+  const parts=collectOpponentVehicleParts(root);
+  applyTeamSpecificLivery(root,team.id,String(i+1).padStart(2,"0"));
+  const nameTag=makeDriverNameTag(driver.name,team,i+1,personality);root.add(nameTag);
+  const progress=gridSlot.progress,formationOffset=i%2===0?1.95:-1.95;
+  const lineBias=((i*.6180339887498949)%1-.5)*2.8,linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08;
+  const pace=(base+(i%3-1)*1.7)*(personality.pace||1);
+  const initialGap=((progress-playerProgress+1)%1)*aiLength,tyre=initialOpponentTyre(personality);
+  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,
+   baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,
+   number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,personality,
+   wheels:parts.wheels,frontPivots:parts.frontPivots,wheelSpin:0,laps:0,tyreCompound:tyre,tyreWear:1,pitStops:0,
+   plannedPitLap:raceLaps>=5?Math.max(1,Math.min(raceLaps-2,Math.round(raceLaps*(personality.pitTiming||.5)))):Infinity,
+   pendingPit:false,pitPhase:"",pitPathDistance:0,pitStopTimer:0,pitStopDone:false,pitCooldown:0,nextTyreCompound:tyre,
+   formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,
+   contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
   const sample=gridSlot,right=new THREE.Vector3(sample.tangent.z,0,-sample.tangent.x).normalize();
   const yaw=Math.atan2(sample.tangent.x,sample.tangent.z),slope=Math.atan2(sample.tangent.y,Math.hypot(sample.tangent.x,sample.tangent.z));
   root.position.set(sample.point.x+right.x*bot.offset,sample.point.y+.035,sample.point.z+right.z*bot.offset);
   root.rotation.set(-slope,yaw,0,"YXZ");root.updateMatrixWorld(true);scene.add(root);opponents.push(bot);
  }
- $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
+ $("opponentValue").textContent=String(opponents.length).padStart(2,"0");renderBroadcastTiming();
 }
 
 function updateOpponents(dt){
@@ -5550,21 +5792,31 @@ function updateOpponents(dt){
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
  if(!count||!aiLength)return;
  const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null;
- const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
+ const traffic=opponents.filter(bot=>!bot.pitPhase).map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
   const wasAheadOfPlayer=bot.playerAheadOfYou===true;
   bot.contactCooldown=Math.max(0,(bot.contactCooldown||0)-dt);
   bot.incidentTimer=Math.max(0,(bot.incidentTimer||0)-dt);
   let index=Math.floor(bot.progress*count)%count;
   const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
+  if(bot.pitPhase){updateOpponentPitPath(bot,dt);return;}
+  const personality=bot.personality||AI_PERSONALITIES[2];
+  bot.pitCooldown=Math.max(0,(bot.pitCooldown||0)-dt);
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
+  const paceVariation=1+Math.sin(elapsed*.73+bot.linePhase)*(1-personality.consistency)*.012;
+  const tyrePace=bot.tyreCompound==="soft"?1.014:bot.tyreCompound==="hard"?.987:bot.tyreCompound==="wet"&&trackWetness>.45?1.012:1;
+  target*=paceVariation*tyrePace*(.985+clamp(bot.tyreWear??1,0,1)*.015);
+  if(trackWetness>.34&&bot.tyreCompound!=="intermediate"&&bot.tyreCompound!=="wet")target*=.88;
+  else if(trackWetness<.12&&(bot.tyreCompound==="intermediate"||bot.tyreCompound==="wet"))target*=.91;
   const turnCross=here.tan.z*ahead.tan.x-here.tan.x*ahead.tan.z;
   const apexShift=clamp(turnCross*2.35*bot.lineStyle,-1.15,1.15);
   const lineVariation=Math.sin(bot.progress*Math.PI*3+bot.linePhase)*.22;
-  const racingLineOffset=clamp(bot.baseOffset+apexShift+lineVariation,-laneLimit+1.0,laneLimit-1.0);
+  const racingLineOffset=clamp(bot.baseOffset+apexShift*personality.lineCommitment+lineVariation,-laneLimit+1.0,laneLimit-1.0);
   let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:racingLineOffset,blocked=false;
   const inFormation=formationLapActive||formationGridSettling;
+  bot.pendingPit=bot.pendingPit||(!inFormation&&shouldOpponentPit(bot));
+  const toPitEntry=(pitEntryCircuitProgress-bot.progress+1)%1*aiLength;
   if(inFormation){
    desiredOffset=bot.formationOffset;
    if(bot.formationParked){target=0;bot.speed=0;}
@@ -5598,16 +5850,21 @@ function updateOpponents(dt){
    if(playerGap>4&&playerGap<86&&Math.abs(nearestInfo.offset-bot.offset)<3.1)blocked=true;
   }
   if(blocked&&!inFormation){
-   const preferred=bot.baseOffset>=0?-laneLimit:laneLimit;
-   if(laneIsClear(preferred)){desiredOffset=preferred;bot.passCommitment=1.4;}
-   else if(laneIsClear(-preferred)){desiredOffset=-preferred;bot.passCommitment=1.0;}
-   else target*=.78;
+   const preferred=personality.aggression>.72?(bot.baseOffset>=0?-laneLimit:laneLimit):(bot.offset>=0?-laneLimit*.62:laneLimit*.62);
+   if(laneIsClear(preferred)){desiredOffset=preferred;bot.passCommitment=personality.aggression>.82?1.8:1.15;}
+   else if(laneIsClear(-preferred)){desiredOffset=-preferred;bot.passCommitment=personality.aggression>.82?1.25:.8;}
+   else target*=personality.aggression>.82?.82:.72;
   }else if(bot.passCommitment>0){bot.passCommitment=Math.max(0,bot.passCommitment-dt);desiredOffset=bot.targetOffset;}
+  if(bot.pendingPit&&toPitEntry<145&&toPitEntry>0&&!inFormation)desiredOffset=Math.max(desiredOffset,laneLimit*.58);
   bot.targetOffset=desiredOffset;
+  if(bot.pendingPit&&toPitEntry<30&&toPitEntry>0&&bot.offset>laneLimit*.38&&!inFormation&&startOpponentPitPath(bot)){updateOpponentPitPath(bot,dt);return;}
   if(bot.incidentTimer>0)target=Math.min(target,Math.max(24,bot.baseSpeed*.58));
   if(raceFlag==="VSC")target=Math.min(target,42);else if(raceFlag==="YELLOW")target=Math.min(target,58);
   bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
-  const oldProgress=bot.progress;bot.progress=(bot.progress+bot.speed*dt/aiLength)%1;
+  const distanceThisStep=bot.speed*dt;
+  const wearPerLap=bot.tyreCompound==="soft"?.24:bot.tyreCompound==="hard"?.105:bot.tyreCompound==="wet"?.17:bot.tyreCompound==="intermediate"?.19:.155;
+  bot.tyreWear=clamp((bot.tyreWear??1)-(distanceThisStep/aiLength)*(wearPerLap/Math.max(.72,personality.tyreCare)),0,1);
+  const oldProgress=bot.progress;bot.progress=(bot.progress+distanceThisStep/aiLength)%1;
   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
   if((formationLapActive||formationGridSettling)&&!bot.formationComplete){
    const formationStep=((bot.progress-bot.formationLastProgress+1)%1)*aiLength;
@@ -5642,9 +5899,9 @@ function resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt){
  aiIncidentRadioCooldown=Math.max(0,aiIncidentRadioCooldown-dt);
  if(currentSessionMode==="practice"||pitLaneDriving||opponents.length<2)return;
  for(let i=0;i<opponents.length;i++){
-  const a=opponents[i];if((a.contactCooldown||0)>0)continue;
+  const a=opponents[i];if(a.pitPhase||(a.contactCooldown||0)>0)continue;
   for(let j=i+1;j<opponents.length;j++){
-   const b=opponents[j];if((b.contactCooldown||0)>0)continue;
+   const b=opponents[j];if(b.pitPhase||(b.contactCooldown||0)>0)continue;
    let delta=b.progress-a.progress;if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
    const longitudinal=delta*aiLength,lateral=b.offset-a.offset;
    if(Math.abs(longitudinal)>4.7||Math.abs(lateral)>2.25)continue;
@@ -6109,8 +6366,9 @@ async function loadRedBullCarModel(targetRoot,generation){
   }
   if(proceduralFallbackRoot)proceduralFallbackRoot.visible=false;
   targetRoot.scale.set(1,1,1);
+  applyTeamSpecificLivery(modelRoot,selectedTeamId,"01");
   importedCarModelRoot=modelRoot;importedCarActive=true;
-  updateVehicleModelStatus("active","RED BULL 2022 · "+parts.length+" PARTS · ORIGINAL RED BULL WHEEL");
+  updateVehicleModelStatus("active","RED BULL 2022 · "+parts.length+" PARTS · TEAM LIVERY / ORIGINAL WHEEL");
   console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
   targetRoot.updateMatrixWorld(true);
   if(!running)setCamera(0);
@@ -6458,6 +6716,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  // Keep the existing 3D chassis, cockpit, steering wheel and running gear; reduce polygon density and use flat faces.
  fallback.traverse(object=>{if(!object.isMesh)return;const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>{if(material&&"flatShading" in material){material.flatShading=true;material.needsUpdate=true;}});});
  carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=true;
+ applyTeamSpecificLivery(fallback,selectedTeamId,"01");
  lowPolyPlayerVisual=null;
  damageParts=[];
  redBullModelLoadPromise=loadRedBullCarModel(carRoot,modelGeneration);
@@ -6504,8 +6763,10 @@ function drawDashboard(){
  };
  const label=(value,x,y,align="left")=>txt(value,x,y,20,muted,800,align);
  const panel=(x,y,bw,bh,accent=null)=>{
-  rounded(x,y,bw,bh,10,"#0a1721","#2a3d49");
-  if(accent){c.fillStyle=accent;c.fillRect(x+12,y+12,4,bh-24);}
+  const panelGradient=c.createLinearGradient(x,y,x+bw,y+bh);
+  panelGradient.addColorStop(0,"rgba(26,53,70,.98)");panelGradient.addColorStop(.52,"rgba(11,29,43,.98)");panelGradient.addColorStop(1,"rgba(6,17,30,.98)");
+  rounded(x,y,bw,bh,10,panelGradient,"rgba(173,218,232,.30)");
+  if(accent){c.save();c.shadowColor=accent;c.shadowBlur=12;c.fillStyle=accent;c.fillRect(x+12,y+12,4,bh-24);c.restore();}
  };
  const bar=(x,y,bw,bh,value,color)=>{
   rounded(x,y,bw,bh,bh/2,"#263844",null);
@@ -7253,8 +7514,8 @@ function setCamera(frameDt=.016){
  const names=["CHASE","TV POD","COCKPIT","HOOD","REAR TV","BROADCAST"];
  $("cameraBtn").textContent="CAM: "+(names[cameraMode]||"BROADCAST");
  broadcastActive=cameraMode===5;
- $("broadcastPanel").classList.toggle("open",broadcastActive);
  $("broadcastBtn").textContent=broadcastActive?"EXIT TV":"BROADCAST";
+ renderBroadcastTiming();
 }
 
 function cycleCamera(){
@@ -7997,9 +8258,12 @@ function startSession(sessionMode="practice"){
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;
  previousFrame=performance.now();audioAccumulator=0;camera.userData.ready=false;
- if(!pitLaneDriving&&sessionMode!=="timeTrial"&&sessionMode!=="practice"){
+ if(sessionMode!=="timeTrial"&&opponentCount>0){
   try{spawnOpponents();}
-  catch(error){console.error("Opponent setup failed; continuing in solo practice.",error);try{clearOpponents();}catch(_){}}
+  catch(error){
+   console.error("AI field setup failed; keeping any successfully created cars.",error);
+   $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
+  }
  }else{
   clearOpponents();$("opponentValue").textContent="00";
   $("trackState").textContent=sessionMode==="timeTrial"?"TIME TRIAL · SOLO":"PIT EXIT · 80 KM/H";
