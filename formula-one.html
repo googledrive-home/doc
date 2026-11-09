@@ -5404,7 +5404,7 @@ function addTracksideProps(){
  });
  // Open marshal platforms and camera towers, all placed beyond the double guardrail.
  const postMat=makeMat(0x59656a,.55,.45),yellowMat=makeMat(0xf0c447,.48,.12),redMat=makeMat(0xd83d36,.48,.12);
- for(let i=0;i<10;i++){
+ for(let i=0;i<(graphicsQuality==="high"?10:0);i++){
   const sample=route[Math.floor((i+.4)/10*route.length)%route.length],side=i%2?1:-1;
   const dist=roadWidth/2+18+(i%3)*2,p=safeTracksidePoint(sample,side,dist,7);
   const y=terrainHeightAt(p.x,p.z),g=new THREE.Group();
@@ -5424,14 +5424,15 @@ function addTracksideProps(){
   const fenceDistance=roadWidth/2+10.4;
   const fencePoints=[];
   const fenceSegments=[];let segment=[];
-  for(let i=0;i<route.length;i+=3){
+  const fenceStride=graphicsQuality==="high"?3:graphicsQuality==="low"?10:6;
+  for(let i=0;i<route.length;i+=fenceStride){
    const progress=i/route.length;
    if(side===1&&isPitLaneCorridorProgress(progress)){
     if(segment.length>3)fenceSegments.push(segment);segment=[];continue;
    }
    const point=safeTracksidePoint(route[i],side,fenceDistance,2.5);
    point.y=terrainHeightAt(point.x,point.z)+2.7;segment.push(point);
-   if(i%18===0){
+   if(Math.floor(i/fenceStride)%8===0){
     const baseY=terrainHeightAt(point.x,point.z);
     const post=new THREE.Mesh(new THREE.BoxGeometry(.09,2.7,.09),fenceMat);
     post.position.set(point.x,baseY+1.35,point.z);environmentGroup.add(post);
@@ -5447,6 +5448,7 @@ function addTracksideProps(){
 }
 
 function addTracksideVehicles(){
+ if(graphicsQuality!=="high")return;
  const vehicleSpecs=[
   {fraction:.11,side:1,type:"van",body:0xe9eceb,accent:0xd83d36},
   {fraction:.28,side:-1,type:"suv",body:0xf0f0e9,accent:0xd83d36},
@@ -5478,11 +5480,15 @@ function addTracksideVehicles(){
 }
 
 function buildGrandstandsAndCrowd(){
- const positions=activeTrack==="spa"?[.055,.31,.62,.84]:
+ const allPositions=activeTrack==="spa"?[.055,.31,.62,.84]:
   activeTrack==="monza"?[.045,.25,.52,.79]:[.08,.33,.59,.86];
+ const standCount=graphicsQuality==="high"?4:graphicsQuality==="low"?1:2;
+ const rowCount=graphicsQuality==="high"?6:graphicsQuality==="low"?2:3;
+ const columns=graphicsQuality==="high"?24:graphicsQuality==="low"?5:9;
+ const positions=allPositions.slice(0,standCount);
  const palette=[0x263d8c,0xc83e37,0xe5e6dd,0x273b31,0xd3a23b,0x683d9c,0x1d91a8,0xededeb];
- const torsoGeo=new THREE.CapsuleGeometry(.17,.34,3,6),headGeo=new THREE.SphereGeometry(.115,7,6);
- const max=positions.length*6*(graphicsQuality==='low'?8:graphicsQuality==='high'?28:11);
+ const torsoGeo=new THREE.CapsuleGeometry(.17,.34,2,5),headGeo=new THREE.SphereGeometry(.115,5,4);
+ const max=positions.length*rowCount*columns;
  const torsoMesh=new THREE.InstancedMesh(torsoGeo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9}),max);
  const headMesh=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:0xd8b28d,roughness:.96}),max);
  const dummy=new THREE.Object3D();let people=0;
@@ -5490,41 +5496,35 @@ function buildGrandstandsAndCrowd(){
  positions.forEach((fraction,standIndex)=>{
   const sample=route[Math.floor(fraction*route.length)%route.length];
   const side=standIndex%2===0?1:-1,heading=Math.atan2(sample.tan.x,sample.tan.z);
-  const centreDistance=roadWidth/2+48,centre=safeTracksidePoint(sample,side,centreDistance,14);
-  const ground=terrainHeightAt(centre.x,centre.z);
+  const centre=safeTracksidePoint(sample,side,roadWidth/2+48,14),ground=terrainHeightAt(centre.x,centre.z);
   const stand=new THREE.Group();stand.position.set(centre.x,ground,centre.z);stand.rotation.y=heading;
-  for(let row=0;row<6;row++){
-   const cross=-6.1+row*2.35;
-   const rowDistance=roadWidth/2+41.9+row*2.35;
-   const rowPoint=safeTracksidePoint(sample,side,rowDistance,14),rowGround=terrainHeightAt(rowPoint.x,rowPoint.z);
-   const rowY=rowGround-ground;
+  for(let row=0;row<rowCount;row++){
+   const cross=(row-(rowCount-1)/2)*2.35,rowDistance=roadWidth/2+41.9+row*2.35;
+   const rowPoint=safeTracksidePoint(sample,side,rowDistance,14),rowGround=terrainHeightAt(rowPoint.x,rowPoint.z),rowY=rowGround-ground;
    const deck=new THREE.Mesh(new THREE.BoxGeometry(2.45,.28,46),seatMat);
-   deck.position.set(cross,rowY+.52+row*.47,0);deck.castShadow=true;stand.add(deck);
-   const beam=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,46),steel);
-   beam.position.set(cross,rowY+.23+row*.47,0);stand.add(beam);
+   deck.position.set(cross,rowY+.52+row*.47,0);deck.castShadow=false;deck.receiveShadow=false;stand.add(deck);
+   const beam=new THREE.Mesh(new THREE.BoxGeometry(.16,.5,46),steel);beam.position.set(cross,rowY+.23+row*.47,0);stand.add(beam);
   }
   const canopy=new THREE.Mesh(new THREE.BoxGeometry(15,.38,49),roofMat);
-  canopy.position.set(-side*1.1,4.35,0);canopy.castShadow=true;stand.add(canopy);
-  for(const z of [-22,0,22]){
-   const support=new THREE.Mesh(new THREE.BoxGeometry(.22,4.1,.22),steel);
-   support.position.set(-side*7,2.2,z);stand.add(support);
+  canopy.position.set(-side*1.1,rowCount===6?4.35:rowCount*1.0+.8,0);canopy.castShadow=false;stand.add(canopy);
+  for(const z of [-22,22]){
+   const support=new THREE.Mesh(new THREE.BoxGeometry(.22,3.4,.22),steel);support.position.set(-side*7,1.7,z);stand.add(support);
   }
   environmentGroup.add(stand);
-  // Every spectator is placed at the exact sampled terrain height below their row.
-  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?8:graphicsQuality==='high'?28:11);col++){
-   const along=(col-(graphicsQuality==='low'?3.5:graphicsQuality==='high'?13.5:5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
-   const p=offsetPoint(sample,side,lateral,0),safe=ensureOffTrackPoint(new THREE.Vector3(p.x+sample.tan.x*along,0,p.z+sample.tan.z*along),side,14),x=safe.x,z=safe.z;
-   const y=terrainHeightAt(x,z)+1.0+row*.47;
+  for(let row=0;row<rowCount;row++)for(let col=0;col<columns;col++){
+   const along=(col-(columns-1)/2)*1.12,lateral=roadWidth/2+41.9+row*2.35;
+   const p=offsetPoint(sample,side,lateral,0);
+   const safe=ensureOffTrackPoint(new THREE.Vector3(p.x+sample.tan.x*along,0,p.z+sample.tan.z*along),side,14);
+   const x=safe.x,z=safe.z,y=terrainHeightAt(x,z)+1.0+row*.47;
    dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
    dummy.rotation.set(0,heading+(col%5)*.04,0);dummy.updateMatrix();
-   torsoMesh.setMatrixAt(people,dummy.matrix);
-   torsoMesh.setColorAt(people,new THREE.Color(palette[(col*7+row*3+standIndex)%palette.length]));
+   torsoMesh.setMatrixAt(people,dummy.matrix);torsoMesh.setColorAt(people,new THREE.Color(palette[(col*7+row*3+standIndex)%palette.length]));
    dummy.position.set(x,y+.31,z);dummy.scale.set(1,1,1);dummy.updateMatrix();headMesh.setMatrixAt(people,dummy.matrix);
    people++;
   }
  });
- torsoMesh.count=people;headMesh.count=people;
- torsoMesh.castShadow=true;headMesh.castShadow=true;environmentGroup.add(torsoMesh,headMesh);
+ torsoMesh.count=people;headMesh.count=people;torsoMesh.castShadow=false;headMesh.castShadow=false;
+ environmentGroup.add(torsoMesh,headMesh);
 }
 
 function buildScenery(){
