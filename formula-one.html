@@ -384,6 +384,12 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  #menu .note{font-size:7px;line-height:1.35}
  @media(max-width:760px){#menu .menu{max-height:98dvh}#menu .menuleft{padding:12px 14px 9px}#menu .menuleft h1{font-size:46px;margin:8px 0}#menu #trackPreview{height:86px;margin:7px 0 5px}#menu .menuright{padding:9px 12px;gap:5px}#menu .team-livery-grid{gap:3px}#menu .team-swatch{min-height:33px;font-size:6px}}
  </style>
+<style id="formationGuideStyles">
+ .formation-guide{position:fixed;top:104px;left:50%;z-index:16;display:none;grid-template-columns:auto auto auto;align-items:center;gap:13px;max-width:min(720px,92vw);padding:10px 15px;border:1px solid #ffffff35;border-left:3px solid #f1c65a;border-radius:9px;background:#07111eeb;box-shadow:0 12px 38px #0009;transform:translateX(-50%);backdrop-filter:blur(8px)}
+ .formation-guide.open{display:grid}.formation-guide small{color:#9db0bf;font-size:8px;font-weight:950;letter-spacing:.13em}.formation-guide strong{color:#f7d474;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}.formation-guide span{color:#f1f5f7;font-size:10px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
+ .formation-option label{display:flex;align-items:center;gap:8px;color:#d5e0e8!important;font-size:8px!important;letter-spacing:.06em}.formation-option input{accent-color:#ff765e}
+ @media(max-width:760px){.formation-guide{top:74px;grid-template-columns:1fr auto;gap:5px 10px;padding:8px 10px}.formation-guide small{grid-column:1/-1}.formation-guide strong{font-size:16px}.formation-guide span{font-size:8px}}
+</style>
 <style id="pitStrategyStyles">
  .pit-plan-overlay{position:fixed;inset:0;z-index:41;display:none;place-items:center;padding:14px;background:#02070bdf;backdrop-filter:blur(9px)}
  .pit-plan-overlay.open{display:grid}.pit-plan-card{width:min(560px,96vw);padding:21px;border:1px solid #ffffff2d;border-radius:16px;background:linear-gradient(145deg,#172a38,#09131d);box-shadow:0 26px 90px #000b}
@@ -446,7 +452,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
         <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="easy">Relaxed</option><option value="balanced" selected>Balanced</option><option value="fast">Fast</option></select></div>
         <div class="field"><label for="raceLapsSelect">Session length</label><select id="raceLapsSelect"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option><option value="10">10 laps</option></select></div>
       </div>
-      <div class="field"><label for="graphicsSelect">Graphics quality</label><select id="graphicsSelect"><option value="low">Performance</option><option value="medium" selected>Balanced</option><option value="high">High detail</option></select></div>
+      <div class="field formation-option"><label><input id="formationLapSelect" type="checkbox"> Optional formation lap before the race</label></div>
+       <div class="field"><label for="graphicsSelect">Graphics quality</label><select id="graphicsSelect"><option value="low">Performance</option><option value="medium" selected>Balanced</option><option value="high">High detail</option></select></div>
       <div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="clear">Clear / sunny</option><option value="cloudy">Cloudy</option><option value="rain">Rain</option><option value="fog">Mist and fog</option><option value="heat">Hot track</option></select></div>
       <div class="two">
         <div class="field"><div class="range-head"><label for="rainRange">Rain intensity</label><output id="rainValue">0%</output></div><input id="rainRange" type="range" min="0" max="100" value="0"></div>
@@ -604,6 +611,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 </div>
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
 <div id="raceStartOverlay" class="race-start-overlay" aria-live="polite"><div class="race-start-panel"><small>APEX GRAND PRIX · START PROCEDURE</small><div id="raceStartLamps" class="race-start-lamps"><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i></div><strong id="raceStartLabel">GET READY</strong></div></div>
+<div id="formationGuide" class="formation-guide" aria-live="polite"><small>FORMATION LAP · RETURN TO START GRID</small><strong id="formationDistance">0 m</strong><span id="formationDirection">STRAIGHT · FOLLOW THE LINE</span></div>
 <div id="raceControlBanner" class="race-control-banner" aria-live="polite">GREEN FLAG</div>
 <div id="pitServiceOverlay" class="pit-service-overlay pit-cinematic-overlay" aria-label="Cinematic pit stop" aria-live="polite">
  <section class="pit-cinematic-card">
@@ -3567,7 +3575,7 @@ let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromis
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let ferrariWheelRoot=null,ferrariScreenMesh=null,ferrariWheelLoadPromise=null,wheelDisplayPage=0;
 let ferrariWheelAssetsPromise=null,ferrariDashboardBaseImage=null,ferrariCarbonWeaveTexture=null,dashLastDrawAt=0;
-let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null;
+let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null,builtTrackId=null;
 const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=12.5,PIT_LANE_LIMIT=22.2;
 let routeSpatialGrid=new Map(),terrainNearestLookup=null;
@@ -3622,6 +3630,7 @@ let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphics
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
+let formationLapEnabled=false,formationLapActive=false,formationLapDistanceRemaining=0,aiUpdateAccumulator=0;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false;
 let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
@@ -4492,12 +4501,30 @@ function auditTrackTerrainAndObjects(){
  if(terrainOverlaps||objectOverlaps)console.warn("APEX found terrain or trackside placement clearances to review",report);
  return report;
 }
+function addStartGridMarkings(){
+ if(!trackGroup||route.length<8||routeLength<=0)return;
+ const vertices=[],halfSlotWidth=1.34,halfSlotLength=2.85;
+ for(let row=0;row<10;row++){
+  const distance=5+row*8.1,progress=((1-distance/routeLength)%1+1)%1;
+  const sample=route[Math.floor(progress*route.length)%route.length];
+  const horizontal=Math.hypot(sample.tan.x,sample.tan.z)||1,tx=sample.tan.x/horizontal,tz=sample.tan.z/horizontal,rx=tz,rz=-tx;
+  for(const side of [-1,1]){
+   const cx=sample.p.x+rx*side*2.2,cz=sample.p.z+rz*side*2.2,cy=sample.p.y+.13;
+   const corner=(lateral,longitudinal)=>[cx+rx*lateral+tx*longitudinal,cy,cz+rz*lateral+tz*longitudinal];
+   const a=corner(-halfSlotWidth,-halfSlotLength),b=corner(halfSlotWidth,-halfSlotLength),d=corner(-halfSlotWidth,halfSlotLength),e=corner(halfSlotWidth,halfSlotLength);
+   for(const [p,q] of [[a,b],[b,e],[e,d],[d,a]])vertices.push(...p,...q);
+  }
+ }
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(vertices,3));
+ const marks=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xf5f3e9,transparent:true,opacity:.94,depthWrite:false}));
+ marks.frustumCulled=false;marks.renderOrder=4;trackGroup.add(marks);
+}
 function createTrack(){
  restoreCircuitRoute();pitLaneDriving=false;tracksidePlacementAudit=[];
  clearOpponents();
  if(trackGroup)disposeGroup(trackGroup);if(environmentGroup)disposeGroup(environmentGroup);
  trackGroup=new THREE.Group();environmentGroup=new THREE.Group();scene.add(trackGroup);scene.add(environmentGroup);
- const def=trackDefs[activeTrack];roadWidth=def.width;
+ const def=trackDefs[activeTrack];roadWidth=def.width+2.4;
  trackWetness=weather.kind==="rain"?clamp(.08+weather.rain/100*.76,0,.92):weather.kind==="cloudy"?weather.rain/100*.16:0;lastWetnessVisual=trackWetness;trackRubber=0;
  const gpsPoints=OFFICIAL_F1_TRACK_POINTS[activeTrack];
  activeTrackPoints=gpsPoints?gpsPoints.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():def.points.slice();
@@ -4570,7 +4597,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
   }
  }
  posts.count=pi;trackGroup.add(posts);
- addStartFinish();
+ addStartFinish();addStartGridMarkings();
  buildScenery();
  buildRunoffAreas();
  if(activeTrack!=="monaco"){addTracksideProps();addTracksideVehicles();buildGrandstandsAndCrowd();}
@@ -4578,7 +4605,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  auditTrackTerrainAndObjects();
  positionCarAtStart();
  updateWeather();
- updatePreview();drawMiniMap();
+ updatePreview();drawMiniMap();builtTrackId=activeTrack;
 }
 function buildCircuitFloodlights(){
  trackFloodlights=[];
