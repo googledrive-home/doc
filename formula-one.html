@@ -5456,7 +5456,7 @@ function updateTrafficRadio(dt){
  trafficRadioScanTimer=0;
  const playerProgress=nearestInfo.progress,playerDistance=lap-1+playerProgress;
  const standings=[{id:"player",distance:playerDistance,isPlayer:true}];
- for(const bot of opponents)standings.push({id:bot.driverId,distance:(bot.laps-1)+bot.progress,isPlayer:false});
+ for(const bot of opponents)if(!bot.pitPhase)standings.push({id:bot.driverId,distance:bot.laps+bot.progress,isPlayer:false});
  standings.sort((a,b)=>b.distance-a.distance);
  const position=standings.findIndex(item=>item.isPlayer)+1;
  if(lastRadioRacePosition===0)lastRadioRacePosition=position;
@@ -5469,6 +5469,7 @@ function updateTrafficRadio(dt){
  const trackLength=circuitRouteLength||routeLength;
  let closest=null;
  for(const bot of opponents){
+  if(bot.pitPhase)continue;
   let delta=bot.progress-playerProgress;
   if(delta>.5)delta-=1;else if(delta<-.5)delta+=1;
   const metres=delta*trackLength;
