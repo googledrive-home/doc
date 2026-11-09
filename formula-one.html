@@ -6019,7 +6019,7 @@ function spawnOpponents(){
   const initialGap=((progress-playerProgress+1)%1)*aiLength,tyre=initialOpponentTyre(personality);
   const initialLaps=0;
   const bot={
-   root,nameTag,progress,gridProgress:progress,speed:pace,baseSpeed:pace,
+   root,nameTag,progress,gridProgress:progress,speed:formationLapActive?0:pace,baseSpeed:pace,
    baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,
     lineAccuracy:difficulty.line,accelLimit:difficulty.accel,maxBrakeDecel:14,penaltyTime:0,speedProfile:null,
    number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,personality,
@@ -7438,8 +7438,8 @@ function updatePhysics(dt){
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
  const throttleHeld=!!(keys.KeyW||keys.ArrowUp),throttleRequest=throttleHeld&&raceStartState!=="countdown"?1:0;
- const throttle=lerp(car.throttle||0,throttleRequest,1-Math.exp(-dt*4.6));
- const brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
+ let throttle=lerp(car.throttle||0,throttleRequest,1-Math.exp(-dt*4.6));
+ let brake=(keys.KeyS||keys.ArrowDown||keys.Space)?1:0;
  if(keys.KeyR&&!keys._r){
   if(Math.abs(car.u)<.45&&Math.abs(car.v)<.45&&throttleRequest===0){
    car.reverse=!car.reverse;car.gear=1;car.shiftTimer=.24;car.throttle=0;playShiftSound(car.reverse?-1:1);
@@ -7448,6 +7448,18 @@ function updatePhysics(dt){
  }else if(!keys.KeyR)keys._r=false;
  const steerInput=(keys.KeyA||keys.ArrowLeft?1:0)+(keys.KeyD||keys.ArrowRight?-1:0);
  const speed=Math.abs(car.u),totalSpeed=Math.hypot(car.u,car.v);
+ if(formationLapActive&&!pitLaneDriving&&nearestInfo&&opponents.length){
+  const circuitLength=circuitRouteLength||routeLength;let nearestGap=Infinity,leaderSpeed=0;
+  for(const bot of opponents){
+   if(bot.pitPhase||bot.formationParked)continue;
+   const gap=(bot.progress-nearestInfo.progress+1)%1*circuitLength;
+   if(gap>1.5&&gap<nearestGap){nearestGap=gap;leaderSpeed=bot.speed||0;}
+  }
+  if(nearestGap<48){
+   const followSpeed=leaderSpeed+clamp((nearestGap-7.5)*.42,0,9);
+   if(speed>followSpeed){brake=Math.max(brake,clamp((speed-followSpeed)/6,0,.9));throttle=Math.min(throttle,.12);}
+  }
+ }
  const pitAutoBrake=pitLaneDriving?clamp((speed-PIT_LANE_LIMIT)/3.2,0,.62):0;
  const cautionAutoBrake=0; // Flags restrict overtaking, not player speed.
  const previousDrsState=!!car.drsActive;
