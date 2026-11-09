@@ -5936,7 +5936,9 @@ function updateOpponentPitPath(bot,dt){
   if(sample){bot.root.position.copy(sample.p);bot.root.rotation.y=Math.atan2(sample.tan.x,sample.tan.z);}
   bot.speed=0;
   if(bot.pitStopTimer<=0){
-   bot.tyreCompound=bot.nextTyreCompound||recommendedOpponentTyre(bot);bot.tyreWear=1;bot.pitPhase="lane";bot.pitStopDone=true;
+   bot.tyreCompound=bot.nextTyreCompound||recommendedOpponentTyre(bot);bot.tyreWear=1;
+    bot.speedProfile=buildAISpeedProfile(bot,circuitRoute.length?circuitRoute:route,circuitRouteLength||routeLength);
+    bot.pitPhase="lane";bot.pitStopDone=true;
    if(aiIncidentRadioCooldown<=0){showTeamRadio(bot.driverName+" has fitted "+bot.tyreCompound.toUpperCase()+" tyres.",3.0);aiIncidentRadioCooldown=3.5;}
   }
   return;
@@ -6019,7 +6021,8 @@ function spawnOpponents(){
    contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,
    playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity,lastAIOvertakeAt:-Infinity
   };
-  const right=new THREE.Vector3(gridSlot.tangent.z,0,-gridSlot.tangent.x).normalize();
+  bot.speedProfile=buildAISpeedProfile(bot,aiRoute,aiLength);
+   const right=new THREE.Vector3(gridSlot.tangent.z,0,-gridSlot.tangent.x).normalize();
   const yaw=Math.atan2(gridSlot.tangent.x,gridSlot.tangent.z),slope=Math.atan2(gridSlot.tangent.y,Math.hypot(gridSlot.tangent.x,gridSlot.tangent.z));
   root.position.set(gridSlot.point.x+right.x*bot.offset,gridSlot.point.y+.045,gridSlot.point.z+right.z*bot.offset);
   root.rotation.set(-slope,yaw,0,"YXZ");root.updateMatrixWorld(true);scene.add(root);opponents.push(bot);
