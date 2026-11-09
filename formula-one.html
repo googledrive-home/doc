@@ -8185,7 +8185,7 @@ function startSession(sessionMode="practice"){
   restoreCircuitRoute();
   positionCarAtStart(false,true,sessionMode==="timeTrial"?0:playerGridDistance());
   setPitButtonAvailable(false);
-  cameraMode=0; // Show the complete grid and AI field from the chase view at race start.
+  if(sessionMode==="race"||sessionMode==="championship"||formationLapActive)cameraMode=0; // Show the complete grid and AI field from the chase view at race start.
  }
  formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}
@@ -8227,6 +8227,7 @@ function restartLap(){
   raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
   if(startInPit){activatePitLaneRoute();positionCarAtStart(true);setPitButtonAvailable(true);}
   else{restoreCircuitRoute();positionCarAtStart(false,true,session==="timeTrial"?0:playerGridDistance());setPitButtonAvailable(false);}
+  if(session==="race"||session==="championship"||formationLapActive)cameraMode=0;
   formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
   $("raceStartOverlay").classList.toggle("open",!startInPit&&!formationLapActive);
   if(session==="timeTrial"){
