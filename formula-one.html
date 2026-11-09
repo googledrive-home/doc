@@ -405,49 +405,76 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  @media(max-width:760px){.pit-plan-card{padding:15px}.pit-plan-grid{gap:8px}.pit-plan-actions{flex-direction:column}}
  </style>
 <style id="immersiveRaceHudStyles">
-/* Compact glass cockpit HUD keeps the circuit visible and clears redundant panels. */
-#brandHud,#leftHud,#rightHud,#tireHud,#controlsLegend,#bottomHud{display:none!important}
-#topHud{left:15px;right:15px;top:11px;align-items:center;gap:12px}
-#telemetry{gap:5px;padding:0;background:none;border:0;box-shadow:none}
-#telemetry .statbox{min-width:85px;padding:9px 13px 8px;border:1px solid rgba(169,215,227,.27);border-bottom:2px solid rgba(255,158,112,.92);border-radius:6px 14px 6px 14px;background:linear-gradient(145deg,rgba(22,49,65,.78),rgba(7,18,31,.70));box-shadow:inset 0 1px rgba(255,255,255,.13),0 9px 24px rgba(0,0,0,.18);backdrop-filter:blur(10px)}
-#telemetry .statbox strong{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:23px;letter-spacing:.035em;text-shadow:0 0 15px rgba(130,214,232,.22);font-variant-numeric:tabular-nums}
-#telemetry .statbox label{color:#a9c5d2;font-size:7px;letter-spacing:.18em}
-#telemetry .statbox small{color:#ffc77e;font-size:8px;font-weight:850;letter-spacing:.10em}
-#hudActions .hudbtn{border:1px solid rgba(182,218,230,.25);border-radius:5px 12px 5px 12px;background:linear-gradient(130deg,rgba(23,47,62,.80),rgba(8,18,30,.78));box-shadow:inset 0 1px rgba(255,255,255,.10);backdrop-filter:blur(9px)}
-.broadcast-panel{position:absolute;top:80px;right:15px;width:min(258px,26vw);max-height:min(56vh,500px);overflow:hidden;padding:10px 12px 8px;border:1px solid rgba(177,220,235,.26);border-top:2px solid rgba(255,160,111,.85);border-radius:5px 15px 5px 15px;background:linear-gradient(145deg,rgba(21,45,60,.72),rgba(6,16,28,.66));box-shadow:0 13px 42px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.10);backdrop-filter:blur(12px);pointer-events:none}
-.broadcast-panel.open{display:block}
-.broadcast-panel header{padding-bottom:7px;border-bottom:1px solid rgba(194,220,231,.18)}
-.broadcast-panel header b{color:#ffad85;font-size:8px;letter-spacing:.16em}
-.broadcast-panel header span{color:#e5edf1;font-size:8px;font-variant-numeric:tabular-nums}
-#broadcastTimingRows{max-height:45vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(157,194,210,.35) transparent}
-.broadcast-row{grid-template-columns:23px minmax(0,1fr) 57px;gap:7px;padding:6px 3px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(90deg,color-mix(in srgb,var(--team-colour,#48677b) 16%,transparent),transparent 76%);font-size:8px}
-.broadcast-row .pos{color:#d6e6ed;font-family:ui-monospace,monospace;font-size:9px}
-.broadcast-row .driver b{font-size:8px;letter-spacing:.025em}
-.broadcast-row .driver small{color:#a3b5bf;font-size:6.5px;letter-spacing:.04em}
-.broadcast-row .gap{color:#ffd18a;font-family:ui-monospace,monospace;font-size:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.broadcast-row.you{outline:1px solid rgba(255,193,125,.23);background:linear-gradient(90deg,rgba(255,153,103,.19),rgba(255,153,103,.02))}
+/* Visible race telemetry, car-condition panels and persistent live timing. */
+#topHud{position:absolute;left:14px;right:14px;top:12px;display:flex;align-items:flex-start;gap:10px;justify-content:space-between;pointer-events:none}
+#brandHud{display:none!important}
+#telemetry{display:flex!important;gap:7px;pointer-events:none}
+#telemetry .statbox{min-width:84px;padding:9px 12px 8px;border:1px solid rgba(169,215,227,.32);border-bottom:2px solid #ff9e70;border-radius:7px 14px 7px 14px;background:linear-gradient(145deg,rgba(19,47,64,.91),rgba(5,17,29,.88));box-shadow:inset 0 1px rgba(255,255,255,.14),0 9px 24px rgba(0,0,0,.23);backdrop-filter:blur(10px)}
+#telemetry .statbox label{color:#b3ced8;font-size:8px;letter-spacing:.16em}
+#telemetry .statbox strong{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:23px;letter-spacing:.035em;font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(130,214,232,.25)}
+#telemetry .statbox small{color:#ffd092;font-size:8px;font-weight:900;letter-spacing:.10em}
+#hudActions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+#hudActions .hudbtn{border:1px solid rgba(182,218,230,.30);border-radius:6px 12px 6px 12px;background:linear-gradient(130deg,rgba(22,48,64,.94),rgba(6,17,29,.92));box-shadow:inset 0 1px rgba(255,255,255,.12),0 6px 18px rgba(0,0,0,.20);backdrop-filter:blur(9px)}
+#leftHud{position:absolute;left:14px;top:84px;width:190px;padding:12px;border:1px solid rgba(174,216,230,.30);border-top:2px solid #ff9e70;border-radius:6px 14px 6px 14px;background:linear-gradient(145deg,rgba(18,43,58,.88),rgba(5,16,28,.86));box-shadow:0 12px 34px rgba(0,0,0,.22);backdrop-filter:blur(10px);pointer-events:none}
+#leftHud .hudtitle{color:#ffad85}
+#trackName{font-size:16px}
+#rightHud{position:absolute;right:14px;top:auto;bottom:14px;width:194px;max-height:28vh;overflow:hidden;padding:10px 12px;border:1px solid rgba(174,216,230,.28);border-radius:6px 14px 6px 14px;background:linear-gradient(145deg,rgba(18,43,58,.88),rgba(5,16,28,.86));box-shadow:0 12px 34px rgba(0,0,0,.22);backdrop-filter:blur(10px);pointer-events:none}
+#minimap{height:76px;margin-top:5px}
+#rightHud .hudrow{margin-top:5px}
+#bottomHud{position:absolute;left:14px;right:auto;bottom:14px;display:flex;align-items:flex-end;gap:10px;pointer-events:none}
+#controlsLegend{display:none!important}
+#tireHud{display:block!important;min-width:230px;max-width:290px;max-height:28vh;overflow:auto;padding:10px 12px;border:1px solid rgba(174,216,230,.30);border-top:2px solid #ff9e70;border-radius:6px 14px 6px 14px;background:linear-gradient(145deg,rgba(18,43,58,.88),rgba(5,16,28,.86));box-shadow:0 12px 34px rgba(0,0,0,.22);backdrop-filter:blur(10px);pointer-events:none}
+#tireHud .hudtitle{color:#ffad85}
+#tireHud .tireline{font-size:9px}
+.broadcast-panel{position:absolute;z-index:6;top:84px;right:14px;width:min(280px,27vw);max-height:min(66vh,620px);overflow:hidden;padding:11px 13px 9px;border:1px solid rgba(177,220,235,.32);border-top:2px solid #ffa476;border-radius:6px 15px 6px 15px;background:linear-gradient(145deg,rgba(18,44,60,.91),rgba(4,15,27,.89));box-shadow:0 15px 42px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.12);backdrop-filter:blur(12px);pointer-events:none;display:none}
+.broadcast-panel.open{display:block!important}
+.broadcast-panel header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(194,220,231,.20)}
+.broadcast-panel header b{color:#ffb48e;font-size:9px;letter-spacing:.14em}
+.broadcast-panel header span{color:#eff4f7;font-size:9px;font-variant-numeric:tabular-nums}
+#broadcastTimingRows{max-height:56vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(157,194,210,.38) transparent}
+.broadcast-row{display:grid;grid-template-columns:23px minmax(0,1fr) 63px;align-items:center;gap:7px;padding:7px 3px;border-bottom:1px solid rgba(255,255,255,.09);background:linear-gradient(90deg,color-mix(in srgb,var(--team-colour,#48677b) 22%,transparent),transparent 78%);font-size:8px}
+.broadcast-row .pos{color:#e0edf2;font-family:ui-monospace,monospace;font-size:10px}
+.broadcast-row .driver{min-width:0}
+.broadcast-row .driver b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;font-size:9px;letter-spacing:.02em}
+.broadcast-row .driver small{display:block;color:#adc1cb;font-size:7px;margin-top:2px;letter-spacing:.035em}
+.broadcast-row .gap{color:#ffd392;text-align:right;font-family:ui-monospace,monospace;font-size:9px;font-weight:950;font-variant-numeric:tabular-nums;white-space:nowrap}
+.broadcast-row.you{outline:1px solid rgba(255,193,125,.28);background:linear-gradient(90deg,rgba(255,153,103,.22),rgba(255,153,103,.03))}
+.broadcast-row.you .pos,.broadcast-row.you .driver b{color:#ffd19a}
 .broadcast-row.pitting .gap{color:#8bd4e7}
-.broadcast-panel footer{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-top:7px;color:#a6bbc7;font-size:6px;letter-spacing:.08em}
-#aiFieldStatus{margin-left:auto;color:#9be0c1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.race-start-panel,.team-radio-banner,.race-control-banner{backdrop-filter:blur(12px);border-radius:5px 14px 5px 14px}
-.race-start-panel{border:1px solid rgba(190,221,235,.30);border-top:2px solid #ff9e72;background:linear-gradient(145deg,rgba(22,49,65,.82),rgba(5,14,25,.78));box-shadow:0 16px 48px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.10)}
-.team-radio-banner{background:linear-gradient(100deg,rgba(18,43,58,.88),rgba(8,18,30,.82));border-color:rgba(176,220,235,.23)}
+.broadcast-panel footer{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-top:8px;color:#b1c6cf;font-size:6.5px;font-weight:900;letter-spacing:.08em}
+#aiFieldStatus{margin-left:auto;color:#a5f0c9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.team-radio-banner{z-index:7;border:1px solid rgba(176,220,235,.28);background:linear-gradient(100deg,rgba(18,43,58,.92),rgba(8,18,30,.90));backdrop-filter:blur(12px)}
+.race-start-panel,.race-control-banner{backdrop-filter:blur(12px)}
 @media(max-width:760px){
- #topHud{left:5px;right:5px;top:5px;gap:4px}
+ #topHud{left:5px;right:5px;top:5px;gap:4px;align-items:flex-start}
  #telemetry{gap:3px}
  #telemetry .statbox{min-width:52px;padding:6px 7px 5px;border-radius:5px 9px 5px 9px}
  #telemetry .statbox strong{font-size:16px}
  #telemetry .statbox label,#telemetry .statbox small{font-size:6px}
- #hudActions{gap:3px}
+ #hudActions{gap:3px;max-width:46vw}
  #hudActions .hudbtn{padding:6px 6px;font-size:7px}
- .broadcast-panel{top:59px;right:5px;width:min(205px,54vw);max-height:42vh;padding:7px 8px}
+ #leftHud{left:5px;top:59px;width:143px;padding:8px}
+ #trackName{font-size:13px}
+ #trackMeta{font-size:7px}
+ #rightHud{display:none!important}
+ #bottomHud{left:5px;right:5px;bottom:7px;gap:5px}
+ #tireHud{min-width:0;width:min(54vw,190px);max-width:54vw;max-height:25vh;padding:7px 8px}
+ #tireHud .hudtitle{font-size:7px}
+ #tireHud .tireline{font-size:7px;margin-top:4px}
+ .broadcast-panel{top:59px;right:5px;width:min(210px,54vw);max-height:40vh;padding:7px 8px}
  #broadcastTimingRows{max-height:32vh}
- .broadcast-row{grid-template-columns:18px minmax(0,1fr) 48px;padding:4px 2px;gap:4px}
+ .broadcast-row{grid-template-columns:18px minmax(0,1fr) 49px;padding:5px 2px;gap:4px}
  .broadcast-row .driver b{font-size:7px}
  .broadcast-row .driver small{font-size:6px}
  .broadcast-row .gap{font-size:7px}
  .broadcast-panel footer{font-size:5px}
- .team-radio-banner{bottom:12px;max-width:88vw}
+ .team-radio-banner{bottom:85px;max-width:88vw;padding:7px 9px}
+}
+@media(max-width:430px){
+ #leftHud{width:116px}
+ #trackMeta{font-size:6px}
+ #tireHud{width:52vw;max-width:52vw}
+ .broadcast-panel{width:min(195px,56vw)}
 }
 </style>
 </head>
@@ -3775,12 +3802,16 @@ function toggleBroadcast(){
  renderBroadcastTiming();camera.userData.ready=false;setCamera(0);
 }
 function renderBroadcastTiming(){
- const panel=$("broadcastPanel");
- if(!panel||!car||!nearestInfo)return;
- if(!pitLaneDriving)broadcastCircuitProgress=nearestInfo.progress;
- const showTiming=running&&opponents.length>0&&currentSessionMode!=="timeTrial";
+ const panel=$("broadcastPanel");if(!panel)return;
+ const showTiming=running&&currentSessionMode!=="timeTrial";
  panel.classList.toggle("open",showTiming);panel.classList.toggle("broadcast-mode",broadcastActive);
  if(!showTiming)return;
+ if(!car||!nearestInfo){
+  $("broadcastTimingRows").innerHTML='<div class="broadcast-row"><span class="pos">—</span><span class="driver"><b>GRID INITIALISING</b><small>WAITING FOR TRACK POSITION</small></span><span class="gap">—</span></div>';
+  return;
+ }
+ if(!pitLaneDriving)broadcastCircuitProgress=nearestInfo.progress;
+ else if(!Number.isFinite(broadcastCircuitProgress))broadcastCircuitProgress=pitExitCircuitProgress;
  const trackLength=circuitRouteLength||routeLength;
  const playerDistance=lap-1+(pitLaneDriving?broadcastCircuitProgress:nearestInfo.progress);
  const playerSpeed=pitLaneDriving?PIT_LANE_LIMIT:Math.abs(car.u||0);
@@ -3795,10 +3826,9 @@ function renderBroadcastTiming(){
  $("broadcastLapLabel").textContent="LAP "+Math.min(lap,raceLaps)+" / "+raceLaps+" · P"+playerPosition;
  $("broadcastCameraLabel").textContent=broadcastActive?"BROADCAST · CAM "+(broadcastShotIndex+1)+"/4":"ALL CAMERA VIEWS";
  const fieldStatus=$("aiFieldStatus");
- if(fieldStatus)fieldStatus.textContent=opponents.length+" AI CARS · "+opponents.filter(bot=>bot.pitPhase).length+" IN PIT LANE";
+ if(fieldStatus)fieldStatus.textContent=opponents.length?opponents.length+" AI CARS · "+opponents.filter(bot=>bot.pitPhase).length+" IN PIT LANE":"AI GRID RECOVERING";
  $("broadcastTimingRows").innerHTML=participants.map((item,index)=>{
-  const gapDistance=Math.max(0,leader.distance-item.distance),lapGap=Math.floor(gapDistance);
-  let gapText="LEADER";
+  const gapDistance=Math.max(0,leader.distance-item.distance),lapGap=Math.floor(gapDistance);let gapText="LEADER";
   if(index>0){
    if(lapGap>=1)gapText="+"+lapGap+" LAP"+(lapGap===1?"":"S");
    else{
@@ -5659,11 +5689,21 @@ function addTeamSideDecals(root,teamId,number="01"){
  root.traverse(object=>{if(object.isMesh&&object.name==="Team identity sidepod sticker")old.push(object);});
  old.forEach(sticker=>sticker.parent?.remove(sticker));
  root.updateMatrixWorld(true);
- const bounds=new THREE.Box3().setFromObject(root),size=bounds.getSize(new THREE.Vector3());
- const sideX=Math.min(.98,Math.max(.58,size.x*.36));
- const y=clamp(bounds.min.y+size.y*.57,.48,1.12);
- const z=clamp((bounds.min.z+bounds.max.z)*.5-size.z*.10,-.9,.15);
- const width=clamp(size.z*.25,.82,1.34),height=clamp(size.y*.20,.22,.40);
+ const inverse=root.matrixWorld.clone().invert(),bounds=new THREE.Box3();
+ root.traverse(object=>{
+  if(!object.isMesh||!object.geometry||object.name==="Team identity sidepod sticker")return;
+  if(!object.geometry.boundingBox)object.geometry.computeBoundingBox();
+  if(object.geometry.boundingBox){
+   const transform=new THREE.Matrix4().multiplyMatrices(inverse,object.matrixWorld);
+   bounds.union(object.geometry.boundingBox.clone().applyMatrix4(transform));
+  }
+ });
+ if(bounds.isEmpty())return;
+ const size=bounds.getSize(new THREE.Vector3());
+ const sideX=Math.max(.55,Math.min(1.30,size.x*.44));
+ const y=clamp(bounds.min.y+size.y*.53,.48,1.22);
+ const z=clamp(bounds.min.z+size.z*.48,-1.25,1.15);
+ const width=clamp(size.z*.25,.90,1.55),height=clamp(size.y*.25,.27,.48);
  const map=createTeamStickerTexture(team,number);
  const material=new THREE.MeshBasicMaterial({map,transparent:true,side:THREE.DoubleSide,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2});
  for(const side of [-1,1]){
@@ -8305,50 +8345,53 @@ function bindPitStation(){
 function startSession(sessionMode="practice"){
  if(builtTrackId!==activeTrack)createTrack();
  const startInPit=sessionMode==="practice";
- if((sessionMode==="race"||sessionMode==="championship")&&opponentCount<1){opponentCount=8;if(sessionMode==="race"){quickOpponentSelection=8;$("opponentCountSelect").value="8";}}
+ if(sessionMode!=="timeTrial"){
+  const minimum=sessionMode==="championship"?19:8;
+  opponentCount=Math.max(minimum,Math.min(19,Math.floor(opponentCount||minimum)));
+  $("opponentCountSelect").value=String(opponentCount);
+  if(sessionMode==="race")quickOpponentSelection=opponentCount;
+ }
  currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;
- weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
+ aiFieldRecoveryTimer=0;weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
  formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
- formationLapDistanceRemaining=circuitRouteLength||routeLength;formationLapDistanceTravelled=0;raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
+ formationLapDistanceRemaining=circuitRouteLength||routeLength;formationLapDistanceTravelled=0;
+ raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
  raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;aiUpdateAccumulator=0;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
  $("raceStartOverlay").classList.toggle("open",!startInPit&&!formationLapActive);$("formationGuide").classList.remove("open");
  if(weatherEvolutionEnabled)showRaceControlMessage("DYNAMIC FORECAST ACTIVE · CONDITIONS MAY CHANGE","info",3.8);
- $("raceControlBanner").classList.remove("open");
- playMenuUiSound("race");
+ $("raceControlBanner").classList.remove("open");playMenuUiSound("race");
  const menuElement=$("menu");menuElement.classList.add("leaving");
  setTimeout(()=>{menuElement.style.display="none";menuElement.classList.remove("leaving");},360);
- $("pitStationOverlay").classList.remove("open");
- if(!carRoot)buildCar();
- if(startInPit){activatePitLaneRoute();positionCarAtStart(true);setPitButtonAvailable(true);}
- else{
-  restoreCircuitRoute();
-  positionCarAtStart(false,true,sessionMode==="timeTrial"?0:playerGridDistance());
-  setPitButtonAvailable(false);
-  if(sessionMode==="race"||sessionMode==="championship"||formationLapActive)cameraMode=0; // Show the complete grid and AI field from the chase view at race start.
+ $("pitStationOverlay").classList.remove("open");if(!carRoot)buildCar();
+ if(startInPit){
+  activatePitLaneRoute();positionCarAtStart(true);setPitButtonAvailable(true);broadcastCircuitProgress=pitExitCircuitProgress;
+ }else{
+  restoreCircuitRoute();positionCarAtStart(false,true,sessionMode==="timeTrial"?0:playerGridDistance());setPitButtonAvailable(false);
  }
+ if(sessionMode!=="timeTrial")cameraMode=0;
  formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}
  catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
  running=true;paused=false;elapsed=0;lapStart=0;physicsAccumulator=0;hudAccumulator=0;
  previousFrame=performance.now();audioAccumulator=0;camera.userData.ready=false;
- if(sessionMode!=="timeTrial"&&opponentCount>0){
+ if(sessionMode!=="timeTrial"){
   try{spawnOpponents();}
   catch(error){
-   console.error("AI field setup failed; keeping any successfully created cars.",error);
+   console.error("AI field setup failed.",error);
    $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
+   $("aiFieldStatus").textContent="AI GRID ERROR";showError(error);
   }
  }else{
-  clearOpponents();$("opponentValue").textContent="00";
-  $("trackState").textContent=sessionMode==="timeTrial"?"TIME TRIAL · SOLO":"PIT EXIT · 80 KM/H";
-  $("trackState").style.color="#f0c75c";
+  clearOpponents();$("opponentValue").textContent="00";$("trackState").textContent="TIME TRIAL · SOLO";$("trackState").style.color="#f0c75c";
  }
  if(sessionMode==="timeTrial"){buildGhostCar();updateGhostToggleUI();}
  else $("ghostToggleBtn").style.display="none";
  try{applyUISettings();}catch(error){console.warn("HUD settings could not be applied.",error);}
+ renderBroadcastTiming();
  try{worldCanvas.focus({preventScroll:true});}catch(_){}
  if(window.matchMedia("(max-width:760px)").matches)$("touchControls").style.display="flex";
 }
@@ -8485,13 +8528,15 @@ function animate(now){
 let settingsResumeAfterClose=false;
 function applyUISettings(){
  if(!$("hud"))return;
- $("hud").style.display=running&&displayOptions.master?"block":"none";
- $("telemetry").style.display=displayOptions.telemetry?"flex":"none";
- $("brandHud").style.display=displayOptions.brand?"block":"none";
- $("leftHud").style.display=displayOptions.circuit?"block":"none";
- $("rightHud").style.display=displayOptions.map?"block":"none";
- $("tireHud").style.display=displayOptions.tyres?"block":"none";
- $("controlsLegend").style.display=displayOptions.controls?"block":"none";
+ displayOptions.master=true;displayOptions.telemetry=true;displayOptions.circuit=true;displayOptions.tyres=true;
+ $("hud").style.display=running?"block":"none";
+ $("telemetry").style.display="flex";
+ $("brandHud").style.display="none";
+ $("leftHud").style.display="block";
+ $("rightHud").style.display=window.matchMedia("(max-width:760px)").matches?"none":"block";
+ $("tireHud").style.display="block";
+ $("controlsLegend").style.display="none";
+ renderBroadcastTiming();
 }
 function syncCameraProfileSettings(){
  const index=Number($("cameraProfileSelect").value),p=cameraProfiles[index];
@@ -8517,26 +8562,28 @@ function saveGameSettings(){
 }
 function loadGameSettings(){
  try{
-  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||localStorage.getItem(F1_SETTINGS_OLDEST_KEY)||localStorage.getItem(F1_SETTINGS_V2_KEY)||localStorage.getItem(F1_SETTINGS_V1_KEY)||"null");if(!saved)return;
-  if(saved.displayOptions)displayOptions={...displayOptions,...saved.displayOptions};
-  if(Number(saved.schemaVersion||0)<8)Object.assign(displayOptions,{brand:false,circuit:false,controls:false});
-  if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
-  if(saved.schemaVersion<7){
-   Object.assign(cameraProfiles[1],{x:0,y:0,z:0,pitch:0,yaw:0,fov:72});
-   cameraProfiles[2].fov=Math.max(76,Number(cameraProfiles[2].fov)||76);
-   showHaloColumn=true;
+  const saved=JSON.parse(localStorage.getItem(F1_SETTINGS_STORAGE_KEY)||localStorage.getItem(F1_SETTINGS_LEGACY_KEY)||localStorage.getItem(F1_SETTINGS_OLD_KEY)||localStorage.getItem(F1_SETTINGS_OLDER_KEY)||localStorage.getItem(F1_SETTINGS_OLDEST_KEY)||localStorage.getItem(F1_SETTINGS_V2_KEY)||localStorage.getItem(F1_SETTINGS_V1_KEY)||"null");
+  if(saved&&typeof saved==="object"){
+   if(Array.isArray(saved.cameraProfiles))saved.cameraProfiles.slice(0,5).forEach((p,i)=>{if(p)Object.assign(cameraProfiles[i],p);});
+   if(saved.schemaVersion<7){
+    Object.assign(cameraProfiles[1],{x:0,y:0,z:0,pitch:0,yaw:0,fov:72});
+    cameraProfiles[2].fov=Math.max(76,Number(cameraProfiles[2].fov)||76);showHaloColumn=true;
+   }
+   const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
+   showHaloColumn=saved.schemaVersion>=5?saved.showHaloColumn!==false:true;
+   showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
+   cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
+   cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);
+   steeringResponse=saved.schemaVersion>=4?num(saved.steeringResponse,.75,.25,1):.75;
+   steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
+   downforceScale=num(saved.downforceScale,1,.8,1.25);brakeBiasSetting=num(saved.brakeBiasSetting,.58,.52,.68);
+   differentialSetting=Math.round(num(saved.differentialSetting,2,1,3));powerModeSetting=Math.round(num(saved.powerModeSetting,1,1,3));
+   masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
+   soundEnabled=saved.soundEnabled!==false;
+   if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
   }
-  const num=(v,f,min,max)=>Number.isFinite(Number(v))?clamp(Number(v),min,max):f;
-  showHaloColumn=saved.schemaVersion>=5?saved.showHaloColumn!==false:true;showSteeringWheel=saved.showSteeringWheel!==false;showDriverHands=saved.showDriverHands!==false;
-  cameraShake=saved.cameraShake?1:0;lookToApex=num(saved.lookToApex,0,0,1);
-  cameraSensitivity=num(saved.cameraSensitivity,.18,.05,.5);steeringResponse=saved.schemaVersion>=4?num(saved.steeringResponse,.75,.25,1):.75;
-  steeringWheelLock=num(saved.steeringWheelLock,300,180,540);brakeStrength=num(saved.brakeStrength,1,.7,1.2);
-  downforceScale=num(saved.downforceScale,1,.8,1.25);brakeBiasSetting=num(saved.brakeBiasSetting,.58,.52,.68);
-  differentialSetting=Math.round(num(saved.differentialSetting,2,1,3));powerModeSetting=Math.round(num(saved.powerModeSetting,1,1,3));
-  masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
-  soundEnabled=saved.soundEnabled!==false;
-  if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
- }catch(_){}
+ }catch(error){console.warn("Some saved settings could not be read; using race defaults.",error);}
+ Object.assign(displayOptions,{master:true,telemetry:true,brand:false,circuit:true,map:true,tyres:true,controls:false});
 }
 function syncSettingsUI(){
  $("cameraProfileSelect").value=String(cameraMode);
