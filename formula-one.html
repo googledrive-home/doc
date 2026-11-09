@@ -452,7 +452,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
         <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="easy">Relaxed</option><option value="balanced" selected>Balanced</option><option value="fast">Fast</option></select></div>
         <div class="field"><label for="raceLapsSelect">Session length</label><select id="raceLapsSelect"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option><option value="10">10 laps</option></select></div>
       </div>
-      <div class="field formation-option"><label><input id="formationLapSelect" type="checkbox"> Optional formation lap before the race</label></div>
+      <div class="field formation-option"><label><input id="formationLapSelect" type="checkbox" checked> Formation lap with the AI field before the race</label></div>
        <div class="field"><label for="graphicsSelect">Graphics quality</label><select id="graphicsSelect"><option value="low">Performance</option><option value="medium" selected>Balanced</option><option value="high">High detail</option></select></div>
       <div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="clear">Clear / sunny</option><option value="cloudy">Cloudy</option><option value="rain">Rain</option><option value="fog">Mist and fog</option><option value="heat">Hot track</option></select></div>
       <div class="two">
@@ -3628,9 +3628,9 @@ let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphics
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
-let formationLapEnabled=false,formationLapActive=false,formationLapDistanceRemaining=0,aiUpdateAccumulator=0;
+let formationLapEnabled=true,formationLapActive=false,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0;
-let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false;
+let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false,pitServiceCalledThisEntry=false;
 let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
 let pitCinematic={active:false,phase:"idle",elapsed:0,duration:0,startProgress:0,targetProgress:.60,serviceDuration:6.4,boxY:0,releaseHold:0,previousProgress:0};
 let pitCrewRoot=null,pitCrewActors=[],pitCrewJacks=[],pitSavedWheelVisibility=[],pitWheelSwapStates=[];
@@ -4502,7 +4502,7 @@ function auditTrackTerrainAndObjects(){
 function addStartGridMarkings(){
  if(!trackGroup||route.length<8||routeLength<=0)return;
  const vertices=[],halfSlotWidth=1.34,halfSlotLength=2.85;
- for(let row=0;row<10;row++){
+ for(let row=0;row<11;row++){
   const distance=8+row*8.1,progress=((1-distance/routeLength)%1+1)%1;
   const sample=route[Math.floor(progress*route.length)%route.length];
   const horizontal=Math.hypot(sample.tan.x,sample.tan.z)||1,tx=sample.tan.x/horizontal,tz=sample.tan.z/horizontal,rx=tz,rz=-tx;
@@ -4895,12 +4895,12 @@ function buildPitLane(){
 }
 function restoreCircuitRoute(){
  if(circuitRoute.length){route=circuitRoute;routeLength=circuitRouteLength;roadWidth=circuitRoadWidth;routeSpatialGrid=circuitRouteSpatialGrid;}
- pitLaneDriving=false;
+ pitLaneDriving=false;pitServiceCalledThisEntry=false;
 }
 function activatePitLaneRoute(useEntryRoute=false){
  const selected=useEntryRoute?pitEntryRoute:pitDriveRoute,selectedLength=useEntryRoute?pitEntryRouteLength:pitDriveRouteLength;
  if(!selected.length)throw new Error("The selected circuit pit lane is not ready.");
- route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
+ pitServiceCalledThisEntry=false;route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
 }
 function pitEntryConnectorDistance(x,z){
  if(!pitEntryApproachSamples.length)return Infinity;
@@ -4924,28 +4924,36 @@ function pitEntryMergeWindow(progress){
 function pitEntryApproachAvailable(){
  if(pitLaneDriving||!pitEntryApproachSamples.length||!car||!nearestInfo||car.reverse||Math.abs(car.u)<2.5)return false;
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
- if(headingDot<.40)return false;
- // Make the pits available from the normal racing line as well as the outer edge.
- // Route selection still requires the driver's explicit PIT button / P key.
- return pitEntryConnectorDistance(car.x,car.z)<=19.5;
+ if(headingDot<.40||nearestInfo.offset<Math.max(.7,roadWidth*.06))return false;
+ return pitEntryConnectorDistance(car.x,car.z)<=10.5;
 }
 function updatePitButtonPrompt(){
- if(pitLaneDriving){setPitButtonAvailable(true);return;}
- setPitButtonAvailable(pitEntryApproachAvailable());
+ if(!car||pitCinematic.active){setPitButtonAvailable(false);return;}
+ if(pitLaneDriving){
+  const canBox=pitRoutePurpose==="entry"&&!pitServiceCalledThisEntry&&!pitPlanOpen&&nearestInfo;
+  setPitButtonAvailable(!pitServiceCalledThisEntry);
+  if(canBox&&nearestInfo.progress>=selectedPitServiceBoxProgress()-.018)beginAutomaticPitService();
+  return;
+ }
+ const available=pitEntryApproachAvailable();setPitButtonAvailable(available);
+ if(available&&pitEntryConnectorDistance(car.x,car.z)<=6.2)requestPitEntry(true);
 }
-function requestPitEntry(){
+function requestPitEntry(automatic=false){
  if(!running||paused||pitLaneDriving)return false;
  if(!pitEntryApproachAvailable()){
-  showRaceControlMessage("PIT ENTRY OPTIONAL · FOLLOW THE RIGHT-HAND ENTRY LINE","info",2.8);
+  showRaceControlMessage("PIT IN · MOVE TO THE RIGHT-HAND ENTRY LINE","info",2.8);
   return false;
  }
+ const connectorGap=pitEntryConnectorDistance(car.x,car.z);
+ if(connectorGap>10.5){showRaceControlMessage("PIT IN · FOLLOW THE ENTRY LINE CLOSER","info",2.8);return false;}
+ pitServiceCalledThisEntry=false;
  const x=car.x,z=car.z,y=car.y;
  activatePitLaneRoute(true);
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
  $("trackState").textContent="PIT ENTRY · 80 KM/H";$("trackState").style.color="#f0c75c";
  setPitButtonAvailable(true);
- showRaceControlMessage("PIT ENTRY SELECTED · FOLLOW THE PIT LANE","info",2.8);
- showTeamRadio("Pit entry confirmed. Follow the line to the pit lane. Box when you're ready for service.");
+ showRaceControlMessage(automatic?"AUTOMATIC PIT ENTRY · PIT LIMITER ACTIVE":"PIT IN CONFIRMED · FOLLOW THE PIT LANE","info",3.2);
+ showTeamRadio(automatic?"Pit entry detected. Follow the marked lane — we will call you into your team box.":"Pit entry confirmed. Follow the line to the pit lane. Your team box stop will trigger automatically.");
  return true;
 }
 function handlePitButtonAction(){
@@ -4955,7 +4963,7 @@ function handlePitButtonAction(){
 function mergeOntoCircuit(){
  if(!pitLaneDriving)return;
  const purpose=pitRoutePurpose,x=car.x,z=car.z,y=car.y;
- restoreCircuitRoute();pitRoutePurpose="out";
+ restoreCircuitRoute();pitRoutePurpose="out";pitServiceCalledThisEntry=false;
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
  $("trackState").textContent="ON CIRCUIT";$("trackState").style.color="#63dfa6";
  setPitButtonAvailable(false);
@@ -5428,7 +5436,7 @@ function updateRaceControl(dt){
 function updateFormationGuide(){
  const guide=$("formationGuide");if(!guide)return;
  if(!formationLapActive||!car||!nearestInfo||!route.length){guide.classList.remove("open");return;}
- const remaining=Math.max(0,(1-nearestInfo.progress)*(circuitRouteLength||routeLength));
+ const remaining=Math.max(0,(circuitRouteLength||routeLength)-formationLapDistanceTravelled);
  formationLapDistanceRemaining=remaining;
  $("formationDistance").textContent=Math.ceil(remaining).toLocaleString()+" m";
  const lookAhead=Math.max(5,Math.round(32/Math.max(1,routeLength)*route.length));
@@ -5468,7 +5476,7 @@ function spawnOpponents(){
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength;
  if(!aiRoute.length||!aiLength){$("opponentValue").textContent="00";return;}
- const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0)));
+ const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0))),playerProgress=nearestInfo&&!pitLaneDriving?nearestInfo.progress:0;
  for(let i=0;i<count;i++){
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
   const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
@@ -5476,7 +5484,8 @@ function spawnOpponents(){
   root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}});
   const row=Math.floor(i/2),gridDistance=8+row*8.1,progress=((1-gridDistance/aiLength)%1+1)%1;
   const baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
-  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels:model.wheels,frontPivots:model.frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
+  const initialGap=((progress-playerProgress+1)%1)*aiLength;
+  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels:model.wheels,frontPivots:model.frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
   const sample=aiRoute[Math.floor(progress*aiRoute.length)%aiRoute.length],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
   const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
   root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
@@ -5489,9 +5498,10 @@ function updateOpponents(dt){
  if(!opponents.length||raceStartState==="countdown")return;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
  if(!count||!aiLength)return;
- const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
+ const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null;
  const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
+  const wasAheadOfPlayer=bot.playerAheadOfYou===true;
   bot.contactCooldown=Math.max(0,(bot.contactCooldown||0)-dt);
   bot.incidentTimer=Math.max(0,(bot.incidentTimer||0)-dt);
   let index=Math.floor(bot.progress*count)%count;
@@ -5533,6 +5543,16 @@ function updateOpponents(dt){
   bot.speed+=clamp(target-bot.speed,-11*dt,5.5*dt);
   const oldProgress=bot.progress;bot.progress=(bot.progress+bot.speed*dt/aiLength)%1;
   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
+  if(playerProgress!==null){
+   const gapAhead=((bot.progress-playerProgress+1)%1)*aiLength,botAheadNow=gapAhead>3&&gapAhead<aiLength*.5,playerBehindGap=aiLength-gapAhead;
+   if(wasAheadOfPlayer&&!botAheadNow&&playerBehindGap<28&&(formationLapActive||raceFlag==="YELLOW")&&elapsed-(bot.lastRestrictedOvertakeAt??-Infinity)>1.2){
+    bot.lastRestrictedOvertakeAt=elapsed;raceStartPenalty+=5;
+    const restriction=formationLapActive?"FORMATION LAP":"YELLOW FLAG";
+    showRaceControlMessage("RESTRICTED OVERTAKE · +5.0S PENALTY","penalty",4.8);
+    showTeamRadio("You overtook "+bot.driverName+" under "+restriction+". Five seconds added to your race penalty.");
+   }
+   bot.playerAheadOfYou=botAheadNow;
+  }
   index=Math.floor(bot.progress*count)%count;
   const sample=aiRoute[index],look=aiRoute[(index+24)%count];
   bot.offset=lerp(bot.offset,bot.targetOffset,1-Math.exp(-dt*1.65));
@@ -6834,13 +6854,21 @@ function drawDashboard(){
  });
 }
 
-function positionCarAtStart(fromPitBox=false,fromGrid=false){
+function playerGridDistance(){
+ const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0)));
+ return 8+Math.ceil(count/2)*8.1;
+}
+function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  if(!carRoot)buildCar();
- const startIndex=fromPitBox?0:fromGrid?0:6,sample=route[startIndex]||route[0];
+ const selectedGridDistance=fromGrid?Math.max(0,Number(gridDistance)||0):0;
+ const gridProgress=selectedGridDistance>0&&routeLength>0?((1-selectedGridDistance/routeLength)%1+1)%1:0;
+ const startIndex=fromPitBox?0:fromGrid?(selectedGridDistance>0?Math.floor(gridProgress*route.length)%route.length:0):6,sample=route[startIndex]||route[0];
  if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
+ const gridRight=fromGrid&&selectedGridDistance>0?new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize():new THREE.Vector3();
+ const gridX=sample.p.x+gridRight.x*2.2,gridZ=sample.p.z+gridRight.z*2.2;
  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
- carRoot.position.set(sample.p.x,sample.p.y+.045,sample.p.z);carRoot.rotation.set(-slope,yaw,0);
- car={x:sample.p.x,z:sample.p.z,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
+ carRoot.position.set(gridX,sample.p.y+.045,gridZ);carRoot.rotation.set(-slope,yaw,0);
+ car={x:gridX,z:gridZ,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
   wear:1,tempF:88,tempR:90,engineTemp:92,gearboxTemp:82,brakeTempF:180,brakeTempR:160,
   wheelHealth:{FL:100,FR:100,RL:100,RR:100},slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
   pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
@@ -6953,8 +6981,9 @@ function temperatureGrip(temp){
 }
 function completeFormationLap(){
  formationLapActive=false;$("formationGuide").classList.remove("open");keys.KeyW=false;keys.ArrowUp=false;
- restoreCircuitRoute();positionCarAtStart(false,true);
- raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
+ restoreCircuitRoute();positionCarAtStart(false,true,playerGridDistance());
+ formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
+ raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartJumpReported=false;
  raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
  $("raceStartOverlay").classList.add("open");
  showRaceControlMessage("FORMATION LAP COMPLETE · TAKE YOUR GRID SLOT","info",3.6);
@@ -7057,8 +7086,8 @@ function updatePhysics(dt){
  car.x+=(car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw))*dt;
  car.z+=(car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw))*dt;
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
- if(!pitLaneDriving)updatePitButtonPrompt();
-  // Pit entry is an explicit branch; the normal circuit remains driveable through its opening.
+ updatePitButtonPrompt();
+  // The right-hand connector selects the pit route; the main racing surface stays open.
  const right=new THREE.Vector3(nearestInfo.tangent.z,0,-nearestInfo.tangent.x).normalize();
  const side=Math.sign(nearestInfo.offset)||1;
  const nearPitEntryConnector=!pitLaneDriving&&side===1&&pitEntryConnectorDistance(car.x,car.z)<=18.5;
@@ -7206,8 +7235,13 @@ function updatePhysics(dt){
  }
  if(pitLaneDriving&&nearestInfo.progress>=.985)mergeOntoCircuit();
  const progress=nearestInfo.progress;
- if(!pitLaneDriving&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
-   if(formationLapActive){completeFormationLap();return;}
+ if(!pitLaneDriving&&formationLapActive){
+  const lapLength=circuitRouteLength||routeLength,progressDelta=(progress-formationLapLastProgress+1)%1;
+  if(!car.reverse&&car.u>1.5&&progressDelta<=.025)formationLapDistanceTravelled+=progressDelta*lapLength;
+  formationLapLastProgress=progress;
+  if(formationLapDistanceTravelled>=lapLength*.995){completeFormationLap();return;}
+ }
+ if(!pitLaneDriving&&!formationLapActive&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
   const completed=elapsed-lapStart,previousBestLap=bestLap;
   if(completed>15){bestLap=Math.min(bestLap,completed);if(bestLap<previousBestLap)showTeamRadio("That's a new personal best. Excellent lap — keep that rhythm.");}
   if(currentSessionMode==="timeTrial"&&completeTimeTrialLap(completed)){bestLap=timeTrialBest;}
@@ -7220,7 +7254,7 @@ function updatePhysics(dt){
    const championshipResult=currentSessionMode==="championship"?completeChampionshipRound():"";
    document.querySelector(".pausecard .eyebrow").textContent=currentSessionMode==="championship"?"Championship round complete":"Chequered flag";
    document.querySelector(".pausecard h2").textContent="FINISH";
-   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+"."+(raceStartPenalty>0?" False-start penalty: +"+raceStartPenalty.toFixed(1)+" seconds.":"")+(championshipResult||"");
+   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+"."+(raceStartPenalty>0?" Race-control penalties: +"+raceStartPenalty.toFixed(1)+" seconds.":"")+(championshipResult||"");
    $("pauseOverlay").style.display="grid";
   }
  }
@@ -7699,8 +7733,8 @@ function updatePitStationUI(){
 }
 function setPitButtonAvailable(available){
  const button=$("pitStopBtn");if(!button)return;
- const label=pitLaneDriving?"BOX":"PIT IN";
- button.style.display=available?"inline-flex":"none";
+ const label=pitLaneDriving?"BOX NOW":"PIT IN";
+ button.style.display=available&&!pitCinematic.active?"inline-flex":"none";
  button.textContent=label;
  button.setAttribute("aria-label",pitLaneDriving?"Call the pit crew":"Choose the optional pit entry");
 }
@@ -8027,7 +8061,8 @@ function beginPitService(){
  keys.KeyW=false;keys.ArrowUp=false;
  const distance=pitRouteDistanceBetween(startProgress,targetProgress),duration=clamp(distance/20.5,2.6,18);
  const serviceDuration=pitServicePlan.repairMode==="none"?6.4:pitServicePlan.repairMode==="aero"?7.7:9.2;
- pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
+ pitServiceCalledThisEntry=true;pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
+ setPitButtonAvailable(false);
  pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,serviceDuration,boxY:car.y,releaseHold:0,previousProgress:startProgress};
  car.u=0;car.v=0;car.throttle=0;car.brake=1;
  setPitCinematicUI("APEX PIT WALL","BOX · BOX · BOX","YOUR TEAM'S SERVICE BOX","Pit limiter engaged. Following the marked lane into your team's garage box.",0,"PIT ENTRY · LIMITER ACTIVE","GUIDED APPROACH");
@@ -8035,8 +8070,16 @@ function beginPitService(){
  showRaceControlMessage("BOX BOX BOX · PIT SEQUENCE ACTIVE","yellow",3.8);
  showTeamRadio("Box, box. Follow the marked line into your garage pit box.");playMenuUiSound("race");
 }
+function beginAutomaticPitService(){
+ if(!running||paused||!pitLaneDriving||pitRoutePurpose!=="entry"||pitServiceCalledThisEntry||pitCinematic.active||pitServiceOpen||pitPlanOpen)return false;
+ pitServiceSelectedTyre=tyreCompound;
+ pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"};
+ beginPitService();
+ return pitCinematic.active;
+}
 function requestPitService(){
  if(!running||paused||pitCinematic.active)return;
+ if(pitServiceCalledThisEntry){showRaceControlMessage("TEAM BOX · SERVICE ALREADY CALLED THIS ENTRY","info",2.8);return;}
  if(!pitLaneDriving){showRaceControlMessage("PIT STOP · ENTER THE PIT LANE FIRST","info",2.8);return;}
  if(!nearestInfo){showRaceControlMessage("PIT STOP · PIT POSITION NOT AVAILABLE","yellow",3.2);return;}
  if(nearestInfo.progress>=selectedPitServiceBoxProgress()-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.2);return;}
@@ -8100,13 +8143,13 @@ function bindPitStation(){
 function startSession(sessionMode="practice"){
  if(builtTrackId!==activeTrack)createTrack();
  const startInPit=sessionMode==="practice";
- if(sessionMode==="race"&&opponentCount<1){opponentCount=8;quickOpponentSelection=8;$("opponentCountSelect").value="8";}
+ if((sessionMode==="race"||sessionMode==="championship")&&opponentCount<1){opponentCount=8;if(sessionMode==="race"){quickOpponentSelection=8;$("opponentCountSelect").value="8";}}
  currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;
  weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
  formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;
- formationLapDistanceRemaining=routeLength;raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
+ formationLapDistanceRemaining=circuitRouteLength||routeLength;formationLapDistanceTravelled=0;raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
  raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;aiUpdateAccumulator=0;
  raceFlag="GREEN";raceFlagTimer=0;raceControlMessageTimer=0;
  $("raceStartOverlay").classList.toggle("open",!startInPit&&!formationLapActive);$("formationGuide").classList.remove("open");
@@ -8118,7 +8161,8 @@ function startSession(sessionMode="practice"){
  $("pitStationOverlay").classList.remove("open");
  if(!carRoot)buildCar();
  if(startInPit){activatePitLaneRoute();positionCarAtStart(true);setPitButtonAvailable(true);}
- else{restoreCircuitRoute();positionCarAtStart(false,true);setPitButtonAvailable(false);}
+ else{restoreCircuitRoute();positionCarAtStart(false,true,sessionMode==="timeTrial"?0:playerGridDistance());setPitButtonAvailable(false);}
+ formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
  try{initAudio();if(audioCtx)audioCtx.resume();startEngineLoops();}
  catch(error){soundEnabled=false;console.warn("Audio is unavailable; continuing without sound.",error);}
  $("hud").style.display="block";$("pauseOverlay").style.display="none";
@@ -8157,7 +8201,8 @@ function restartLap(){
   raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
   raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
   if(startInPit){activatePitLaneRoute();positionCarAtStart(true);setPitButtonAvailable(true);}
-  else{restoreCircuitRoute();positionCarAtStart(false,true);setPitButtonAvailable(false);}
+  else{restoreCircuitRoute();positionCarAtStart(false,true,session==="timeTrial"?0:playerGridDistance());setPitButtonAvailable(false);}
+  formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;
   $("raceStartOverlay").classList.toggle("open",!startInPit&&!formationLapActive);
   if(session==="timeTrial"){
    lapRecording=[];lapRecordAccumulator=0;loadTimeTrialRecord();bestLap=timeTrialBest;
