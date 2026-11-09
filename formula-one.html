@@ -5963,17 +5963,19 @@ function circuitSlotAtProgress(progress){
 }
 function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
- const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
+ const difficulty={veryEasy:{speed:68,line:.66,accel:5.6},easy:{speed:76,line:.80,accel:6.5},medium:{speed:84,line:.91,accel:7.2},hard:{speed:92,line:.97,accel:7.8},veryHard:{speed:98,line:1,accel:8.2}}[aiSkill]||{speed:84,line:.91,accel:7.2};
+ const base=difficulty.speed;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength;
  if(!aiRoute.length||!aiLength)throw new Error("AI grid cannot be built because the circuit route is empty.");
- const count=Math.max(8,Math.min(19,Math.floor(opponentCount||8)));
- opponentCount=count;$("opponentCountSelect").value=String(count);
+ const count=Math.max(0,Math.min(19,Math.floor(opponentCount)||0));
+ opponentCount=count;$("opponentCountSelect").value=String(count);addStartGridMarkings();
  const practice=currentSessionMode==="practice";
+ if(count===0){$("opponentValue").textContent="00";const fieldStatus=$("aiFieldStatus");if(fieldStatus)fieldStatus.textContent="SOLO · NO AI OPPONENTS";renderBroadcastTiming();return;}
  const playerProgress=practice?pitExitCircuitProgress:nearestInfo&&!pitLaneDriving?nearestInfo.progress:0;
  for(let i=0;i<count;i++){
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length],team=teamById(driver.teamId);
   const personality=driver.personality||AI_PERSONALITIES[i%AI_PERSONALITIES.length];
-  const row=Math.floor(i/2),formationOffset=i%2===0?2.0:-2.0;
+  const row=Math.floor(i/2),formationOffset=i%2===0?2.2:-2.2;
   let gridSlot;
   if(practice){
    // Start the visible practice pack just beyond the actual pit exit, not 700 metres away at the start line.
@@ -6002,19 +6004,20 @@ function spawnOpponents(){
   const nameTag=makeDriverNameTag(driver.name,team,i+1,personality);root.add(nameTag);
   const progress=gridSlot.progress,lineBias=((i*.6180339887498949)%1-.5)*2.2;
   const linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08;
-  const pace=(base+(i%3-1)*1.7)*(personality.pace||1)*(practice?.78:1);
+  const pace=base*(personality.pace||1)*(practice?.78:1);
   const initialGap=((progress-playerProgress+1)%1)*aiLength,tyre=initialOpponentTyre(personality);
   const initialLaps=0;
   const bot={
    root,nameTag,progress,gridProgress:progress,speed:pace,baseSpeed:pace,
    baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,
+    lineAccuracy:difficulty.line,accelLimit:difficulty.accel,maxBrakeDecel:14,penaltyTime:0,speedProfile:null,
    number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,personality,
    wheels,frontPivots,wheelSpin:0,laps:initialLaps,tyreCompound:tyre,tyreWear:1,pitStops:0,
    plannedPitLap:raceLaps>=5?Math.max(1,Math.min(raceLaps-2,Math.round(raceLaps*(personality.pitTiming||.5)))):Infinity,
    pendingPit:false,pitPhase:"",pitPathDistance:0,pitStopTimer:0,pitStopDone:false,pitCooldown:0,nextTyreCompound:tyre,
-   formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,
+   formationDistance:0,formationLastProgress:progress,formationStartProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,
    contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,
-   playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity
+   playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity,lastAIOvertakeAt:-Infinity
   };
   const right=new THREE.Vector3(gridSlot.tangent.z,0,-gridSlot.tangent.x).normalize();
   const yaw=Math.atan2(gridSlot.tangent.x,gridSlot.tangent.z),slope=Math.atan2(gridSlot.tangent.y,Math.hypot(gridSlot.tangent.x,gridSlot.tangent.z));
@@ -8491,8 +8494,8 @@ function startSession(sessionMode="practice"){
  if(builtTrackId!==activeTrack)createTrack();
  const startInPit=sessionMode==="practice";
  if(sessionMode!=="timeTrial"){
-  const minimum=sessionMode==="championship"?19:8;
-  opponentCount=Math.max(minimum,Math.min(19,Math.floor(opponentCount||minimum)));
+  const minimum=sessionMode==="championship"?19:0;
+  opponentCount=Math.max(minimum,Math.min(19,Math.floor(opponentCount)||0));
   $("opponentCountSelect").value=String(opponentCount);
   if(sessionMode==="race")quickOpponentSelection=opponentCount;
  }
