@@ -1412,7 +1412,7 @@ function openStandaloneGame(file,title,launchMode=''){
   document.body.style.overflow='hidden';
   frame.title=$('standaloneGameTitle').textContent;
   const target=new URL('./'+file,window.location.href);
-  if(file==='formula-one.html')target.searchParams.set('build','apex-redbull-team-ai-20261109-v1');
+  if(file==='formula-one.html')target.searchParams.set('build','apex-redbull-visible-ai-liveries-hud-20261109-v2');
   if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
 }
