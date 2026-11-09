@@ -5495,6 +5495,28 @@ function makeDriverNameTag(driverName){
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
  sprite.name="AI driver name tag";sprite.position.set(0,2.65,0);sprite.scale.set(4.35,.82,1);sprite.renderOrder=20;return sprite;
 }
+function collectOpponentVehicleParts(root){
+ const wheels=[],frontPivots=[];
+ root.traverse(object=>{
+  object.visible=true;
+  if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}
+  if(object.name==="wheel-roll"||/^(FL|FR|RL|RR)-wheel-spin$/.test(object.name))wheels.push(object);
+  if(object.name==="front-wheel-pivot"||/^(FL|FR)-steering-pivot$/.test(object.name))frontPivots.push(object);
+ });
+ return {wheels,frontPivots};
+}
+function upgradeOpponentVisualsToImportedModel(){
+ if(!importedCarActive||!importedCarModelRoot||!opponents.length)return;
+ opponents.forEach(bot=>{
+  const previous=bot.root,root=importedCarModelRoot.clone(true);
+  root.name="AI · "+bot.driverName;root.visible=true;
+  root.position.copy(previous.position);root.rotation.copy(previous.rotation);root.scale.copy(previous.scale);
+  const parts=collectOpponentVehicleParts(root);
+  if(bot.nameTag){previous.remove(bot.nameTag);root.add(bot.nameTag);}
+  scene.remove(previous);scene.add(root);
+  bot.root=root;bot.wheels=parts.wheels;bot.frontPivots=parts.frontPivots;
+ });
+}
 function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
@@ -5504,19 +5526,16 @@ function spawnOpponents(){
  for(let i=0;i<count;i++){
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
   const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
-  // Clone the active player's full low-poly 3D car. AI use the same body, cockpit, steering and wheels.
-  const root=(proceduralFallbackRoot||carRoot).clone(true);root.name="AI · "+driver.name;root.visible=true;
-  const wheels=[],frontPivots=[];
-  root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}
-   if(object.name==="wheel-roll")wheels.push(object);
-   if(object.name==="front-wheel-pivot")frontPivots.push(object);
-  });
+  // Use the imported high-detail 3D car whenever it has finished loading; the procedural model is only a fallback.
+  const vehicleSource=importedCarActive&&importedCarModelRoot?importedCarModelRoot:(proceduralFallbackRoot||carRoot);
+  const root=vehicleSource.clone(true);root.name="AI · "+driver.name;root.visible=true;
+  const {wheels,frontPivots}=collectOpponentVehicleParts(root);
   const nameTag=makeDriverNameTag(driver.name);root.add(nameTag);
   const row=Math.floor(i/2),gridDistance=8+row*8.1,gridSlot=gridSlotBehindStartLine(gridDistance);
   if(!gridSlot)continue;
-  const progress=gridSlot.progress,baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
+  const progress=gridSlot.progress,formationOffset=i%2===0?1.95:-1.95,lineBias=((i*0.6180339887498949)%1-.5)*2.8,linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08,pace=base+(i%3-1)*1.7;
   const initialGap=((progress-playerProgress+1)%1)*aiLength;
-  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
+  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
   const sample=gridSlot,right=new THREE.Vector3(sample.tangent.z,0,-sample.tangent.x).normalize();
   const yaw=Math.atan2(sample.tangent.x,sample.tangent.z),slope=Math.atan2(sample.tangent.y,Math.hypot(sample.tangent.x,sample.tangent.z));
   root.position.set(sample.point.x+right.x*bot.offset,sample.point.y+.035,sample.point.z+right.z*bot.offset);
@@ -5529,7 +5548,7 @@ function updateOpponents(dt){
  if(!opponents.length||(raceStartState==="countdown"&&!formationGridSettling))return;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,count=aiRoute.length;
  if(!count||!aiLength)return;
- const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null,formationPace=Math.max(0,Math.abs(car?.u||0)+.8);
+ const arcDistance=36*aiLength/count,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4),playerProgress=!pitLaneDriving&&nearestInfo?nearestInfo.progress:null;
  const traffic=opponents.map(bot=>({progress:bot.progress,offset:bot.offset,bot}));
  opponents.forEach(bot=>{
   const wasAheadOfPlayer=bot.playerAheadOfYou===true;
@@ -5539,17 +5558,21 @@ function updateOpponents(dt){
   const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
-  let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
+  const turnCross=here.tan.z*ahead.tan.x-here.tan.x*ahead.tan.z;
+  const apexShift=clamp(turnCross*2.35*bot.lineStyle,-1.15,1.15);
+  const lineVariation=Math.sin(bot.progress*Math.PI*3+bot.linePhase)*.22;
+  const racingLineOffset=clamp(bot.baseOffset+apexShift+lineVariation,-laneLimit+1.0,laneLimit-1.0);
+  let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:racingLineOffset,blocked=false;
   const inFormation=formationLapActive||formationGridSettling;
   if(inFormation){
-   desiredOffset=bot.baseOffset;
+   desiredOffset=bot.formationOffset;
    if(bot.formationParked){target=0;bot.speed=0;}
    else if(bot.formationComplete){
     // Each AI completes one full circuit, then brakes back into its original box rather than being repositioned.
     const remainingToGrid=((bot.gridProgress-bot.progress+1)%1)*aiLength;
     if(remainingToGrid<.38&&bot.speed<.65){bot.progress=bot.gridProgress;bot.speed=0;bot.formationParked=true;target=0;}
     else target=Math.min(target,Math.sqrt(Math.max(0,2*5.2*remainingToGrid)));
-   }else if(formationLapActive)target=Math.min(target,formationPace);
+   // Formation-lap AI keeps its own calculated pace instead of being speed-matched to the player.
   }
   const laneIsClear=candidate=>{
    for(const item of traffic){
@@ -6365,6 +6388,7 @@ async function loadRedBullCarModel(targetRoot,generation){
   console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
   targetRoot.updateMatrixWorld(true);
   setCamera(0);
+  upgradeOpponentVisualsToImportedModel();
  }catch(error){
   if(generation===carBuildGeneration){
    updateVehicleModelStatus("error","FALLBACK · "+(error?.message||String(error)));
@@ -6438,7 +6462,7 @@ function createLowPolyFormulaCar(team,label="Low-poly Formula car"){
 }
 function buildCar(){
  const modelGeneration=++carBuildGeneration;
- updateVehicleModelStatus("loading","BUILDING LOW-POLY FORMULA CAR…");
+ updateVehicleModelStatus("loading","BUILDING BACKUP CAR · LOADING HIGH-DETAIL 3D MODEL…");
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry&&!o.geometry.userData?.apexSharedLowPoly)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];ferrariWheelRoot=null;ferrariScreenMesh=null;ferrariWheelLoadPromise=null;ferrariDashboardBaseImage=null;dashLastDrawAt=0;wheelDisplayPage=0;softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
@@ -6710,7 +6734,7 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=true;
  lowPolyPlayerVisual=null;
  damageParts=[];
- redBullModelLoadPromise=Promise.resolve();importedCarActive=false;updateVehicleModelStatus("active","LOW-POLY CAR · PERFORMANCE MODEL");
+ redBullModelLoadPromise=loadRedBullCarModel(carRoot,modelGeneration);
  return redBullModelLoadPromise;
 }
 function applyLivery(color){
@@ -7139,7 +7163,8 @@ function updatePhysics(dt){
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);car.v+=latAccel*dt;
+ const chassisSpeedLimit=formationLapActive?Infinity:100;
+ car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,chassisSpeedLimit);car.v+=latAccel*dt;
  const lateralDamping=assistMode==="assisted"?2.8:assistMode==="sport"?1.55:.78;
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
@@ -8682,7 +8707,7 @@ function bindControls(){
 }
 async function boot(){
  try{
-  // Low-poly vehicle meshes share small local geometries; no imported car or wheel pack is required.
+  // Build a procedural safety model first; the full imported 3D car replaces it as soon as its asset pack is ready.
   loadGameSettings();championshipState=loadChampionship();quickTrackSelection=activeTrack;
   $("championshipHudBtn").style.display="none";$("trackSelect").disabled=false;$("opponentCountSelect").disabled=false;
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
@@ -8690,7 +8715,7 @@ async function boot(){
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
   if(!carRoot)buildCar();
   positionCarAtStart();
-  setLoad(76,"Preparing shared low-poly vehicle meshes");await new Promise(r=>requestAnimationFrame(r));
+  setLoad(76,"Preparing high-detail car model and wheel rig");await new Promise(r=>requestAnimationFrame(r));
   setLoad(82,"Finishing track and car setup");await new Promise(r=>requestAnimationFrame(r));
   setLoad(90,"Preparing engine audio");await new Promise(r=>requestAnimationFrame(r));
    try{initAudio();}catch(error){console.warn("Audio will initialise on the first race start.",error);}
