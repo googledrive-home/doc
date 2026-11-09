@@ -8533,7 +8533,9 @@ async function boot(){
    setLoad(86,"Fitting Ferrari wheel and preparing its LCD");
    await ferrariWheelLoadPromise;
   }
-  setLoad(91,"Applying race setup");updateWeather();syncWeatherInputs();
+  setLoad(90,"Preparing engine audio");await new Promise(r=>requestAnimationFrame(r));
+   try{initAudio();}catch(error){console.warn("Audio will initialise on the first race start.",error);}
+   setLoad(91,"Applying race setup");updateWeather();syncWeatherInputs();
   bindControls();$("trackName").textContent=trackDefs[activeTrack].name;$("trackMeta").textContent=trackDefs[activeTrack].country+" · "+fmtKm(trackDefs[activeTrack].length)+" · "+trackDefs[activeTrack].turns+" turns";
   setLoad(100,"Ready to race","Your circuit and car are ready.");await new Promise(r=>setTimeout(r,220));
   $("loading").style.opacity="0";setTimeout(()=>$("loading").style.display="none",380);
