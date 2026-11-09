@@ -3706,7 +3706,7 @@ function nearestTerrainSample(x,z){
 let shiftMode="automatic",aiSkill="medium",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true,lastRenderAt=0;
 const TARGET_RENDER_INTERVAL_MS=1000/30;
-let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0,lastMeasuredRenderFps=30;
+let performanceSampleStart=0,performanceSampleFrames=0,lastMeasuredRenderFps=30;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let formationLapEnabled=true,formationLapActive=false,formationGridSettling=false,formationGridSettleTimer=0,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0,aiFieldRecoveryTimer=0;
@@ -4773,7 +4773,7 @@ function buildRacingLineVisual(){
  if(racingLineGroup?.parent)racingLineGroup.parent.remove(racingLineGroup);
  racingLineGroup=null;
  const data=buildRacingLineData();if(!data||!trackGroup)return;
- const {samples,n,offsets,speedProfile}=data,positions=[],colours=[],indices=[];
+ const {samples,n,offsets,speedProfile}=data,positions=[],colours=[];
  const green=new THREE.Color(0x39e58c),yellow=new THREE.Color(0xffd44f),orange=new THREE.Color(0xff914e),red=new THREE.Color(0xff4e4e);
  for(let i=0;i<n;i++){
   const sample=samples[i],h=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/h,rz=-sample.tan.x/h,o=offsets[i];
@@ -4781,7 +4781,7 @@ function buildRacingLineVisual(){
   positions.push(x-rx*.17,y,z-rz*.17,x+rx*.17,y,z+rz*.17);
   const v=speedProfile[i],colour=v<32?red:v<45?orange:v<63?yellow:green;
   for(let side=0;side<2;side++)colours.push(colour.r,colour.g,colour.b);
-  const next=(i+1)%n,a=i*2,b=a+1,c=next*2,d=c+1;indices.push(a,c,b,b,c,d);
+  // Per-section indices are generated below so off-screen racing-line sections can be culled.
  }
  racingLineGroup=new THREE.Group();racingLineGroup.name="Suggested racing line and braking points";
  const chunkSize=72,lineMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:.96,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,toneMapped:false});
@@ -8826,7 +8826,7 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
 function qualityPixelRatio(){
  return graphicsQuality==="low"?.90:graphicsQuality==="high"?1.25:1.0;
 }
-function applyAdaptiveResolutionScale(){
+function applyRenderResolution(){
  if(!renderer)return;
  const cap=qualityPixelRatio();
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,cap));
@@ -8843,8 +8843,8 @@ function monitorPerformance(now){
 }
 function applyGraphicsQuality(){
  if(!renderer)return;
- adaptiveResolutionScale=1;performanceSampleStart=0;performanceSampleFrames=0;adaptiveSlowSamples=0;adaptiveFastSamples=0;
- applyAdaptiveResolutionScale();
+ performanceSampleStart=0;performanceSampleFrames=0;
+ applyRenderResolution();
  renderer.shadowMap.enabled=graphicsQuality==="high";renderer.shadowMap.type=THREE.PCFShadowMap;
  if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1024:512;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
 }
