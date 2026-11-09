@@ -8040,6 +8040,7 @@ function updatePitCinematicCamera(dt){
 
 function animate(now){
  requestAnimationFrame(animate);
+ if(!running&&!looseDamageParts.length&&!crashDebris.length)return;
  if(running)monitorPerformance(now);
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(running&&!paused){
