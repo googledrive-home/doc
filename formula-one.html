@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#080c12">
-<meta name="apex-build" content="26.11.4-full-3d-ai-lines">
+<meta name="apex-build" content="26.11.5-redbull-native-wheel-performance">
 <title>APEX // Formula Racing</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080c12;color:#f4f6f8}
@@ -407,7 +407,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
 <div id="loading"><div class="loadcard">
- <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.4 · FULL 3D / AI RACING LINES</span></div>
+ <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.5 · RED BULL 3D / PERFORMANCE</span></div>
  <div class="load-emblem">A<span>P</span>X</div><div class="brandmark">FORMULA RACING · WORLD TOUR</div>
  <h1>PREPARE<br><span>FOR THE GRID.</span></h1><p id="loadText">Preparing the circuit and car...</p>
  <div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div>
@@ -6181,7 +6181,7 @@ function createLowPolyFormulaCar(team,label="Low-poly Formula car"){
 }
 function buildCar(){
  const modelGeneration=++carBuildGeneration;
- updateVehicleModelStatus("loading","BUILDING BACKUP CAR · LOADING HIGH-DETAIL 3D MODEL…");
+ updateVehicleModelStatus("loading","LOADING RED BULL 2022 3D MODEL AND ORIGINAL WHEEL…");
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry&&!o.geometry.userData?.apexSharedLowPoly)o.geometry.dispose();});}
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];dashLastDrawAt=0;wheelDisplayPage=0;softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
