@@ -4084,13 +4084,22 @@ function initRenderer(){
   starField.frustumCulled=false;starField.renderOrder=-999;scene.add(starField);
  cloudGroup=new THREE.Group();scene.add(cloudGroup);
  cloudMaterial=new THREE.MeshBasicMaterial({color:0xf4f7f8,transparent:true,opacity:.075,depthWrite:false,toneMapped:false});
- const cloudPuff=new THREE.SphereGeometry(1,28,20);
- for(let i=0;i<15;i++){
-  const cloud=new THREE.Group();cloud.position.set(Math.cos(i*2.4)*(340+(i%4)*135),155+(i%3)*35,Math.sin(i*2.4)*(340+(i%5)*120));
-  const count=4+(i%3);
-  for(let j=0;j<count;j++){const puff=new THREE.Mesh(cloudPuff,cloudMaterial);const size=9+(j*4+i%3*2);puff.position.set((j-(count-1)/2)*size*.62,(j%2)*3.2,Math.sin(j*2.2)*size*.34);puff.scale.set(size*1.35,size*.72,size*.88);cloud.add(puff);}
-  cloudGroup.add(cloud);
+ // Clouds share one low-detail instanced draw call instead of dozens of separate sphere meshes.
+ const cloudPuff=new THREE.SphereGeometry(1,12,8),cloudCount=48;
+ const cloudInstances=new THREE.InstancedMesh(cloudPuff,cloudMaterial,cloudCount),cloudDummy=new THREE.Object3D();
+ let cloudIndex=0;
+ for(let i=0;i<12;i++){
+  const centreX=Math.cos(i*2.4)*(340+(i%4)*135),centreY=155+(i%3)*35,centreZ=Math.sin(i*2.4)*(340+(i%5)*120);
+  const count=4;
+  for(let j=0;j<count;j++){
+   const size=9+(j*4+i%3*2);
+   cloudDummy.position.set(centreX+(j-(count-1)/2)*size*.62,centreY+(j%2)*3.2,centreZ+Math.sin(j*2.2)*size*.34);
+   cloudDummy.scale.set(size*1.35,size*.72,size*.88);cloudDummy.rotation.set(0,j*.12,i*.08);
+   cloudDummy.updateMatrix();cloudInstances.setMatrixAt(cloudIndex++,cloudDummy.matrix);
+  }
  }
+ cloudInstances.count=cloudIndex;cloudInstances.instanceMatrix.needsUpdate=true;cloudInstances.frustumCulled=false;
+ cloudGroup.add(cloudInstances);
  hemiLight=new THREE.HemisphereLight(0xe8f3ff,0x899486,2.35);scene.add(hemiLight);
  ambientLight=new THREE.AmbientLight(0xffffff,.62);scene.add(ambientLight);
  sunLight=new THREE.DirectionalLight(0xfff0d5,2.05);sunLight.position.set(-250,480,-180);sunLight.castShadow=true;
