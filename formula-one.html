@@ -5537,7 +5537,33 @@ function buildGrandstandsAndCrowd(){
   }
  });
  torsoMesh.count=people;headMesh.count=people;torsoMesh.castShadow=false;headMesh.castShadow=false;
- environmentGroup.add(torsoMesh,headMesh);
+ addChunkedInstances(torsoMesh,environmentGroup,320);addChunkedInstances(headMesh,environmentGroup,320);
+}
+
+function addChunkedInstances(source,parent=environmentGroup,cellSize=420){
+ if(!source||!parent||!source.count)return;
+ const buckets=new Map(),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),colour=new THREE.Color();
+ for(let i=0;i<source.count;i++){
+  source.getMatrixAt(i,matrix);position.setFromMatrixPosition(matrix);
+  const key=Math.floor(position.x/cellSize)+":"+Math.floor(position.z/cellSize);
+  let bucket=buckets.get(key);if(!bucket){bucket=[];buckets.set(key,bucket);}
+  bucket.push({matrix:matrix.clone(),color:source.instanceColor?source.getColorAt(i,colour).clone():null});
+ }
+ for(const [key,items] of buckets){
+  const chunk=new THREE.InstancedMesh(source.geometry,source.material,items.length);
+  chunk.name=(source.name||"Static environment")+ " · view chunk "+key;
+  chunk.castShadow=source.castShadow;chunk.receiveShadow=source.receiveShadow;
+  chunk.renderOrder=source.renderOrder;chunk.frustumCulled=true;
+  items.forEach((item,index)=>{
+   chunk.setMatrixAt(index,item.matrix);
+   if(item.color)chunk.setColorAt(index,item.color);
+  });
+  chunk.instanceMatrix.needsUpdate=true;
+  if(chunk.instanceColor)chunk.instanceColor.needsUpdate=true;
+  if(typeof chunk.computeBoundingSphere==="function")chunk.computeBoundingSphere();
+  parent.add(chunk);
+ }
+ // The source is never added to the scene; its shared geometry/material remain owned by chunks.
 }
 
 function buildScenery(){
@@ -5584,7 +5610,7 @@ function buildScenery(){
  trunks.count=treeN;broadCrownA.count=broadN;broadCrownB.count=broadAltN;pineCrown.count=pineN;
  trunks.castShadow=false;broadCrownA.castShadow=false;broadCrownB.castShadow=false;pineCrown.castShadow=false;
  trunks.receiveShadow=false;broadCrownA.receiveShadow=false;broadCrownB.receiveShadow=false;pineCrown.receiveShadow=false;
- environmentGroup.add(trunks,broadCrownA,broadCrownB,pineCrown);
+ addChunkedInstances(trunks,environmentGroup,420);addChunkedInstances(broadCrownA,environmentGroup,420);addChunkedInstances(broadCrownB,environmentGroup,420);addChunkedInstances(pineCrown,environmentGroup,420);
  const shrubCount=Math.round((dry?230:park?300:260)*quality),shrubGeo=new THREE.SphereGeometry(1,8,6);
  const shrubs=new THREE.InstancedMesh(shrubGeo,shrubMat,shrubCount);
  const grassCount=Math.round((park?560:dry?420:460)*quality),grassGeo=new THREE.ConeGeometry(1,1,4),grassMat=makeMat(dry?0x9a8651:0x527543,1);
@@ -5608,7 +5634,7 @@ function buildScenery(){
  }
  shrubs.castShadow=false;rocks.castShadow=false;grasses.castShadow=false;
  shrubs.receiveShadow=false;rocks.receiveShadow=false;grasses.receiveShadow=false;
- environmentGroup.add(shrubs,grasses,rocks);
+ addChunkedInstances(shrubs,environmentGroup,360);addChunkedInstances(grasses,environmentGroup,360);addChunkedInstances(rocks,environmentGroup,360);
 }
 function clearOpponents(){
  // AI cars share geometry and most materials with the player. Dispose only team-colour
