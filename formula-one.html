@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#080c12">
-<meta name="apex-build" content="26.11.9-visible-ai-team-cars-race-hud">
+<meta name="apex-build" content="26.11.9-noncircular-damage-links">
 <title>APEX // Formula Racing</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#080c12;color:#f4f6f8}
@@ -481,7 +481,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <body>
 <canvas id="world" aria-label="3D Formula racing circuit"></canvas>
 <div id="loading"><div class="loadcard">
- <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.9 · VISIBLE AI / TEAM LIVERIES / LIVE TIMING</span></div>
+ <div class="load-topline"><span>APEX MOTORSPORTS <i>///</i> RACING SIMULATION</span><span>BUILD 26.11.9 · DAMAGE-SAFE VEHICLE CLONING / LIVE TIMING</span></div>
  <div class="load-emblem">A<span>P</span>X</div><div class="brandmark">FORMULA RACING · WORLD TOUR</div>
  <h1>PREPARE<br><span>FOR THE GRID.</span></h1><p id="loadText">Preparing the circuit and car...</p>
  <div class="loadbar"><i id="loadFill"></i></div><div class="loadmeta"><span id="loadStep">Loading 3D renderer</span><b id="loadPct">4%</b></div>
@@ -6057,7 +6057,9 @@ function damageSystemForPart(name){
 }
 function registerDamagePart(mesh,name,threshold,zone=null){
  const part={mesh,name,threshold,system:damageSystemForPart(name),zone:zone||inferDamageZone(name),detached:false};
- damageParts.push(part);mesh.userData.apexDamagePart=part;return mesh;
+ // Keep the live damage link off userData: Three.js JSON-copies userData when cloning objects.
+ Object.defineProperty(mesh,"apexDamagePart",{value:part,writable:true,configurable:true});
+ damageParts.push(part);return mesh;
 }
 function spawnCrashParticles(origin,side,severity){
  const count=Math.round(6+severity*15);
@@ -7980,14 +7982,9 @@ function findTyreInWheel(roll){
 function preparePitWheelSwap(){
  return pitWheelCorners().map(corner=>{
   const oldRoll=corner.roll,parent=oldRoll?.parent;if(!oldRoll||!parent)return null;
-  const oldParts=[],damageRecords=[];
-  oldRoll.traverse(node=>{oldParts.push(node);damageRecords.push(node.userData?.apexDamagePart||null);});
-  // Three.js serialises userData during clone; temporarily remove the circular
-  // damage-part back-reference, then restore it before the wheel is used again.
-  oldParts.forEach(node=>{if(node.userData)delete node.userData.apexDamagePart;});
-  let newRoll;
-  try{newRoll=oldRoll.clone(true);}
-  finally{oldParts.forEach((node,index)=>{if(damageRecords[index])node.userData.apexDamagePart=damageRecords[index];});}
+  const oldParts=[];oldRoll.traverse(node=>oldParts.push(node));
+  // Damage-part links live on the mesh, not userData, so the Three.js clone is safe.
+  const newRoll=oldRoll.clone(true);
   newRoll.name=(oldRoll.name||"wheel assembly")+" · fresh wheel";
   newRoll.userData={...newRoll.userData,...oldRoll.userData,pitReplacement:true};
   const newParts=[];newRoll.traverse(node=>newParts.push(node));
@@ -8011,8 +8008,8 @@ function installPitTyre(state){
  state.newRoll.position.copy(state.newStart);state.newRoll.quaternion.copy(state.originalQuaternion);state.newRoll.scale.copy(state.originalScale);
  state.newMounted=true;
  for(let i=0;i<Math.min(state.oldParts.length,state.newParts.length);i++){
-  const oldNode=state.oldParts[i],newNode=state.newParts[i],damagePart=oldNode.userData?.apexDamagePart;
-  if(damagePart){damagePart.mesh=newNode;newNode.userData.apexDamagePart=damagePart;}
+  const oldNode=state.oldParts[i],newNode=state.newParts[i],damagePart=oldNode.apexDamagePart;
+  if(damagePart){damagePart.mesh=newNode;Object.defineProperty(newNode,"apexDamagePart",{value:damagePart,writable:true,configurable:true});}
  }
  const {tyre,brakeDisk}=findTyreInWheel(state.newRoll);
  if(state.assembly){
@@ -8057,7 +8054,7 @@ function restorePitWheelChanges(){
   }
   wheelMeshes[state.index]=state.oldRoll;
   for(let i=0;i<Math.min(state.oldParts.length,state.newParts.length);i++){
-   const damagePart=state.newParts[i].userData?.apexDamagePart;
+   const damagePart=state.newParts[i].apexDamagePart;
    if(damagePart)damagePart.mesh=state.oldParts[i];
   }
   if(state.assembly){
