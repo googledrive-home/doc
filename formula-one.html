@@ -4919,12 +4919,13 @@ function makePitPathSamples(points,count=180){
  }
  return {samples,length};
 }
-function addPitRibbon(samples,width,material,yOffset=.07){
+function addPitRibbon(samples,width,material,yOffset=.07,startWidth=width,endWidth=width){
  if(!samples||samples.length<2)return;
  const positions=[],uvs=[],indices=[];
  for(let i=0;i<samples.length;i++){
   const sample=samples[i],length=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/length,rz=-sample.tan.x/length;
-  positions.push(sample.p.x-rx*width*.5,sample.p.y+yOffset,sample.p.z-rz*width*.5,sample.p.x+rx*width*.5,sample.p.y+yOffset,sample.p.z+rz*width*.5);
+  const t=i/Math.max(1,samples.length-1),currentWidth=lerp(startWidth,endWidth,smoothStep(0,.62,t));
+  positions.push(sample.p.x-rx*currentWidth*.5,sample.p.y+yOffset,sample.p.z-rz*currentWidth*.5,sample.p.x+rx*currentWidth*.5,sample.p.y+yOffset,sample.p.z+rz*currentWidth*.5);
   uvs.push(0,i*.7,1,i*.7);
  }
  for(let i=0;i<samples.length-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d);}
@@ -4943,6 +4944,16 @@ function addPitEdgeLine(samples,side,distance,color=0xf0eee5,radius=.055){
  mesh.receiveShadow=true;trackGroup.add(mesh);
 }
 
+function addTaperedPitEdgeLine(samples,side,startWidth,endWidth,color=0xf0eee5,radius=.055){
+ const points=samples.map((sample,i)=>{
+  const t=i/Math.max(1,samples.length-1),width=lerp(startWidth,endWidth,smoothStep(0,.62,t));
+  const len=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/len,rz=-sample.tan.x/len;
+  return new THREE.Vector3(sample.p.x+rx*side*(width*.5-.22),sample.p.y+.155,sample.p.z+rz*side*(width*.5-.22));
+ });
+ const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.35);
+ const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,samples.length),radius,5,false),makeMat(color,.72));
+ mesh.receiveShadow=false;trackGroup.add(mesh);
+}
 function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples.length-1){
  const start=Math.max(0,startIndex),end=Math.min(samples.length-1,endIndex);
  if(end-start<4)return;
@@ -5049,7 +5060,7 @@ function buildPitLane(){
   const t=i/8,progress=entryProgress+(1-entryProgress)*t;
   // Start near the usable outer edge of the racing surface so the car can
   // actually join the pit path from the track, rather than snapping from centreline.
-  const edgeOffset=roadWidth*.45;
+  const edgeOffset=roadWidth*.5+.8;
   return at(progress,lerp(edgeOffset,laneOffset,smoothStep(0,1,t)));
  });
  const entry=makePitPathSamples(entryControls,Math.max(72,Math.ceil(entryBefore/2.2)));
@@ -5087,9 +5098,13 @@ function buildPitLane(){
  if(Math.abs(pitEntryRouteLength-pitLengthTarget)>pitLengthTarget*.12)console.warn("Pit route length differs from reference by more than 12%",pitAudit);
  const pitAsphalt=circuitAsphaltMaterial?circuitAsphaltMaterial.clone():new THREE.MeshPhysicalMaterial({color:0xffffff,map:makeAsphaltTexture(),roughness:.87,metalness:.02,clearcoat:0,clearcoatRoughness:.85,side:THREE.DoubleSide});
  pitAsphalt.userData.isAsphalt=true;
- addPitRibbon(visualRoute,PIT_LANE_WIDTH,pitAsphalt,.075);
+ addPitRibbon(entry.samples,PIT_LANE_WIDTH,pitAsphalt,.075,.8,PIT_LANE_WIDTH);
+ addPitRibbon(lane.samples,PIT_LANE_WIDTH,pitAsphalt,.075);
+ addPitRibbon(exit.samples,PIT_LANE_WIDTH,pitAsphalt,.075);
  addPitRibbon(driveway.samples,PIT_LANE_WIDTH,pitAsphalt,.078);
- for(const samples of [visualRoute,driveway.samples]){
+ addTaperedPitEdgeLine(entry.samples,-1,.8,PIT_LANE_WIDTH,0xf1efe8,.052);
+ addTaperedPitEdgeLine(entry.samples,1,.8,PIT_LANE_WIDTH,0xf1efe8,.052);
+ for(const samples of [lane.samples,exit.samples,driveway.samples]){
   addPitEdgeLine(samples,-1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
   addPitEdgeLine(samples,1,PIT_LANE_WIDTH*.5-.22,0xf1efe8,.052);
  }
