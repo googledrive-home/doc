@@ -5516,7 +5516,7 @@ function spawnOpponents(){
   if(!gridSlot)continue;
   const progress=gridSlot.progress,baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
   const initialGap=((progress-playerProgress+1)%1)*aiLength;
-  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0;contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
+  const bot={root,nameTag,progress,gridProgress:progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,formationDistance:0,formationLastProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset,playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity};
   const sample=gridSlot,right=new THREE.Vector3(sample.tangent.z,0,-sample.tangent.x).normalize();
   const yaw=Math.atan2(sample.tangent.x,sample.tangent.z),slope=Math.atan2(sample.tangent.y,Math.hypot(sample.tangent.x,sample.tangent.z));
   root.position.set(sample.point.x+right.x*bot.offset,sample.point.y+.035,sample.point.z+right.z*bot.offset);
