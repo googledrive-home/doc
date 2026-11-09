@@ -3571,7 +3571,8 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 
 let playerHeadlights=[],playerHeadlightsOwner=null;
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,starField=null,trackFloodlights=[],softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
-let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false;
+let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false,lowPolyPlayerVisual=null;
+let lowPolyVehicleGeometries=null;const lowPolyVehicleMaterials=new Map();
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
 let ferrariWheelRoot=null,ferrariScreenMesh=null,ferrariWheelLoadPromise=null,wheelDisplayPage=0;
 let ferrariWheelAssetsPromise=null,ferrariDashboardBaseImage=null,ferrariCarbonWeaveTexture=null,dashLastDrawAt=0;
@@ -5343,7 +5344,7 @@ function clearOpponents(){
    if(!object.isMesh||!object.material)return;
    const materials=Array.isArray(object.material)?object.material:[object.material];
    materials.forEach(material=>{
-    if(material&&!sharedMaterials.has(material)&&!disposed.has(material)){disposed.add(material);material.dispose();}
+    if(material&&!material.userData?.apexSharedLowPoly&&!sharedMaterials.has(material)&&!disposed.has(material)){disposed.add(material);material.dispose();}
    });
   });
  });
@@ -5469,43 +5470,20 @@ function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength;
- if(!carRoot||!aiRoute.length||!aiLength){$("opponentValue").textContent="00";return;}
- for(let i=0;i<opponentCount;i++){
-  const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);root.visible=true;root.userData.isAI=true;
-  const lights=[];let meshCount=0;
-  root.traverse(o=>{
-   if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)lights.push(o);
-   if(o.isMesh){meshCount++;o.visible=true;o.frustumCulled=false;o.castShadow=false;o.receiveShadow=false;}
-  });
-  lights.forEach(o=>o.parent?.remove(o));
-  if(meshCount===0){
-   const fallback=new THREE.Mesh(new THREE.BoxGeometry(1.8,.55,4.4),new THREE.MeshStandardMaterial({color:0x2879c9,roughness:.5}));
-   fallback.position.y=.55;root.add(fallback);
-  }
+ if(!aiRoute.length||!aiLength){$("opponentValue").textContent="00";return;}
+ const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0)));
+ for(let i=0;i<count;i++){
   const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
-  const team=TEAM_LIVERIES.find(x=>x.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
-  const primary=new THREE.Color(team.primary),accent=new THREE.Color(team.accent);
-  const playerHex=selectedLivery.replace("#","").toLowerCase(),accentHex=selectedAccent.replace("#","").toLowerCase();
-  root.traverse(o=>{
-   if(!o.isMesh||!o.material)return;
-   const paint=mat=>{
-    if(!mat||!mat.color)return mat;
-    const hex=mat.color.getHexString().toLowerCase();
-    if(hex===playerHex){const cloned=mat.clone();cloned.color.copy(primary);return cloned;}
-    if(hex===accentHex){const cloned=mat.clone();cloned.color.copy(accent);return cloned;}
-    return mat;
-   };
-   o.material=Array.isArray(o.material)?o.material.map(paint):paint(o.material);
-  });
+  const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
+  const model=createLowPolyFormulaCar(team,"AI "+driver.name+" · "+team.mark),root=model.root;
+  root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}});
   const row=Math.floor(i/2),gridDistance=8+row*8.1,progress=((1-gridDistance/aiLength)%1+1)%1;
-  const wheels=[],frontPivots=[];
-  root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
   const baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
-  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
+  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels:model.wheels,frontPivots:model.frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
   const sample=aiRoute[Math.floor(progress*aiRoute.length)%aiRoute.length],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
   root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
-  root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);root.updateMatrixWorld(true);
-  scene.add(root);opponents.push(bot);
+  root.rotation.set(-slope,yaw,0,"YXZ");root.updateMatrixWorld(true);scene.add(root);opponents.push(bot);
  }
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
 }
@@ -5709,7 +5687,7 @@ function clearCrashEffects(){
  looseDamageParts=[];
  for(const p of crashDebris){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}
  crashDebris=[];
- vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
+ vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};lowPolyPlayerVisual=null;
 }
 
 const REDBULL_ASSET_VERSION="redbull-20261104-controls-fix";
@@ -6331,10 +6309,59 @@ async function loadRedBullCarModel(targetRoot,generation){
  }
 }
 
+function getLowPolyVehicleGeometries(){
+ if(lowPolyVehicleGeometries)return lowPolyVehicleGeometries;
+ const mark=geometry=>{geometry.userData.apexSharedLowPoly=true;return geometry;};
+ lowPolyVehicleGeometries={
+  box:mark(new THREE.BoxGeometry(1,1,1)),nose:mark(new THREE.ConeGeometry(.40,1.86,5,1)),
+  tyre:mark(new THREE.CylinderGeometry(.39,.39,.25,7,1)),hub:mark(new THREE.CylinderGeometry(.205,.205,.265,6,1)),
+  halo:mark(new THREE.CylinderGeometry(.045,.045,1,5,1)),helmet:mark(new THREE.DodecahedronGeometry(.24,0)),
+  steering:mark(new THREE.TorusGeometry(.19,.026,5,9))
+ };
+ return lowPolyVehicleGeometries;
+}
+function getLowPolyVehicleMaterials(team){
+ const key=team?.id||team?.primary||"default";
+ if(lowPolyVehicleMaterials.has(key))return lowPolyVehicleMaterials.get(key);
+ const make=color=>{const material=new THREE.MeshLambertMaterial({color,flatShading:true});material.userData.apexSharedLowPoly=true;return material;};
+ const palette={body:make(team?.primary||"#d83b36"),accent:make(team?.accent||"#f0c84b"),carbon:make(0x202a32),tyre:make(0x15191d),hub:make(0x9aa4aa),visor:make(0x13232c)};
+ lowPolyVehicleMaterials.set(key,palette);return palette;
+}
+function createLowPolyFormulaCar(team,label="Low-poly Formula car"){
+ const geo=getLowPolyVehicleGeometries(),mat=getLowPolyVehicleMaterials(team),root=new THREE.Group();
+ root.name=label;root.userData.lowPolyFormulaCar=true;const wheels=[],frontPivots=[];
+ const box=(sx,sy,sz,x,y,z,material)=>{
+  const mesh=new THREE.Mesh(geo.box,material);mesh.scale.set(sx,sy,sz);mesh.position.set(x,y,z);root.add(mesh);return mesh;
+ };
+ const bar=(start,end,material)=>{
+  const a=new THREE.Vector3(...start),b=new THREE.Vector3(...end),delta=b.sub(a),mesh=new THREE.Mesh(geo.halo,material);
+  mesh.position.copy(a.addScaledVector(delta,.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.clone().normalize());
+  mesh.scale.y=delta.length();root.add(mesh);return mesh;
+ };
+ box(1.66,.13,4.55,0,.27,-.02,mat.carbon);box(1.12,.43,2.62,0,.53,-.10,mat.body);
+ box(.62,.17,1.02,0,.72,-.12,mat.carbon);box(.70,.32,1.22,-.67,.46,-.20,mat.body);box(.70,.32,1.22,.67,.46,-.20,mat.body);
+ const nose=new THREE.Mesh(geo.nose,mat.body);nose.rotation.x=Math.PI/2;nose.position.set(0,.47,1.72);root.add(nose);
+ box(2.12,.11,.34,0,.25,2.47,mat.accent);box(.12,.35,.40,-1.0,.38,2.42,mat.body);box(.12,.35,.40,1.0,.38,2.42,mat.body);
+ box(1.82,.14,.30,0,.82,-2.03,mat.body);box(.12,.35,.38,-.84,.75,-2.02,mat.accent);box(.12,.35,.38,.84,.75,-2.02,mat.accent);
+ box(.86,.10,.34,0,.42,-2.17,mat.carbon);box(.62,.12,.76,0,.80,-.28,mat.carbon);
+ const helmet=new THREE.Mesh(geo.helmet,mat.accent);helmet.position.set(0,1.02,-.48);root.add(helmet);box(.34,.075,.045,0,1.06,-.265,mat.visor);
+ const steering=new THREE.Mesh(geo.steering,mat.carbon);steering.position.set(0,.91,.47);root.add(steering);
+ bar([0,1.12,.52],[0,1.34,.48],mat.carbon);bar([-.34,1.12,.16],[-.31,1.31,-.26],mat.carbon);
+ bar([.34,1.12,.16],[.31,1.31,-.26],mat.carbon);bar([-.31,1.31,-.26],[0,1.34,.48],mat.carbon);
+ bar([.31,1.31,-.26],[0,1.34,.48],mat.carbon);
+ for(const z of [1.39,-1.38])for(const side of [-1,1]){
+  const front=z>0,pivot=new THREE.Group();pivot.position.set(side*.91,.39,z);root.add(pivot);
+  const tyre=new THREE.Mesh(geo.tyre,mat.tyre);tyre.rotation.z=Math.PI/2;pivot.add(tyre);
+  const hub=new THREE.Mesh(geo.hub,mat.hub);hub.rotation.z=Math.PI/2;pivot.add(hub);
+  wheels.push(tyre);if(front)frontPivots.push(pivot);
+ }
+ root.traverse(object=>{object.visible=true;if(object.isMesh){object.castShadow=false;object.receiveShadow=false;object.frustumCulled=false;}});
+ return {root,wheels,frontPivots};
+}
 function buildCar(){
  const modelGeneration=++carBuildGeneration;
  updateVehicleModelStatus("loading","LOADING RED BULL 2022…");
- if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
+ if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry&&!o.geometry.userData?.apexSharedLowPoly)o.geometry.dispose();});
  carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];ferrariWheelRoot=null;ferrariScreenMesh=null;ferrariWheelLoadPromise=null;ferrariDashboardBaseImage=null;dashLastDrawAt=0;wheelDisplayPage=0;softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
  const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
@@ -6600,8 +6627,10 @@ steeringPivot=new THREE.Group();steeringPivot.position.set(0,1.00,.80);steeringP
  applyLivery(selectedLivery);
  const fallback=new THREE.Group();fallback.name="procedural-fallback-car";fallback.scale.x=.78;
  for(const child of [...carRoot.children])fallback.add(child);
- carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;
- redBullModelLoadPromise=loadRedBullCarModel(carRoot,modelGeneration);
+ carRoot.scale.set(1,1,1);carRoot.add(fallback);proceduralFallbackRoot=fallback;fallback.visible=false;
+ const playerTeam=TEAM_LIVERIES.find(item=>item.id===selectedTeamId)||TEAM_LIVERIES[0];
+ lowPolyPlayerVisual=createLowPolyFormulaCar(playerTeam,"Player low-poly Formula car");carRoot.add(lowPolyPlayerVisual.root);
+ redBullModelLoadPromise=Promise.resolve();importedCarActive=false;updateVehicleModelStatus("active","LOW-POLY CAR · PERFORMANCE MODEL");
  return redBullModelLoadPromise;
 }
 function applyLivery(color){
@@ -7190,6 +7219,7 @@ function updatePhysics(dt){
   steeringPivot.rotation.z=-clamp(car.steer/Math.max(.001,roadWheelLock)*wheelLockRadians,-wheelLockRadians,wheelLockRadians);handGroup.rotation.z=0;
  for(const pivot of frontWheelPivots)pivot.rotation.y=car.steer;
  for(const wheel of wheelMeshes)wheel.rotation.x=car.wheelSpin;
+ if(lowPolyPlayerVisual){lowPolyPlayerVisual.frontPivots.forEach(p=>p.rotation.y=car.steer);lowPolyPlayerVisual.wheels.forEach(w=>w.rotation.x=car.wheelSpin);}
  updateSoftBody(dt);
  car.ersEnergy=clamp((car.ersEnergy??100)+dt*(brake>.12?8:throttle<.12?1.8:0)-dt*(car.ersDeploy&&throttle>.12?14:0),0,100);
  if(car.ersEnergy<=0)car.ersDeploy=false;
@@ -8134,7 +8164,7 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function qualityPixelRatio(){
- return graphicsQuality==="low"?.62:graphicsQuality==="high"?1.0:.80;
+ return graphicsQuality==="low"?.55:graphicsQuality==="high"?.84:.70;
 }
 function applyAdaptiveResolutionScale(){
  if(!renderer)return;
