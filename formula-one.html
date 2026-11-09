@@ -4654,23 +4654,30 @@ function addStartGridMarkings(){
 function buildRacingLineData(){
  const samples=circuitRoute.length?circuitRoute:route,n=samples.length,length=circuitRouteLength||routeLength;
  if(n<8||length<=0){racingLineData=null;return null;}
- const offsets=new Float32Array(n),curvature=new Float32Array(n),speedProfile=new Float32Array(n),ds=length/n;
+ const offsets=new Float32Array(n),curvature=new Float32Array(n),turnSigns=new Float32Array(n),speedProfile=new Float32Array(n),ds=length/n;
  const span=Math.max(4,Math.round(n*12/length));
  for(let i=0;i<n;i++){
   const before=samples[(i-span+n)%n].tan,after=samples[(i+span)%n].tan;
   const cross=before.z*after.x-before.x*after.z,dot=clamp(before.x*after.x+before.z*after.z,-1,1);
-  const angle=Math.atan2(cross,dot),k=Math.abs(angle)/Math.max(1,2*span*ds);
-  curvature[i]=k;
-  offsets[i]=clamp(-Math.sign(angle)*Math.min(2.35,k*78),-3.0,3.0);
+  const angle=Math.atan2(cross,dot);
+  turnSigns[i]=Math.sign(angle);
+  curvature[i]=Math.abs(angle)/Math.max(1,2*span*ds);
  }
- const smoothed=new Float32Array(n);
+ // Move from the outside on corner entry, clip the inside at the apex, then unwind outward.
+ for(let i=0;i<n;i++){
+  const k=curvature[i],before=curvature[(i-span+n)%n],after=curvature[(i+span)%n];
+  const rise=clamp((k-before)/Math.max(.0005,k),0,1);
+  const fall=clamp((k-after)/Math.max(.0005,k),0,1);
+  const outside=Math.max(rise,fall),inside=1-outside,turn=turnSigns[i];
+  offsets[i]=clamp(turn*(inside*1.15-outside*2.05),-2.65,2.65);
+ }
+ const smoothed=new Float32Array(n),scratch=new Float32Array(n);
  for(let pass=0;pass<3;pass++){
-  for(let i=0;i<n;i++){
-   const source=pass===0?offsets:smoothed;
-   smoothed[i]=source[(i-1+n)%n]*.25+source[i]*.5+source[(i+1)%n]*.25;
-  }
-  if(pass<2)offsets.set(smoothed);
+  const source=pass===0?offsets:smoothed;
+  for(let i=0;i<n;i++)scratch[i]=source[(i-1+n)%n]*.25+source[i]*.5+source[(i+1)%n]*.25;
+  smoothed.set(scratch);
  }
+ offsets.set(smoothed);
  const spec=tireSpecs[tyreCompound]||tireSpecs.medium,water=clamp(trackWetness,0,1);
  const wetFactor=tyreCompound==="wet"?lerp(.80,1.04,smoothStep(.20,.86,water)):
   tyreCompound==="intermediate"?Math.max(.56,1.01-.70*Math.pow((water-.42)/.58,2)):Math.max(.29,1-.72*water);
@@ -4685,6 +4692,7 @@ function buildRacingLineData(){
   speedProfile[i]=Math.max(12,speed);
  }
  const maxBrake=clamp(grip*9.81*.92,7,19.5);
+ // Backward propagation gives each point a speed low enough to brake for the next corner.
  for(let pass=0;pass<3;pass++){
   for(let i=n-1;i>=0;i--){
    const next=(i+1)%n,reachable=Math.sqrt(speedProfile[next]*speedProfile[next]+2*maxBrake*ds);
