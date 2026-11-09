@@ -8089,7 +8089,7 @@ function updateWeather(){
  syncTimeOfDayControls();lastWetnessVisual=wet;
 }
 
-let rainPoints=null,rainGeometry=null;
+let rainPoints=null,rainGeometry=null,rainVisualAccumulator=0;
 function ensureRain(){
  if(!rainPoints){
   const count=1300,arr=new Float32Array(count*3);for(let i=0;i<count;i++){arr[i*3]=(Math.random()-.5)*100;arr[i*3+1]=Math.random()*45;arr[i*3+2]=(Math.random()-.5)*100;}
@@ -8136,9 +8136,11 @@ function updateRain(dt){
   if(Math.abs(trackWetness-lastWetnessVisual)>.012)updateWeather();
  }
  if(!rainPoints||!rainPoints.visible||!carRoot)return;
+ rainVisualAccumulator+=dt;if(rainVisualAccumulator<1/30)return;
+ const visualDt=Math.min(.12,rainVisualAccumulator);rainVisualAccumulator=0;
  const a=rainGeometry.attributes.position.array;
  for(let i=0;i<a.length;i+=3){
-  a[i+1]-=dt*(18+weather.rain*.45);
+  a[i+1]-=visualDt*(18+weather.rain*.45);
   if(a[i+1]<0){a[i+1]=32+Math.random()*18;a[i]=car.x+(Math.random()-.5)*100;a[i+2]=car.z+(Math.random()-.5)*100;}
  }
  rainPoints.position.set(car.x,0,car.z);rainGeometry.attributes.position.needsUpdate=true;
