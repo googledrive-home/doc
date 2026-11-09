@@ -5561,7 +5561,7 @@ function updateRaceStart(dt){
  }else overlay.classList.remove("open");
 }
 
-function makeDriverNameTag(driverName,team,number){
+function makeDriverNameTag(driverName,team,number,personality){
  const canvas=document.createElement("canvas");canvas.width=512;canvas.height=112;
  const ctx=canvas.getContext("2d");ctx.clearRect(0,0,512,112);
  const primary=team?.primary||"#19385d",accent=team?.accent||"#ffc77e";
@@ -5569,7 +5569,8 @@ function makeDriverNameTag(driverName,team,number){
  rounded(5,5,502,102,16);const gradient=ctx.createLinearGradient(0,0,512,112);gradient.addColorStop(0,"rgba(19,39,55,.96)");gradient.addColorStop(1,"rgba(5,16,27,.96)");ctx.fillStyle=gradient;ctx.fill();ctx.strokeStyle=accent;ctx.lineWidth=3;ctx.stroke();
  ctx.fillStyle=primary;ctx.fillRect(12,12,10,88);ctx.fillStyle=accent;ctx.fillRect(24,12,3,88);
  ctx.fillStyle=accent;ctx.font="900 22px system-ui";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(String(team?.mark||"GP").toUpperCase(),38,36);
- ctx.fillStyle="#f7fafc";ctx.font="900 33px system-ui, sans-serif";ctx.fillText(String(driverName||"DRIVER").toUpperCase(),38,77,365);
+ ctx.fillStyle="#f7fafc";ctx.font="900 31px system-ui, sans-serif";ctx.fillText(String(driverName||"DRIVER").toUpperCase(),38,74,365);
+ ctx.fillStyle="#a9bdc8";ctx.font="800 13px system-ui";ctx.fillText(String(team?.name||"CONSTRUCTOR")+" · "+String(personality?.label||"RACE DRIVER").toUpperCase(),38,99,365);
  ctx.textAlign="right";ctx.font="1000 34px ui-monospace,monospace";ctx.fillStyle=accent;ctx.fillText(String(number||"").padStart(2,"0"),478,58);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false,toneMapped:false}));
@@ -5603,10 +5604,11 @@ function teamById(teamId){return TEAM_LIVERIES.find(team=>team.id===teamId)||TEA
 function createTeamTextureVariant(baseTexture,team){
  const image=baseTexture?.image;
  if(!image||!Number(image.width)||!Number(image.height))return null;
- const key=team.id+"|"+(baseTexture.uuid||"texture");
+ const imageKey=image.currentSrc||image.src||baseTexture.uuid||"texture";
+ const key=team.id+"|"+imageKey+"|"+baseTexture.offset.x+","+baseTexture.offset.y+"|"+baseTexture.repeat.x+","+baseTexture.repeat.y;
  if(teamTextureVariants.has(key))return teamTextureVariants.get(key);
  try{
-  const scale=Math.min(1,2048/Math.max(image.width,image.height));
+  const scale=Math.min(1,768/Math.max(image.width,image.height));
   const width=Math.max(2,Math.round(image.width*scale)),height=Math.max(2,Math.round(image.height*scale));
   const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext("2d",{alpha:true});ctx.drawImage(image,0,0,width,height);
@@ -5617,8 +5619,8 @@ function createTeamTextureVariant(baseTexture,team){
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=baseTexture.colorSpace||THREE.SRGBColorSpace;
   texture.flipY=baseTexture.flipY;texture.mapping=baseTexture.mapping;texture.wrapS=baseTexture.wrapS;texture.wrapT=baseTexture.wrapT;
   texture.offset.copy(baseTexture.offset);texture.repeat.copy(baseTexture.repeat);texture.center.copy(baseTexture.center);texture.rotation=baseTexture.rotation;
-  texture.minFilter=baseTexture.minFilter;texture.magFilter=baseTexture.magFilter;
-  texture.anisotropy=Math.min(4,renderer?.capabilities?.getMaxAnisotropy?.()||1);texture.needsUpdate=true;
+  texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
+  texture.anisotropy=Math.min(2,renderer?.capabilities?.getMaxAnisotropy?.()||1);texture.needsUpdate=true;
   teamTextureVariants.set(key,texture);return texture;
  }catch(error){console.warn("Team texture tint skipped for "+team.name,error);return null;}
 }
@@ -5763,7 +5765,7 @@ function spawnOpponents(){
   const root=vehicleSource.clone(true);root.name="AI · "+driver.name;root.visible=true;
   const parts=collectOpponentVehicleParts(root);
   applyTeamSpecificLivery(root,team.id,String(i+1).padStart(2,"0"));
-  const nameTag=makeDriverNameTag(driver.name,team,i+1);root.add(nameTag);
+  const nameTag=makeDriverNameTag(driver.name,team,i+1,personality);root.add(nameTag);
   const progress=gridSlot.progress,formationOffset=i%2===0?1.95:-1.95;
   const lineBias=((i*.6180339887498949)%1-.5)*2.8,linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08;
   const pace=(base+(i%3-1)*1.7)*(personality.pace||1);
