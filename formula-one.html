@@ -8088,6 +8088,7 @@ function bindPitStation(){
 function startSession(sessionMode="practice"){
  if(builtTrackId!==activeTrack)createTrack();
  const startInPit=sessionMode==="practice";
+ if(sessionMode==="race"&&opponentCount<1){opponentCount=8;quickOpponentSelection=8;$("opponentCountSelect").value="8";}
  currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;
  weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
@@ -8541,11 +8542,7 @@ function bindControls(){
 }
 async function boot(){
  try{
-  // Start downloading the Ferrari wheel and all glTF-referenced textures while
-  // the track and full car are being prepared, not after the race has started.
-  const wheelPreloadPromise=getFerrariWheelAssets().catch(error=>{
-   console.error("[APEX] Ferrari wheel preload failed:",error);return null;
-  });
+  // Low-poly vehicle meshes share small local geometries; no imported car or wheel pack is required.
   loadGameSettings();championshipState=loadChampionship();quickTrackSelection=activeTrack;
   $("championshipHudBtn").style.display="none";$("trackSelect").disabled=false;$("opponentCountSelect").disabled=false;
   setLoad(12,"Loading graphics engine");await new Promise(r=>requestAnimationFrame(r));
@@ -8553,16 +8550,8 @@ async function boot(){
   createTrack();setLoad(67,"Constructing the open-wheel car");await new Promise(r=>requestAnimationFrame(r));
   if(!carRoot)buildCar();
   positionCarAtStart();
-  if(redBullModelLoadPromise){
-   setLoad(76,"Installing Red Bull 2022 model");
-   await Promise.race([redBullModelLoadPromise,new Promise(resolve=>setTimeout(resolve,25000))]);
-  }
-  setLoad(82,"Loading Ferrari steering wheel and textures");
-  await wheelPreloadPromise;
-  if(ferrariWheelLoadPromise){
-   setLoad(86,"Fitting Ferrari wheel and preparing its LCD");
-   await ferrariWheelLoadPromise;
-  }
+  setLoad(76,"Preparing shared low-poly vehicle meshes");await new Promise(r=>requestAnimationFrame(r));
+  setLoad(82,"Finishing track and car setup");await new Promise(r=>requestAnimationFrame(r));
   setLoad(90,"Preparing engine audio");await new Promise(r=>requestAnimationFrame(r));
    try{initAudio();}catch(error){console.warn("Audio will initialise on the first race start.",error);}
    setLoad(91,"Applying race setup");updateWeather();syncWeatherInputs();
