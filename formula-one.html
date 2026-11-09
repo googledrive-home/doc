@@ -5571,6 +5571,7 @@ function updateOpponents(dt){
     const remainingToGrid=((bot.gridProgress-bot.progress+1)%1)*aiLength;
     if(remainingToGrid<.38&&bot.speed<.65){bot.progress=bot.gridProgress;bot.speed=0;bot.formationParked=true;target=0;}
     else target=Math.min(target,Math.sqrt(Math.max(0,2*5.2*remainingToGrid)));
+   }
    // Formation-lap AI keeps its own calculated pace instead of being speed-matched to the player.
   }
   const laneIsClear=candidate=>{
