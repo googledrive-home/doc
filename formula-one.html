@@ -4084,22 +4084,29 @@ function initRenderer(){
   starField.frustumCulled=false;starField.renderOrder=-999;scene.add(starField);
  cloudGroup=new THREE.Group();scene.add(cloudGroup);
  cloudMaterial=new THREE.MeshBasicMaterial({color:0xf4f7f8,transparent:true,opacity:.075,depthWrite:false,toneMapped:false});
- // Clouds share one low-detail instanced draw call instead of dozens of separate sphere meshes.
- const cloudPuff=new THREE.SphereGeometry(1,12,8),cloudCount=48;
- const cloudInstances=new THREE.InstancedMesh(cloudPuff,cloudMaterial,cloudCount),cloudDummy=new THREE.Object3D();
- let cloudIndex=0;
- for(let i=0;i<12;i++){
+ // Cloud puffs are instanced per nearby sky cluster. Each cluster has its own bounds,
+ // so Three.js can skip it entirely when it is outside the current camera frustum.
+ const cloudPuff=new THREE.SphereGeometry(1,12,8),cloudBuckets=new Map(),cloudDummy=new THREE.Object3D();
+ for(let i=0;i<15;i++){
   const centreX=Math.cos(i*2.4)*(340+(i%4)*135),centreY=155+(i%3)*35,centreZ=Math.sin(i*2.4)*(340+(i%5)*120);
-  const count=4;
+  const key=Math.floor(centreX/460)+":"+Math.floor(centreZ/460);
+  let bucket=cloudBuckets.get(key);if(!bucket){bucket=[];cloudBuckets.set(key,bucket);}
+  const count=4+(i%3);
   for(let j=0;j<count;j++){
    const size=9+(j*4+i%3*2);
    cloudDummy.position.set(centreX+(j-(count-1)/2)*size*.62,centreY+(j%2)*3.2,centreZ+Math.sin(j*2.2)*size*.34);
    cloudDummy.scale.set(size*1.35,size*.72,size*.88);cloudDummy.rotation.set(0,j*.12,i*.08);
-   cloudDummy.updateMatrix();cloudInstances.setMatrixAt(cloudIndex++,cloudDummy.matrix);
+   cloudDummy.updateMatrix();bucket.push(cloudDummy.matrix.clone());
   }
  }
- cloudInstances.count=cloudIndex;cloudInstances.instanceMatrix.needsUpdate=true;cloudInstances.frustumCulled=false;
- cloudGroup.add(cloudInstances);
+ for(const [key,matrices] of cloudBuckets){
+  const cluster=new THREE.InstancedMesh(cloudPuff,cloudMaterial,matrices.length);
+  cluster.name="Cloud cluster "+key;cluster.frustumCulled=true;
+  matrices.forEach((matrix,index)=>cluster.setMatrixAt(index,matrix));
+  cluster.instanceMatrix.needsUpdate=true;
+  if(typeof cluster.computeBoundingSphere==="function")cluster.computeBoundingSphere();
+  cloudGroup.add(cluster);
+ }
  hemiLight=new THREE.HemisphereLight(0xe8f3ff,0x899486,2.35);scene.add(hemiLight);
  ambientLight=new THREE.AmbientLight(0xffffff,.62);scene.add(ambientLight);
  sunLight=new THREE.DirectionalLight(0xfff0d5,2.05);sunLight.position.set(-250,480,-180);sunLight.castShadow=true;
