@@ -6436,7 +6436,8 @@ function registerDamagePart(mesh,name,threshold,zone=null){
  damageParts.push(part);return mesh;
 }
 function spawnCrashParticles(origin,side,severity){
- const count=Math.round(6+severity*15);
+ const count=Math.min(Math.round(6+severity*15),Math.max(0,72-crashDebris.length));
+ if(!count)return;
  const colors=[0xe8483f,0x222a31,0xc2c8cc,0xf0bd4c];
  for(let i=0;i<count;i++){
   const material=new THREE.MeshStandardMaterial({color:colors[i%colors.length],roughness:.82,metalness:.12});
