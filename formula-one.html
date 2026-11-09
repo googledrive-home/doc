@@ -3704,8 +3704,9 @@ function nearestTerrainSample(x,z){
  return {sample:nearest,distance:Math.sqrt(best)};
 }
 let shiftMode="automatic",aiSkill="medium",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
-let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
-let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
+let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true,lastRenderAt=0;
+const TARGET_RENDER_INTERVAL_MS=1000/30;
+let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0,lastMeasuredRenderFps=30;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let formationLapEnabled=true,formationLapActive=false,formationGridSettling=false,formationGridSettleTimer=0,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0,aiFieldRecoveryTimer=0;
@@ -8766,30 +8767,17 @@ function qualityPixelRatio(){
 function applyAdaptiveResolutionScale(){
  if(!renderer)return;
  const cap=qualityPixelRatio();
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,cap*adaptiveResolutionScale));
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,cap));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
 }
 function monitorPerformance(now){
  performanceSampleFrames++;
  if(!performanceSampleStart){performanceSampleStart=now;return;}
  const span=now-performanceSampleStart;
- if(span<1400)return;
- const fps=performanceSampleFrames*1000/span;
+ if(span<1800)return;
+ lastMeasuredRenderFps=performanceSampleFrames*1000/span;
  performanceSampleFrames=0;performanceSampleStart=now;
- if(fps<48){
-  adaptiveSlowSamples++;adaptiveFastSamples=0;
- }else if(fps>58){
-  adaptiveFastSamples++;adaptiveSlowSamples=0;
- }else{
-  adaptiveSlowSamples=0;adaptiveFastSamples=0;
- }
- if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.86){
-  adaptiveResolutionScale=Math.max(.86,adaptiveResolutionScale-.035);
-  applyAdaptiveResolutionScale();adaptiveSlowSamples=0;
- }else if(adaptiveFastSamples>=5&&adaptiveResolutionScale<1){
-  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.02);
-  applyAdaptiveResolutionScale();adaptiveFastSamples=0;
- }
+ // Resolution stays fixed; the scene is optimised through culling and render scheduling.
 }
 function applyGraphicsQuality(){
  if(!renderer)return;
@@ -8814,7 +8802,7 @@ function updatePitCinematicCamera(dt){
 function animate(now){
  requestAnimationFrame(animate);
  if(!running&&!looseDamageParts.length&&!crashDebris.length)return;
- if(running)monitorPerformance(now);
+ 
  const frameDt=Math.min(.05,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(running&&!paused&&currentSessionMode!=="timeTrial"&&opponentCount>0&&!opponents.length){
   aiFieldRecoveryTimer+=frameDt;
@@ -8848,14 +8836,18 @@ function animate(now){
   physicsAccumulator=0;
   if(pitCinematic.active)updatePitCinematicCamera(frameDt);else setCamera(frameDt);
  }
- if(skyDome)skyDome.position.copy(camera.position);
- if(starField)starField.position.copy(camera.position);
- if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
  if(teamRadioTimer>0)updateTeamRadio(frameDt);
  if(running&&!paused)updateTrafficRadio(frameDt);
- updateTimeTrialGhost();
- if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
- if(renderer&&scene&&camera&&(running||looseDamageParts.length||crashDebris.length))renderer.render(scene,camera);
+ const needsRender=!!(renderer&&scene&&camera&&(running||looseDamageParts.length||crashDebris.length));
+ if(needsRender&&now-lastRenderAt>=TARGET_RENDER_INTERVAL_MS-.25){
+  lastRenderAt=now;monitorPerformance(now);
+  if(skyDome)skyDome.position.copy(camera.position);
+  if(starField)starField.position.copy(camera.position);
+  if(cloudGroup&&carRoot)cloudGroup.position.set(carRoot.position.x,0,carRoot.position.z);
+  updateTimeTrialGhost();
+  if(running||looseDamageParts.length||crashDebris.length)updateCrashDebris(frameDt);
+  renderer.render(scene,camera);
+ }
 }
 
 let settingsResumeAfterClose=false;
