@@ -4404,7 +4404,7 @@ function addSuzukaBridgeStructure(){
  geometry.setAttribute("position",new THREE.Float32BufferAttribute(vertices,3));
  geometry.setIndex(indices);geometry.computeVertexNormals();
  const concrete=new THREE.MeshStandardMaterial({color:0x69747b,roughness:.91,metalness:.04,side:THREE.DoubleSide});
- const deck=new THREE.Mesh(geometry,concrete);deck.castShadow=true;deck.receiveShadow=true;deck.frustumCulled=false;trackGroup.add(deck);
+ const deck=new THREE.Mesh(geometry,concrete);deck.castShadow=true;deck.receiveShadow=true;deck.frustumCulled=true;trackGroup.add(deck);
  const girderMat=new THREE.MeshStandardMaterial({color:0x4f5b63,roughness:.84,metalness:.10});
  for(const side of [-1,1]){
   const points=section.map(i=>stableTrackOffset(route,i,side,halfWidth,-.70));
@@ -4783,13 +4783,23 @@ function buildRacingLineVisual(){
   for(let side=0;side<2;side++)colours.push(colour.r,colour.g,colour.b);
   const next=(i+1)%n,a=i*2,b=a+1,c=next*2,d=c+1;indices.push(a,c,b,b,c,d);
  }
- const geometry=new THREE.BufferGeometry();
- geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
- geometry.setAttribute("color",new THREE.Float32BufferAttribute(colours,3));
- geometry.setIndex(indices);geometry.computeVertexNormals();
  racingLineGroup=new THREE.Group();racingLineGroup.name="Suggested racing line and braking points";
- const line=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:.96,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,toneMapped:false}));
- line.renderOrder=7;line.frustumCulled=true;racingLineGroup.add(line);
+ const chunkSize=72,lineMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:.96,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,toneMapped:false});
+ for(let start=0;start<n;start+=chunkSize){
+  const count=Math.min(chunkSize,n-start),chunkPositions=[],chunkColours=[],chunkIndices=[];
+  for(let j=0;j<=count;j++){
+   const index=(start+j)%n,base=index*6;
+   for(let k=0;k<6;k++)chunkPositions.push(positions[base+k]);
+   for(let k=0;k<6;k++)chunkColours.push(colours[base+k]);
+  }
+  for(let j=0;j<count;j++){const a=j*2,b=a+1,c=(j+1)*2,d=c+1;chunkIndices.push(a,c,b,b,c,d);}
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(chunkPositions,3));
+  geometry.setAttribute("color",new THREE.Float32BufferAttribute(chunkColours,3));
+  geometry.setIndex(chunkIndices);geometry.computeVertexNormals();
+  const line=new THREE.Mesh(geometry,lineMaterial);line.renderOrder=7;line.frustumCulled=true;
+  line.name="Racing line view section "+Math.floor(start/chunkSize);racingLineGroup.add(line);
+ }
  const brakeVertices=[],brakePoints=[];let lastMarker=-Infinity;
  for(let i=0;i<n;i++){
   const before=speedProfile[(i-5+n)%n],now=speedProfile[i],after=speedProfile[(i+12)%n],metres=i*data.ds;
@@ -4802,9 +4812,13 @@ function buildRacingLineVisual(){
   }
  }
  if(brakeVertices.length){
-  const brakeGeometry=new THREE.BufferGeometry();brakeGeometry.setAttribute("position",new THREE.Float32BufferAttribute(brakeVertices,3));
-  const bars=new THREE.LineSegments(brakeGeometry,new THREE.LineBasicMaterial({color:0xff594e,transparent:true,opacity:1,depthWrite:false,toneMapped:false}));
-  bars.renderOrder=8;bars.frustumCulled=false;racingLineGroup.add(bars);
+  const brakeMaterial=new THREE.LineBasicMaterial({color:0xff594e,transparent:true,opacity:1,depthWrite:false,toneMapped:false});
+  const markersPerChunk=24;
+  for(let start=0;start<brakeVertices.length/6;start+=markersPerChunk){
+   const values=brakeVertices.slice(start*6,Math.min(brakeVertices.length,(start+markersPerChunk)*6));
+   const brakeGeometry=new THREE.BufferGeometry();brakeGeometry.setAttribute("position",new THREE.Float32BufferAttribute(values,3));
+   const bars=new THREE.LineSegments(brakeGeometry,brakeMaterial);bars.renderOrder=8;bars.frustumCulled=true;racingLineGroup.add(bars);
+  }
   // One shared texture and one instanced draw call keep the brake labels clear without adding many draw calls.
   const canvas=document.createElement("canvas");canvas.width=256;canvas.height=64;
   const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(30,8,8,.92)";ctx.fillRect(4,4,248,56);
@@ -4816,7 +4830,7 @@ function buildRacingLineVisual(){
   brakePoints.forEach((point,i)=>{
    dummy.position.set(point.x,point.y,point.z);dummy.rotation.set(-Math.PI/2,point.heading,0,"YXZ");dummy.updateMatrix();markers.setMatrixAt(i,dummy.matrix);
   });
-  markers.instanceMatrix.needsUpdate=true;markers.frustumCulled=false;markers.renderOrder=9;racingLineGroup.add(markers);
+  markers.instanceMatrix.needsUpdate=true;markers.renderOrder=9;addChunkedInstances(markers,racingLineGroup,420);
  }
  racingLineGroup.visible=!!racingLineEnabled;trackGroup.add(racingLineGroup);
 }
@@ -5861,7 +5875,7 @@ function makeDriverNameTag(driverName,team,number,personality){
  texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
  sprite.name="AI team timing tag";sprite.position.set(0,3.18,0);sprite.scale.set(5.05,1.26,1);
- sprite.renderOrder=1000;sprite.frustumCulled=false;return sprite;
+ sprite.renderOrder=1000;sprite.frustumCulled=true;return sprite;
 }
 function collectOpponentVehicleParts(root){
  const wheels=[],frontPivots=[];
