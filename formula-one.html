@@ -4424,7 +4424,7 @@ function makeAsphaltTexture(){
   ctx.fillStyle=Math.random()>.5?"rgba(20,23,25,.10)":"rgba(210,211,206,.08)";ctx.fillRect(x,y,r,r);
  }
  const tex=new THREE.CanvasTexture(canvas);tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
- tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=12;tex.needsUpdate=true;return tex;
+ tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=Math.min(4,renderer?.capabilities?.getMaxAnisotropy?.()||1);tex.needsUpdate=true;return tex;
 }
 
 function smoothStep(a,b,x){
@@ -4892,7 +4892,7 @@ function addCircuitFacilities(){
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
   materials.push(new THREE.MeshStandardMaterial({map:tex,roughness:.68,side:THREE.DoubleSide}));
  });
- for(let i=0;i<(activeTrack==="monaco"?0:18);i++){
+ for(let i=0;i<(activeTrack==="monaco"?0:graphicsQuality==="high"?18:graphicsQuality==="low"?4:8);i++){
   const fraction=((.035+i*.052)%1);
   const sample=route[Math.floor(fraction*route.length)%route.length];let side=i%2?1:-1;
   if(side===1&&isPitLaneCorridorProgress(fraction))side=-1;
@@ -5530,7 +5530,7 @@ function buildGrandstandsAndCrowd(){
 function buildScenery(){
  const dry=activeTrack==="laguna",park=["monza","silverstone","suzuka"].includes(activeTrack),city=activeTrack==="monaco";
  if(city)return;
- const quality=graphicsQuality==="low"?.13:graphicsQuality==="high"?.52:.24;
+ const quality=graphicsQuality==="low"?.13:graphicsQuality==="high"?.48:.22;
  const count=Math.round((park?520:dry?360:440)*quality);
  const trunkMat=makeMat(dry?0x756047:0x56483a,.96);
  const broadMat=makeMat(dry?0x8a8558:park?0x426d3e:0x315d3a,.98);
