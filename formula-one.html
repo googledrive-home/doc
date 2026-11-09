@@ -3574,8 +3574,7 @@ let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,stee
 let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false,lowPolyPlayerVisual=null;
 let lowPolyVehicleGeometries=null;const lowPolyVehicleMaterials=new Map();
 let importedWheelAssemblies=[],importedBrakeDiscs=[],importedEngineMeshes=[],nativeHaloMeshes=[],importedThermalAccumulator=0;
-let ferrariWheelRoot=null,ferrariScreenMesh=null,ferrariWheelLoadPromise=null,wheelDisplayPage=0;
-let ferrariWheelAssetsPromise=null,ferrariDashboardBaseImage=null,ferrariCarbonWeaveTexture=null,dashLastDrawAt=0;
+let wheelDisplayPage=0,dashLastDrawAt=0;
 let activeTrack="spa",pathCurve,route=[],activeTrackPoints=[],routeLength=0,roadWidth=13,trackScale=1,terrainBaseY=0,car=null,nearestInfo=null,builtTrackId=null;
 const ROUTE_GRID_CELL=40;
 const PIT_LANE_WIDTH=12.5,PIT_LANE_LIMIT=22.2;
@@ -3957,7 +3956,7 @@ function initRenderer(){
  renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:false,alpha:false,powerPreference:"high-performance"});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.0));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
- renderer.shadowMap.enabled=graphicsQuality!=='low';renderer.shadowMap.type=THREE.PCFShadowMap;renderer.toneMappingExposure=1.22;
+ renderer.shadowMap.enabled=graphicsQuality==="high";renderer.shadowMap.type=THREE.PCFShadowMap;renderer.toneMappingExposure=1.22;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb7c2);scene.fog=new THREE.FogExp2(0x9eb7c2,.00034);
  racingEnvironment=createRacingEnvironment();scene.environment=racingEnvironment;scene.environmentIntensity=1.0;
@@ -4407,7 +4406,7 @@ function buildTerrain(def){
  for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
  minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
  const width=maxX-minX,depth=maxZ-minZ;
- const nx=graphicsQuality==="low"?192:graphicsQuality==="high"?384:288;
+ const nx=graphicsQuality==="low"?192:graphicsQuality==="high"?384:240;
  const nz=Math.max(112,Math.round(nx*depth/width));
  const coarseStep=Math.max(1,Math.floor(route.length/640)),samples=[];
  for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
@@ -5221,7 +5220,7 @@ function buildGrandstandsAndCrowd(){
   activeTrack==="monza"?[.045,.25,.52,.79]:[.08,.33,.59,.86];
  const palette=[0x263d8c,0xc83e37,0xe5e6dd,0x273b31,0xd3a23b,0x683d9c,0x1d91a8,0xededeb];
  const torsoGeo=new THREE.CapsuleGeometry(.17,.34,3,6),headGeo=new THREE.SphereGeometry(.115,7,6);
- const max=positions.length*6*(graphicsQuality==='low'?8:graphicsQuality==='high'?28:14);
+ const max=positions.length*6*(graphicsQuality==='low'?8:graphicsQuality==='high'?28:11);
  const torsoMesh=new THREE.InstancedMesh(torsoGeo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9}),max);
  const headMesh=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:0xd8b28d,roughness:.96}),max);
  const dummy=new THREE.Object3D();let people=0;
@@ -5250,8 +5249,8 @@ function buildGrandstandsAndCrowd(){
   }
   environmentGroup.add(stand);
   // Every spectator is placed at the exact sampled terrain height below their row.
-  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?8:graphicsQuality==='high'?28:14);col++){
-   const along=(col-(graphicsQuality==='low'?3.5:graphicsQuality==='high'?13.5:6.5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
+  for(let row=0;row<6;row++)for(let col=0;col<(graphicsQuality==='low'?8:graphicsQuality==='high'?28:11);col++){
+   const along=(col-(graphicsQuality==='low'?3.5:graphicsQuality==='high'?13.5:5))*1.12,lateral=roadWidth/2+41.9+row*2.35;
    const p=offsetPoint(sample,side,lateral,0),safe=ensureOffTrackPoint(new THREE.Vector3(p.x+sample.tan.x*along,0,p.z+sample.tan.z*along),side,14),x=safe.x,z=safe.z;
    const y=terrainHeightAt(x,z)+1.0+row*.47;
    dummy.position.set(x,y,z);dummy.scale.set(1,.78+(col%3)*.1,1);
@@ -5269,7 +5268,7 @@ function buildGrandstandsAndCrowd(){
 function buildScenery(){
  const dry=activeTrack==="laguna",park=["monza","silverstone","suzuka"].includes(activeTrack),city=activeTrack==="monaco";
  if(city)return;
- const quality=graphicsQuality==="low"?.30:graphicsQuality==="high"?.78:.54;
+ const quality=graphicsQuality==="low"?.30:graphicsQuality==="high"?.78:.46;
  const count=Math.round((park?520:dry?360:440)*quality);
  const trunkMat=makeMat(dry?0x756047:0x56483a,.96);
  const broadMat=makeMat(dry?0x8a8558:park?0x426d3e:0x315d3a,.98);
@@ -6001,282 +6000,6 @@ function ensureWheelDashboardCanvas(){
  }
  return dashTexture;
 }
-function ferrariSourcePointToThree(point){
- return new THREE.Vector3(point[0],point[2],-point[1]);
-}
-function ferrariControlCenters(rows,actions){
- return rows.map((point,index)=>({point:ferrariSourcePointToThree(point),action:actions[index]}));
-}
-function keepFerrariWheelAsOnlyVisibleCockpitWheel(){
- if(!steeringPivot||!ferrariWheelRoot||ferrariWheelRoot.parent!==steeringPivot)return;
- for(const child of steeringPivot.children){
-  if(child!==ferrariWheelRoot)child.visible=false;
- }
-}
-function getFerrariWheelAssets(){
- if(!ferrariWheelAssetsPromise){
-  const base=new URL("./assets/f1-steering-wheel/",window.location.href);
-  const wheelBuild=new URLSearchParams(window.location.search).get("build")||"apex-ferrari-wheel-20261107-v19";
-  const manager=new THREE.LoadingManager();
-  manager.setURLModifier(resourceUrl=>{
-   try{
-    const resolved=new URL(resourceUrl,base);
-    if(resolved.origin===base.origin&&resolved.pathname.startsWith(base.pathname)){
-     resolved.searchParams.set("build",wheelBuild);
-     return resolved.href;
-    }
-   }catch(_){}
-   return resourceUrl;
-  });
-  manager.onError=url=>console.error("[APEX] Ferrari wheel texture or geometry request failed:",url);
-  const loader=new GLTFLoader(manager);
-  loader.setResourcePath(base.href);
-  const coreUrl=new URL("F1_steering_wheel_core.gltf",base);
-  const controlsUrl=new URL("F1_steering_wheel_controls.gltf",base);
-  coreUrl.searchParams.set("build",wheelBuild);
-  controlsUrl.searchParams.set("build",wheelBuild);
-  ferrariWheelAssetsPromise=Promise.all([
-   loader.loadAsync(coreUrl.href),
-   loader.loadAsync(controlsUrl.href)
-  ]).then(([coreAsset,controlsAsset])=>{
-   let meshCount=0;
-   [coreAsset.scene,controlsAsset.scene].forEach(root=>root.traverse(object=>{if(object.isMesh)meshCount++;}));
-   console.info("[APEX] Ferrari wheel geometry and textures preloaded:",{meshes:meshCount});
-   return {coreAsset,controlsAsset,base,wheelBuild};
-  }).catch(error=>{
-   ferrariWheelAssetsPromise=null;
-   throw error;
-  });
- }
- return ferrariWheelAssetsPromise;
-}
-function cloneFerrariWheelScene(source){
- const scene=source.clone(true);
- scene.traverse(object=>{
-  if(!object.isMesh)return;
-  if(Array.isArray(object.material))object.material=object.material.map(material=>material?.clone?.()||material);
-  else if(object.material)object.material=object.material.clone();
- });
- return scene;
-}
-function createFerrariCarbonWeaveTexture(){
- if(ferrariCarbonWeaveTexture)return ferrariCarbonWeaveTexture;
- const canvas=document.createElement("canvas");canvas.width=canvas.height=256;
- const context=canvas.getContext("2d");
- context.fillStyle="#10151b";context.fillRect(0,0,256,256);
- const cell=16;
- for(let y=0;y<256;y+=cell){
-  for(let x=0;x<256;x+=cell){
-   const light=((x/cell+y/cell)%2)===0;
-   const gradient=context.createLinearGradient(x,y,x+cell,y+cell);
-   gradient.addColorStop(0,light?"#303943":"#11171e");
-   gradient.addColorStop(.5,light?"#1b242d":"#080d12");
-   gradient.addColorStop(1,light?"#0e141a":"#27313a");
-   context.fillStyle=gradient;context.fillRect(x,y,cell,cell);
-   context.strokeStyle=light?"#66727b55":"#03070b99";
-   context.lineWidth=2;
-   for(let k=-cell;k<cell*2;k+=4){
-    context.beginPath();context.moveTo(x+k,y);context.lineTo(x+k+cell,y+cell);context.stroke();
-   }
-   context.strokeStyle="#87939b20";context.lineWidth=1;
-   context.strokeRect(x+1,y+1,cell-2,cell-2);
-  }
- }
- ferrariCarbonWeaveTexture=new THREE.CanvasTexture(canvas);
- ferrariCarbonWeaveTexture.colorSpace=THREE.SRGBColorSpace;
- ferrariCarbonWeaveTexture.wrapS=THREE.RepeatWrapping;
- ferrariCarbonWeaveTexture.wrapT=THREE.RepeatWrapping;
- ferrariCarbonWeaveTexture.repeat.set(4,4);
- ferrariCarbonWeaveTexture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
- ferrariCarbonWeaveTexture.needsUpdate=true;
- return ferrariCarbonWeaveTexture;
-}
-function styleFerrariWheelMaterials(meshes){
- const carbonTexture=createFerrariCarbonWeaveTexture();
- const anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
- let mappedTextures=0;
- meshes.forEach(mesh=>{
-  const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
-  materials.forEach(material=>{
-   if(!material)return;
-   const name=String(material.name||"").toLowerCase();
-   if(name.includes("carbon fiber")){
-    if(!material.map)material.map=carbonTexture;
-    material.color?.setHex(0x89939c);
-    material.metalness=.14;material.roughness=.52;
-    if("clearcoat" in material)material.clearcoat=.12;
-    if("clearcoatRoughness" in material)material.clearcoatRoughness=.42;
-   }else if(name.includes("rubber")){
-    material.color?.setHex(0x11161b);material.metalness=.01;material.roughness=.9;
-   }else if(name.includes("black plastic")){
-    material.color?.setHex(0x10161d);material.metalness=.06;material.roughness=.5;
-   }else if(name.includes("anodizedmetal")){
-    material.color?.setHex(0x4e5963);material.metalness=.58;material.roughness=.38;
-   }else if(name.includes("bmd_brass")){
-    material.color?.setHex(0x8b6a3b);material.metalness=.52;material.roughness=.43;
-   }else if(name.includes("mat_plastic")){
-    material.color?.setHex(0x1a2229);material.metalness=.04;material.roughness=.56;
-   }else if(name.includes("plastic_white")){
-    // The source white plastic was clipping under the cockpit's bright sun,
-    // hemi and environment lighting. Keep it a muted satin grey instead.
-    material.color?.setHex(0x687681);material.metalness=.08;material.roughness=.56;
-   }else if(name.includes("translucent plastic_green")){
-    material.color?.setHex(0x36b886);material.roughness=.42;
-   }else if(name.includes("translucent plastic_blue")){
-    material.color?.setHex(0x3989bd);material.roughness=.42;
-   }else if(name.includes("translucent plastic_red")){
-    material.color?.setHex(0xbd4e49);material.roughness=.42;
-   }else if(name.includes("translucent plastic_yellow")){
-    material.color?.setHex(0xc6a43d);material.roughness=.42;
-   }
-   if("envMapIntensity" in material)material.envMapIntensity=Math.min(material.envMapIntensity??1,.58);
-   if(material.map){
-    material.map.colorSpace=THREE.SRGBColorSpace;
-    material.map.anisotropy=anisotropy;
-    material.map.needsUpdate=true;
-    mappedTextures++;
-   }
-   if(material.emissiveMap){
-    material.emissiveMap.colorSpace=THREE.SRGBColorSpace;
-    material.emissiveMap.anisotropy=anisotropy;
-   }
-   material.needsUpdate=true;
-  });
- });
- return mappedTextures;
-}
-
-async function loadFerrariSteeringWheel(pivot,generation){
- try{
-  ensureWheelDashboardCanvas();
-  const wheelAssets=await getFerrariWheelAssets();
-  if(!wheelAssets)throw new Error("Ferrari wheel assets could not be preloaded.");
-  const coreAsset={scene:cloneFerrariWheelScene(wheelAssets.coreAsset.scene)};
-  const controlsAsset={scene:cloneFerrariWheelScene(wheelAssets.controlsAsset.scene)};
-  if(generation!==carBuildGeneration||!pivot.parent)return;
-  coreAsset.scene.updateMatrixWorld(true);controlsAsset.scene.updateMatrixWorld(true);
-  // Blender exports the wheel body as a named parent group with several child
-  // meshes, rather than as one mesh named "steering_wheel_body.001".
-  // Measure the complete core scene so this works with the real hierarchy.
-  let coreMeshCount=0;
-  coreAsset.scene.traverse(object=>{
-   if(object.isMesh&&object.geometry)coreMeshCount++;
-  });
-  if(coreMeshCount===0)throw new Error("Ferrari core glTF loaded but contains no mesh geometry.");
-  const bodyBounds=new THREE.Box3().setFromObject(coreAsset.scene);
-  if(bodyBounds.isEmpty())throw new Error("Ferrari core glTF has no measurable geometry bounds.");
-  const bodyCentre=bodyBounds.getCenter(new THREE.Vector3());
-  const bodySize=bodyBounds.getSize(new THREE.Vector3());
-  if(![bodyCentre.x,bodyCentre.y,bodyCentre.z,bodySize.x,bodySize.y,bodySize.z].every(Number.isFinite)){
-   throw new Error("Ferrari core glTF has invalid geometry bounds.");
-  }
-  const visualRoot=new THREE.Group();visualRoot.name="Ferrari F1 steering wheel";
-  visualRoot.add(coreAsset.scene);visualRoot.add(controlsAsset.scene);
-  const wheelScale=clamp(.225/Math.max(.001,bodySize.x),.65,.80);
-  visualRoot.scale.setScalar(wheelScale);
-  // The cockpit camera faces +Z; move the whole assembled wheel 25 mm
-  // forward along the steering column, without changing its pivot/controls.
-  visualRoot.position.set(-bodyCentre.x*wheelScale,-bodyCentre.y*wheelScale,-bodyCentre.z*wheelScale+.025);
-  pivot.add(visualRoot);visualRoot.updateMatrixWorld(true);
-
-  const allMeshes=[];
-  visualRoot.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=false;allMeshes.push(object);}});
-  const mappedTextureCount=styleFerrariWheelMaterials(allMeshes);
-  const screen=allMeshes.find(mesh=>/ferrari_dashboard_screen/i.test(mesh.name));
-  if(!screen||!screen.geometry?.attributes?.uv)throw new Error("The Ferrari dashboard screen mesh or its UV map is missing.");
-  const screenMaterials=Array.isArray(screen.material)?screen.material:[screen.material];
-  ferrariDashboardBaseImage=screenMaterials.find(material=>material?.map?.image)?.map?.image||null;
-  const texture=ensureWheelDashboardCanvas();
-  texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;texture.generateMipmaps=false;texture.minFilter=THREE.NearestFilter;texture.magFilter=THREE.NearestFilter;
-  texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
-  texture.needsUpdate=true;
-  screen.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,toneMapped:false});
-  screen.renderOrder=5;screen.frustumCulled=false;ferrariScreenMesh=screen;
-
-  // Retain a faint emitter under the original glass layer; the canvas itself
-  // is mapped directly onto the model's own UV-mapped LCD surface.
-  const emitter=allMeshes.find(mesh=>/display_emmiter/i.test(mesh.name));
-  if(emitter){
-   const soften=material=>{
-    if(!material)return;
-    material.transparent=true;material.opacity=Math.min(material.opacity??1,.10);
-    material.depthWrite=false;material.needsUpdate=true;
-   };
-   if(Array.isArray(emitter.material))emitter.material.forEach(soften);else soften(emitter.material);
-   emitter.renderOrder=4;
-  }
-  const glass=allMeshes.find(mesh=>/display_glass/i.test(mesh.name));
-  if(glass){glass.visible=false;glass.renderOrder=6;}
-
-  // Use the model's individual, disconnected button islands as real hit
-  // targets. Their component positions are from the uploaded Blender mesh.
-  const definitions={
-   "steering_wheel_top_buttons.001":ferrariControlCenters([
-    [-.104729,.022548,.166335],[.104713,.022548,.166364],
-    [-.068353,.022695,.121931],[-.076989,.022703,.152264],
-    [-.120720,.022678,.145939],[-.122961,-.010751,.154307],
-    [.068349,.022695,.121950],[.076977,.022703,.152285],
-    [.120710,.022678,.145972],[.122949,-.010751,.154341]
-   ],["ERS","DRS","BB_MINUS","DIFF_MINUS","PAGE_PREV","PIT_STOP","BB_PLUS","DIFF_PLUS","PAGE_NEXT","RADIO"]),
-   "steering_wheel_turning_knobs.001":ferrariControlCenters([
-    [-.083691,.007995,.080094],[-.135306,.009669,.128788],
-    [.083699,.007995,.080116],[.135300,.009669,.128825]
-   ],["POWER_MODE","DIFF_NEXT","BB_PLUS","PAGE_NEXT"]),
-   "steering_wheel_turning_switches.001":ferrariControlCenters([
-    [.000011,.019240,.030375],[-.060695,.019243,.040133],
-    [-.041910,.019250,.068509],[.060198,.019243,.040150],
-    [.041921,.019250,.068520]
-   ],["POWER_MODE","ERS","DRS","RADIO","PAGE_NEXT"]),
-   "steering_wheel_turnable_knobs_top_side.001":ferrariControlCenters([
-    [-.087295,.005831,.119046],[.087292,.005831,.119070],
-    [-.080906,.005831,.119489],[.080903,.005831,.119511]
-   ],["DIFF_NEXT","BB_PLUS","POWER_MODE","PAGE_NEXT"]),
-   "steering_wheel_middle_turning_knob.001":ferrariControlCenters([
-    [-.000045,.020937,.071422]
-   ],["PAGE_NEXT"]),
-   "steering_wheel_inter_switch.001":ferrariControlCenters([
-    [-.029818,.020093,.034524]
-   ],["RADIO"])
-  };
-  wheelControlMeshes=[];wheelShiftLedMeshes=[];
-  const bindPhysical=name=>{
-   const mesh=allMeshes.find(object=>object.name.toLowerCase()===name.toLowerCase());
-   if(!mesh)return null;
-   mesh.userData.ferrariControlCenters=definitions[name]||[];
-   mesh.userData.ferrariControlType=definitions[name]?"component-group":"single";
-   if(mesh.userData.ferrariControlCenters.length||mesh.userData.ferrariControlType==="single")wheelControlMeshes.push(mesh);
-   return mesh;
-  };
-  Object.keys(definitions).forEach(bindPhysical);
-  const paddle=allMeshes.find(mesh=>/paddle_gear_shifter/i.test(mesh.name));
-  if(paddle){paddle.userData.ferrariControlType="paddle";wheelControlMeshes.push(paddle);}
-  allMeshes.filter(mesh=>/steering_wheel_top_leds|steering_wheel_top_panel_leds/i.test(mesh.name))
-   .forEach(mesh=>wheelShiftLedMeshes.push(mesh));
-  ferrariWheelRoot=visualRoot;
-  // Hide the old cockpit wheel after the imported model and LCD are ready.
-  // setCamera also reapplies this after any camera-visibility refresh.
-  keepFerrariWheelAsOnlyVisibleCockpitWheel();
-  wheelDisplayPage=0;
-  drawDashboard();
-  if(generation===carBuildGeneration){
-   const modelLabel=$("vehicleModelState")?.textContent||"RED BULL 2022";
-   updateVehicleModelStatus("active",modelLabel.replace(/ · FERRARI WHEEL.*$/,"")+" · FERRARI WHEEL LOADED");
-  }
-  console.info("Ferrari steering wheel installed:",{
-   meshes:allMeshes.length,screen:screen.name,controls:wheelControlMeshes.map(mesh=>mesh.name),
-   size:bodySize.toArray().map(value=>Number((value*wheelScale).toFixed(3))),
-   mappedTextures:mappedTextureCount
-  });
- }catch(error){
-  if(generation===carBuildGeneration){
-   const message=String(error?.message||error).replace(/\s+/g," ").slice(0,150);
-   const modelLabel=$("vehicleModelState")?.textContent||"RED BULL 2022";
-   updateVehicleModelStatus("error",modelLabel.replace(/ · FERRARI WHEEL.*$/,"")+" · WHEEL ERROR: "+message);
-   console.error("[APEX] Ferrari steering wheel installation failed:",error);
-  }
- }
-}
-
 async function loadRedBullCarModel(targetRoot,generation){
  try{
   const pack=await getRedBullAssetPack();
@@ -6328,14 +6051,10 @@ async function loadRedBullCarModel(targetRoot,generation){
    if(/^(control|switch|shifter|control shaft)$/i.test(name)){} 
   }
   createImportedSteeringWheel(modelRoot,parts);
-  // Mount the full imported car before starting the separate Ferrari wheel load.
-  // This gives the wheel loader a stable, final parent transform and cockpit anchor.
+  // Keep the original Red Bull steering wheel that is built into the imported FBX.
   targetRoot.add(modelRoot);
   modelRoot.updateMatrixWorld(true);
   targetRoot.updateMatrixWorld(true);
-  if(steeringPivot){
-   ferrariWheelLoadPromise=loadFerrariSteeringWheel(steeringPivot,generation);
-  }
   // FBX mesh bounds are obtained in world space, then converted into car-local space.
   // This keeps camera anchors correct after the car has been placed and rotated on the circuit.
   const boundsInCarSpace=mesh=>{
@@ -6384,7 +6103,7 @@ async function loadRedBullCarModel(targetRoot,generation){
   if(proceduralFallbackRoot)proceduralFallbackRoot.visible=false;
   targetRoot.scale.set(1,1,1);
   importedCarModelRoot=modelRoot;importedCarActive=true;
-  updateVehicleModelStatus("active","RED BULL 2022 · "+parts.length+" PARTS · "+importedWheelAssemblies.length+" WHEELS");
+  updateVehicleModelStatus("active","RED BULL 2022 · "+parts.length+" PARTS · ORIGINAL RED BULL WHEEL");
   console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
   targetRoot.updateMatrixWorld(true);
   if(!running)setCamera(0);
@@ -6464,7 +6183,7 @@ function buildCar(){
  const modelGeneration=++carBuildGeneration;
  updateVehicleModelStatus("loading","BUILDING BACKUP CAR · LOADING HIGH-DETAIL 3D MODEL…");
  if(carRoot){clearOpponents();scene.remove(carRoot);carRoot.traverse(o=>{if(o.geometry&&!o.geometry.userData?.apexSharedLowPoly)o.geometry.dispose();});}
- carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];ferrariWheelRoot=null;ferrariScreenMesh=null;ferrariWheelLoadPromise=null;ferrariDashboardBaseImage=null;dashLastDrawAt=0;wheelDisplayPage=0;softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
+ carRoot=new THREE.Group();carRoot.name="Formula car";carRoot.scale.x=.78;proceduralFallbackRoot=null;importedCarModelRoot=null;importedCarActive=false;importedWheelAssemblies=[];importedBrakeDiscs=[];importedEngineMeshes=[];cockpitHiddenMeshes=[];cockpitVisibleMeshes=[];cockpitHaloColumn=null;nativeHaloMeshes=[];camera.userData.importedCockpitEye=null;camera.userData.importedHaloTvRig=null;damageParts=[];wheelControlMeshes=[];wheelShiftLedMeshes=[];dashLastDrawAt=0;wheelDisplayPage=0;softBodyNodes=[];softBodyBeams=[];softBodyShells=[];softBodyUpdateCount=0;softBodyActive=false;vehicleDamage=0;vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100};
  const paint=new THREE.MeshStandardMaterial({color:selectedLivery,metalness:.34,roughness:.34,envMapIntensity:1.3});
  const carbon=makeMat(0x171e26,.5,.16),rubber=makeMat(0x202328,.94,0),rim=makeMat(0xb8c0c6,.29,.76),glass= new THREE.MeshStandardMaterial({color:0x243b49,metalness:.18,roughness:.2,transparent:true,opacity:.72,envMapIntensity:.8});
  const yellow=makeMat(parseInt(selectedAccent.slice(1),16),.4,.2),white=makeMat(0xf4f1e8,.48,.18);
@@ -6764,9 +6483,6 @@ function drawDashboard(){
  const bg=c.createLinearGradient(0,0,0,h);
  bg.addColorStop(0,"#142430");bg.addColorStop(.48,"#08151f");bg.addColorStop(1,"#03080d");
  c.fillStyle=bg;c.fillRect(0,0,w,h);
- if(ferrariDashboardBaseImage){
-  c.save();c.globalAlpha=.075;c.drawImage(ferrariDashboardBaseImage,0,0,w,h);c.restore();
- }
  const rounded=(x,y,bw,bh,r,fill,stroke)=>{
   c.beginPath();c.moveTo(x+r,y);c.lineTo(x+bw-r,y);c.quadraticCurveTo(x+bw,y,x+bw,y+r);
   c.lineTo(x+bw,y+bh-r);c.quadraticCurveTo(x+bw,y+bh,x+bw-r,y+bh);
@@ -7473,8 +7189,7 @@ function setCamera(frameDt=.016){
   }
   carRoot.userData.cameraVisibilityMode=cameraMode;
  }
- keepFerrariWheelAsOnlyVisibleCockpitWheel();
- if(cameraMode===2){
+  if(cameraMode===2){
   if(camera.parent!==carRoot)carRoot.add(camera);
   const eye=camera.userData.importedCockpitEye||{x:0,y:.86,z:.04};
   camera.position.set(eye.x+profile.x,eye.y+profile.y+(cameraShake?Math.sin(elapsed*24)*.008*Math.min(1,Math.abs(car?.u||0)/35):0),eye.z+profile.z);
@@ -7575,7 +7290,7 @@ function updateWeather(){
   sunLight.position.set(Math.cos(azimuth)*520,Math.max(-.08,sunElevation)*480,Math.sin(azimuth)*520);
   sunLight.color.setHex(twilight>.18?0xffc08d:0xfff0d5);
   sunLight.intensity=Math.max(.018,p.sun*(.10+.90*daylightLevel)*(1-cloud*.24));
-  sunLight.castShadow=daylightLevel>.10&&graphicsQuality!=="low";sunLight.shadow.needsUpdate=true;
+  sunLight.castShadow=daylightLevel>.10&&graphicsQuality==="high";sunLight.shadow.needsUpdate=true;
  }
  if(hemiLight){hemiLight.intensity=lerp(.22,2.3,daylightLevel);hemiLight.color.setHex(nightLevel>.65?0x526c91:0xe8f3ff);hemiLight.groundColor.setHex(nightLevel>.65?0x182331:0x899486);}
  if(ambientLight)ambientLight.intensity=lerp(.10,.62,daylightLevel);
@@ -8330,7 +8045,7 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function qualityPixelRatio(){
- return graphicsQuality==="low"?.55:graphicsQuality==="high"?.84:.70;
+ return graphicsQuality==="low"?.50:graphicsQuality==="high"?.76:.62;
 }
 function applyAdaptiveResolutionScale(){
  if(!renderer)return;
@@ -8364,7 +8079,7 @@ function applyGraphicsQuality(){
  if(!renderer)return;
  adaptiveResolutionScale=1;performanceSampleStart=0;performanceSampleFrames=0;adaptiveSlowSamples=0;adaptiveFastSamples=0;
  applyAdaptiveResolutionScale();
- renderer.shadowMap.enabled=graphicsQuality!=="low";renderer.shadowMap.type=THREE.PCFShadowMap;
+ renderer.shadowMap.enabled=graphicsQuality==="high";renderer.shadowMap.type=THREE.PCFShadowMap;
  if(sunLight){const mapSize=graphicsQuality==="low"?512:graphicsQuality==="high"?1024:512;sunLight.shadow.mapSize.set(mapSize,mapSize);sunLight.shadow.needsUpdate=true;}
 }
 function onResize(){if(!renderer||!camera)return;renderer.setSize(window.innerWidth,window.innerHeight,false);camera.aspect=window.innerWidth/window.innerHeight;camera.zoom=1;camera.fov=66;camera.updateProjectionMatrix();}
@@ -8583,16 +8298,19 @@ function bindWeather(prefix){
  const ids=prefix==="live"?["liveWeather","liveRain","liveTemp","liveCloud","liveFog"]:["weatherSelect","rainRange","tempRange","cloudRange","fogRange"];
  for(const id of ids)$(id).addEventListener("input",()=>{setWeatherFromInputs(prefix);syncWeatherInputs();});
 }
-function applyFerrariWheelAction(action){
+function applyRedBullWheelAction(action){
  if(!car)return;
  switch(action){
   case "ERS":car.ersDeploy=!car.ersDeploy;break;
   case "DRS":car.drsArmed=!car.drsArmed;break;
-  case "BB_PLUS":car.brakeBias=clamp((car.brakeBias||.58)+.01,.52,.68);break;
+  case "BB_PLUS":
+  case "BBAL":car.brakeBias=clamp((car.brakeBias||.58)+.01,.52,.68);break;
   case "BB_MINUS":car.brakeBias=clamp((car.brakeBias||.58)-.01,.52,.68);break;
-  case "DIFF_NEXT":car.diffMode=(car.diffMode||1)%3+1;break;
+  case "DIFF_NEXT":
+  case "DIFF":car.diffMode=(car.diffMode||1)%3+1;break;
   case "DIFF_MINUS":car.diffMode=Math.max(1,(car.diffMode||1)-1);break;
-  case "POWER_MODE":car.powerMode=(car.powerMode||1)%3+1;powerModeSetting=car.powerMode;break;
+  case "POWER_MODE":
+  case "MODE":car.powerMode=(car.powerMode||1)%3+1;powerModeSetting=car.powerMode;break;
   case "PAGE_NEXT":wheelDisplayPage=(wheelDisplayPage+1)%4;break;
   case "PAGE_PREV":wheelDisplayPage=(wheelDisplayPage+3)%4;break;
   case "RADIO":car.radioMessage=(car.radioMessage||0)%4+1;break;
@@ -8607,7 +8325,7 @@ function applyFerrariWheelAction(action){
  drawDashboard();
 }
 function handleWheelControlClick(event){
- if(event.button!==0||!running||paused||cameraMode!==2||!car||!wheelControlMeshes.length||!ferrariWheelRoot)return;
+ if(event.button!==0||!running||paused||cameraMode!==2||!car||!wheelControlMeshes.length||!steeringPivot)return;
  const rect=worldCanvas.getBoundingClientRect(),pointer=new THREE.Vector2(
   ((event.clientX-rect.left)/rect.width)*2-1,
   -((event.clientY-rect.top)/rect.height)*2+1
@@ -8615,24 +8333,9 @@ function handleWheelControlClick(event){
  const raycaster=new THREE.Raycaster();raycaster.setFromCamera(pointer,camera);
  const hits=raycaster.intersectObjects(wheelControlMeshes,false);
  if(!hits.length)return;
- const hit=hits[0],mesh=hit.object,type=mesh.userData.ferrariControlType||"single";
- let action=null;
- if(type==="component-group"){
-  const point=ferrariWheelRoot.worldToLocal(hit.point.clone());
-  const centres=mesh.userData.ferrariControlCenters||[];
-  let nearest=null,best=Infinity;
-  for(const item of centres){
-   const d=point.distanceToSquared(item.point);
-   if(d<best){best=d;nearest=item;}
-  }
-  if(nearest&&best<.0036)action=nearest.action;
- }else if(type==="paddle"){
-  const point=ferrariWheelRoot.worldToLocal(hit.point.clone());
-  action=point.x<0?"SHIFT_DOWN":"SHIFT_UP";
- }else{
-  action=mesh.userData.ferrariControlAction||null;
- }
- if(action)applyFerrariWheelAction(action);
+ const hit=hits[0],mesh=hit.object;
+ const action=mesh.userData.wheelControl||mesh.userData.redBullControlAction||null;
+ if(action)applyRedBullWheelAction(action);
 }
 
 function bindControls(){
