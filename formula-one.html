@@ -5410,8 +5410,27 @@ function updateRaceControl(dt){
   else if(raceControlMessageTimer===0)showRaceControlMessage(raceFlag==="VSC"?"VIRTUAL SAFETY CAR":"YELLOW FLAG",raceFlag==="VSC"?"vsc":"yellow",raceFlagTimer);
  }
 }
+function updateFormationGuide(){
+ const guide=$("formationGuide");if(!guide)return;
+ if(!formationLapActive||!car||!nearestInfo||!route.length){guide.classList.remove("open");return;}
+ const remaining=Math.max(0,(1-nearestInfo.progress)*(circuitRouteLength||routeLength));
+ formationLapDistanceRemaining=remaining;
+ $("formationDistance").textContent=Math.ceil(remaining).toLocaleString()+" m";
+ const lookAhead=Math.max(5,Math.round(32/Math.max(1,routeLength)*route.length));
+ const target=route[(nearestInfo.index+lookAhead)%route.length]?.p;
+ let direction="STRAIGHT";
+ if(target){
+  const dx=target.x-car.x,dz=target.z-car.z,fx=Math.sin(car.yaw),fz=Math.cos(car.yaw);
+  const angle=Math.atan2(dx*fz-dz*fx,dx*fx+dz*fz);
+  direction=Math.abs(angle)<.20?"STRAIGHT":angle>0?"RIGHT":"LEFT";
+ }
+ $("formationDirection").textContent=direction+" · FOLLOW THE LINE";guide.classList.add("open");
+}
 function updateRaceStart(dt){
- const overlay=$("raceStartOverlay"),lamps=$("raceStartLamps"),label=$("raceStartLabel");if(!overlay||!lamps||!label)return;
+ const overlay=$("raceStartOverlay"),lamps=$("raceStartLamps"),label=$("raceStartLabel");
+ if(!overlay||!lamps||!label)return;
+ if(formationLapActive){overlay.classList.remove("open");updateFormationGuide();return;}
+ $("formationGuide").classList.remove("open");
  if(raceStartState==="countdown"){
   overlay.classList.add("open");raceStartTimer+=dt;
   if((keys.KeyW||keys.ArrowUp)&&!raceStartJumpReported){raceStartJumpReported=true;raceStartPenalty+=5;showRaceControlMessage("FALSE START · +5.0S PENALTY","penalty",4.2);showTeamRadio("Hold position. False start detected — five-second penalty.");}
@@ -5424,24 +5443,51 @@ function updateRaceStart(dt){
    if(!raceStartJumpReported){showRaceControlMessage("GREEN FLAG · RACE STARTED","info",2.6);showTeamRadio("Lights out. Good launch — watch the first braking zone.");}
   }
  }else if(raceStartState==="green"){
-  overlay.classList.add("open");raceStartTimer+=dt;if(raceStartTimer>=1.05){raceStartState="none";overlay.classList.remove("open");}
+  overlay.classList.add("open");raceStartTimer+=dt;
+  if(raceStartTimer>=1.05){raceStartState="none";overlay.classList.remove("open");}
  }else overlay.classList.remove("open");
 }
+
 function spawnOpponents(){
  clearOpponents();aiIncidentRadioCooldown=0;
  const base=aiSkill==="easy"?72:aiSkill==="fast"?94:84;
+ const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength;
+ if(!carRoot||!aiRoute.length||!aiLength){$("opponentValue").textContent="00";return;}
  for(let i=0;i<opponentCount;i++){
-  const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);
-  const lights=[];root.traverse(o=>{if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)lights.push(o);});lights.forEach(o=>o.parent?.remove(o));
-  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length],team=TEAM_LIVERIES.find(x=>x.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
-  const primary=new THREE.Color(team.primary),accent=new THREE.Color(team.accent),playerHex=selectedLivery.replace("#","").toLowerCase(),accentHex=selectedAccent.replace("#","").toLowerCase();
-  root.traverse(o=>{if(!o.isMesh||!o.material)return;const paint=mat=>{if(!mat||!mat.color)return mat;const hex=mat.color.getHexString().toLowerCase();if(hex===playerHex){const c=mat.clone();c.color.copy(primary);return c;}if(hex===accentHex){const c=mat.clone();c.color.copy(accent);return c;}return mat;};o.material=Array.isArray(o.material)?o.material.map(paint):paint(o.material);});
-  const gridDistance=8+Math.floor(i/2)*8.2+(i%2)*.9,progress=(1-gridDistance/routeLength+1)%1;
-  const wheels=[],frontPivots=[];root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
-  const baseOffset=(i%2?1:-1)*2,pace=base+(i%3-1)*1.7;
-  const bot={root,progress,speed:raceStartState==="countdown"?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
-  const sample=route[Math.floor(progress*route.length)%route.length],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
-  root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);
+  const root=carRoot.clone(true);root.name="AI Formula car "+(i+1);root.visible=true;root.userData.isAI=true;
+  const lights=[];let meshCount=0;
+  root.traverse(o=>{
+   if(o.userData.playerHeadlight||o.userData.playerHeadlightTarget)lights.push(o);
+   if(o.isMesh){meshCount++;o.visible=true;o.frustumCulled=false;o.castShadow=false;o.receiveShadow=false;}
+  });
+  lights.forEach(o=>o.parent?.remove(o));
+  if(meshCount===0){
+   const fallback=new THREE.Mesh(new THREE.BoxGeometry(1.8,.55,4.4),new THREE.MeshStandardMaterial({color:0x2879c9,roughness:.5}));
+   fallback.position.y=.55;root.add(fallback);
+  }
+  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length];
+  const team=TEAM_LIVERIES.find(x=>x.id===driver.teamId)||TEAM_LIVERIES[(i+1)%TEAM_LIVERIES.length];
+  const primary=new THREE.Color(team.primary),accent=new THREE.Color(team.accent);
+  const playerHex=selectedLivery.replace("#","").toLowerCase(),accentHex=selectedAccent.replace("#","").toLowerCase();
+  root.traverse(o=>{
+   if(!o.isMesh||!o.material)return;
+   const paint=mat=>{
+    if(!mat||!mat.color)return mat;
+    const hex=mat.color.getHexString().toLowerCase();
+    if(hex===playerHex){const cloned=mat.clone();cloned.color.copy(primary);return cloned;}
+    if(hex===accentHex){const cloned=mat.clone();cloned.color.copy(accent);return cloned;}
+    return mat;
+   };
+   o.material=Array.isArray(o.material)?o.material.map(paint):paint(o.material);
+  });
+  const row=Math.floor(i/2),gridDistance=5+row*8.1,progress=((1-gridDistance/aiLength)%1+1)%1;
+  const wheels=[],frontPivots=[];
+  root.traverse(o=>{if(o.name==="wheel-roll")wheels.push(o);if(o.name==="front-wheel-pivot")frontPivots.push(o);});
+  const baseOffset=(i%2===0?1:-1)*2.2,pace=base+(i%3-1)*1.7;
+  const bot={root,progress,speed:raceStartState==="countdown"||formationLapActive?0:pace,baseSpeed:pace,baseOffset,offset:baseOffset,targetOffset:baseOffset,number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,wheels,frontPivots,wheelSpin:0,laps:0,passCommitment:0,contactCooldown:0,incidentTimer:0,incidentTargetOffset:baseOffset};
+  const sample=aiRoute[Math.floor(progress*aiRoute.length)%aiRoute.length],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+  root.position.set(sample.p.x+right.x*bot.offset,sample.p.y+.035,sample.p.z+right.z*bot.offset);
+  root.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);root.updateMatrixWorld(true);
   scene.add(root);opponents.push(bot);
  }
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
@@ -5460,6 +5506,7 @@ function updateOpponents(dt){
   const here=aiRoute[index],ahead=aiRoute[(index+36)%count],dot=clamp(here.tan.dot(ahead.tan),-1,1);
   const curvature=Math.acos(dot)/Math.max(8,arcDistance),lateralLimit=aiSkill==="easy"?17:aiSkill==="fast"?29:23;
   let target=Math.min(bot.baseSpeed,Math.sqrt(lateralLimit/Math.max(.00025,curvature)));
+   if(formationLapActive)target=Math.min(target,38);
   let desiredOffset=bot.incidentTimer>0?bot.incidentTargetOffset:bot.baseOffset,blocked=false;
   const laneIsClear=candidate=>{
    for(const item of traffic){
@@ -6846,6 +6893,15 @@ function temperatureGrip(temp){
  if(Math.abs(d)<=12)return 1;
  return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
 }
+function completeFormationLap(){
+ formationLapActive=false;$("formationGuide").classList.remove("open");
+ restoreCircuitRoute();positionCarAtStart(false,true);
+ raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
+ raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
+ $("raceStartOverlay").classList.add("open");
+ showRaceControlMessage("FORMATION LAP COMPLETE · TAKE YOUR GRID SLOT","info",3.6);
+ spawnOpponents();
+}
 function updatePhysics(dt){
  if(pitServiceOpen){
   // The scripted pit approach owns position and speed. Freeze normal physics
@@ -6928,7 +6984,7 @@ function updatePhysics(dt){
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);car.v+=latAccel*dt;
+ car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);if(formationLapActive&&!car.reverse&&car.u>42)car.u=42;car.v+=latAccel*dt;
  const lateralDamping=assistMode==="assisted"?2.8:assistMode==="sport"?1.55:.78;
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
@@ -7093,6 +7149,7 @@ function updatePhysics(dt){
  if(pitLaneDriving&&nearestInfo.progress>=.985)mergeOntoCircuit();
  const progress=nearestInfo.progress;
  if(!pitLaneDriving&&previousProgress>.87&&progress<.13&&Math.abs(car.u)>8){
+   if(formationLapActive){completeFormationLap();return;}
   const completed=elapsed-lapStart,previousBestLap=bestLap;
   if(completed>15){bestLap=Math.min(bestLap,completed);if(bestLap<previousBestLap)showTeamRadio("That's a new personal best. Excellent lap — keep that rhythm.");}
   if(currentSessionMode==="timeTrial"&&completeTimeTrialLap(completed)){bestLap=timeTrialBest;}
