@@ -6542,6 +6542,7 @@ function createImportedWheelAssemblies(modelRoot,parts){
    const part=info.mesh,sourceName=info.sourceName;
    if(assigned.has(part))continue;
    part.geometry.translate(-centre.x,-centre.y,-centre.z);
+   part.geometry.computeBoundingBox();part.geometry.computeBoundingSphere();
    part.position.set(0,0,0);part.rotation.set(0,0,0);part.scale.set(1,1,1);
    roll.add(part);assigned.add(part);part.userData.wheelId=id;
    const isTyre=info.namedTyre||(part===seed?.mesh&&info.plausible);
