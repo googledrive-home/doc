@@ -8582,7 +8582,7 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function qualityPixelRatio(){
- return graphicsQuality==="low"?.50:graphicsQuality==="high"?.76:.62;
+ return graphicsQuality==="low"?.42:graphicsQuality==="high"?.68:.56;
 }
 function applyAdaptiveResolutionScale(){
  if(!renderer)return;
@@ -8597,18 +8597,18 @@ function monitorPerformance(now){
  if(span<1400)return;
  const fps=performanceSampleFrames*1000/span;
  performanceSampleFrames=0;performanceSampleStart=now;
- if(fps<43){
+ if(fps<48){
   adaptiveSlowSamples++;adaptiveFastSamples=0;
  }else if(fps>58){
   adaptiveFastSamples++;adaptiveSlowSamples=0;
  }else{
   adaptiveSlowSamples=0;adaptiveFastSamples=0;
  }
- if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.58){
-  adaptiveResolutionScale=Math.max(.58,adaptiveResolutionScale-.12);
+ if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.40){
+  adaptiveResolutionScale=Math.max(.40,adaptiveResolutionScale-.10);
   applyAdaptiveResolutionScale();adaptiveSlowSamples=0;
  }else if(adaptiveFastSamples>=5&&adaptiveResolutionScale<1){
-  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.05);
+  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.035);
   applyAdaptiveResolutionScale();adaptiveFastSamples=0;
  }
 }
@@ -8700,18 +8700,18 @@ function syncCameraProfileSettings(){
   $(label).textContent=(unit==="m"?Number(value).toFixed(2):Math.round(value))+unit;
  }
 }
-const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV7";
-const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV6";
+const F1_SETTINGS_STORAGE_KEY="apexFormulaRacingSettingsV8";
+const F1_SETTINGS_LEGACY_KEY="apexFormulaRacingSettingsV7";
 const F1_SETTINGS_OLD_KEY="apexFormulaRacingSettingsV5";
 const F1_SETTINGS_OLDER_KEY="apexFormulaRacingSettingsV4";
 const F1_SETTINGS_OLDEST_KEY="apexFormulaRacingSettingsV3";
 const F1_SETTINGS_V2_KEY="apexFormulaRacingSettingsV2";
 const F1_SETTINGS_V1_KEY="apexFormulaRacingSettingsV1";
 function saveGameSettings(){
- try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:8,
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:9,
   displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
   cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
-  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality
+  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality,racingLineEnabled
  }));}catch(_){}
 }
 function loadGameSettings(){
@@ -8735,6 +8735,7 @@ function loadGameSettings(){
    masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
    soundEnabled=saved.soundEnabled!==false;
    if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
+ racingLineEnabled=saved.racingLineEnabled===true;
   }
  }catch(error){console.warn("Some saved settings could not be read; using race defaults.",error);}
  Object.assign(displayOptions,{master:true,telemetry:true,brand:false,circuit:true,map:true,tyres:true,controls:false});
@@ -8745,6 +8746,7 @@ function syncSettingsUI(){
  $("uiBrand").checked=displayOptions.brand;$("uiCircuitPanel").checked=displayOptions.circuit;
  $("uiMapPanel").checked=displayOptions.map;$("uiTyrePanel").checked=displayOptions.tyres;
  $("uiControls").checked=displayOptions.controls;
+ $("racingLineSetting").checked=racingLineEnabled;
  $("showHaloColumnSetting").checked=showHaloColumn;$("showSteeringWheelSetting").checked=showSteeringWheel;
  $("showDriverHandsSetting").checked=showDriverHands;$("cameraShakeSetting").checked=cameraShake>0;
  $("autoLookSetting").checked=lookToApex>0;
@@ -8803,6 +8805,7 @@ function bindSettings(){
  $("showDriverHandsSetting").addEventListener("change",e=>{showDriverHands=e.target.checked;applyCockpitPreferences();});
  $("cameraShakeSetting").addEventListener("change",e=>{cameraShake=e.target.checked?1:0;});
  $("autoLookSetting").addEventListener("change",e=>{lookToApex=e.target.checked?.25:0;$("lookApexRange").value=Math.round(lookToApex*100);$("lookApexValue").textContent=Math.round(lookToApex*100)+"%";});
+ $("racingLineSetting").addEventListener("change",e=>{racingLineEnabled=e.target.checked;updateRacingLineVisibility();saveGameSettings();});
  const cameraRanges=[["camXRange","x","camXValue","m"],["camYRange","y","camYValue","m"],["camZRange","z","camZValue","m"],["camPitchRange","pitch","camPitchValue","°"],["camYawRange","yaw","camYawValue","°"],["camFovRange","fov","camFovValue","°"]];
  cameraRanges.forEach(([id,key,out,unit])=>$(id).addEventListener("input",e=>{
   const index=Number($("cameraProfileSelect").value),p=cameraProfiles[index];p[key]=Number(e.target.value);
