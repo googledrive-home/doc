@@ -4651,6 +4651,88 @@ function addStartGridMarkings(){
  }
  trackGroup.add(gridMarksGroup);
 }
+function buildRacingLineData(){
+ const samples=circuitRoute.length?circuitRoute:route,n=samples.length,length=circuitRouteLength||routeLength;
+ if(n<8||length<=0){racingLineData=null;return null;}
+ const offsets=new Float32Array(n),curvature=new Float32Array(n),speedProfile=new Float32Array(n),ds=length/n;
+ const span=Math.max(4,Math.round(n*12/length));
+ for(let i=0;i<n;i++){
+  const before=samples[(i-span+n)%n].tan,after=samples[(i+span)%n].tan;
+  const cross=before.z*after.x-before.x*after.z,dot=clamp(before.x*after.x+before.z*after.z,-1,1);
+  const angle=Math.atan2(cross,dot),k=Math.abs(angle)/Math.max(1,2*span*ds);
+  curvature[i]=k;
+  offsets[i]=clamp(-Math.sign(angle)*Math.min(2.35,k*78),-3.0,3.0);
+ }
+ const smoothed=new Float32Array(n);
+ for(let pass=0;pass<3;pass++){
+  for(let i=0;i<n;i++){
+   const source=pass===0?offsets:smoothed;
+   smoothed[i]=source[(i-1+n)%n]*.25+source[i]*.5+source[(i+1)%n]*.25;
+  }
+  if(pass<2)offsets.set(smoothed);
+ }
+ const spec=tireSpecs[tyreCompound]||tireSpecs.medium,water=clamp(trackWetness,0,1);
+ const wetFactor=tyreCompound==="wet"?lerp(.80,1.04,smoothStep(.20,.86,water)):
+  tyreCompound==="intermediate"?Math.max(.56,1.01-.70*Math.pow((water-.42)/.58,2)):Math.max(.29,1-.72*water);
+ const grip=spec.mu*wetFactor*(1+trackRubber*(1-water*.62));
+ const aero=.5*airDensity*4.4*downforceScale*.78/mass;
+ for(let i=0;i<n;i++){
+  let speed=100,k=Math.max(.00012,curvature[i]);
+  for(let pass=0;pass<6;pass++){
+   const cornerG=clamp(grip*(1+aero*speed*speed),.78,3.6);
+   speed=Math.min(speed,Math.sqrt(cornerG*9.81/k));
+  }
+  speedProfile[i]=Math.max(12,speed);
+ }
+ const maxBrake=clamp(grip*9.81*.92,7,19.5);
+ for(let pass=0;pass<3;pass++){
+  for(let i=n-1;i>=0;i--){
+   const next=(i+1)%n,reachable=Math.sqrt(speedProfile[next]*speedProfile[next]+2*maxBrake*ds);
+   if(reachable<speedProfile[i])speedProfile[i]=reachable;
+  }
+ }
+ racingLineData={samples,n,length,ds,offsets,curvature,speedProfile,grip,maxBrake};
+ return racingLineData;
+}
+function buildRacingLineVisual(){
+ if(racingLineGroup?.parent)racingLineGroup.parent.remove(racingLineGroup);
+ racingLineGroup=null;
+ const data=buildRacingLineData();if(!data||!trackGroup)return;
+ const {samples,n,offsets,speedProfile}=data,positions=[],colours=[],indices=[];
+ const green=new THREE.Color(0x39e58c),yellow=new THREE.Color(0xffd44f),orange=new THREE.Color(0xff914e),red=new THREE.Color(0xff4e4e);
+ for(let i=0;i<n;i++){
+  const sample=samples[i],h=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/h,rz=-sample.tan.x/h,o=offsets[i];
+  const x=sample.p.x+rx*o,z=sample.p.z+rz*o,y=sample.p.y+.155;
+  positions.push(x-rx*.17,y,z-rz*.17,x+rx*.17,y,z+rz*.17);
+  const v=speedProfile[i],colour=v<32?red:v<45?orange:v<63?yellow:green;
+  for(let side=0;side<2;side++)colours.push(colour.r,colour.g,colour.b);
+  const next=(i+1)%n,a=i*2,b=a+1,c=next*2,d=c+1;indices.push(a,c,b,b,c,d);
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute("color",new THREE.Float32BufferAttribute(colours,3));
+ geometry.setIndex(indices);geometry.computeVertexNormals();
+ racingLineGroup=new THREE.Group();racingLineGroup.name="Suggested racing line and braking points";
+ const line=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:.96,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,toneMapped:false}));
+ line.renderOrder=7;line.frustumCulled=true;racingLineGroup.add(line);
+ const brakeVertices=[];let lastMarker=-Infinity;
+ for(let i=0;i<n;i++){
+  const before=speedProfile[(i-5+n)%n],now=speedProfile[i],after=speedProfile[(i+12)%n],metres=i*data.ds;
+  if(before-now>1.15&&after>now+4&&metres-lastMarker>90){
+   const sample=samples[i],h=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/h,rz=-sample.tan.x/h,o=offsets[i];
+   const x=sample.p.x+rx*o,z=sample.p.z+rz*o,y=sample.p.y+.19;
+   brakeVertices.push(x-rx*1.2,y,z-rz*1.2,x+rx*1.2,y,z+rz*1.2);lastMarker=metres;
+  }
+ }
+ if(brakeVertices.length){
+  const brakeGeometry=new THREE.BufferGeometry();brakeGeometry.setAttribute("position",new THREE.Float32BufferAttribute(brakeVertices,3));
+  const bars=new THREE.LineSegments(brakeGeometry,new THREE.LineBasicMaterial({color:0xff594e,transparent:true,opacity:1,depthWrite:false,toneMapped:false}));
+  bars.renderOrder=8;bars.frustumCulled=false;racingLineGroup.add(bars);
+ }
+ racingLineGroup.visible=!!racingLineEnabled;trackGroup.add(racingLineGroup);
+}
+function updateRacingLineVisibility(){if(racingLineGroup)racingLineGroup.visible=!!racingLineEnabled;}
+
 function createTrack(){
  restoreCircuitRoute();pitLaneDriving=false;tracksidePlacementAudit=[];
  clearOpponents();
@@ -4707,7 +4789,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
   trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(360,Math.floor(route.length*.55)),.055,5,true),edgeMat));
  }
  circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
- buildPitLane();
+ buildPitLane();buildRacingLineVisual();
  const pitGaps=pitTrackConnectionGaps();
  const railTop=makeBarrierMaterial(.52,.36);railTop.userData.radius=.085;
  const railMid=makeBarrierMaterial(.68,.22);railMid.userData.radius=.065;
