@@ -5613,7 +5613,9 @@ function addChunkedInstances(source,parent=environmentGroup,cellSize=420){
   source.getMatrixAt(i,matrix);position.setFromMatrixPosition(matrix);
   const key=Math.floor(position.x/cellSize)+":"+Math.floor(position.z/cellSize);
   let bucket=buckets.get(key);if(!bucket){bucket=[];buckets.set(key,bucket);}
-  bucket.push({matrix:matrix.clone(),color:source.instanceColor?source.getColorAt(i,colour).clone():null});
+  let instanceColour=null;
+  if(source.instanceColor){source.getColorAt(i,colour);instanceColour=colour.clone();}
+  bucket.push({matrix:matrix.clone(),color:instanceColour});
  }
  for(const [key,items] of buckets){
   const chunk=new THREE.InstancedMesh(source.geometry,source.material,items.length);
