@@ -5735,6 +5735,7 @@ function makeDriverNameTag(driverName,team,number,personality){
  ctx.fillText(String(number||"").padStart(2,"0"),610,87);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+ texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
  sprite.name="AI team timing tag";sprite.position.set(0,3.18,0);sprite.scale.set(5.05,1.26,1);
  sprite.renderOrder=1000;sprite.frustumCulled=false;return sprite;
@@ -5743,7 +5744,7 @@ function collectOpponentVehicleParts(root){
  const wheels=[],frontPivots=[];
  root.traverse(object=>{
   object.visible=true;
-  if(object.isMesh){object.frustumCulled=false;object.castShadow=false;object.receiveShadow=false;}
+  if(object.isMesh){object.frustumCulled=true;object.castShadow=false;object.receiveShadow=false;}
   if(object.name==="wheel-roll"||/^(FL|FR|RL|RR)-wheel-spin$/.test(object.name))wheels.push(object);
   if(object.name==="front-wheel-pivot"||/^(FL|FR)-steering-pivot$/.test(object.name))frontPivots.push(object);
  });
@@ -6002,7 +6003,7 @@ function spawnOpponents(){
    root=simpleCar.root;wheels=simpleCar.wheels;frontPivots=simpleCar.frontPivots;
    addTeamSideDecals(root,team.id,String(i+1).padStart(2,"0"));
   }
-  root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh)object.frustumCulled=false;});
+  root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=true;object.castShadow=false;object.receiveShadow=false;}});
   const nameTag=makeDriverNameTag(driver.name,team,i+1,personality);root.add(nameTag);
   const progress=gridSlot.progress,lineBias=((i*.6180339887498949)%1-.5)*2.2;
   const linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08;
