@@ -4709,12 +4709,12 @@ function addStartGridMarkings(){
  if(aiVertices.length){
   const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(aiVertices,3));
   const marks=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xf5f3e9,transparent:true,opacity:.72,depthWrite:false}));
-  marks.frustumCulled=false;marks.renderOrder=5;gridMarksGroup.add(marks);
+  marks.frustumCulled=true;marks.renderOrder=5;gridMarksGroup.add(marks);
  }
  if(playerVertices.length){
   const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.Float32BufferAttribute(playerVertices,3));
   const marks=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xffa85c,transparent:true,opacity:1,depthWrite:false,toneMapped:false}));
-  marks.frustumCulled=false;marks.renderOrder=6;gridMarksGroup.add(marks);
+  marks.frustumCulled=true;marks.renderOrder=6;gridMarksGroup.add(marks);
  }
  trackGroup.add(gridMarksGroup);
 }
@@ -5088,7 +5088,7 @@ function addPitSafetyBarrier(samples,side,distance,startIndex=0,endIndex=samples
   dummy.position.set(sample.p.x+rx*side*distance,sample.p.y+.56,sample.p.z+rz*side*distance);
   dummy.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z),0);dummy.updateMatrix();posts.setMatrixAt(index++,dummy.matrix);
  }
- posts.count=index;posts.castShadow=true;trackGroup.add(posts);
+ posts.count=index;posts.castShadow=true;addChunkedInstances(posts,trackGroup,320);
 }
 function addPitPaddockBuildings(){
  if(!pitLaneSamples.length||!environmentGroup)return;
@@ -5426,9 +5426,9 @@ function addCircuitLandmarks(){
     dummy.scale.set(width*.32,1.8,depth*.28);dummy.rotation.set(0,heading,0);dummy.updateMatrix();rooftopMesh.setMatrixAt(rooftopCount++,dummy.matrix);
    }
   }
-  facadeMeshes.forEach((mesh,i)=>{mesh.count=facadeCounts[i];mesh.castShadow=false;mesh.receiveShadow=true;environmentGroup.add(mesh);});
-  roofMeshes.forEach((mesh,i)=>{mesh.count=roofCounts[i];mesh.castShadow=false;environmentGroup.add(mesh);});
-  rooftopMesh.count=rooftopCount;rooftopMesh.castShadow=false;environmentGroup.add(rooftopMesh);
+  facadeMeshes.forEach((mesh,i)=>{mesh.count=facadeCounts[i];mesh.castShadow=false;mesh.receiveShadow=true;addChunkedInstances(mesh,environmentGroup,420);});
+  roofMeshes.forEach((mesh,i)=>{mesh.count=roofCounts[i];mesh.castShadow=false;addChunkedInstances(mesh,environmentGroup,420);});
+  rooftopMesh.count=rooftopCount;rooftopMesh.castShadow=false;addChunkedInstances(rooftopMesh,environmentGroup,420);
   addMonacoHarbour();
  }else if(activeTrack==="suzuka"){
   // A distant Ferris wheel landmark inspired by the park setting, safely beyond the runoff.
@@ -5973,7 +5973,7 @@ function addTeamSideDecals(root,teamId,number="01"){
  for(const side of [-1,1]){
   const decal=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
   decal.name="Team identity sidepod sticker";decal.position.set(side*sideX,y,z);
-  decal.rotation.y=side*Math.PI/2;decal.renderOrder=8;decal.frustumCulled=false;root.add(decal);
+  decal.rotation.y=side*Math.PI/2;decal.renderOrder=8;decal.frustumCulled=true;root.add(decal);
  }
 }
 function applyTeamSpecificLivery(root,teamId,number="01"){
