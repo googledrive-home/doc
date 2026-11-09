@@ -6019,7 +6019,7 @@ function spawnOpponents(){
   const initialGap=((progress-playerProgress+1)%1)*aiLength,tyre=initialOpponentTyre(personality);
   const initialLaps=0;
   const bot={
-   root,nameTag,progress,gridProgress:progress,speed:formationLapActive?0:pace,baseSpeed:pace,
+   root,nameTag,progress,gridProgress:progress,speed:0,baseSpeed:pace,
    baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,
     lineAccuracy:difficulty.line,accelLimit:difficulty.accel,maxBrakeDecel:14,penaltyTime:0,speedProfile:null,
    number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,personality,
