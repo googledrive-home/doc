@@ -571,6 +571,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  <div class="model-state"><span>CAR MODEL</span><b id="vehicleModelState" data-state="loading">LOADING RED BULL 2022…</b></div>
  <div class="tireline"><span>Front tyre temperature</span><b id="tireTemp">76°C</b></div>
  <div class="tireline"><span>Rear tyre temperature</span><b id="rearTemp">78°C</b></div>
+ <div class="tireline"><span>Tyre grip</span><b id="tyreGripValue">100%</b></div>
+ <div class="tireline"><span>Track grip</span><b id="trackGripValue">100% · ASPHALT</b></div>
  <div class="tireline"><span>Slip angle</span><b id="slipValue">0.0°</b></div>
  <div class="condition-title">Tyre wear <small id="tyreWearValue">100%</small></div>
  <div class="condition-meter tyre-wear-meter"><i id="tyreWearBar"></i></div>
@@ -7033,9 +7035,9 @@ function pacejka(slip,peakB=10.8,shapeC=1.32,curvatureE=.96){
  return Math.sin(shapeC*Math.atan(bx-curvatureE*(bx-Math.atan(bx))));
 }
 function temperatureGrip(temp){
- const d=temp-98;
- if(Math.abs(d)<=12)return 1;
- return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
+ const d=Math.abs(temp-98);
+ if(d<=10)return 1;
+ return clamp(1-Math.pow((d-10)/50,1.35)*.42,.48,1);
 }
 function completeFormationLap(){
  formationLapActive=false;formationGridSettling=true;formationGridSettleTimer=0;
@@ -7101,8 +7103,8 @@ function updatePhysics(dt){
  const frontWheelCondition=((wheelHealth.FL??100)+(wheelHealth.FR??100))*.005;
  const rearWheelCondition=((wheelHealth.RL??100)+(wheelHealth.RR??100))*.005;
  const muFront=baseGrip*.97*tempF*lerp(.48,1,frontWheelCondition),muRear=baseGrip*1.10*tempR*lerp(.48,1,rearWheelCondition);
- const surfaceOffset=Math.abs(nearestInfo.offset),half=roadHalfWidthAt(route[nearestInfo.index]||route[0]);
- car.surfaceGrip=surfaceOffset<=half?1:surfaceOffset<=half+5?.68:surfaceOffset<=half+12?.34:.14;
+ const surfaceOffset=Math.abs(nearestInfo.offset),half=roadHalfWidthAt(route[nearestInfo.index]||route[0]),runoffDistance=Math.max(0,surfaceOffset-half);
+ car.surfaceGrip=runoffDistance<=.45?1:runoffDistance<=1.4?lerp(1,.88,smoothStep(.45,1.4,runoffDistance)):runoffDistance<=4?lerp(.88,.48,smoothStep(1.4,4,runoffDistance)):lerp(.48,.20,smoothStep(4,11,runoffDistance));
  const rearCap=muRear*rearLoad*car.surfaceGrip,frontCap=muFront*frontLoad*car.surfaceGrip;
  const torque=torqueAt(car.rpm),clutchFactor=(shiftMode==="manual"&&clutchPressed)?0.015:1;
  const launchMap=car.reverse?1:lerp(.48,1,clamp(speed/24,0,1));
@@ -7131,7 +7133,7 @@ function updatePhysics(dt){
  const longitudinal=rearFx+frontFx+fyF*Math.sin(car.steer)+mass*car.r*car.v;
  const lateral=fyF*Math.cos(car.steer)+fyR-mass*car.r*car.u,latAccel=lateral/mass;
  car.longAccel=longitudinal/mass;car.lateralAccel=latAccel;
- car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);if(formationLapActive&&!car.reverse&&car.u>42)car.u=42;car.v+=latAccel*dt;
+ car.u=clamp(car.u+car.longAccel*dt,car.reverse?-5.8:-18,100);car.v+=latAccel*dt;
  const lateralDamping=assistMode==="assisted"?2.8:assistMode==="sport"?1.55:.78;
  car.v*=Math.exp(-lateralDamping*dt);
  const slipLimit=Math.max(1.2,totalSpeed*.22);car.v=clamp(car.v,-slipLimit,slipLimit);
@@ -7282,9 +7284,13 @@ function updatePhysics(dt){
  }
  car.slip=(Math.abs(alphaF)+Math.abs(alphaR))*.5;
  const stress=clamp(car.slip*.9+Math.abs(latAccel)/32,0,1.6);
- car.wear=clamp(car.wear-dt*(.0000013+stress*.000007)*(tireSpecs[tyreCompound].wear)*.58,.18,1);
- car.tempF=lerp(car.tempF,weather.temp+58+stress*19,Math.min(1,dt*.12));
- car.tempR=lerp(car.tempR,weather.temp+59+stress*20,Math.min(1,dt*.12));
+ const tyreStress=clamp(stress+Math.abs(car.longAccel)/28+Math.max(0,car.slip-.10)*1.8,0,2.2);
+ const distanceWear=Math.abs(car.u)*.0000005;
+ car.wear=clamp(car.wear-dt*(.00012+tyreStress*.00018+distanceWear)*(tireSpecs[tyreCompound].wear),.10,1);
+ const speedHeat=clamp(Math.abs(car.u)/85,0,1.35),trackCooling=1+trackWetness*.65;
+ const targetFrontTemp=weather.temp+63+tyreStress*17+speedHeat*4,targetRearTemp=weather.temp+64+tyreStress*20+speedHeat*5;
+ car.tempF=lerp(car.tempF,targetFrontTemp,Math.min(1,dt*(.055+.025*speedHeat)*trackCooling));
+ car.tempR=lerp(car.tempR,targetRearTemp,Math.min(1,dt*(.052+.024*speedHeat)*trackCooling));
  importedThermalAccumulator+=dt;
  if(importedThermalAccumulator>=.1){updateImportedCarThermals(importedThermalAccumulator);importedThermalAccumulator=0;}
  car.wheelSpin+=car.u*dt/wheelRadius;
@@ -7403,7 +7409,12 @@ function updateVehicleCondition(){
 function updateHud(grip,offGrip){
  $("speedValue").textContent=String(Math.round(Math.abs(car.u)*3.6)).padStart(3,"0");$("gearValue").textContent=car.reverse?"R":String(car.gear);$("rpmValue").textContent=Math.round(car.rpm).toLocaleString()+" RPM";
  $("lapValue").textContent=String(lap).padStart(2,"0");$("lapTime").textContent=fmtTime(elapsed-lapStart);$("bestLap").textContent=Number.isFinite(bestLap)?fmtTime(bestLap):"--:--.---";
- $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";$("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
+ $("tireTemp").textContent=Math.round(car.tempF)+"°C";$("rearTemp").textContent=Math.round(car.tempR)+"°C";
+ const tyreGripPercent=clamp(((temperatureGrip(car.tempF)+temperatureGrip(car.tempR))*.5)*car.wear*100,0,100);
+ $("tyreGripValue").textContent=Math.round(tyreGripPercent)+"%";
+ const trackGripPercent=clamp((car.surfaceGrip??1)*100,0,100),surfaceName=trackGripPercent>94?"ASPHALT":trackGripPercent>68?"KERB":trackGripPercent>38?"GRAVEL":"RUNOFF";
+ $("trackGripValue").textContent=Math.round(trackGripPercent)+"% · "+surfaceName;
+ $("slipValue").textContent=(car.slip*57.3).toFixed(1)+"°";updateVehicleCondition();
  $("weatherName").textContent=weather.kind==="rain"?"Rain "+weather.rain+"%":weather.kind.charAt(0).toUpperCase()+weather.kind.slice(1);
  $("tyreName").textContent=tireSpecs[tyreCompound].label;
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
@@ -8120,7 +8131,7 @@ function beginPitService(){
  if(startProgress>=targetProgress-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.5);return;}
  keys.KeyW=false;keys.ArrowUp=false;
  const distance=pitRouteDistanceBetween(startProgress,targetProgress),duration=clamp(distance/20.5,2.6,18);
- const serviceDuration=pitServicePlan.repairMode==="none"?6.4:pitServicePlan.repairMode==="aero"?7.7:9.2;
+ const serviceDuration=pitServicePlan.repairMode==="none"?2.4:pitServicePlan.repairMode==="aero"?2.7:3.0;
  pitServiceCalledThisEntry=true;pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
  setPitButtonAvailable(false);
  pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,serviceDuration,boxY:car.y,releaseHold:0,previousProgress:startProgress};
