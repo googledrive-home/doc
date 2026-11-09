@@ -4895,12 +4895,12 @@ function buildPitLane(){
 }
 function restoreCircuitRoute(){
  if(circuitRoute.length){route=circuitRoute;routeLength=circuitRouteLength;roadWidth=circuitRoadWidth;routeSpatialGrid=circuitRouteSpatialGrid;}
- pitLaneDriving=false;
+ pitLaneDriving=false;pitServiceCalledThisEntry=false;
 }
 function activatePitLaneRoute(useEntryRoute=false){
  const selected=useEntryRoute?pitEntryRoute:pitDriveRoute,selectedLength=useEntryRoute?pitEntryRouteLength:pitDriveRouteLength;
  if(!selected.length)throw new Error("The selected circuit pit lane is not ready.");
- route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
+ pitServiceCalledThisEntry=false;route=selected;routeLength=selectedLength;roadWidth=PIT_LANE_WIDTH;pitLaneDriving=true;pitRoutePurpose=useEntryRoute?"entry":"out";buildRouteSpatialGrid();
 }
 function pitEntryConnectorDistance(x,z){
  if(!pitEntryApproachSamples.length)return Infinity;
@@ -4924,28 +4924,36 @@ function pitEntryMergeWindow(progress){
 function pitEntryApproachAvailable(){
  if(pitLaneDriving||!pitEntryApproachSamples.length||!car||!nearestInfo||car.reverse||Math.abs(car.u)<2.5)return false;
  const headingDot=Math.sin(car.yaw)*nearestInfo.tangent.x+Math.cos(car.yaw)*nearestInfo.tangent.z;
- if(headingDot<.40)return false;
- // Make the pits available from the normal racing line as well as the outer edge.
- // Route selection still requires the driver's explicit PIT button / P key.
- return pitEntryConnectorDistance(car.x,car.z)<=19.5;
+ if(headingDot<.40||nearestInfo.offset<Math.max(.7,roadWidth*.06))return false;
+ return pitEntryConnectorDistance(car.x,car.z)<=10.5;
 }
 function updatePitButtonPrompt(){
- if(pitLaneDriving){setPitButtonAvailable(true);return;}
- setPitButtonAvailable(pitEntryApproachAvailable());
+ if(!car||pitCinematic.active){setPitButtonAvailable(false);return;}
+ if(pitLaneDriving){
+  const canBox=pitRoutePurpose==="entry"&&!pitServiceCalledThisEntry&&!pitPlanOpen&&nearestInfo;
+  setPitButtonAvailable(!pitServiceCalledThisEntry);
+  if(canBox&&nearestInfo.progress>=selectedPitServiceBoxProgress()-.018)beginAutomaticPitService();
+  return;
+ }
+ const available=pitEntryApproachAvailable();setPitButtonAvailable(available);
+ if(available&&pitEntryConnectorDistance(car.x,car.z)<=6.2)requestPitEntry(true);
 }
-function requestPitEntry(){
+function requestPitEntry(automatic=false){
  if(!running||paused||pitLaneDriving)return false;
  if(!pitEntryApproachAvailable()){
-  showRaceControlMessage("PIT ENTRY OPTIONAL · FOLLOW THE RIGHT-HAND ENTRY LINE","info",2.8);
+  showRaceControlMessage("PIT IN · MOVE TO THE RIGHT-HAND ENTRY LINE","info",2.8);
   return false;
  }
+ const connectorGap=pitEntryConnectorDistance(car.x,car.z);
+ if(connectorGap>10.5){showRaceControlMessage("PIT IN · FOLLOW THE ENTRY LINE CLOSER","info",2.8);return false;}
+ pitServiceCalledThisEntry=false;
  const x=car.x,z=car.z,y=car.y;
  activatePitLaneRoute(true);
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
  $("trackState").textContent="PIT ENTRY · 80 KM/H";$("trackState").style.color="#f0c75c";
  setPitButtonAvailable(true);
- showRaceControlMessage("PIT ENTRY SELECTED · FOLLOW THE PIT LANE","info",2.8);
- showTeamRadio("Pit entry confirmed. Follow the line to the pit lane. Box when you're ready for service.");
+ showRaceControlMessage(automatic?"AUTOMATIC PIT ENTRY · PIT LIMITER ACTIVE":"PIT IN CONFIRMED · FOLLOW THE PIT LANE","info",3.2);
+ showTeamRadio(automatic?"Pit entry detected. Follow the marked lane — we will call you into your team box.":"Pit entry confirmed. Follow the line to the pit lane. Your team box stop will trigger automatically.");
  return true;
 }
 function handlePitButtonAction(){
@@ -4955,7 +4963,7 @@ function handlePitButtonAction(){
 function mergeOntoCircuit(){
  if(!pitLaneDriving)return;
  const purpose=pitRoutePurpose,x=car.x,z=car.z,y=car.y;
- restoreCircuitRoute();pitRoutePurpose="out";
+ restoreCircuitRoute();pitRoutePurpose="out";pitServiceCalledThisEntry=false;
  nearestInfo=findNearest(x,z,y,null);car.routeIndex=nearestInfo.index;previousProgress=nearestInfo.progress;
  $("trackState").textContent="ON CIRCUIT";$("trackState").style.color="#63dfa6";
  setPitButtonAvailable(false);
@@ -7725,8 +7733,8 @@ function updatePitStationUI(){
 }
 function setPitButtonAvailable(available){
  const button=$("pitStopBtn");if(!button)return;
- const label=pitLaneDriving?"BOX":"PIT IN";
- button.style.display=available?"inline-flex":"none";
+ const label=pitLaneDriving?"BOX NOW":"PIT IN";
+ button.style.display=available&&!pitCinematic.active?"inline-flex":"none";
  button.textContent=label;
  button.setAttribute("aria-label",pitLaneDriving?"Call the pit crew":"Choose the optional pit entry");
 }
@@ -8053,7 +8061,8 @@ function beginPitService(){
  keys.KeyW=false;keys.ArrowUp=false;
  const distance=pitRouteDistanceBetween(startProgress,targetProgress),duration=clamp(distance/20.5,2.6,18);
  const serviceDuration=pitServicePlan.repairMode==="none"?6.4:pitServicePlan.repairMode==="aero"?7.7:9.2;
- pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
+ pitServiceCalledThisEntry=true;pitServiceOpen=true;pitServiceActive=true;pitServiceTimer=0;
+ setPitButtonAvailable(false);
  pitCinematic={active:true,phase:"approach",elapsed:0,duration,startProgress,targetProgress,serviceDuration,boxY:car.y,releaseHold:0,previousProgress:startProgress};
  car.u=0;car.v=0;car.throttle=0;car.brake=1;
  setPitCinematicUI("APEX PIT WALL","BOX · BOX · BOX","YOUR TEAM'S SERVICE BOX","Pit limiter engaged. Following the marked lane into your team's garage box.",0,"PIT ENTRY · LIMITER ACTIVE","GUIDED APPROACH");
@@ -8061,8 +8070,16 @@ function beginPitService(){
  showRaceControlMessage("BOX BOX BOX · PIT SEQUENCE ACTIVE","yellow",3.8);
  showTeamRadio("Box, box. Follow the marked line into your garage pit box.");playMenuUiSound("race");
 }
+function beginAutomaticPitService(){
+ if(!running||paused||!pitLaneDriving||pitRoutePurpose!=="entry"||pitServiceCalledThisEntry||pitCinematic.active||pitServiceOpen||pitPlanOpen)return false;
+ pitServiceSelectedTyre=tyreCompound;
+ pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"};
+ beginPitService();
+ return pitCinematic.active;
+}
 function requestPitService(){
  if(!running||paused||pitCinematic.active)return;
+ if(pitServiceCalledThisEntry){showRaceControlMessage("TEAM BOX · SERVICE ALREADY CALLED THIS ENTRY","info",2.8);return;}
  if(!pitLaneDriving){showRaceControlMessage("PIT STOP · ENTER THE PIT LANE FIRST","info",2.8);return;}
  if(!nearestInfo){showRaceControlMessage("PIT STOP · PIT POSITION NOT AVAILABLE","yellow",3.2);return;}
  if(nearestInfo.progress>=selectedPitServiceBoxProgress()-.006){showRaceControlMessage("YOUR TEAM'S PIT BOX HAS BEEN PASSED","yellow",3.2);return;}
