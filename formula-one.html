@@ -4873,9 +4873,15 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
  trackGroup.add(makeCurb(route,-1,.85));trackGroup.add(makeCurb(route,1,.85));
  const edgeMat=makeMat(0xf3f1e8,.76);
  for(const side of [-1,1]){
-  const edgePts=route.map((s,i)=>stableTrackOffset(route,i,side,Math.max(2.8,roadHalfWidthAt(s)-.12),.075));
-  const edgeCurve=new THREE.CatmullRomCurve3(edgePts,true,"centripetal",.5);
-  trackGroup.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(360,Math.floor(route.length*.55)),.055,5,true),edgeMat));
+  const edgePts=route.map((sample,i)=>stableTrackOffset(route,i,side,Math.max(2.8,roadHalfWidthAt(sample)-.12),.075));
+  const edgeChunkSize=72;
+  for(let start=0;start<edgePts.length;start+=edgeChunkSize){
+   const points=[];
+   for(let k=start-2;k<=Math.min(edgePts.length-1,start+edgeChunkSize+2);k++)points.push(edgePts[(k+edgePts.length)%edgePts.length]);
+   const edgeCurve=new THREE.CatmullRomCurve3(points,false,"centripetal",.5);
+   const edgeMesh=new THREE.Mesh(new THREE.TubeGeometry(edgeCurve,Math.max(36,Math.floor(points.length*.55)),.055,5,false),edgeMat);
+   edgeMesh.frustumCulled=true;trackGroup.add(edgeMesh);
+  }
  }
  circuitRoute=route;circuitRouteLength=routeLength;circuitRoadWidth=roadWidth;circuitRouteSpatialGrid=routeSpatialGrid;
  buildPitLane();
@@ -4900,7 +4906,7 @@ terrainBaseY=route.reduce((sum,p)=>sum+p.p.y,0)/route.length;
    dummy.rotation.set(0,Math.atan2(route[i].tan.x,route[i].tan.z),0);dummy.updateMatrix();posts.setMatrixAt(pi++,dummy.matrix);
   }
  }
- posts.count=pi;trackGroup.add(posts);
+ posts.count=pi;addChunkedInstances(posts,trackGroup,420);
  addStartFinish();addStartGridMarkings();
  buildScenery();
  buildRunoffAreas();
@@ -5490,6 +5496,7 @@ function addTracksideProps(){
    }
    const point=safeTracksidePoint(route[i],side,fenceDistance,2.5);
    point.y=terrainHeightAt(point.x,point.z)+2.7;segment.push(point);
+   if(segment.length>=64){fenceSegments.push(segment);segment=segment.slice(-3);}
    if(Math.floor(i/fenceStride)%8===0){
     const baseY=terrainHeightAt(point.x,point.z);
     const post=new THREE.Mesh(new THREE.BoxGeometry(.09,2.7,.09),fenceMat);
