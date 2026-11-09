@@ -3874,7 +3874,7 @@ function updateGhostToggleUI(){
 function buildGhostCar(){
  clearGhostCar();
  if(currentSessionMode!=="timeTrial"||!timeTrialGhostData.length||!carRoot)return;
- ghostRoot=carRoot.clone(true);ghostRoot.name="Personal best ghost car";
+ ghostRoot=cloneObject3DSafely(carRoot);ghostRoot.name="Personal best ghost car";
  const remove=[];
  ghostRoot.traverse(object=>{
   if(object.isSpotLight||object.isPointLight||object.userData.playerHeadlight||object.userData.playerHeadlightTarget){remove.push(object);return;}
@@ -5629,7 +5629,7 @@ function upgradeOpponentVisualsToImportedModel(){
  if(!importedCarActive||!importedCarModelRoot||!opponents.length)return;
  opponents.forEach(bot=>{
   if(bot.pitPhase)return;
-  const previous=bot.root,root=importedCarModelRoot.clone(true);
+  const previous=bot.root,root=cloneObject3DSafely(importedCarModelRoot);
   root.name="AI · "+bot.driverName;root.visible=true;
   root.position.copy(previous.position);root.rotation.copy(previous.rotation);root.scale.copy(importedCarModelRoot.scale);
   const parts=collectOpponentVehicleParts(root);
@@ -5866,7 +5866,7 @@ function spawnOpponents(){
   if(!gridSlot)throw new Error("AI car "+(i+1)+" has no valid circuit start slot.");
   let root,wheels,frontPivots;
   if(importedCarActive&&importedCarModelRoot){
-   root=importedCarModelRoot.clone(true);root.name="AI · "+driver.name;
+   root=cloneObject3DSafely(importedCarModelRoot);root.name="AI · "+driver.name;
    const parts=collectOpponentVehicleParts(root);wheels=parts.wheels;frontPivots=parts.frontPivots;
    applyTeamSpecificLivery(root,team.id,String(i+1).padStart(2,"0"));
   }else{
@@ -6054,6 +6054,31 @@ function damageSystemForPart(name){
  if(/wishbone|suspension|wheel|tyre|tire|rim|disk|bujon|fender/.test(n))return "suspension";
  if(/diffuser|floor|underfloor/.test(n))return "floor";
  return "chassis";
+}
+function cloneObject3DSafely(source){
+ const backups=[];
+ source.traverse(object=>{
+  const original=object.userData;
+  if(!original||typeof original!=="object")return;
+  const ancestors=[];let safe={};
+  try{
+   const serialized=JSON.stringify(original,function(key,value){
+    // Damage-part links point back to their meshes and must never be copied as JSON metadata.
+    if(key==="apexDamagePart")return undefined;
+    if(value===null||typeof value!=="object")return value;
+    // Remove circular references while preserving ordinary nested and shared metadata.
+    while(ancestors.length&&ancestors[ancestors.length-1]!==this)ancestors.pop();
+    if(ancestors.includes(value))return undefined;
+    ancestors.push(value);return value;
+   });
+   safe=serialized?JSON.parse(serialized):{};
+  }catch(error){
+   console.warn("Non-serializable Three.js metadata omitted while cloning "+(object.name||"object")+".",error);
+  }
+  backups.push([object,original]);object.userData=safe;
+ });
+ try{return source.clone(true);}
+ finally{for(const [object,original] of backups)object.userData=original;}
 }
 function registerDamagePart(mesh,name,threshold,zone=null){
  const part={mesh,name,threshold,system:damageSystemForPart(name),zone:zone||inferDamageZone(name),detached:false};
@@ -6483,7 +6508,7 @@ async function loadRedBullCarModel(targetRoot,generation){
   }
   if(proceduralFallbackRoot)proceduralFallbackRoot.visible=false;
   targetRoot.scale.set(1,1,1);
-  const opponentModelTemplate=modelRoot.clone(true);
+  const opponentModelTemplate=cloneObject3DSafely(modelRoot);
   opponentModelTemplate.name="Red Bull 2022 · pristine AI team template";
   applyTeamSpecificLivery(modelRoot,selectedTeamId,"01");
   importedCarModelRoot=opponentModelTemplate;importedCarActive=true;
@@ -7984,7 +8009,7 @@ function preparePitWheelSwap(){
   const oldRoll=corner.roll,parent=oldRoll?.parent;if(!oldRoll||!parent)return null;
   const oldParts=[];oldRoll.traverse(node=>oldParts.push(node));
   // Damage-part links live on the mesh, not userData, so the Three.js clone is safe.
-  const newRoll=oldRoll.clone(true);
+  const newRoll=cloneObject3DSafely(oldRoll);
   newRoll.name=(oldRoll.name||"wheel assembly")+" · fresh wheel";
   newRoll.userData={...newRoll.userData,...oldRoll.userData,pitReplacement:true};
   const newParts=[];newRoll.traverse(node=>newParts.push(node));
