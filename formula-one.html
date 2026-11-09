@@ -4723,19 +4723,33 @@ function buildRacingLineVisual(){
  racingLineGroup=new THREE.Group();racingLineGroup.name="Suggested racing line and braking points";
  const line=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,transparent:true,opacity:.96,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,toneMapped:false}));
  line.renderOrder=7;line.frustumCulled=true;racingLineGroup.add(line);
- const brakeVertices=[];let lastMarker=-Infinity;
+ const brakeVertices=[],brakePoints=[];let lastMarker=-Infinity;
  for(let i=0;i<n;i++){
   const before=speedProfile[(i-5+n)%n],now=speedProfile[i],after=speedProfile[(i+12)%n],metres=i*data.ds;
   if(before-now>1.15&&after>now+4&&metres-lastMarker>90){
    const sample=samples[i],h=Math.hypot(sample.tan.x,sample.tan.z)||1,rx=sample.tan.z/h,rz=-sample.tan.x/h,o=offsets[i];
    const x=sample.p.x+rx*o,z=sample.p.z+rz*o,y=sample.p.y+.19;
-   brakeVertices.push(x-rx*1.2,y,z-rz*1.2,x+rx*1.2,y,z+rz*1.2);lastMarker=metres;
+   brakeVertices.push(x-rx*1.2,y,z-rz*1.2,x+rx*1.2,y,z+rz*1.2);
+   brakePoints.push({x,y:y+.035,z,heading:Math.atan2(sample.tan.x,sample.tan.z)});
+   lastMarker=metres;
   }
  }
  if(brakeVertices.length){
   const brakeGeometry=new THREE.BufferGeometry();brakeGeometry.setAttribute("position",new THREE.Float32BufferAttribute(brakeVertices,3));
   const bars=new THREE.LineSegments(brakeGeometry,new THREE.LineBasicMaterial({color:0xff594e,transparent:true,opacity:1,depthWrite:false,toneMapped:false}));
   bars.renderOrder=8;bars.frustumCulled=false;racingLineGroup.add(bars);
+  // One shared texture and one instanced draw call keep the brake labels clear without adding many draw calls.
+  const canvas=document.createElement("canvas");canvas.width=256;canvas.height=64;
+  const ctx=canvas.getContext("2d");ctx.fillStyle="rgba(30,8,8,.92)";ctx.fillRect(4,4,248,56);
+  ctx.strokeStyle="#ff6656";ctx.lineWidth=6;ctx.strokeRect(5,5,246,54);
+  ctx.fillStyle="#fff4ed";ctx.font="1000 36px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("BRAKE",128,34);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+  const markerMaterial=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+  const markerGeometry=new THREE.PlaneGeometry(2.55,.64),markers=new THREE.InstancedMesh(markerGeometry,markerMaterial,brakePoints.length),dummy=new THREE.Object3D();
+  brakePoints.forEach((point,i)=>{
+   dummy.position.set(point.x,point.y,point.z);dummy.rotation.set(-Math.PI/2,point.heading,0,"YXZ");dummy.updateMatrix();markers.setMatrixAt(i,dummy.matrix);
+  });
+  markers.instanceMatrix.needsUpdate=true;markers.frustumCulled=false;markers.renderOrder=9;racingLineGroup.add(markers);
  }
  racingLineGroup.visible=!!racingLineEnabled;trackGroup.add(racingLineGroup);
 }
