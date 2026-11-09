@@ -1412,7 +1412,7 @@ function openStandaloneGame(file,title,launchMode=''){
   document.body.style.overflow='hidden';
   frame.title=$('standaloneGameTitle').textContent;
   const target=new URL('./'+file,window.location.href);
-  if(file==='formula-one.html')target.searchParams.set('build','apex-circular-userdata-safe-clone-20261109-v4');
+  if(file==='formula-one.html')target.searchParams.set('build','apex-ai-smoothing-raceline-20261109-v5');
   if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
 }
