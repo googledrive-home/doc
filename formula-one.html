@@ -4283,34 +4283,66 @@ function tracksideExtraAt(s,desired,margin=1.25){
  return Number.isFinite(s.nearTrackClearance)?clamp((s.nearTrackClearance-base-other-margin)*.5,0,desired):desired;
 }
 function makeRibbon(samples,width,material,yOff=.025){
- const pos=[],uv=[],idx=[],nominal=Math.max(0,(width-roadWidth)*.5);
- for(let i=0;i<samples.length;i++){
-  const s=samples[i],base=roadHalfWidthAt(s),extra=width>roadWidth?Math.min(nominal,tracksideExtraAt(s,nominal,1.15),base*.42):0,half=base+extra;
-  const a=stableTrackOffset(samples,i,-1,half,yOff),b=stableTrackOffset(samples,i,1,half,yOff),v=i/samples.length*routeLength/12;
-  pos.push(a.x,a.y,a.z,b.x,b.y,b.z);uv.push(0,v,1,v);
+ const group=new THREE.Group(),n=samples.length,nominal=Math.max(0,(width-roadWidth)*.5),chunkSize=72;
+ for(let start=0;start<n;start+=chunkSize){
+  const count=Math.min(chunkSize,n-start),positions=[],uvs=[],indices=[];
+  for(let j=0;j<=count;j++){
+   const unwrapped=start+j,index=unwrapped%n,sample=samples[index];
+   const base=roadHalfWidthAt(sample),extra=width>roadWidth?Math.min(nominal,tracksideExtraAt(sample,nominal,1.15),base*.42):0,half=base+extra;
+   const left=stableTrackOffset(samples,index,-1,half,yOff),right=stableTrackOffset(samples,index,1,half,yOff),v=unwrapped/n*routeLength/12;
+   positions.push(left.x,left.y,left.z,right.x,right.y,right.z);uvs.push(0,v,1,v);
+  }
+  for(let j=0;j<count;j++){const a=j*2,b=a+1,c=(j+1)*2,d=c+1;indices.push(a,c,b,b,c,d);}
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2));
+  geometry.setIndex(indices);geometry.computeVertexNormals();
+  const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.frustumCulled=true;
+  mesh.name="Track ribbon view section "+Math.floor(start/chunkSize);group.add(mesh);
  }
- for(let i=0;i<samples.length;i++){const j=(i+1)%samples.length,a=i*2,b=a+1,c=j*2,d=c+1;idx.push(a,c,b,b,c,d);}
- const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
- const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;mesh.frustumCulled=true;return mesh;
+ return group;
 }
+
 function makeCurb(samples,side,width){
- const pos=[],col=[],idx=[],red=new THREE.Color(0xd82f37),white=new THREE.Color(0xf3eee5);
- for(let i=0;i<samples.length;i++){
-  const base=roadHalfWidthAt(samples[i]),cw=tracksideExtraAt(samples[i],width,.8);
-  const a=stableTrackOffset(samples,i,side,base+.15,.045),b=stableTrackOffset(samples,i,side,base+.15+cw,.045);
-  pos.push(a.x,a.y,a.z,b.x,b.y,b.z);
-  const c=Math.floor(i/samples.length*routeLength/7)%2?white:red;for(let k=0;k<2;k++)col.push(c.r,c.g,c.b);
+ const group=new THREE.Group(),n=samples.length,red=new THREE.Color(0xd82f37),white=new THREE.Color(0xf3eee5),chunkSize=72;
+ const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,side:THREE.DoubleSide});
+ for(let start=0;start<n;start+=chunkSize){
+  const count=Math.min(chunkSize,n-start),positions=[],colours=[],indices=[];
+  for(let j=0;j<=count;j++){
+   const global=start+j,index=global%n,base=roadHalfWidthAt(samples[index]),curbWidth=tracksideExtraAt(samples[index],width,.8);
+   const a=stableTrackOffset(samples,index,side,base+.15,.045),b=stableTrackOffset(samples,index,side,base+.15+curbWidth,.045);
+   positions.push(a.x,a.y,a.z,b.x,b.y,b.z);
+   const colour=Math.floor(global/n*routeLength/7)%2?white:red;
+   for(let k=0;k<2;k++)colours.push(colour.r,colour.g,colour.b);
+  }
+  for(let j=0;j<count;j++){const a=j*2,b=a+1,c=(j+1)*2,d=c+1;indices.push(a,c,b,b,c,d);}
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute("color",new THREE.Float32BufferAttribute(colours,3));
+  geometry.setIndex(indices);geometry.computeVertexNormals();
+  const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=true;
+  mesh.name="Kerb view section "+Math.floor(start/chunkSize);group.add(mesh);
  }
- for(let i=0;i<samples.length;i++){const j=(i+1)%samples.length,a=i*2,b=a+1,c=j*2,d=c+1;idx.push(a,c,b,b,c,d);}
- const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setAttribute("color",new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
- return new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,side:THREE.DoubleSide}));
+ return group;
 }
+
 function makeRail(samples,side,distance,height,material){
- const desired=Math.max(0,distance-roadWidth*.5);
- const pts=samples.map((s,i)=>stableTrackOffset(samples,i,side,roadHalfWidthAt(s)+tracksideExtraAt(s,desired,1.6),height));
- const c=new THREE.CatmullRomCurve3(pts,true,"centripetal",.5);
- return new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(360,Math.floor(samples.length*.55)),material.userData.radius||.13,6,true),material);
+ const group=new THREE.Group(),n=samples.length,desired=Math.max(0,distance-roadWidth*.5),chunkSize=72,overlap=2;
+ for(let start=0;start<n;start+=chunkSize){
+  const end=Math.min(n,start+chunkSize),points=[];
+  for(let k=start-overlap;k<=end+overlap;k++){
+   const index=(k+n)%n;
+   points.push(stableTrackOffset(samples,index,side,roadHalfWidthAt(samples[index])+tracksideExtraAt(samples[index],desired,1.6),height));
+  }
+  if(points.length<5)continue;
+  const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.5);
+  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(36,Math.floor(points.length*.55)),material.userData.radius||.13,6,false),material);
+  mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=true;
+  mesh.name="Safety rail view section "+Math.floor(start/chunkSize);group.add(mesh);
+ }
+ return group;
 }
+
 function isPitTrackConnectionGap(progress){
  const p=(progress%1+1)%1;
  return p<=Math.min(.24,pitExitCircuitProgress+.025)||p>=Math.max(.76,pitEntryCircuitProgress-.025);
@@ -4324,24 +4356,29 @@ function pitTrackConnectionGaps(){
 }
 
 function makeRailWithGaps(samples,side,distance,height,material,gaps){
- const group=new THREE.Group(),n=samples.length,desired=Math.max(0,distance-roadWidth*.5);
+ const group=new THREE.Group(),n=samples.length,desired=Math.max(0,distance-roadWidth*.5),chunkSize=72,overlap=2;
  const sorted=gaps.slice().sort((a,b)=>a[0]-b[0]);
- for(let g=0;g<sorted.length;g++){
-  const startProgress=sorted[g][1],endProgress=sorted[(g+1)%sorted.length][0];
+ for(let gap=0;gap<sorted.length;gap++){
+  const startProgress=sorted[gap][1],endProgress=sorted[(gap+1)%sorted.length][0];
   let start=Math.ceil(startProgress*n),end=Math.floor(endProgress*n);
   if(end<=start)end+=n;
   const points=[];
   for(let k=start;k<=end;k++){
-   const i=k%n;
-   points.push(stableTrackOffset(samples,i,side,roadHalfWidthAt(samples[i])+tracksideExtraAt(samples[i],desired,1.6),height));
+   const index=k%n;
+   points.push(stableTrackOffset(samples,index,side,roadHalfWidthAt(samples[index])+tracksideExtraAt(samples[index],desired,1.6),height));
   }
-  if(points.length<5)continue;
-  const curve=new THREE.CatmullRomCurve3(points,false,"centripetal",.5);
-  const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(48,Math.floor(points.length*.55)),material.userData.radius||.13,6,false),material);
-  mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+  for(let offset=0;offset<points.length-1;offset+=chunkSize){
+   const from=Math.max(0,offset-overlap),to=Math.min(points.length-1,offset+chunkSize+overlap);
+   const section=points.slice(from,to+1);if(section.length<5)continue;
+   const curve=new THREE.CatmullRomCurve3(section,false,"centripetal",.5);
+   const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,Math.max(36,Math.floor(section.length*.55)),material.userData.radius||.13,6,false),material);
+   mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=true;
+   mesh.name="Safety rail view section "+gap+":"+Math.floor(offset/chunkSize);group.add(mesh);
+  }
  }
  return group;
 }
+
 function addSuzukaBridgeStructure(){
  if(activeTrack!=="suzuka"||!route.length)return;
  // GP centreline crossing: the East-course pass is near 2,498 m;
