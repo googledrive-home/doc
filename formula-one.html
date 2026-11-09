@@ -5328,8 +5328,25 @@ function buildScenery(){
  environmentGroup.add(shrubs,grasses,rocks);
 }
 function clearOpponents(){
- // Opponents clone the player's geometry, so remove the clones without disposing shared meshes.
- opponents.forEach(bot=>scene.remove(bot.root));
+ // AI cars share geometry and most materials with the player. Dispose only team-colour
+ // material clones created for opponents; keep shared player resources alive.
+ const sharedMaterials=new Set();
+ if(carRoot)carRoot.traverse(object=>{
+  if(!object.isMesh||!object.material)return;
+  const materials=Array.isArray(object.material)?object.material:[object.material];
+  materials.forEach(material=>{if(material)sharedMaterials.add(material);});
+ });
+ opponents.forEach(bot=>{
+  scene.remove(bot.root);
+  const disposed=new Set();
+  bot.root.traverse(object=>{
+   if(!object.isMesh||!object.material)return;
+   const materials=Array.isArray(object.material)?object.material:[object.material];
+   materials.forEach(material=>{
+    if(material&&!sharedMaterials.has(material)&&!disposed.has(material)){disposed.add(material);material.dispose();}
+   });
+  });
+ });
  opponents=[];
 }
 function showTeamRadio(message,duration=4.5){
@@ -6894,7 +6911,7 @@ function temperatureGrip(temp){
  return clamp(1-Math.pow((Math.abs(d)-12)/48,1.35)*.38,.58,1);
 }
 function completeFormationLap(){
- formationLapActive=false;$("formationGuide").classList.remove("open");
+ formationLapActive=false;$("formationGuide").classList.remove("open");keys.KeyW=false;keys.ArrowUp=false;
  restoreCircuitRoute();positionCarAtStart(false,true);
  raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
  raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
