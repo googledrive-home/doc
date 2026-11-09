@@ -524,7 +524,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
         <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="4">4 cars</option><option value="8" selected>8 cars</option><option value="12">12 cars</option><option value="16">16 cars</option><option value="19">19 cars · full grid</option></select></div>
       </div>
       <div class="two">
-        <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="easy">Relaxed</option><option value="balanced" selected>Balanced</option><option value="fast">Fast</option></select></div>
+        <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="veryEasy">Very easy</option><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="veryHard">Very hard</option></select></div>
         <div class="field"><label for="raceLapsSelect">Session length</label><select id="raceLapsSelect"><option value="1">1 lap</option><option value="3" selected>3 laps</option><option value="5">5 laps</option><option value="10">10 laps</option></select></div>
       </div>
       <div class="field formation-option"><label><input id="formationLapSelect" type="checkbox" checked> Formation lap with the AI field before the race</label></div>
@@ -739,6 +739,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
      <label><input type="checkbox" id="showDriverHandsSetting" checked><span><b>Show driver gloves</b><small>Show the driver's hands at the wheel.</small></span></label>
     </div><p class="settings-hint">Cockpit view keeps every original Red Bull mesh visible. Adjust lateral position, eye height and forward/rear offset until the track is clear. The TV pod follows the imported halo and looks back across the driver towards the wheel. Camera offsets are stored separately for each view.</p>
    </section>
+   <section class="settings-group"><h3>Racing guidance</h3><div class="settings-options compact"><label><input type="checkbox" id="racingLineSetting"><span><b>Racing line and braking points</b><small>Show the suggested cornering line and braking markers directly on the circuit.</small></span></label></div></section>
    <section class="settings-group"><h3>Audio mix</h3>
     <div class="two">
      <div class="field"><div class="range-head"><label for="masterVolumeRange">Master volume</label><output id="masterVolumeValue">85%</output></div><input id="masterVolumeRange" type="range" min="0" max="100" step="5" value="85"></div>
@@ -3645,6 +3646,7 @@ const OFFICIAL_F1_TRACK_POINTS = Object.freeze({
 });
 
 let playerHeadlights=[],playerHeadlightsOwner=null;
+let gridMarksGroup=null,racingLineGroup=null,racingLineData=null,racingLineEnabled=false;
 let renderer,scene,camera,clock,trackGroup,environmentGroup,carRoot,carBody,steeringPivot,handGroup,cockpitHaloColumn=null,frontWheelPivots=[],wheelMeshes=[],wheelCornerPivots=[],wheelControlMeshes=[],wheelShiftLedMeshes=[],wheelAngle=0,skyDome,skyMaterial,cloudGroup,cloudMaterial,dashCanvas,dashContext,dashTexture,cockpitHiddenMeshes=[],cockpitVisibleMeshes=[],terrainSamples=[],damageParts=[],looseDamageParts=[],crashDebris=[],vehicleDamage=0,vehicleHealth={engine:100,gearbox:100,chassis:100,suspension:100,frontAero:100,rearAero:100,floor:100},racingEnvironment=null,hemiLight=null,ambientLight=null,sunLight=null,fillLight=null,starField=null,trackFloodlights=[],softBodyNodes=[],softBodyBeams=[],softBodyShells=[],softBodyUpdateCount=0,softBodyActive=false;
 let proceduralFallbackRoot=null,importedCarModelRoot=null,redBullAssetPackPromise=null,redBullModelLoadPromise=null,carBuildGeneration=0,importedCarActive=false,lowPolyPlayerVisual=null;
 let lowPolyVehicleGeometries=null;const lowPolyVehicleMaterials=new Map();
@@ -3701,7 +3703,7 @@ function nearestTerrainSample(x,z){
  }
  return {sample:nearest,distance:Math.sqrt(best)};
 }
-let shiftMode="automatic",aiSkill="balanced",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
+let shiftMode="automatic",aiSkill="medium",opponentCount=8,raceLaps=3,graphicsQuality="medium",opponents=[];
 let running=false,paused=false,previousFrame=0,physicsAccumulator=0,hudAccumulator=0,audioAccumulator=0,elapsed=0,lap=1,lapStart=0,bestLap=Infinity,previousProgress=0,cameraMode=2,showHaloColumn=true;
 let performanceSampleStart=0,performanceSampleFrames=0,adaptiveResolutionScale=1,adaptiveSlowSamples=0,adaptiveFastSamples=0;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
@@ -5593,8 +5595,8 @@ function updateRaceStart(dt){
 }
 
 function makeDriverNameTag(driverName,team,number,personality){
- const canvas=document.createElement("canvas");canvas.width=640;canvas.height=160;
- const ctx=canvas.getContext("2d");ctx.clearRect(0,0,640,160);
+ const canvas=document.createElement("canvas");canvas.width=1024;canvas.height=256;
+ const ctx=canvas.getContext("2d");ctx.scale(1.6,1.6);ctx.clearRect(0,0,640,160);
  const primary=team?.primary||"#19385d",accent=team?.accent||"#ffc77e";
  const rounded=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();};
  rounded(5,5,630,150,22);
@@ -5612,7 +5614,7 @@ function makeDriverNameTag(driverName,team,number,personality){
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
- sprite.name="AI team timing tag";sprite.position.set(0,3.05,0);sprite.scale.set(4.75,1.19,1);
+ sprite.name="AI team timing tag";sprite.position.set(0,3.18,0);sprite.scale.set(5.05,1.26,1);
  sprite.renderOrder=1000;sprite.frustumCulled=false;return sprite;
 }
 function collectOpponentVehicleParts(root){
@@ -7073,8 +7075,8 @@ function gridSlotBehindStartLine(distanceMeters){
  return null;
 }
 function playerGridDistance(){
- const count=Math.max(0,Math.min(19,Math.floor(opponentCount||0)));
- return 8+Math.ceil(count/2)*8.1;
+ const count=Math.max(0,Math.min(19,Math.floor(opponentCount)||0));
+ return 8+Math.floor(count/2)*8.1;
 }
 function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  if(!carRoot)buildCar();
@@ -7083,7 +7085,8 @@ function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  const startIndex=fromPitBox?0:gridSlot?gridSlot.index:fromGrid?0:6,sample=gridSlot?{p:gridSlot.point,tan:gridSlot.tangent}:route[startIndex]||route[0];
  if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
  const gridRight=gridSlot?new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize():new THREE.Vector3();
- const lateral=gridSlot?2.2:0,gridX=sample.p.x+gridRight.x*lateral,gridZ=sample.p.z+gridRight.z*lateral;
+ const playerGridSide=opponentCount%2===1?-1:1;
+ const lateral=gridSlot?2.2*playerGridSide:0,gridX=sample.p.x+gridRight.x*lateral,gridZ=sample.p.z+gridRight.z*lateral;
  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
  carRoot.position.set(gridX,sample.p.y+.045,gridZ);carRoot.rotation.set(-slope,yaw,0);
  car={x:gridX,z:gridZ,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
