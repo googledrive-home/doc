@@ -4061,8 +4061,8 @@ function createRacingEnvironment(){
 }
 
 function initRenderer(){
- renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:false,alpha:false,powerPreference:"high-performance"});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.0));
+ renderer=new THREE.WebGLRenderer({canvas:worldCanvas,antialias:true,alpha:false,powerPreference:"high-performance",stencil:false,depth:true});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,qualityPixelRatio()));
  renderer.setSize(window.innerWidth,window.innerHeight,false);
  renderer.shadowMap.enabled=graphicsQuality==="high";renderer.shadowMap.type=THREE.PCFShadowMap;renderer.toneMappingExposure=1.22;
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
@@ -4094,7 +4094,7 @@ function initRenderer(){
  hemiLight=new THREE.HemisphereLight(0xe8f3ff,0x899486,2.35);scene.add(hemiLight);
  ambientLight=new THREE.AmbientLight(0xffffff,.62);scene.add(ambientLight);
  sunLight=new THREE.DirectionalLight(0xfff0d5,2.05);sunLight.position.set(-250,480,-180);sunLight.castShadow=true;
- sunLight.shadow.mapSize.set(2048,2048);sunLight.shadow.camera.left=-900;sunLight.shadow.camera.right=900;sunLight.shadow.camera.top=900;sunLight.shadow.camera.bottom=-900;sunLight.shadow.camera.near=.5;sunLight.shadow.camera.far=1800;sunLight.shadow.bias=-.00008;sunLight.shadow.normalBias=.025;sunLight.shadow.radius=3;scene.add(sunLight);scene.add(sunLight.target);
+ sunLight.shadow.mapSize.set(graphicsQuality==="high"?1024:512,graphicsQuality==="high"?1024:512);sunLight.shadow.camera.left=-900;sunLight.shadow.camera.right=900;sunLight.shadow.camera.top=900;sunLight.shadow.camera.bottom=-900;sunLight.shadow.camera.near=.5;sunLight.shadow.camera.far=1800;sunLight.shadow.bias=-.00008;sunLight.shadow.normalBias=.025;sunLight.shadow.radius=3;scene.add(sunLight);scene.add(sunLight.target);
  fillLight=new THREE.DirectionalLight(0xc7e0f5,.48);fillLight.position.set(330,170,260);fillLight.castShadow=false;scene.add(fillLight);
  window.addEventListener("resize",onResize);
 }
@@ -4514,7 +4514,7 @@ function buildTerrain(def){
  for(const sample of route){const p=sample.p;minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}
  minX-=terrainPad;maxX+=terrainPad;minZ-=terrainPad;maxZ+=terrainPad;
  const width=maxX-minX,depth=maxZ-minZ;
- const nx=graphicsQuality==="low"?192:graphicsQuality==="high"?384:240;
+ const nx=graphicsQuality==="low"?144:graphicsQuality==="high"?288:192;
  const nz=Math.max(112,Math.round(nx*depth/width));
  const coarseStep=Math.max(1,Math.floor(route.length/640)),samples=[];
  for(let i=0;i<route.length;i+=coarseStep)samples.push(route[i]);
@@ -5521,7 +5521,7 @@ function buildGrandstandsAndCrowd(){
 function buildScenery(){
  const dry=activeTrack==="laguna",park=["monza","silverstone","suzuka"].includes(activeTrack),city=activeTrack==="monaco";
  if(city)return;
- const quality=graphicsQuality==="low"?.30:graphicsQuality==="high"?.78:.46;
+ const quality=graphicsQuality==="low"?.13:graphicsQuality==="high"?.52:.24;
  const count=Math.round((park?520:dry?360:440)*quality);
  const trunkMat=makeMat(dry?0x756047:0x56483a,.96);
  const broadMat=makeMat(dry?0x8a8558:park?0x426d3e:0x315d3a,.98);
@@ -5568,7 +5568,7 @@ function buildScenery(){
  const grassCount=Math.round((park?560:dry?420:460)*quality),grassGeo=new THREE.ConeGeometry(1,1,4),grassMat=makeMat(dry?0x9a8651:0x527543,1);
  const grasses=new THREE.InstancedMesh(grassGeo,grassMat,grassCount);
  const rockGeo=new THREE.IcosahedronGeometry(1,1),rockMat=makeMat(dry?0x89795e:0x6d756d,.98);
- const rockCount=dry?90:park?58:72,rocks=new THREE.InstancedMesh(rockGeo,rockMat,rockCount);
+ const rockCount=Math.round((dry?90:park?58:72)*(graphicsQuality==="high"?1:graphicsQuality==="low"?.35:.55)),rocks=new THREE.InstancedMesh(rockGeo,rockMat,rockCount);
  for(let i=0;i<shrubCount;i++){
   const sample=route[(i*43+Math.floor(i/7)*19)%route.length],side=i%2?1:-1;
   const dist=roadWidth/2+22+(i*29)%65,p=safeTracksidePoint(sample,side,dist,4),ground=terrainHeightAt(p.x,p.z),scale=.35+(i%11)*.055;
@@ -6750,7 +6750,8 @@ async function loadRedBullCarModel(targetRoot,generation){
   console.info("Red Bull 2022 model installed:",{parts:parts.length,wheels:importedWheelAssemblies.length,dimensions:[size.x*scale*.90,size.y*scale,size.z*scale]});
   targetRoot.updateMatrixWorld(true);
   if(!running)setCamera(0);
-  upgradeOpponentVisualsToImportedModel();
+  // Keep the player on the full imported model, but retain lightweight shared-geometry AI cars.
+  // Upgrading every opponent to the 83-part player model creates excessive draw calls.
  }catch(error){
   if(generation===carBuildGeneration){
    updateVehicleModelStatus("error","FALLBACK · "+(error?.message||String(error)));
@@ -8705,7 +8706,7 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function qualityPixelRatio(){
- return graphicsQuality==="low"?.42:graphicsQuality==="high"?.68:.56;
+ return graphicsQuality==="low"?.90:graphicsQuality==="high"?1.25:1.0;
 }
 function applyAdaptiveResolutionScale(){
  if(!renderer)return;
@@ -8727,11 +8728,11 @@ function monitorPerformance(now){
  }else{
   adaptiveSlowSamples=0;adaptiveFastSamples=0;
  }
- if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.40){
-  adaptiveResolutionScale=Math.max(.40,adaptiveResolutionScale-.10);
+ if(adaptiveSlowSamples>=2&&adaptiveResolutionScale>.86){
+  adaptiveResolutionScale=Math.max(.86,adaptiveResolutionScale-.035);
   applyAdaptiveResolutionScale();adaptiveSlowSamples=0;
  }else if(adaptiveFastSamples>=5&&adaptiveResolutionScale<1){
-  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.035);
+  adaptiveResolutionScale=Math.min(1,adaptiveResolutionScale+.02);
   applyAdaptiveResolutionScale();adaptiveFastSamples=0;
  }
 }
