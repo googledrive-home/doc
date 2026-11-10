@@ -413,22 +413,21 @@ function makeTerrain(track){
   const x=p.getX(i)+centerX,z=p.getZ(i)+centerZ,h=terrainY(x,z,track);p.setY(i,h);
   const variation=Math.sin(x*.018+track.seed)*Math.cos(z*.015)*.055;
   const base=weather==="snow"?[.72,.78,.82]:track.id==="serpent"?[.36,.38,.30]:track.id==="coast"?[.42,.47,.34]:track.id==="alpine"?[.34,.42,.31]:[.28,.38,.27];
-  const tint=clamp01(.76+(h+24)/145+variation);
-  colors.push(base[0]*tint,base[1]*tint,base[2]*tint);
+  const tint=clamp01(.76+(h+24)/145+variation);colors.push(base[0]*tint,base[1]*tint,base[2]*tint);
  }
  geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
  grassTexture=grassTexture||makeGrassTexture();
  const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=settings.shadows&&settings.quality!=="low";mesh.frustumCulled=true;worldGroup.add(mesh);
- // A continuous rocky ridge closes the playable valley 125–145 m from the road.
- const count=Math.ceil(samples.length/18)*2,rockGeo=new THREE.BoxGeometry(1,1,1),rockMat=new THREE.MeshStandardMaterial({color:0x555a55,roughness:1}),ridge=new THREE.InstancedMesh(rockGeo,rockMat,count),dummy=new THREE.Object3D(),rnd=seeded(track.seed*1901);let k=0;
- for(let i=0;i<samples.length;i+=18){
+ // Continuous, segmented rock escarpments stand 139 m off each verge.
+ const count=Math.ceil(samples.length/6)*2,wallGeo=new THREE.BoxGeometry(1,1,1),wallMat=new THREE.MeshStandardMaterial({color:0x555a55,roughness:.98}),ridge=new THREE.InstancedMesh(wallGeo,wallMat,count),dummy=new THREE.Object3D(),rnd=seeded(track.seed*1901);let k=0;
+ for(let i=0;i<samples.length;i+=6){
   const s=samples[i],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),rot=Math.atan2(s.tan.x,s.tan.z);
   for(const side of [-1,1]){
-   const off=side*139,x=s.p.x+right.x*off,z=s.p.z+right.z*off,h=terrainY(x,z,track),height=14+rnd()*17;
-   dummy.position.set(x,h+height*.43,z);dummy.scale.set(20+rnd()*12,height,18+rnd()*10);
-   dummy.rotation.set((rnd()-.5)*.12,rot+(rnd()-.5)*.18,(rnd()-.5)*.10);dummy.updateMatrix();ridge.setMatrixAt(k++,dummy.matrix);
-   addWorldCollider(x,z,9.5,"mountain-ridge");
+   const off=side*139,x=s.p.x+right.x*off,z=s.p.z+right.z*off,h=terrainY(x,z,track),height=15+rnd()*16;
+   dummy.position.set(x,h+height*.5,z);dummy.scale.set(7.5,height,39+rnd()*3);
+   dummy.rotation.set((rnd()-.5)*.045,rot+(rnd()-.5)*.035,(rnd()-.5)*.05);dummy.updateMatrix();ridge.setMatrixAt(k++,dummy.matrix);
+   addWorldCollider(x,z,8,"cliff-wall");
   }
  }
  ridge.count=k;ridge.instanceMatrix.needsUpdate=true;ridge.castShadow=false;ridge.receiveShadow=true;worldGroup.add(ridge);
@@ -868,7 +867,7 @@ function addWorldCollider(x,z,radius,type="obstacle"){
 function resolveWorldCollision(state,dt){
  const road=nearestRoad(state.x,state.z),half=trackData.halfWidth||2.9;
  // A steep, rocky ridge forms a finite stage boundary instead of an endless flat landscape.
- const boundary=126,side=Math.sign(road.offset||1);
+ const boundary=160,side=Math.sign(road.offset||1);
  if(Math.abs(road.offset)>boundary){
   const sample=trackData.samples[road.index],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),push=Math.abs(road.offset)-boundary;
   state.x-=right.x*side*(push+.08);state.z-=right.z*side*(push+.08);
