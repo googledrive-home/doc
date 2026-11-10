@@ -749,13 +749,23 @@ function updateRenderQuality(){
 }
 function updateCamera(dt,immediate=false){
  if(!carState||!vehicleRoot)return;
- const yaw=carState.yaw,fx=Math.sin(yaw),fz=Math.cos(yaw);
- const desired=new THREE.Vector3(carState.x-fx*6.9,terrainY(carState.x,carState.z)+2.75,carState.z-fz*6.9);
- const lookX=carState.x+fx*3.6,lookZ=carState.z+fz*3.6;
- const target=new THREE.Vector3(lookX,terrainY(lookX,lookZ)+1.10,lookZ);
- camera.position.copy(desired);camera.lookAt(target);
+ const yaw=carState.yaw,fx=Math.sin(yaw),fz=Math.cos(yaw),ground=terrainY(carState.x,carState.z),damp=immediate?1:1-Math.exp(-settings.cameraSmooth*dt);
+ let desired,target;
+ if(cameraMode===1){desired=vehicleRoot.localToWorld(new THREE.Vector3(0,1.42,1.15));target=vehicleRoot.localToWorld(new THREE.Vector3(0,1.34,18));}
+ else if(cameraMode===2){desired=vehicleRoot.localToWorld(new THREE.Vector3(-.08,1.53,.16));target=vehicleRoot.localToWorld(new THREE.Vector3(-.08,1.46,20));}
+ else if(cameraMode===3){desired=vehicleRoot.localToWorld(new THREE.Vector3(0,.98,2.02));target=vehicleRoot.localToWorld(new THREE.Vector3(0,.92,28));}
+ else{
+  const distance=settings.cameraDistance,height=settings.cameraHeight,lookAhead=settings.cameraLookAhead,cy=Math.cos(cameraYaw),sy=Math.sin(cameraYaw);
+  const offsetX=fx*distance*cy-fz*distance*sy,offsetZ=fz*distance*cy+fx*distance*sy;
+  desired=new THREE.Vector3(carState.x-offsetX,ground+height+Math.sin(clamp(cameraPitch,-.32,.55))*distance,carState.z-offsetZ);
+  const lookX=carState.x+fx*lookAhead,lookZ=carState.z+fz*lookAhead;target=new THREE.Vector3(lookX,terrainY(lookX,lookZ)+1.02,lookZ);
+ }
+ if(!camera.userData.ready||immediate){camera.position.copy(desired);camera.userData.ready=true;}else camera.position.lerp(desired,damp);
+ camera.lookAt(target);
+ if(settings.cameraShake>0&&cameraMode===0&&!immediate&&gameActive&&!paused){const shake=Math.min(.035,Math.abs(carState.latAccel)*.00065+Math.abs(carState.longAccel)*.00012)*settings.cameraShake*3;camera.position.y+=Math.sin(performance.now()*.021)*shake;}
  camera.fov=settings.fov;camera.updateProjectionMatrix();
 }
+function setCamera(next=(cameraMode+1)%CAMERAS.length){cameraMode=((next%CAMERAS.length)+CAMERAS.length)%CAMERAS.length;$("cameraBtn").textContent="CAMERA · "+CAMERAS[cameraMode];cameraYaw=0;cameraPitch=.10;updateCamera(.016,true);}
 function setCamera(){cameraMode=0;$("cameraBtn").textContent="CAMERA · FIXED CHASE";updateCamera(.016,true);}
 function resetCar(){
  if(!carState||!vehicleRoot)return;
@@ -764,10 +774,10 @@ function resetCar(){
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+.305,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
 }
 function inputState(){
- const steerLeft=!!(keys.KeyA||keys.ArrowLeft),steerRight=!!(keys.KeyD||keys.ArrowRight);
- const steer=(steerLeft?1:0)-(steerRight?1:0);
- const throttle=(keys.KeyW||keys.ArrowUp)?1:0,brake=(keys.KeyS||keys.ArrowDown)?1:0;
- return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake:!!keys.Space};
+ let steer=(keys.KeyA?1:0)-(keys.KeyD?1:0);if(settings.invertSteer)steer=-steer;
+ let throttle=keys.KeyW?1:0,brake=keys.KeyS?1:0;if(settings.swapPedals)[throttle,brake]=[brake,throttle];
+ const handbrake=settings.invertHandbrake?!keys.Space:!!keys.Space;
+ return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake};
 }
 function physicsStep(dt){
   if(!carState||!gameActive||paused||stageFinished)return;
@@ -795,34 +805,39 @@ function physicsStep(dt){
   const yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.8+.55),latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*.42;
   s.yawRate+=yawAccel*dt;s.latAccel=latAccel;s.vLat+=latAccel*dt;
   const ratios=[3.32,2.67,2.21,1.86,1.60,1.39,1.22];
-  if(settings.autoGear){if(s.rpm>spec.rpm*(.82+.08*settings.shift)&&s.gear<7)s.gear++;else if(s.rpm<spec.rpm*(.34+.10*settings.shift)&&s.gear>1)s.gear--;}
-  else{if(keys.KeyE){s.gear=Math.min(7,s.gear+1);keys.KeyE=false;}if(keys.KeyQ){s.gear=Math.max(1,s.gear-1);keys.KeyQ=false;}}
+  if(settings.autoGear){if(s.rpm>spec.rpm*(.84+.08*settings.shift)&&s.gear<7)s.gear++;else if(s.rpm<spec.rpm*(.31+.08*settings.shift)&&s.gear>1)s.gear--;}
+  else if(shiftCooldown<=0){const up=!!keys.ArrowRight,down=!!keys.ArrowLeft;if(up||down){const direction=settings.invertShifts?-1:1;s.gear=clamp(s.gear+(up?direction:-direction),1,7);keys.ArrowRight=false;keys.ArrowLeft=false;shiftCooldown=.18;}}
+  if(s.gear!==lastGear){playShiftSound();lastGear=s.gear;animateGearControls();}
   const ratio=ratios[s.gear-1],wheelRpm=speed/.405*60/(Math.PI*2),coupledRpm=wheelRpm*ratio*settings.finalDrive;
   const rpm=clamp(Math.max(1200,coupledRpm),1100,spec.rpm);s.rpm+=(rpm-s.rpm)*(1-Math.exp(-dt*5));
   const rpmNorm=clamp((s.rpm-1200)/(spec.rpm-1200),0,1),torqueAtRpm=spec.torque*(.72+.28*Math.sin(Math.PI*rpmNorm));
   const torqueForce=torqueAtRpm*ratio*settings.finalDrive*.55/.405,tractionCut=settings.tcs>0?Math.max(.35,1-settings.tcs*Math.max(0,Math.abs(s.vLat)/(speed+2)-.11)*2.5):1;
-  const engineForce=input.throttle*Math.min(spec.force,torqueForce)*settings.power*tractionCut;
-  const brakeDemand=Math.pow(input.brake,1.12);
+  const forwardForce=input.throttle*Math.min(spec.force,torqueForce)*settings.power*tractionCut;
+  const brakeDemand=Math.pow((input.brake&&s.vLong>.7)?input.brake:0,1.12);
+  const reverseForce=(input.brake&&s.vLong<=.7)?input.brake*spec.force*.48:0;
   const frontBrake=spec.mass*9.81*.72*brakeDemand*settings.brakeBias,rearBrake=spec.mass*9.81*.72*brakeDemand*(1-settings.brakeBias);
-  const handForce=spec.mass*9.81*.30*s.handbrakeBlend,drag=.56*speed*speed+spec.mass*9.81*.018,longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
-  s.longAccel=longAcc;s.vLong+=longAcc*dt;if(input.brake&&settings.abs>0&&Math.abs(s.vLong)<.8)s.vLong=0;
+  const handForce=spec.mass*9.81*.30*s.handbrakeBlend,drag=Math.sign(s.vLong||1)*(.56*speed*speed+spec.mass*9.81*.018),engineForce=forwardForce-reverseForce,longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
+  s.longAccel=longAcc;s.vLong+=longAcc*dt;if(input.brake&&s.vLong>0&&settings.abs>0&&Math.abs(s.vLong)<.8)s.vLong=0;
   s.vLong=clamp(s.vLong,-8,spec.maxSpeed*(.94+settings.power*.06));if(input.handbrake&&s.vLong<0)s.vLong=0;
   if(inDitch){s.vLong*=Math.exp(-dt*1.05);s.vLat*=Math.exp(-dt*.42);s.yawRate*=Math.exp(-dt*.26);}
   s.yaw+=s.yawRate*dt;
   const vx=Math.sin(s.yaw)*s.vLong+Math.cos(s.yaw)*s.vLat,vz=Math.cos(s.yaw)*s.vLong-Math.sin(s.yaw)*s.vLat;
   s.x+=vx*dt;s.z+=vz*dt;s.travel+=Math.hypot(vx,vz)*dt;
-  const ground=terrainY(s.x,s.z,track);vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305,s.z);
+  const ground=terrainY(s.x,s.z,track);vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305+getSuspensionBodyOffset(),s.z);
   vehicleRoot.rotation.set(-clamp(s.longAccel*.006,-.08,.08),s.yaw,clamp(-s.latAccel*.008,-.13,.13),"YXZ");
   const driftAngle=Math.atan2(s.vLat,Math.max(1,Math.abs(s.vLong)))*180/Math.PI;s.slip=driftAngle;
   wheelAssemblies.forEach((w,i)=>{w.pivot.rotation.y=w.front?s.steer:0;w.wheel.rotation.x-=s.vLong*dt/.405;
    const wx=s.x+Math.cos(s.yaw)*w.baseX+Math.sin(s.yaw)*w.baseZ,wz=s.z-Math.sin(s.yaw)*w.baseX+Math.cos(s.yaw)*w.baseZ;
-   const springTravel=clamp(terrainY(wx,wz,track)-ground,-.16,.16);w.pivot.position.y=.42+springTravel;
-   const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-springTravel,.7,1.3);susp.spring.scale.y=susp.strut.scale.y;});
+   const cornerHeight=terrainY(wx,wz,track)-ground,pitchLoad=-s.longAccel*.0022*(w.front?1:-1),rollLoad=s.latAccel*.0018*w.side,targetTravel=clamp(cornerHeight*.62+pitchLoad+rollLoad,-.22,.22);
+   const springAcceleration=(targetTravel-w.travel)*(settings.spring*31+8)-w.travelVelocity*(settings.damper*15+3);w.travelVelocity+=springAcceleration*dt;w.travel=clamp(w.travel+w.travelVelocity*dt,-.24,.24);w.pivot.position.y=.42+w.travel;
+   const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-w.travel*.9,.72,1.25);susp.spring.scale.y=susp.strut.scale.y;});
+  resolveWorldCollision(s,dt);animateCockpitControls(input);updateWindshield(dt);
   const drift=Math.abs(driftAngle)>9&&speedKmh>25&&Math.abs(input.steer)>.06;
-  if(drift&&Math.abs(s.vLat)>2){dustAccumulator+=dt;if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(-speed*.5));}}}
+  if((drift&&Math.abs(s.vLat)>2)||(!onRoad&&speed>5)){dustAccumulator+=dt;if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(-speed*.38));}}}
+  if(s.damage>.12&&speed>4&&Math.random()<dt*(1+s.damage*9)){const p=vehicleRoot.localToWorld(new THREE.Vector3(.42,.38,-2.05));spawnDust(p.x,p.y,p.z,new THREE.Vector3((Math.random()-.5)*.4,.9,-speed*.18));}
   nearestIndex=roadInfo.index;stageMeters=((nearestIndex-stageStartIndex+trackData.samples.length)%trackData.samples.length)/trackData.samples.length*trackData.length;
   if(stageMeters>=stageTargetMeters){stageMeters=stageTargetMeters;finishStage();}
-  if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);
+  if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);if(vehicleRoot?.userData?.exhaustGlow)vehicleRoot.userData.exhaustGlow.material.emissiveIntensity=s.damage>.25?.65:.08;
   paceNoteTimer+=dt;if(paceNoteTimer>.16){paceNoteTimer=0;updatePaceNotes();}updateCarHud(input,drift);
  }
 function nearestRoad(x,z){
@@ -904,49 +919,66 @@ function drawTrackPreview(){
  $("trackPreviewName").textContent=track.name;$("trackPreviewDistance").textContent=(stage.full?track.full/1000:stage.km).toFixed(1)+" KM · "+stage.name;
 }
 function startStage(){
+ if(engineAudio?.state==="suspended")engineAudio.resume();
+ $("introScreen").classList.remove("open");$("homeScreen").classList.remove("open");
  if(!trackData||!vehicleRoot){buildPreviewWorld();}
  const spec=CARS[selectedCar];placeCar();gameActive=true;paused=false;stageFinished=false;elapsed=0;if(engineAudio?.state==="suspended")engineAudio.resume();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");
  $("hudCarName").textContent=spec.name+" · AWD";$("stageName").textContent=TRACKS[selectedTrack].stages[selectedStage].name;
  $("stageMeta").textContent=TRACKS[selectedTrack].name+" · "+(TRACKS[selectedTrack].stages[selectedStage].full?(TRACKS[selectedTrack].full/1000).toFixed(1):TRACKS[selectedTrack].stages[selectedStage].km.toFixed(1))+" KM";
- $("cameraBtn").textContent="CAMERA · FIXED CHASE";previousFrame=performance.now();applyAtmosphere();updatePaceNotes();updateCarHud({handbrake:false},false);
+ $("cameraBtn").textContent="CAMERA · "+CAMERAS[cameraMode];previousFrame=performance.now();applyAtmosphere();updatePaceNotes();updateCarHud({handbrake:false},false);
 }
 function returnGarage(){
- gameActive=false;paused=false;stageFinished=false;$("hud").style.display="none";$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");$("menu").style.display="grid";
+ gameActive=false;paused=false;stageFinished=false;$("hud").style.display="none";$("introScreen").classList.remove("open");$("homeScreen").classList.remove("open");$("menu").style.display="grid";setMenuStep(0);$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");$("menu").style.display="grid";
  keys={};if(carState)carState.vLong=0;
 }
 function pauseGame(){if(!gameActive)return;paused=true;$("pauseScreen").classList.add("open");}
 function resumeGame(){paused=false;$("pauseScreen").classList.remove("open");previousFrame=performance.now();}
 function setRangeValue(id,value,format){$(id).value=value;$(id.replace("Range","Value")).textContent=format(value);}
 function bindSettings(){
- const bind=(id,key,format)=>$(id).addEventListener("input",e=>{settings[key]=Number(e.target.value)/(key==="finalDrive"||key==="ride"||key==="fov" ?1:100);$(id.replace("Range","Value")).textContent=format(Number(e.target.value));});
- bind("powerRange","power",v=>v+"%");bind("finalDriveRange","finalDrive",v=>(+v).toFixed(2));bind("shiftRange","shift",v=>v+"%");
- bind("springRange","spring",v=>v+"%");bind("damperRange","damper",v=>v+"%");bind("rideRange","ride",v=>(v)+" cm");
+ const bind=(id,key,format,scale=100)=>$(id).addEventListener("input",e=>{settings[key]=Number(e.target.value)/scale;const out=$(id.replace("Range","Value"));if(out)out.textContent=format(Number(e.target.value));});
+ bind("powerRange","power",v=>v+"%");bind("finalDriveRange","finalDrive",v=>(+v).toFixed(2),1);bind("shiftRange","shift",v=>v+"%");
+ bind("springRange","spring",v=>v+"%");bind("damperRange","damper",v=>v+"%");bind("rideRange","ride",v=>v+" cm");
  bind("steerRange","steer",v=>v+"%");bind("frontDiffRange","frontDiff",v=>v+"%");bind("rearDiffRange","rearDiff",v=>v+"%");
  bind("tcsRange","tcs",v=>v+"%");bind("absRange","abs",v=>v+"%");bind("brakeRange","brakeBias",v=>v+"%");
- bind("fovRange","fov",v=>v+"°");bind("surfaceRange","surface",v=>v+"%");bind("volumeRange","volume",v=>v+"%");
- $("rideRange").addEventListener("input",e=>{settings.ride=Number(e.target.value)/100;});
+ bind("fovRange","fov",v=>v+"°",1);bind("surfaceRange","surface",v=>v+"%");
+ bind("volumeRange","volume",v=>v+"%");bind("shiftVolumeRange","shiftVolume",v=>v+"%");
+ bind("cameraDistanceRange","cameraDistance",v=>(+v).toFixed(1)+" m",1);bind("cameraHeightRange","cameraHeight",v=>(+v).toFixed(1)+" m",1);
+ bind("cameraLookAheadRange","cameraLookAhead",v=>(+v).toFixed(1)+" m",1);bind("cameraSmoothRange","cameraSmooth",v=>v,1);
+ bind("cameraShakeRange","cameraShake",v=>v+"%");
  $("qualitySelect").addEventListener("change",e=>{settings.quality=e.target.value;updateRenderQuality();});
- [["shadowCheck","shadows"],["dustCheck","dust"],["hudCheck","hud"],["autoGearCheck","autoGear"],["driftAssistCheck","driftAssist"]].forEach(([id,key])=>$(id).addEventListener("change",e=>{settings[key]=e.target.checked;updateRenderQuality();}));
+ $("targetFpsSelect").addEventListener("change",e=>settings.targetFps=Number(e.target.value));
+ [["shadowCheck","shadows"],["dustCheck","dust"],["hudCheck","hud"],["autoGearCheck","autoGear"],["driftAssistCheck","driftAssist"],["invertSteerCheck","invertSteer"],["swapPedalsCheck","swapPedals"],["invertShiftsCheck","invertShifts"],["invertHandbrakeCheck","invertHandbrake"],["wipersCheck","wipers"],["paceNotesCheck","paceNotes"],["adaptiveCheck","adaptiveQuality"]].forEach(([id,key])=>$(id).addEventListener("change",e=>{settings[key]=e.target.checked;updateRenderQuality();if(key==="wipers")syncWindshieldOverlay();}));
  $("tyreSelect").addEventListener("change",e=>tyre=e.target.value);
  $("saveSettings").addEventListener("click",()=>{localStorage.setItem("gravel-rally-settings",JSON.stringify(settings));$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}});
  $("resetSetup").addEventListener("click",()=>{settings={...DEFAULTS};syncSettingsUi();updateRenderQuality();});
 }
 function syncSettingsUi(){
- const pct=["power","shift","spring","damper","steer","frontDiff","rearDiff","tcs","abs","brakeBias","surface","volume"];
- pct.forEach(k=>{const ids={power:"powerRange",shift:"shiftRange",spring:"springRange",damper:"damperRange",steer:"steerRange",frontDiff:"frontDiffRange",rearDiff:"rearDiffRange",tcs:"tcsRange",abs:"absRange",brakeBias:"brakeRange",surface:"surfaceRange",volume:"volumeRange"};const id=ids[k],v=Math.round(settings[k]*100);$(id).value=v;$(id.replace("Range","Value")).textContent=v+"%";});
- $("finalDriveRange").value=settings.finalDrive;$("finalDriveValue").textContent=settings.finalDrive.toFixed(2);
- $("rideRange").value=Math.round(settings.ride*100);$("rideValue").textContent=Math.round(settings.ride*100)+" cm";
- $("fovRange").value=settings.fov;$("fovValue").textContent=settings.fov+"°";$("qualitySelect").value=settings.quality;
- $("shadowCheck").checked=settings.shadows;$("dustCheck").checked=settings.dust;$("hudCheck").checked=settings.hud;
- $("autoGearCheck").checked=settings.autoGear;$("driftAssistCheck").checked=settings.driftAssist;
-}
-let resumeAfterSettings=false;
-function openSettings(){resumeAfterSettings=gameActive&&!paused;if(resumeAfterSettings)paused=true;syncSettingsUi();$("modal").classList.add("open");}
+ const pct=["power","shift","spring","damper","steer","frontDiff","rearDiff","tcs","abs","brakeBias","surface","volume","shiftVolume"];
+ const ids={power:"powerRange",shift:"shiftRange",spring:"springRange",damper:"damperRange",steer:"steerRange",frontDiff:"frontDiffRange",rearDiff:"rearDiffRange",tcs:"tcsRange",abs:"absRange",brakeBias:"brakeRange",surface:"surfaceRange",volume:"volumeRange",shiftVolume:"shiftVolumeRange"};
+ pct.forEach(k=>{const id=ids[k],v=Math.round(settings[k]*100);$(id).value=v;$(id.replace("Range","Value")).textContent=v+"%";});
+ const raw=[["finalDrive","finalDriveRange","finalDriveValue",v=>(+v).toFixed(2)],["ride","rideRange","rideValue",v=>Math.round(v)+" cm"],["fov","fovRange","fovValue",v=>v+"°"],["cameraDistance","cameraDistanceRange","cameraDistanceValue",v=>(+v).toFixed(1)+" m"],["cameraHeight","cameraHeightRange","cameraHeightValue",v=>(+v).toFixed(1)+" m"],["cameraLookAhead","cameraLookAheadRange","cameraLookAheadValue",v=>(+v).toFixed(1)+" m"],["cameraSmooth","cameraSmoothRange","cameraSmoothValue",v=>v],["cameraShake","cameraShakeRange","cameraShakeValue",v=>Math.round(v*100)+"%"]];
+ raw.forEach(([key,input,output,format])=>{$(input).value=key==="cameraShake"?Math.round(settings[key]*100):Math.round(settings[key]*10)/10;$(output).textContent=format(settings[key]);});
+ $("qualitySelect").value=settings.quality;$("targetFpsSelect").value=String(settings.targetFps);
+ const checks={shadowCheck:"shadows",dustCheck:"dust",hudCheck:"hud",autoGearCheck:"autoGear",driftAssistCheck:"driftAssist",invertSteerCheck:"invertSteer",swapPedalsCheck:"swapPedals",invertShiftsCheck:"invertShifts",invertHandbrakeCheck:"invertHandbrake",wipersCheck:"wipers",paceNotesCheck:"paceNotes",adaptiveCheck:"adaptiveQuality"};
+ Object.entries(checks).forEach(([id,key])=>$(id).checked=!!settings[key]);
+}function openSettings(){resumeAfterSettings=gameActive&&!paused;if(resumeAfterSettings)paused=true;syncSettingsUi();$("modal").classList.add("open");}
 function loadSettings(){
  try{const saved=JSON.parse(localStorage.getItem("gravel-rally-settings")||"null");if(saved&&typeof saved==="object")settings={...DEFAULTS,...saved};}catch(e){}
  syncSettingsUi();
 }
+function setMenuStep(step){
+ flowStep=clamp(step,0,2);
+ const groups={0:["carField","carSummary","trackField"],1:["stageField","previewField"],2:["conditionField","tyreField","confirmSummary"]};
+ ["carField","carSummary","trackField","stageField","previewField","conditionField","tyreField","confirmSummary"].forEach(id=>$(id).classList.toggle("flow-hidden",!groups[flowStep].includes(id)));
+ $("startBtn").classList.toggle("flow-hidden",flowStep!==2);
+ $("flowBack").style.visibility=flowStep===0?"hidden":"visible";
+ $("flowNext").classList.toggle("flow-hidden",flowStep===2);
+ const labels=[["STEP 01 · CAR & TRACK","Choose your competition car and rally location","Car & route selection"],["STEP 02 · SELECT STAGE","Pick a timed stage section and review its route map","Stage selection"],["STEP 03 · CONFIRM EVENT","Review the event details, conditions and car before starting","Confirm rally event"]];
+ $("flowLabel").textContent=labels[flowStep][0];$("flowMeta").textContent=labels[flowStep][1];$("flowTitle").textContent=labels[flowStep][2];
+ $("confirmSummary").innerHTML="<b>EVENT</b> "+TRACKS[selectedTrack].name+" · "+TRACKS[selectedTrack].stages[selectedStage].name+"<br><b>CAR</b> "+CARS[selectedCar].name+"<br><b>CONDITIONS</b> "+weather.toUpperCase()+" · "+timeOfDay.toUpperCase()+" · "+tyre.toUpperCase();
+}
+function showEventMenu(mode){gameMode=mode;$("homeScreen").classList.remove("open");$("menu").style.display="grid";setMenuStep(0);setMenuStageOptions();buildPreviewWorld();}
 function bindUI(){
  $("trackSelect").addEventListener("change",()=>{selectedTrack=$("trackSelect").value;selectedStage=0;setMenuStageOptions();buildPreviewWorld();});
  $("weatherSelect").addEventListener("change",()=>{weather=$("weatherSelect").value;buildPreviewWorld();});
@@ -956,23 +988,25 @@ function bindUI(){
  $("setupBtn").addEventListener("click",openSettings);$("closeSettings").addEventListener("click",()=>{$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}});
  $("pauseSetupBtn").addEventListener("click",openSettings);$("pauseBtn").addEventListener("click",pauseGame);
  $("resumeBtn").addEventListener("click",resumeGame);$("pauseGarageBtn").addEventListener("click",returnGarage);$("garageBtn").addEventListener("click",returnGarage);
- $("cameraBtn").addEventListener("click",()=>setCamera(cameraMode+1));$("finishGarageBtn").addEventListener("click",returnGarage);
- $("restartStageBtn").addEventListener("click",startStage);
- document.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Escape"){if($("modal").classList.contains("open"))$("modal").classList.remove("open");else if(gameActive&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")setCamera(cameraMode+1);if(e.code==="KeyR"&&gameActive)resetCar();if(e.code==="KeyP"&&gameActive){if(paused)resumeGame();else pauseGame();}keys[e.code]=true;});
- document.addEventListener("keyup",e=>{keys[e.code]=false;});
- window.addEventListener("blur",()=>{keys={};});
-}
-function updateAudio(){
- if(!engineAudio)return;
- if(!gameActive||paused){engineGain.gain.value=0;return;}
- const throttle=(keys.KeyW||keys.ArrowUp)?1:0,spd=carState?Math.abs(carState.vLong):0;
- engineOsc.frequency.setTargetAtTime(42+(carState?.rpm||1200)/specSafeRpm()*0.0+spd*4.7,engineAudio.currentTime,.06);
- engineGain.gain.setTargetAtTime(settings.volume*(.035+throttle*.07),engineAudio.currentTime,.1);
+ $("cameraBtn").addEventListener("click",()=>setCamera(cameraMode+1));$("finishGarageBtn").addEventListener("click",returnGarage);$("restartStageBtn").addEventListener("click",startStage);
+ $("introPlay").addEventListener("click",()=>{$("introScreen").classList.remove("open");$("homeScreen").classList.add("open");});
+ $("introSettings").addEventListener("click",openSettings);$("homeBack").addEventListener("click",()=>{$("homeScreen").classList.remove("open");$("introScreen").classList.add("open");});
+ document.querySelectorAll("[data-mode]").forEach(el=>el.addEventListener("click",()=>showEventMenu(el.dataset.mode)));
+ $("flowBack").addEventListener("click",()=>setMenuStep(flowStep-1));$("flowNext").addEventListener("click",()=>setMenuStep(flowStep+1));
+ document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Escape"){if($("modal").classList.contains("open"))$("modal").classList.remove("open");else if(gameActive&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")setCamera(cameraMode+1);if(e.code==="KeyR"&&gameActive)resetCar();if(e.code==="KeyP"&&gameActive){if(paused)resumeGame();else pauseGame();}if(e.code==="KeyV"){wiperOn=!wiperOn;syncWindshieldOverlay();}if(["KeyI","KeyJ","KeyK","KeyL"].includes(e.code)&&cameraMode===0){const step=.08;if(e.code==="KeyJ")cameraYaw-=step;if(e.code==="KeyL")cameraYaw+=step;if(e.code==="KeyI")cameraPitch=Math.min(.55,cameraPitch+step*.55);if(e.code==="KeyK")cameraPitch=Math.max(-.32,cameraPitch-step*.55);}keys[e.code]=true;});
+ document.addEventListener("keyup",e=>{keys[e.code]=false;});window.addEventListener("blur",()=>{keys={};});
+}function updateAudio(){
+ if(!engineAudio)return;if(!gameActive||paused){engineGain.gain.setTargetAtTime(0,engineAudio.currentTime,.08);return;}
+ const input=inputState(),spd=carState?Math.abs(carState.vLong):0,rpm=carState?.rpm||1200;
+ engineOsc.frequency.setTargetAtTime(48+(rpm/specSafeRpm())*138+spd*1.05,engineAudio.currentTime,.055);
+ engineGain.gain.setTargetAtTime(settings.volume*(.028+Math.max(input.throttle,input.brake*.55)*.085),engineAudio.currentTime,.12);
 }
 function specSafeRpm(){return CARS[selectedCar].rpm;}
 function initAudio(){
  try{engineAudio=new (window.AudioContext||window.webkitAudioContext)();engineOsc=engineAudio.createOscillator();engineGain=engineAudio.createGain();engineOsc.type="sawtooth";engineOsc.frequency.value=55;engineGain.gain.value=0;engineOsc.connect(engineGain);engineGain.connect(engineAudio.destination);engineOsc.start();}catch(e){}
 }
+function playShiftSound(){if(!engineAudio||settings.shiftVolume<=0)return;try{const osc=engineAudio.createOscillator(),gain=engineAudio.createGain();osc.type="square";osc.frequency.setValueAtTime(720,engineAudio.currentTime);osc.frequency.exponentialRampToValueAtTime(180,engineAudio.currentTime+.075);gain.gain.setValueAtTime(settings.shiftVolume*.055,engineAudio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,engineAudio.currentTime+.10);osc.connect(gain);gain.connect(engineAudio.destination);osc.start();osc.stop(engineAudio.currentTime+.11);}catch(e){}}
+function animateGearControls(){if(!vehicleRoot?.userData?.shifterLever)return;vehicleRoot.userData.shifterLever.rotation.x=-.24;setTimeout(()=>{if(vehicleRoot?.userData?.shifterLever)vehicleRoot.userData.shifterLever.rotation.x=0;},130);}
 function animate(now){
  requestAnimationFrame(animate);
  const dt=Math.min(.045,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
@@ -981,8 +1015,8 @@ function animate(now){
  updatePrecipitation(dt);updateCamera(dt);
  renderer.render(scene,camera);
  if(now-fpsStart>1000){fps=frameSamples*1000/Math.max(1,now-fpsStart);frameSamples=0;fpsStart=now;$("perf").textContent=Math.round(fps)+" FPS · ADAPTIVE QUALITY";
-  if(fps<28&&adaptiveScale>.58){adaptiveScale=Math.max(.58,adaptiveScale*.90);updateRenderQuality();}
-  else if(fps>35&&adaptiveScale<1){adaptiveScale=Math.min(1,adaptiveScale+.04);updateRenderQuality();}
+  if(settings.adaptiveQuality&&fps<Math.max(24,settings.targetFps*.48)&&adaptiveScale>.58){adaptiveScale=Math.max(.58,adaptiveScale*.90);updateRenderQuality();}
+  else if(settings.adaptiveQuality&&fps>settings.targetFps*.62&&adaptiveScale<1){adaptiveScale=Math.min(1,adaptiveScale+.04);updateRenderQuality();}
  }
  frameSamples++;
 }
