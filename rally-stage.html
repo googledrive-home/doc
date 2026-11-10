@@ -278,7 +278,7 @@ function makeRoad(trackData){
  for(let i=0;i<n;i++){
   const a=samples[i],right=new THREE.Vector3(a.tan.z,0,-a.tan.x).normalize(),p=a.p;
   positions.push(p.x-right.x*half,p.y+.08,p.z-right.z*half,p.x+right.x*half,p.y+.08,p.z+right.z*half);
-  uv.push(0,i/n*trackData.length/8,1,i/n*trackData.length/8);
+  uv.push(0,i/n*24,1,i/n*24);
  }
  for(let i=0;i<n;i++){const j=(i+1)%n, a=i*2,b=a+1,c=j*2,d=c+1;indices.push(a,c,b,b,c,d);}
  const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
@@ -296,7 +296,7 @@ function makeRoad(trackData){
 }
 function nearRoad(x,z,margin=28){
  const s=trackData.samples,n=s.length,step=15;
- for(let i=0;i<n;i+=step){const dx=x-s[i].p.x,dz=z-s[i].p.z;if(dx*dx+dz*dz<margin*margin)return true;}
+ for(let i=0;i<n;i+=4){const dx=x-s[i].p.x,dz=z-s[i].p.z;if(dx*dx+dz*dz<margin*margin)return true;}
  return false;
 }
 function makeForest(track){
@@ -455,7 +455,7 @@ function makeCar(spec){
   wheelAssemblies.push({pivot,wheel,front:i<2,side:i%2===0?-1:1,baseX:pos[0],baseZ:pos[2]});
   suspensionParts.push({strut,spring,corner:i});
  });
- root.userData={steering,engine,gearUnit,cockpit,bodyMat};return root;
+ root.userData={steering,engine,gearUnit,cockpit,bodyMat,chassis};return root;
 }
 function clearWorld(){if(worldGroup){scene.remove(worldGroup);worldGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();});}worldGroup=new THREE.Group();scene.add(worldGroup);}
 function buildWorld(){
@@ -476,7 +476,7 @@ function placeCar(){
  const stage=TRACKS[selectedTrack].stages[selectedStage];stageSelection();
  const s=trackData.samples[stageStartIndex],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
  const x=s.p.x+right.x*.1,z=s.p.z+right.z*.1;
- vehicleRoot.position.set(x,terrainY(x,z)+settings.ride+.20,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
+ vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(x,terrainY(x,z)+.305,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
  carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,damage:0,wear:0,travel:0};
  wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);});
 }
@@ -543,7 +543,7 @@ function resetCar(){
  if(!carState||!vehicleRoot)return;
  const idx=nearestIndex,s=trackData.samples[idx],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
  carState.x=s.p.x+right.x*0;carState.z=s.p.z+right.z*0;carState.yaw=Math.atan2(s.tan.x,s.tan.z);carState.vLong=0;carState.vLat=0;carState.yawRate=0;
- vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+settings.ride+.2,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
+ vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+.305,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
 }
 function inputState(){
  const steer=(keys.KeyA||keys.ArrowLeft?-1:0)+(keys.KeyD||keys.ArrowRight?1:0);
@@ -584,8 +584,8 @@ function physicsStep(dt){
  s.yawRate+=yawAccel*dt;s.latAccel=latAccel;s.vLat+=latAccel*dt;
  // Engine torque, gearbox and final drive are separate from tyre forces.
  if(settings.autoGear){
-  if(s.rpm>spec.rpm*.93&&s.gear<6)s.gear++;
-  else if(s.rpm<spec.rpm*.36&&s.gear>1)s.gear--;
+  if(s.rpm>spec.rpm*(.82+.15*settings.shift)&&s.gear<6)s.gear++;
+  else if(s.rpm<spec.rpm*(.48-.16*settings.shift)&&s.gear>1)s.gear--;
  }else{
   if(keys.KeyE){s.gear=Math.min(6,s.gear+1);keys.KeyE=false;}
   if(keys.KeyQ){s.gear=Math.max(1,s.gear-1);keys.KeyQ=false;}
@@ -610,7 +610,7 @@ function physicsStep(dt){
  s.x+=steerVelocityX*dt;s.z+=steerVelocityZ*dt;
  s.travel+=Math.hypot(steerVelocityX,steerVelocityZ)*dt;
  const ground=terrainY(s.x,s.z,track),ride= settings.ride;
- vehicleRoot.position.set(s.x,ground+ride+.20,s.z);
+ vehicleRoot.userData.chassis.position.y=(ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305,s.z);
  vehicleRoot.rotation.set(-clamp(s.longAccel*.006,-.08,.08),s.yaw,clamp(-s.latAccel*.008,-.13,.13),"YXZ");
  const driftAngle=Math.atan2(s.vLat,Math.max(1,Math.abs(s.vLong)))*180/Math.PI;s.slip=driftAngle;
  wheelAssemblies.forEach((w,i)=>{
@@ -759,8 +759,7 @@ function animate(now){
 function resize(){if(!renderer||!camera)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);}
 async function boot(){
  try{
-  setLoad(10,"Preparing renderer");initScene();setLoad(45,"Building forest roads");
-  buildWorld();setLoad(74,"Preparing rally cars");buildVehicle();placeCar();setLoad(90,"Loading stage controls");
+  setLoad(10,"Preparing renderer");initScene();setLoad(82,"Preparing stage controls");
   bindUI();bindSettings();loadSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
   window.addEventListener("resize",resize);previousFrame=performance.now();fpsStart=previousFrame;requestAnimationFrame(animate);
   setLoad(100,"Ready to drive");$("loading").style.opacity="0";setTimeout(()=>$("loading").style.display="none",400);
