@@ -204,6 +204,15 @@ input[type=range]{accent-color:#d4aa70}
 <body>
 <canvas id="world"></canvas>
 <div id="loading"><div class="loading-glow"></div><div class="loading-layout"><div class="loading-brand"><span>GRAVEL</span><b>RALLY</b><small>WORLD RALLY STAGE PROGRAMME</small></div><div class="loading-track-art"><div class="loading-mountain mountain-a"></div><div class="loading-mountain mountain-b"></div><div class="loading-road-shape"></div><div class="loading-car-mark">WRX</div><div class="loading-stage-tag">STAGE PREPARATION <i></i></div></div><div class="load-card"><div class="load-card-head"><strong>PREPARING YOUR STAGE</strong><span>01 / 04</span></div><p>Building the road, forest, Subaru rally car, cockpit systems and gravel simulation.</p><div class="loadbar"><div id="loadFill"></div></div><div id="loadText"><span id="loadStep">Preparing terrain</span><b id="loadPct">0%</b></div></div></div></div>
+<script>
+window.__rallyModuleStarted=false;
+window.__rallyModuleWatchdog=setTimeout(()=>{
+ if(window.__rallyModuleStarted)return;
+ const step=document.getElementById("loadStep"),pct=document.getElementById("loadPct");
+ if(step)step.textContent="The 3D engine did not load. Check your connection, then refresh this game.";
+ if(pct)pct.textContent="!";
+},12000);
+</script>
 <div id="windshieldDirt" aria-hidden="true"></div>
 <div id="introScreen" class="front-screen open"><div class="front-shell intro-shell">
  <section class="intro-copy"><div class="intro-kicker">Gravel Rally · Official Stage Programme</div><h1>GRAVEL<span>RALLY</span></h1>
@@ -275,6 +284,7 @@ input[type=range]{accent-color:#d4aa70}
 <script type="module">
 import * as THREE from "three";
 import { STLLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/STLLoader.js";
+window.__rallyModuleStarted=true;clearTimeout(window.__rallyModuleWatchdog);
 
 const $=id=>document.getElementById(id);
 const TRACKS={
@@ -312,7 +322,7 @@ const CARS={
  stratos:{name:"SUBARU IMPREZA WRC · BLUE",description:"Subaru WRC blue livery · planted braking · stable fast-stage balance",hp:395,torque:545,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:.96,force:6700,maxSpeed:49.2,body:"sedan",rpm:7500},
  coupe:{name:"SUBARU IMPREZA WRC · GOLD",description:"Subaru WRC gold livery · rear-biased setup · lively stage exits",hp:420,torque:570,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.94,force:7000,maxSpeed:48.5,body:"coupe",rpm:7700}
 };
-const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"high",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:7.2,cameraHeight:2.8,cameraLookAhead:3.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
+const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:7.2,cameraHeight:2.8,cameraLookAhead:3.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
 let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="wet",tyre="wet",timeOfDay="sunset";
 let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial,grassTexture=null;
 let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,skyDome=null,skyTexture=null,skyCanvas=null,paceNoteTimer=0;
@@ -504,7 +514,7 @@ function nearRoad(x,z,margin=28){
  return false;
 }
 function makeForest(track){
- const rnd=seeded(track.seed*319+17),count=settings.quality==="low"?6200:settings.quality==="high"?19400:13200;
+ const rnd=seeded(track.seed*319+17),count=settings.quality==="low"?4500:settings.quality==="high"?12500:9000;
  const trunkGeo=new THREE.CylinderGeometry(.12,.22,1,7),pineGeo=new THREE.ConeGeometry(1,1,8);
  const trunkMat=new THREE.MeshStandardMaterial({color:0x493d31,roughness:1});
  const pineA=new THREE.MeshStandardMaterial({color:weather==="snow"?0x83928f:0x203a2d,roughness:1});
@@ -533,7 +543,7 @@ function makeForest(track){
  trunks.count=placed;foliageA.count=placed;foliageB.count=placed;broad.count=broadCount;
  [trunks,foliageA,foliageB,broad].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=settings.shadows&&settings.quality!=="low";m.receiveShadow=false;worldGroup.add(m);});
  // Collidable boulders and exposed rocks on the shoulders break up the tree line.
- const rockCount=settings.quality==="low"?650:settings.quality==="high"?1900:1250,rockGeo=new THREE.DodecahedronGeometry(1,1),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount),rockRand=seeded(track.seed*1301);let rockPlaced=0,rockTries=0;
+ const rockCount=settings.quality==="low"?450:settings.quality==="high"?1400:900,rockGeo=new THREE.DodecahedronGeometry(1,1),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount),rockRand=seeded(track.seed*1301);let rockPlaced=0,rockTries=0;
  while(rockPlaced<rockCount&&rockTries<rockCount*2.5){
   rockTries++;const s=trackData.samples[Math.floor(rockRand()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rockRand()<.5?-1:1,off=8+rockRand()*31,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off;
   if(nearRoad(x,z,7))continue;
@@ -541,12 +551,12 @@ function makeForest(track){
   addWorldCollider(x,z,Math.max(.45,scale*.48),"rock");
  }
  rocks.count=rockPlaced;rocks.instanceMatrix.needsUpdate=true;rocks.castShadow=settings.shadows&&settings.quality!=="low";worldGroup.add(rocks);
- const bushCount=settings.quality==="low"?1100:settings.quality==="high"?3400:2300,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x8c9892:0x40533b,roughness:1}),bushCount);
+ const bushCount=settings.quality==="low"?750:settings.quality==="high"?2400:1500,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x8c9892:0x40533b,roughness:1}),bushCount);
  for(let i=0;i<bushCount;i++){const s=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rnd()<.5?-1:1,off=5.8+rnd()*24,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off,sc=.45+rnd()*1.7;dummy.position.set(x,terrainY(x,z,track)+sc*.45,z);dummy.scale.set(sc*1.3,sc*.72,sc);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();bushes.setMatrixAt(i,dummy.matrix);}
  bushes.instanceMatrix.needsUpdate=true;worldGroup.add(bushes);
 }
 function makeGroundCover(track){
- const rnd=seeded(track.seed*711+29),count=settings.quality==="low"?2600:settings.quality==="high"?7200:4600,geo=new THREE.ConeGeometry(.34,.9,5),mat=new THREE.MeshStandardMaterial({color:0x69784d,roughness:1});
+ const rnd=seeded(track.seed*711+29),count=settings.quality==="low"?1600:settings.quality==="high"?4500:2800,geo=new THREE.ConeGeometry(.34,.9,5),mat=new THREE.MeshStandardMaterial({color:0x69784d,roughness:1});
  const grass=new THREE.InstancedMesh(geo,mat,count),dummy=new THREE.Object3D();
  for(let i=0;i<count;i++){const s=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rnd()<.5?-1:1,off=6+rnd()*112,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off,scale=.22+rnd()*.8;dummy.position.set(x,terrainY(x,z,track)+scale*.45,z);dummy.scale.set(scale*.55,scale,scale*.55);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();grass.setMatrixAt(i,dummy.matrix);}
  grass.instanceMatrix.needsUpdate=true;worldGroup.add(grass);
@@ -601,10 +611,7 @@ function makeTown(track){
  body.count=k;roof.count=k;door.count=k;win.count=k*2;
  [body,roof,door,win].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=false;});worldGroup.add(body,roof,door,win);
 }
-function makeEnvironment(track){
- scene.background=new THREE.Color(track.id==="serpent"?0x65777a:track.id==="alpine"?0x71848c:track.id==="coast"?0x76868a:0x71817f);
- scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.0051:.0040);
- makeTerrain(track);makeRoad(trackData);makeDitches(track);makeRiver(track);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
+function setupEnvironmentSun(){
  if(!environmentSun){
   environmentSun=new THREE.DirectionalLight(0xffdfbd,2.65);environmentSun.position.set(-300,420,250);
   environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);
@@ -613,7 +620,37 @@ function makeEnvironment(track){
   environmentSun.shadow.bias=-0.00012;environmentSun.shadow.normalBias=.035;environmentSun.shadow.radius=3.5;
   scene.add(environmentSun);scene.add(environmentSun.target);
  }
- environmentSun.castShadow=settings.shadows&&settings.quality!=="low";environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);environmentSun.shadow.needsUpdate=true;applyAtmosphere();
+ environmentSun.castShadow=settings.shadows&&settings.quality!=="low";
+ environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);
+ environmentSun.shadow.needsUpdate=true;
+}
+function makeEnvironment(track){
+ scene.background=new THREE.Color(track.id==="serpent"?0x65777a:track.id==="alpine"?0x71848c:track.id==="coast"?0x76868a:0x71817f);
+ scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.0051:.0040);
+ makeTerrain(track);makeRoad(trackData);makeDitches(track);makeRiver(track);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
+ setupEnvironmentSun();applyAtmosphere();
+}
+function nextPaint(){return new Promise(resolve=>requestAnimationFrame(()=>resolve()));}
+async function buildWorldProgressive(){
+ const track=TRACKS[selectedTrack];
+ clearWorld();worldColliders=[];collisionGrid.clear();
+ setLoad(17,"Laying out the rally route");
+ trackData=makeRoute(track);nearestIndex=0;stageStartIndex=0;
+ roadTexture=roadTexture||makeRoadTexture();grassTexture=grassTexture||makeGrassTexture();
+ await nextPaint();
+ scene.background=new THREE.Color(track.id==="serpent"?0x65777a:track.id==="alpine"?0x71848c:track.id==="coast"?0x76868a:0x71817f);
+ scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.0051:.0040);
+ setLoad(29,"Sculpting the terrain");
+ makeTerrain(track);await nextPaint();
+ setLoad(42,"Building the gravel road");
+ makeRoad(trackData);makeDitches(track);await nextPaint();
+ setLoad(54,"Adding rivers and wet-road details");
+ makeRiver(track);await nextPaint();
+ setLoad(63,"Growing the forest");
+ makeForest(track);await nextPaint();
+ setLoad(79,"Finishing roadside scenery");
+ makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);await nextPaint();
+ setupEnvironmentSun();applyAtmosphere();
 }
 function hexMix(a,b,t){
  const ca=new THREE.Color(a),cb=new THREE.Color(b);return "#"+ca.lerp(cb,clamp01(t)).getHexString();
@@ -1118,11 +1155,11 @@ function updateSmoke(dt){
  }
  smokePoints.geometry.attributes.position.needsUpdate=true;smokePoints.visible=active;
 }
-function initScene(){
+async function initScene(){
  const canvas=$("world");
  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.14;
- renderer.setPixelRatio(Math.min(devicePixelRatio,settings.quality==="high"?1.4:settings.quality==="low"?.8:1));
+ renderer.setPixelRatio(Math.min(devicePixelRatio,settings.quality==="high"?1.25:settings.quality==="low"?.8:1));
  renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=settings.shadows&&settings.quality!=="low";renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x68777e);scene.fog=new THREE.FogExp2(0x68777e,.000105);
  camera=new THREE.PerspectiveCamera(settings.fov,innerWidth/innerHeight,.1,18000);camera.position.set(0,8,-14);
@@ -1130,7 +1167,10 @@ function initScene(){
  environmentHemi=new THREE.HemisphereLight(0xd5e0e6,0x343a34,.82);scene.add(environmentHemi);
  environmentFill=new THREE.DirectionalLight(0xffd7b1,.48);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
  environmentAmbient=new THREE.AmbientLight(0xc8d0d3,.16);scene.add(environmentAmbient);
- roadTexture=makeRoadTexture();buildWorld();buildVehicle();buildDust();placeCar();updateCamera(.016,true);loadSubaruAssets();
+ await nextPaint();
+ await buildWorldProgressive();
+ setLoad(86,"Preparing the Subaru rally car");
+ buildVehicle();buildDust();placeCar();updateCamera(.016,true);loadSubaruAssets();
 }
 function updateRenderQuality(){
  if(!renderer)return;
@@ -1452,7 +1492,8 @@ function setMenuStep(step){
 function showEventMenu(mode){
  gameMode=mode;campaignRound=0;campaignTimes=[];
  $("homeScreen").classList.remove("open");$("introScreen").classList.remove("open");
- $("menu").style.display="grid";setMenuStep(0);setMenuStageOptions();buildPreviewWorld();
+ $("menu").style.display="grid";setMenuStep(0);setMenuStageOptions();
+ if(!trackData||!vehicleRoot)buildPreviewWorld();else drawTrackPreview();
 }
 function bindUI(){
  $("trackSelect").addEventListener("change",()=>{selectedTrack=$("trackSelect").value;selectedStage=0;setMenuStageOptions();buildPreviewWorld();});
@@ -1568,11 +1609,11 @@ function initSettingsTabs(){
 
 async function boot(){
  try{
-  loadSettings();setLoad(10,"Preparing renderer");initScene();setLoad(82,"Preparing stage controls");
+  loadSettings();setLoad(7,"Starting the 3D renderer");await nextPaint();await initScene();setLoad(88,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
   window.addEventListener("resize",resize);previousFrame=performance.now();fpsStart=previousFrame;requestAnimationFrame(animate);
   setLoad(90,"Loading Subaru WRC model");if(subaruAssetsPromise)await Promise.race([subaruAssetsPromise,new Promise(resolve=>setTimeout(resolve,9000))]);setLoad(100,"Ready to drive");$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
- }catch(error){console.error(error);$("loadStep").textContent="Could not start: "+error.message;}
+ }catch(error){console.error("Gravel Rally startup failed:",error);$("loadStep").textContent="Startup failed: "+(error?.message||"unknown error");$("loadPct").textContent="ERROR";$("loadFill").style.background="#d56b56";}
 }
 boot();
 </script>
