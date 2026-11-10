@@ -4759,9 +4759,11 @@ function addStartGridMarkings(){
  if(gridMarksGroup?.parent)gridMarksGroup.parent.remove(gridMarksGroup);
  gridMarksGroup=new THREE.Group();gridMarksGroup.name="Exact starting-grid boxes";
  const aiVertices=[],playerVertices=[],halfSlotWidth=1.34,halfSlotLength=2.85;
- const count=Math.max(0,Math.min(19,Math.floor(opponentCount)||0));
+ const count=Math.max(0,Math.min(21,Math.floor(opponentCount)||0));
  const rows=Math.max(1,Math.ceil((count+1)/2));
- const playerRow=Math.floor(count/2),playerSide=count%2===1?-1:1;
+ const qualifying=currentSessionMode==="championship"?getQualifyingResult():null;
+ const playerPosition=qualifying?qualifying.playerPosition:count+1;
+ const playerRow=Math.floor((playerPosition-1)/2),playerSide=playerPosition%2===1?1:-1;
  for(let row=0;row<rows;row++){
   const slot=gridSlotBehindStartLine(8+row*8.1);
   if(!slot)continue;
@@ -6220,15 +6222,22 @@ function spawnOpponents(){
  const base=difficulty.speed;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength;
  if(!aiRoute.length||!aiLength)throw new Error("AI grid cannot be built because the circuit route is empty.");
- const count=Math.max(0,Math.min(19,Math.floor(opponentCount)||0));
+ const count=Math.max(0,Math.min(21,Math.floor(opponentCount)||0));
  opponentCount=count;$("opponentCountSelect").value=String(count);addStartGridMarkings();
  const practice=currentSessionMode==="practice";
  if(count===0){$("opponentValue").textContent="00";const fieldStatus=$("aiFieldStatus");if(fieldStatus)fieldStatus.textContent="SOLO · NO AI OPPONENTS";renderBroadcastTiming();return;}
  const playerProgress=practice?pitExitCircuitProgress:nearestInfo&&!pitLaneDriving?nearestInfo.progress:0;
+ const careerWeekend=currentSessionMode==="qualifying"||currentSessionMode==="championship";
+ const qualifying=currentSessionMode==="championship"?getQualifyingResult():null;
+ const qualifyingRanks=new Map((qualifying?.order||[]).map((driverId,index)=>[driverId,index+1]));
+ let driverRoster=careerWeekend?CHAMPIONSHIP_AI_DRIVERS.filter(driver=>driver.id!==selectedCareerDriverId):CHAMPIONSHIP_AI_DRIVERS.slice();
+ if(qualifying)driverRoster.sort((a,b)=>(qualifyingRanks.get(a.id)||99)-(qualifyingRanks.get(b.id)||99));
  for(let i=0;i<count;i++){
-  const driver=CHAMPIONSHIP_AI_DRIVERS[i%CHAMPIONSHIP_AI_DRIVERS.length],team=teamById(driver.teamId);
+  const driver=driverRoster[i%driverRoster.length],team=teamById(driver.teamId);
   const personality=driver.personality||AI_PERSONALITIES[i%AI_PERSONALITIES.length];
-  const row=Math.floor(i/2),formationOffset=i%2===0?2.2:-2.2;
+  const gridPosition=qualifying?(qualifyingRanks.get(driver.id)||i+1):i+1;
+  const row=practice?Math.floor(i/2):Math.floor((gridPosition-1)/2);
+  const formationOffset=practice?(i%2===0?2.2:-2.2):(gridPosition%2===1?2.2:-2.2);
   let gridSlot;
   if(practice){
    // Start the visible practice pack just beyond the actual pit exit, not 700 metres away at the start line.
@@ -7585,8 +7594,10 @@ function gridSlotBehindStartLine(distanceMeters){
  return null;
 }
 function playerGridDistance(){
- const count=Math.max(0,Math.min(19,Math.floor(opponentCount)||0));
- return 8+Math.floor(count/2)*8.1;
+ const count=Math.max(0,Math.min(21,Math.floor(opponentCount)||0));
+ const qualifying=currentSessionMode==="championship"?getQualifyingResult():null;
+ const position=qualifying?qualifying.playerPosition:Math.max(1,count+1);
+ return 8+Math.floor((position-1)/2)*8.1;
 }
 function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  if(!carRoot)buildCar();
@@ -7595,7 +7606,9 @@ function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  const startIndex=fromPitBox?0:gridSlot?gridSlot.index:fromGrid?0:6,sample=gridSlot?{p:gridSlot.point,tan:gridSlot.tangent}:route[startIndex]||route[0];
  if(!sample||!sample.p)throw new Error("The selected circuit has no valid start position");
  const gridRight=gridSlot?new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize():new THREE.Vector3();
- const playerGridSide=opponentCount%2===1?-1:1;
+ const qualifying=currentSessionMode==="championship"?getQualifyingResult():null;
+ const playerPosition=qualifying?qualifying.playerPosition:Math.max(1,opponentCount+1);
+ const playerGridSide=playerPosition%2===1?1:-1;
  const lateral=gridSlot?2.2*playerGridSide:0,gridX=sample.p.x+gridRight.x*lateral,gridZ=sample.p.z+gridRight.z*lateral;
  const yaw=Math.atan2(sample.tan.x,sample.tan.z),slope=Math.atan2(sample.tan.y,Math.hypot(sample.tan.x,sample.tan.z));
  carRoot.position.set(gridX,sample.p.y+.045,gridZ);carRoot.rotation.set(-slope,yaw,0);
@@ -8896,12 +8909,12 @@ function startSession(sessionMode="practice"){
  if(builtTrackId!==activeTrack)createTrack();
  const startInPit=sessionMode==="practice";
  if(sessionMode!=="timeTrial"){
-  const minimum=sessionMode==="championship"?19:0;
-  opponentCount=Math.max(minimum,Math.min(19,Math.floor(opponentCount)||0));
+  const minimum=(sessionMode==="championship"||sessionMode==="qualifying")?21:0;
+  opponentCount=Math.max(minimum,Math.min(21,Math.floor(opponentCount)||0));
   $("opponentCountSelect").value=String(opponentCount);
   if(sessionMode==="race")quickOpponentSelection=opponentCount;
  }
- currentSessionMode=sessionMode;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;
+ currentSessionMode=sessionMode;currentSessionLapTarget=sessionMode==="qualifying"?3:raceLaps;tyreWearRadioLap=-1;trafficRadioScanTimer=0;trafficRadioCooldown=0;lastRadioRacePosition=0;
  aiFieldRecoveryTimer=0;weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
@@ -8959,7 +8972,8 @@ function restartLap(){
   $("pitServiceOverlay").classList.remove("open");
   clearCrashEffects();clearGhostCar();clearOpponents();restoreCircuitRoute();
   buildCar();
-  formationLapActive=!startInPit&&session!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
+  currentSessionLapTarget=session==="qualifying"?3:raceLaps;
+   formationLapActive=!startInPit&&session!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
   raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
   raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;
   raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
