@@ -199,7 +199,7 @@ input[type=range]{accent-color:#d4aa70}
 }
 
 </style>
-<script type="importmap">{"imports":{"three":"./assets/vendor/three.module.min.js"}}</script>
+
 </head>
 <body>
 <canvas id="world"></canvas>
@@ -286,7 +286,7 @@ window.__rallyModuleWatchdog=setTimeout(()=>{
 <div id="pauseScreen"><div class="dialog"><div class="kicker">Stage control</div><h2>PAUSED</h2><p>Car and stage timer are paused. Adjust your setup or return to the service area.</p><div class="dialog-actions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseSetupBtn">CAR SETUP</button><button class="secondary" id="pauseGarageBtn">GARAGE</button></div></div></div>
 <div id="finishScreen"><div class="dialog"><div class="kicker">Stage complete</div><h2>FINISH LINE</h2><p id="finishSummary">Stage time recorded.</p><div class="dialog-actions"><button class="action" id="finishGarageBtn">BACK TO GARAGE</button><button class="action hidden" id="nextStageBtn">NEXT STAGE</button><button class="secondary" id="restartStageBtn">RESTART STAGE</button></div></div></div>
 <script type="module">
-import * as THREE from "three";
+import * as THREE from "./assets/vendor/three.module.min.js";
 import { STLLoader } from "./assets/vendor/STLLoader.js";
 const $=id=>document.getElementById(id);
 const TRACKS={
