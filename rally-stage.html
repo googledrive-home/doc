@@ -766,12 +766,18 @@ function getSuspensionBodyOffset(){
  if(!wheelAssemblies.length)return 0;
  return wheelAssemblies.reduce((sum,w)=>sum+(w.travel||0),0)/wheelAssemblies.length*.12;
 }
+function dtCockpitBlend(){return Math.max(2,Math.min(12,settings.cameraSmooth*.55));}
 function animateCockpitControls(input){
  if(!vehicleRoot?.userData)return;const u=vehicleRoot.userData;
  if(u.steering)u.steering.rotation.z=-carState.steer*.72;
  if(u.handbrakeLever)u.handbrakeLever.rotation.z=input.handbrake?-.48:0;
  if(u.coDriver)u.coDriver.rotation.x=clamp(-carState.longAccel*.008,-.08,.08);
- if(u.steeringHands)u.steeringHands.forEach((hand,i)=>{hand.rotation.z=-carState.steer*.20*(i?1:-1);});
+ if(u.steeringHands)u.steeringHands.forEach((hand,i)=>{
+  const base=new THREE.Vector3(i?-.145:.145,-.005,.045);
+  const reach=input.handbrake&&i===1?new THREE.Vector3(.40,-.13,-.34):base;
+  hand.position.lerp(reach,1-Math.exp(-dtCockpitBlend()* (input.handbrake&&i===1?8:5)));
+  hand.rotation.z=-carState.steer*.20*(i?1:-1)+(input.handbrake&&i===1?-.22:0);
+ });
 }
 function syncWindshieldOverlay(){
  const overlay=$("windshieldDirt");if(!overlay)return;
@@ -818,7 +824,10 @@ function applySubaruAssets(){
  }
  if(subaruWheelGeometry&&!vehicleRoot.userData.subaruWheels){
   const wheelMat=material(0x9aa5a5,.32,.78);
-  wheelAssemblies.forEach(w=>{const modelWheel=new THREE.Mesh(subaruWheelGeometry.clone(),wheelMat);modelWheel.rotation.set(0,0,0);modelWheel.castShadow=true;modelWheel.position.set(0,0,0);w.wheel.add(modelWheel);});
+  wheelAssemblies.forEach(w=>{
+   w.wheel.children.forEach(child=>{child.visible=false;});
+   const modelWheel=new THREE.Mesh(subaruWheelGeometry.clone(),wheelMat);modelWheel.rotation.set(0,0,0);modelWheel.castShadow=true;modelWheel.position.set(0,0,0);w.wheel.add(modelWheel);
+  });
   vehicleRoot.userData.subaruWheels=true;
  }
 }
@@ -1144,7 +1153,7 @@ function bindUI(){
  $("introSettings").addEventListener("click",openSettings);$("homeBack").addEventListener("click",()=>{$("homeScreen").classList.remove("open");$("introScreen").classList.add("open");});
  document.querySelectorAll("[data-mode]").forEach(el=>el.addEventListener("click",()=>showEventMenu(el.dataset.mode)));
  $("flowBack").addEventListener("click",()=>setMenuStep(flowStep-1));$("flowNext").addEventListener("click",()=>setMenuStep(flowStep+1));
- document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Escape"){if($("modal").classList.contains("open"))$("modal").classList.remove("open");else if(gameActive&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")setCamera(cameraMode+1);if(e.code==="KeyR"&&gameActive)resetCar();if(e.code==="KeyP"&&gameActive){if(paused)resumeGame();else pauseGame();}if(e.code==="KeyV"){wiperOn=!wiperOn;syncWindshieldOverlay();}if(["KeyI","KeyJ","KeyK","KeyL"].includes(e.code)&&cameraMode===0){const step=.08;if(e.code==="KeyJ")cameraYaw-=step;if(e.code==="KeyL")cameraYaw+=step;if(e.code==="KeyI")cameraPitch=Math.min(.55,cameraPitch+step*.55);if(e.code==="KeyK")cameraPitch=Math.max(-.32,cameraPitch-step*.55);}keys[e.code]=true;});
+ document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();if(e.code==="Escape"){if($("modal").classList.contains("open")){$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}}else if(gameActive&&!paused)pauseGame();else if(paused)resumeGame();}if(e.code==="KeyC")setCamera(cameraMode+1);if(e.code==="KeyR"&&gameActive)resetCar();if(e.code==="KeyP"&&gameActive){if(paused)resumeGame();else pauseGame();}if(e.code==="KeyV"){wiperOn=!wiperOn;syncWindshieldOverlay();}if(["KeyI","KeyJ","KeyK","KeyL"].includes(e.code)&&cameraMode===0){const step=.08;if(e.code==="KeyJ")cameraYaw-=step;if(e.code==="KeyL")cameraYaw+=step;if(e.code==="KeyI")cameraPitch=Math.min(.55,cameraPitch+step*.55);if(e.code==="KeyK")cameraPitch=Math.max(-.32,cameraPitch-step*.55);}keys[e.code]=true;});
  document.addEventListener("keyup",e=>{keys[e.code]=false;});window.addEventListener("blur",()=>{keys={};});
 }function updateAudio(){
  if(!engineAudio)return;if(!gameActive||paused){engineGain.gain.setTargetAtTime(0,engineAudio.currentTime,.08);return;}
@@ -1157,7 +1166,16 @@ function initAudio(){
  try{engineAudio=new (window.AudioContext||window.webkitAudioContext)();engineOsc=engineAudio.createOscillator();engineGain=engineAudio.createGain();engineOsc.type="sawtooth";engineOsc.frequency.value=55;engineGain.gain.value=0;engineOsc.connect(engineGain);engineGain.connect(engineAudio.destination);engineOsc.start();}catch(e){}
 }
 function playShiftSound(){if(!engineAudio||settings.shiftVolume<=0)return;try{const osc=engineAudio.createOscillator(),gain=engineAudio.createGain();osc.type="square";osc.frequency.setValueAtTime(720,engineAudio.currentTime);osc.frequency.exponentialRampToValueAtTime(180,engineAudio.currentTime+.075);gain.gain.setValueAtTime(settings.shiftVolume*.055,engineAudio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,engineAudio.currentTime+.10);osc.connect(gain);gain.connect(engineAudio.destination);osc.start();osc.stop(engineAudio.currentTime+.11);}catch(e){}}
-function animateGearControls(){if(!vehicleRoot?.userData?.shifterLever)return;vehicleRoot.userData.shifterLever.rotation.x=-.24;setTimeout(()=>{if(vehicleRoot?.userData?.shifterLever)vehicleRoot.userData.shifterLever.rotation.x=0;},130);}
+function animateGearControls(){
+ if(!vehicleRoot?.userData?.shifterLever)return;
+ vehicleRoot.userData.shifterLever.rotation.x=-.24;
+ const hand=vehicleRoot.userData.steeringHands?.[1];
+ if(hand)hand.position.set(.50,-.14,-.34);
+ setTimeout(()=>{
+  if(vehicleRoot?.userData?.shifterLever)vehicleRoot.userData.shifterLever.rotation.x=0;
+  if(hand&&!keys.Space)hand.position.set(.145,-.005,.045);
+ },190);
+}
 function animate(now){
  requestAnimationFrame(animate);
  const dt=Math.min(.045,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
