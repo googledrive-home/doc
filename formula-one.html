@@ -4018,13 +4018,15 @@ function applyGameModeSelection(){
 function completeChampionshipQualifying(){
  if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return "";
  const player=getSelectedCareerDriver(),playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
- const participants=[{id:player.id,name:player.name,team:player.team,distance:(currentSessionLapTarget||3)+playerProgress-raceStartPenalty/120,isPlayer:true}];
+ const playerTime=Number.isFinite(bestLap)?bestLap:999;
+ const participants=[{id:player.id,name:player.name,team:player.team,time:playerTime,distance:(currentSessionLapTarget||3)+playerProgress-raceStartPenalty/120,isPlayer:true}];
  for(const bot of opponents){
   const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
   if(!driver||driver.id===player.id)continue;
-  participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,bot.laps+bot.progress-(bot.penaltyTime||0)/120)});
+  const aiTime=Number.isFinite(bot.bestLap)?bot.bestLap:999-(bot.baseSpeed||0);
+  participants.push({id:driver.id,name:driver.name,team:driver.team,time:aiTime,distance:Math.max(0,bot.laps+bot.progress-(bot.penaltyTime||0)/120)});
  }
- participants.sort((a,b)=>b.distance-a.distance);
+ participants.sort((a,b)=>a.time-b.time||b.distance-a.distance);
  const playerPosition=participants.findIndex(item=>item.isPlayer)+1,round=championshipState.round+1;
  const record={round,playerDriverId:player.id,playerPosition,order:participants.map(item=>item.id)};
  championshipState.qualifyingResults=(championshipState.qualifyingResults||[]).filter(item=>item.round!==round).concat(record);
@@ -5958,7 +5960,9 @@ function updateRaceStart(dt){
   [...lamps.children].forEach((lamp,i)=>lamp.classList.toggle("on",i<raceStartLit));
   lamps.classList.remove("green");label.textContent=raceStartLit>=5?"HOLD POSITION":"GET READY";
   if(raceStartTimer>=raceStartReleaseAt){
-   raceStartState="green";raceStartTimer=0;lapStart=elapsed;lamps.classList.add("green");
+   raceStartState="green";raceStartTimer=0;lapStart=elapsed;
+   opponents.forEach(bot=>{bot.laps=0;bot.bestLap=Infinity;bot.hasStartedLap=false;bot.lapStartTime=elapsed;});
+   lamps.classList.add("green");
    [...lamps.children].forEach(lamp=>lamp.classList.add("on"));label.textContent="LIGHTS OUT · GO!";
    if(!raceStartJumpReported){showRaceControlMessage("GREEN FLAG · RACE STARTED","info",2.6);showTeamRadio("Lights out. Good launch — watch the first braking zone.");}
   }
@@ -6279,6 +6283,7 @@ function spawnOpponents(){
    plannedPitLap:raceLaps>=5?Math.max(1,Math.min(raceLaps-2,Math.round(raceLaps*(personality.pitTiming||.5)))):Infinity,
    pendingPit:false,pitPhase:"",pitPathDistance:0,pitStopTimer:0,pitStopDone:false,pitCooldown:0,nextTyreCompound:tyre,
    formationDistance:0,formationLastProgress:progress,formationStartProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,
+    bestLap:Infinity,lapStartTime:elapsed,hasStartedLap:false,
    contactCooldown:0,playerContactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,
    playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity,lastAIOvertakeAt:-Infinity
   };
@@ -6434,7 +6439,14 @@ function updateOpponents(dt){
 
    bot.tyreWear=clamp((bot.tyreWear??1)-(travel/aiLength)*(.155/Math.max(.72,personality.tyreCare)),0,1);
    bot.progress=newProgress;
-   if(oldProgress>.87&&bot.progress<.13)bot.laps++;
+   if(oldProgress>.87&&bot.progress<.13){
+    bot.laps++;
+    if(bot.hasStartedLap){
+     const completedBotLap=elapsed-(bot.lapStartTime??elapsed);
+     if(completedBotLap>15)bot.bestLap=Math.min(bot.bestLap??Infinity,completedBotLap);
+    }
+    bot.hasStartedLap=true;bot.lapStartTime=elapsed;
+   }
 
    if(formation&&!bot.formationComplete){
     const formationStep=((bot.progress-bot.formationLastProgress+1)%1)*aiLength;
