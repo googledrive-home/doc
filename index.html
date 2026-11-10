@@ -1415,7 +1415,7 @@ function openStandaloneGame(file,title,launchMode=''){
   frame.title=$('standaloneGameTitle').textContent;
   const target=new URL('./'+file,window.location.href);
   if(file==='formula-one.html')target.searchParams.set('build','apex-camera-culling-30fps-20261109-v8');
-  if(file==='rally-stage.html')target.searchParams.set('build','rally-loading-fix-20261110-v2');
+  if(file==='rally-stage.html')target.searchParams.set('build','rally-loading-'+Date.now());
   if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
 }
