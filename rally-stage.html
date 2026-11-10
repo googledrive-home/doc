@@ -286,8 +286,29 @@ window.__rallyModuleWatchdog=setTimeout(()=>{
 <div id="pauseScreen"><div class="dialog"><div class="kicker">Stage control</div><h2>PAUSED</h2><p>Car and stage timer are paused. Adjust your setup or return to the service area.</p><div class="dialog-actions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseSetupBtn">CAR SETUP</button><button class="secondary" id="pauseGarageBtn">GARAGE</button></div></div></div>
 <div id="finishScreen"><div class="dialog"><div class="kicker">Stage complete</div><h2>FINISH LINE</h2><p id="finishSummary">Stage time recorded.</p><div class="dialog-actions"><button class="action" id="finishGarageBtn">BACK TO GARAGE</button><button class="action hidden" id="nextStageBtn">NEXT STAGE</button><button class="secondary" id="restartStageBtn">RESTART STAGE</button></div></div></div>
 <script type="module">
-import * as THREE from "./assets/vendor/three.module.min.js";
-import { STLLoader } from "./assets/vendor/STLLoader.js";
+/* Mark the module as running before loading dependencies so the watchdog can
+   distinguish a dependency error from a script that never executed. */
+window.__rallyModuleStarted=true;
+clearTimeout(window.__rallyModuleWatchdog);
+
+let THREE;
+try {
+ THREE=await import(new URL("./assets/vendor/three.module.min.js",import.meta.url).href);
+} catch(localEngineError) {
+ console.error("Local Three.js load failed; trying the CDN fallback.",localEngineError);
+ try {
+  THREE=await import("https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js");
+ } catch(remoteEngineError) {
+  const message="Three.js could not load. Local: "+(localEngineError?.message||localEngineError)+"; CDN: "+(remoteEngineError?.message||remoteEngineError);
+  console.error("Gravel Rally engine startup failed:",message);
+  const step=document.getElementById("loadStep"),pct=document.getElementById("loadPct"),fill=document.getElementById("loadFill");
+  if(step)step.textContent=message.slice(0,220);
+  if(pct)pct.textContent="ERROR";
+  if(fill){fill.style.width="100%";fill.style.background="#d56b56";}
+  throw new Error(message);
+ }
+}
+
 const $=id=>document.getElementById(id);
 const TRACKS={
  highland:{id:"highland",name:"WELSH FOREST RALLY",full:23400,seed:13,grip:.80,trees:7200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
@@ -1086,14 +1107,23 @@ function applySubaruAssets(){
 }
 function loadSubaruAssets(){
  if(subaruAssetsPromise)return subaruAssetsPromise;
- const loader=new STLLoader(),base="https://raw.githubusercontent.com/googledrive-home/doc/main/assets/";
- subaruAssetsPromise=Promise.all([
-  loader.loadAsync(base+"subaru_-_subaru_wrc-1.STL"),
-  loader.loadAsync(base+"subaru_-_subaru_wheel-1.STL")
- ]).then(([body,wheel])=>{
-  subaruBodyGeometry=fitSTLGeometry(body,"body",CARS[selectedCar]);subaruWheelGeometry=fitSTLGeometry(wheel,"wheel",CARS[selectedCar]);
-  applySubaruAssets();$("loadStep").textContent="Subaru model loaded";return true;
- }).catch(error=>{console.warn("Subaru STL import unavailable; keeping the procedural rally car.",error);return false;});
+ /* The detailed STL model is optional; load its parser lazily so a missing
+    STLLoader can never prevent the procedural rally car and game from booting. */
+ subaruAssetsPromise=(async()=>{
+  try{
+   const {STLLoader}=await import("./assets/vendor/STLLoader.js");
+   const loader=new STLLoader(),base="https://raw.githubusercontent.com/googledrive-home/doc/main/assets/";
+   const [body,wheel]=await Promise.all([
+    loader.loadAsync(base+"subaru_-_subaru_wrc-1.STL"),
+    loader.loadAsync(base+"subaru_-_subaru_wheel-1.STL")
+   ]);
+   subaruBodyGeometry=fitSTLGeometry(body,"body",CARS[selectedCar]);subaruWheelGeometry=fitSTLGeometry(wheel,"wheel",CARS[selectedCar]);
+   applySubaruAssets();$("loadStep").textContent="Subaru model loaded";return true;
+  }catch(error){
+   console.warn("Subaru STL import unavailable; keeping the procedural rally car.",error);
+   return false;
+  }
+ })();
  return subaruAssetsPromise;
 }
 function buildVehicle(){
