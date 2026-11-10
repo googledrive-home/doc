@@ -388,13 +388,14 @@ function nearRoad(x,z,margin=28){
 }
 function makeForest(track){
  const rnd=seeded(track.seed*319),count=track.id==="serpent"?Math.max(track.trees,6900):track.trees,treeGeo=new THREE.ConeGeometry(1,1,9),trunkGeo=new THREE.CylinderGeometry(.12,.2,1,7);
+ const groves=Array.from({length:38},()=>{const sample=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),side=rnd()<.5?-1:1,offset=95+rnd()*340;return{x:sample.p.x+right.x*side*offset,z:sample.p.z+right.z*side*offset};});
  const trunks=new THREE.InstancedMesh(trunkGeo,new THREE.MeshStandardMaterial({color:0x4a4038,roughness:1}),count);
  const foliageA=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x718087:track.id==="coast"?0x435044:0x2d4437,roughness:1}),count);
  const foliageB=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x9aa7aa:track.id==="alpine"?0x3e5946:0x354b3b,roughness:1}),count);
  const broadleaf=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({color:0x4b6544,roughness:1}),Math.floor(count*.18));
  const dummy=new THREE.Object3D();let placed=0,broad=0,tries=0;
  while(placed<count&&tries<count*12){
-  tries++;const x=(rnd()-.5)*9600,z=(rnd()-.5)*9600;
+  tries++;const grove=groves[Math.floor(rnd()*groves.length)],x=grove.x+(rnd()+rnd()-1)*260,z=grove.z+(rnd()+rnd()-1)*260;
   if(nearRoad(x,z,track.id==="highland"?25:22))continue;
   const h=terrainY(x,z,track),scale=.85+rnd()*2.1;addWorldCollider(x,z,Math.max(.55,scale*.17),"tree");
   dummy.position.set(x,h+1.35*scale,z);dummy.scale.set(.68*scale,2.7*scale,.68*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
@@ -852,15 +853,15 @@ function placeCar(){
  wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);w.travel=0;w.travelVelocity=0;});
 }
 function buildDust(){
- const count=260;dustPositions=new Float32Array(count*3);dustLives=Array(count).fill(0);dustVelocity=Array.from({length:count},()=>new THREE.Vector3());
+ const count=210;dustPositions=new Float32Array(count*3);dustLives=Array(count).fill(0);dustVelocity=Array.from({length:count},()=>new THREE.Vector3());
  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(dustPositions,3));
- dustPoints=new THREE.Points(g,new THREE.PointsMaterial({color:0x998e7c,size:2.7,transparent:true,opacity:.66,depthWrite:false,sizeAttenuation:true}));
+ dustPoints=new THREE.Points(g,new THREE.PointsMaterial({color:0x998e7c,size:1.9,transparent:true,opacity:.38,depthWrite:false,sizeAttenuation:true}));
  dustPoints.frustumCulled=false;scene.add(dustPoints);
 }
 function spawnDust(x,y,z,velocity){
  if(!settings.dust||!dustPoints)return;
  let i=dustLives.findIndex(v=>v<=0);if(i<0)i=Math.floor(Math.random()*dustLives.length);
- dustLives[i]=.95+Math.random()*.90;
+ dustLives[i]=.62+Math.random()*.62;
  dustPositions[i*3]=x+(Math.random()-.5)*.9;dustPositions[i*3+1]=y+.1+Math.random()*.35;dustPositions[i*3+2]=z+(Math.random()-.5)*.9;
  dustVelocity[i].set(-velocity.x*.12+(Math.random()-.5)*2,1+Math.random()*1.5,-velocity.z*.12+(Math.random()-.5)*2);
 }
@@ -982,7 +983,12 @@ function physicsStep(dt){
   if(s.damage>.12&&speed>4&&Math.random()<dt*(1+s.damage*9)){const p=vehicleRoot.localToWorld(new THREE.Vector3(.42,.38,-2.05));spawnDust(p.x,p.y,p.z,new THREE.Vector3((Math.random()-.5)*.4,.9,-speed*.18));}
   nearestIndex=roadInfo.index;stageMeters=((nearestIndex-stageStartIndex+trackData.samples.length)%trackData.samples.length)/trackData.samples.length*trackData.length;
   if(stageMeters>=stageTargetMeters){stageMeters=stageTargetMeters;finishStage();}
-  if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);if(vehicleRoot?.userData?.exhaustGlow)vehicleRoot.userData.exhaustGlow.material.emissiveIntensity=s.damage>.25?.65:.08;
+  if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);if(vehicleRoot?.userData?.exhaustGlow){
+   const pop=s.rpm>CARS[selectedCar].rpm*.90&&input.throttle<.42&&speedKmh>12;
+   vehicleRoot.userData.exhaustGlow.visible=pop||s.damage>.20;
+   vehicleRoot.userData.exhaustGlow.material.emissiveIntensity=pop?1.8+Math.sin(performance.now()*.12)*.6:s.damage>.25?.45:.08;
+   vehicleRoot.userData.exhaustGlow.scale.set(1,pop?1.8:.65,1);
+  }
   paceNoteTimer+=dt;if(paceNoteTimer>.16){paceNoteTimer=0;updatePaceNotes();}updateCarHud(input,drift);
  }
 function nearestRoad(x,z){
