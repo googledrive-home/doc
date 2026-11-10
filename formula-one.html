@@ -8869,7 +8869,7 @@ function openPitStation(){
  playMenuUiSound("tap");applyPitTrackWetness();updateWeather();syncWeatherInputs();updatePitStationUI();
  $("pitDriveOutBtn").style.display=(gameMode==="championship"||gameMode==="timeTrial")?"none":"";
  $("pitRaceBtn").disabled=gameMode==="championship"&&championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length;
- $("pitRaceBtn").innerHTML=gameMode==="championship"?(championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length?"<span>SEASON COMPLETE · VIEW STANDINGS</span><b>✓</b>":"<span>CHAMPIONSHIP · START ROUND "+(championshipState.round+1)+" OF 6</span><b>→</b>"):gameMode==="timeTrial"?"<span>TIME TRIAL · START WITH PERSONAL BEST GHOST</span><b>→</b>":"<span>RACE · START ON TRACK</span><b>→</b>";
+ $("pitRaceBtn").innerHTML=gameMode==="championship"?(championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length?"<span>SEASON COMPLETE · VIEW STANDINGS</span><b>✓</b>":getQualifyingResult()?"<span>CAREER ROUND "+(championshipState.round+1)+" · START RACE · QUALIFIED P"+getQualifyingResult().playerPosition+"</span><b>→</b>":"<span>CAREER ROUND "+(championshipState.round+1)+" · START QUALIFYING · 3 LAPS</span><b>→</b>"):gameMode==="timeTrial"?"<span>TIME TRIAL · START WITH PERSONAL BEST GHOST</span><b>→</b>":"<span>RACE · START ON TRACK</span><b>→</b>";
  $("pitStationOverlay").classList.add("open");
 }
 function closePitStation(){playMenuUiSound("close");$("pitStationOverlay").classList.remove("open");}
@@ -8902,7 +8902,7 @@ function bindPitStation(){
  $("pitTempRange").addEventListener("input",event=>{weather.temp=Number(event.target.value);syncWeatherInputs();updateWeather();updatePitStationUI();});
  $("pitBackBtn").addEventListener("click",closePitStation);
  $("pitDriveOutBtn").addEventListener("click",()=>startSession("practice"));
- $("pitRaceBtn").addEventListener("click",()=>{if(gameMode==="championship"&&championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length){openChampionship();return;}startSession(gameMode==="championship"?"championship":gameMode==="timeTrial"?"timeTrial":"race");});
+ $("pitRaceBtn").addEventListener("click",()=>{if(gameMode==="championship"&&championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length){openChampionship();return;}startSession(gameMode==="championship"?(getQualifyingResult()?"championship":"qualifying"):gameMode==="timeTrial"?"timeTrial":"race");});
 }
 
 function startSession(sessionMode="practice"){
