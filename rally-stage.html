@@ -232,7 +232,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="menu-head"><h2 id="flowTitle">Car & route selection</h2><button class="secondary" id="openSettings">SETUP & SETTINGS</button></div><div class="flow-nav"><div><strong id="flowLabel">STEP 01 · CAR & TRACK</strong><small id="flowMeta">Choose your competition car and rally location</small></div><div class="flow-actions"><button class="secondary" id="flowBack">BACK</button><button class="secondary" id="flowNext">CONTINUE</button></div></div><nav class="flow-tabs" id="flowTabs" aria-label="Event setup steps"><button class="active" data-flow-step="0">01 · CAR</button><button data-flow-step="1">02 · STAGE</button><button data-flow-step="2">03 · CONDITIONS</button><button data-flow-step="3">04 · START</button></nav>
    <div class="field" id="carField"><label for="carSelect">Competition car</label><select id="carSelect"><option value="falcon">Subaru Impreza WRC · AWD</option><option value="stratos">Subaru Impreza WRC · Blue</option><option value="coupe">Subaru Impreza WRC · Gold</option></select></div>
    <div class="car-summary" id="carSummary"><div class="car-silhouette" id="carArt"><svg viewBox="0 0 180 80"><path d="M12 52 L27 42 L42 38 L57 20 L117 20 L137 38 L158 43 L169 53 L165 62 L15 62Z" fill="#d74f3f" stroke="#f3d5a5" stroke-width="2"/><path d="M59 24 L112 24 L130 39 L48 39Z" fill="#1a2c34" stroke="#7e9aa0"/><circle cx="45" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/><circle cx="135" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/></svg></div><div><strong id="carName">FALCON R5</strong><small id="carDesc">Short wheelbase · agile rotation · forgiving gravel balance</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div></div></div>
-   <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Welsh Forest Roads · 23.4 km</option><option value="alpine">Alpine Pass · Turini-inspired · 24.8 km</option><option value="coast">Rocky Mountain Rally · 21.6 km</option><option value="serpent">Serpent Ridge · Hairpin Challenge · 28.6 km</option></select></div>
+   <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Wales · Forest stages · 23.4 km</option><option value="alpine">Finland · Crest & jump stages · 24.8 km</option><option value="coast">Acropolis · Rocky gravel stages · 21.6 km</option><option value="serpent">Col de Turini · Hairpin pass · 28.6 km</option></select></div>
    <div class="field" id="stageField"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
     <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
    <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
@@ -278,28 +278,28 @@ import { STLLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/j
 
 const $=id=>document.getElementById(id);
 const TRACKS={
- highland:{id:"highland",name:"HIGHLAND FOREST",full:23400,seed:13,grip:.80,trees:7200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
+ highland:{id:"highland",name:"WELSH FOREST RALLY",full:23400,seed:13,grip:.80,trees:7200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
   {id:"pine",name:"PINE RIDGE SPRINT",km:5.2,start:0,desc:"Fast crests · linked medium bends"},
   {id:"river",name:"RIVER BEND",km:6.0,start:.23,desc:"Tight hairpins · narrow forest cuts"},
   {id:"quarry",name:"OLD QUARRY RUN",km:5.7,start:.49,desc:"Off-camber turns · rough braking zones"},
   {id:"village",name:"VILLAGE FINALE",km:6.5,start:.75,desc:"Blind entries · fast-to-tight transitions"},
   {id:"full",name:"FULL HIGHLAND STAGE",km:23.4,start:0,desc:"Complete 23.4 km rally · every corner",full:true}
  ]},
- alpine:{id:"alpine",name:"ALPINE VALLEY",full:24800,seed:27,grip:.84,trees:5400,town:[.18,.39,.62,.82],color:0x65735c,stages:[
+ alpine:{id:"alpine",name:"FINLAND CREST RUN",full:24800,seed:27,grip:.84,trees:5400,town:[.18,.39,.62,.82],color:0x65735c,stages:[
   {id:"pass",name:"NORTH PASS",km:6.0,start:0,desc:"Long climbs · blind crests · tight 2s"},
   {id:"lake",name:"LAKE DESCENT",km:5.5,start:.24,desc:"Steep descent · off-camber switchbacks"},
   {id:"tunnel",name:"TUNNEL RIDGE",km:6.8,start:.46,desc:"Narrow ledges · linked hairpins"},
   {id:"valley",name:"VALLEY FINALE",km:6.5,start:.72,desc:"Fast sweepers · village braking zones"},
   {id:"full",name:"FULL ALPINE STAGE",km:24.8,start:0,desc:"Complete 24.8 km mountain rally",full:true}
  ]},
- coast:{id:"coast",name:"MOORLAND COAST",full:21600,seed:41,grip:.76,trees:3900,town:[.12,.32,.56,.78],color:0x68735a,stages:[
+ coast:{id:"coast",name:"ACROPOLIS ROCK STAGES",full:21600,seed:41,grip:.76,trees:3900,town:[.12,.32,.56,.78],color:0x68735a,stages:[
   {id:"cliff",name:"COASTLINE RUN",km:5.4,start:0,desc:"Exposed drops · quick direction changes"},
   {id:"wind",name:"WIND FARM LOOP",km:5.2,start:.25,desc:"Blind brows · tightening bends"},
   {id:"farm",name:"FARMLAND CUT",km:5.6,start:.49,desc:"Stone walls · narrow farm lanes"},
   {id:"sunset",name:"SUNSET FINALE",km:5.4,start:.75,desc:"Long downhill bends · deceptive hairpins"},
   {id:"full",name:"FULL MOORLAND STAGE",km:21.6,start:0,desc:"Complete 21.6 km coastal rally",full:true}
  ]},
-  serpent:{id:"serpent",name:"SERPENT RIDGE",full:28600,seed:59,grip:.70,trees:7200,town:[.09,.31,.57,.82],color:0x646b50,cornerHeavy:true,stages:[
+  serpent:{id:"serpent",name:"COL DE TURINI PASS",full:28600,seed:59,grip:.70,trees:7200,town:[.09,.31,.57,.82],color:0x646b50,cornerHeavy:true,stages:[
    {id:"switchback",name:"THE SWITCHBACK WALL",km:6.864,start:0,desc:"Relentless hairpins · steep uphill braking"},
    {id:"snakes",name:"SNAKE PASS",km:7.436,start:.24,desc:"Back-to-back S bends · tightening 1s and 2s"},
    {id:"descent",name:"KNIFE-EDGE DESCENT",km:7.15,start:.50,desc:"Blind crests · downhill hairpins · off-camber exits"},
@@ -326,15 +326,16 @@ const tyreSpecs={gravel:{mu:.83,wear:1,name:"GRAVEL SOFT"},hard:{mu:.76,wear:.64
 function setLoad(p,label){$("loadFill").style.width=p+"%";$("loadPct").textContent=p+"%";$("loadStep").textContent=label;}
 function seeded(seed){let x=seed>>>0;return()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 function terrainY(x,z,track=TRACKS[selectedTrack]){
- const base=Math.sin(x*.0011+track.seed)*11+Math.cos(z*.00135-track.seed*.3)*13+Math.sin((x+z)*.0021)*6.2+Math.cos((x-z)*.00068)*12;
+ const broad=Math.sin(x*.0011+track.seed)*11+Math.cos(z*.00135-track.seed*.3)*13+Math.sin((x+z)*.0021)*6.2+Math.cos((x-z)*.00068)*12;
  const folds=Math.sin(x*.0031+track.seed*1.7)*Math.cos(z*.0026-track.seed)*4.2+Math.sin((x-z)*.0042)*2.8;
- const crests=Math.sin((x+z)*.0061+track.seed)*2.8+Math.cos((x-z)*.0084-track.seed*.3)*1.9;
- const mountain=Math.sin((x*.0008+z*.00064)+track.seed*.1)*Math.cos(z*.00095-x*.00052)*22;
- const profile=track.id==="alpine"?Math.sin(x*.0013+z*.0011+track.seed)*24+Math.cos((x-z)*.0018)*14:
+ const microAmp=track.id==="alpine"?9.2:track.id==="serpent"?6.8:track.id==="coast"?5.1:4.2;
+ const microCrests=microAmp*Math.sin((x*.043+z*.021)+track.seed)+microAmp*.62*Math.cos((x-z)*.034-track.seed*.2);
+ const ridge=Math.sin((x*.0008+z*.00064)+track.seed*.1)*Math.cos(z*.00095-x*.00052)*22;
+ const profile=track.id==="alpine"?Math.sin(x*.0019+z*.0014+track.seed)*15+Math.cos((x+z)*.0024)*11:
                track.id==="serpent"?Math.sin(x*.0010+z*.0007+track.seed)*30+Math.sin((x-z)*.0013-track.seed*.4)*18:
                track.id==="highland"?Math.sin((x-z)*.0019+track.seed)*12+Math.cos((x+z)*.0024)*7:
                Math.sin((x+z)*.0017+track.seed)*17+Math.cos((x-z)*.0021)*10;
- return base+folds+crests+mountain+profile;
+ return broad+folds+microCrests+ridge+profile;
 }
 function makeRoadTexture(){
  const c=document.createElement("canvas");c.width=c.height=1024;const ctx=c.getContext("2d"),rnd=seeded(881);
@@ -359,9 +360,12 @@ function makeGrassTexture(){
 }
 function makeRoute(track){
  const profiles={
+  // Finland-inspired: fewer, faster turns with big crests and long lanes.
   highland:{rows:8,gap:300,radius:150,straight:2260,bend:1.12},
-  alpine:{rows:10,gap:260,radius:130,straight:1400,bend:1.0},
+  alpine:{rows:6,gap:320,radius:160,straight:3000,bend:.72},
+  // Welsh forest / rocky Acropolis profiles keep the road narrow and rough.
   coast:{rows:8,gap:285,radius:142.5,straight:2000,bend:1.10},
+  // Turini-inspired: twelve successive mountain hairpins.
   serpent:{rows:12,gap:240,radius:120,straight:1200,bend:.94}
  };
  const cfg=profiles[track.id]||profiles.highland,rows=cfg.rows,spacing=cfg.gap,radius=cfg.radius;
@@ -382,7 +386,6 @@ function makeRoute(track){
    add(endX+Math.cos(theta)*radius,centerZ+Math.sin(theta)*radius);
   }
  }
- // Finite outer return lane closes the pass around the outside of the final hairpin.
  const lastZ=zStart+(rows-1)*spacing,outerX=xStart-520,outerZ=zStart-520;
  add(outerX,lastZ);add(outerX,outerZ);add(xStart,outerZ);
  let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
@@ -1236,9 +1239,10 @@ function finishStage(){
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function setMenuStageOptions(){
- const track=TRACKS[selectedTrack];selectedStage=clamp(selectedStage,0,track.stages.length-1);
- $("stageList").innerHTML=track.stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+(s.full?(track.full/1000).toFixed(1):s.km.toFixed(1))+' KM · '+s.desc+'</small></button>').join("");
- document.querySelectorAll(".segment").forEach(b=>b.addEventListener("click",()=>{selectedStage=Number(b.dataset.stage);setMenuStageOptions();}));
+ const track=TRACKS[selectedTrack],stages=(gameMode==="career"||gameMode==="tournament")?track.stages.filter(s=>!s.full):track.stages;
+ selectedStage=clamp(selectedStage,0,stages.length-1);
+ $("stageList").innerHTML=stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+(s.full?(track.full/1000).toFixed(1):s.km.toFixed(1))+' KM · '+s.desc+'</small></button>').join("");
+ document.querySelectorAll("#stageList .segment").forEach(b=>b.addEventListener("click",()=>{selectedStage=Number(b.dataset.stage);setMenuStageOptions();}));
  drawTrackPreview();
 }
 function updateCarCard(){
