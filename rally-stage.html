@@ -366,7 +366,7 @@ function makeRoute(track){
   // Welsh forest / rocky Acropolis profiles keep the road narrow and rough.
   coast:{rows:8,gap:285,radius:142.5,straight:2000,bend:1.10},
   // Turini-inspired: twelve successive mountain hairpins.
-  serpent:{rows:12,gap:240,radius:120,straight:1200,bend:.94}
+  serpent:{rows:12,gap:110,radius:55,straight:1200,bend:.94}
  };
  const cfg=profiles[track.id]||profiles.highland,rows=cfg.rows,spacing=cfg.gap,radius=cfg.radius;
  const half=cfg.straight*.5,xStart=-half,xEnd=half,zStart=-(rows-1)*spacing*.5,control=[];
