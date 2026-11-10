@@ -295,7 +295,7 @@ function makeRoute(track){
  const samples=points.map((p,i)=>{p.y=terrainY(p.x,p.z,track)+.24;const tan=curve.getTangentAt(i/count).normalize();return{p,tan,progress:i/count};});
  const cellSize=64,spatialIndex=new Map();
  for(const sample of samples){const cx=Math.floor(sample.p.x/cellSize),cz=Math.floor(sample.p.z/cellSize),key=cx+":"+cz;if(!spatialIndex.has(key))spatialIndex.set(key,[]);spatialIndex.get(key).push(sample.p);}
- return{curve,samples,length:track.full,control,spatialIndex,spatialCell:cellSize};
+ return{curve,samples,length:track.full,control,spatialIndex,spatialCell:cellSize,trackId:track.id,halfWidth:track.id==="serpent"?4.1:4.95};
 }
 function makeTerrain(track){
  const size=9800,segments=settings.quality==="low"?100:150;
@@ -316,7 +316,7 @@ function makeTerrain(track){
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
  const samples=trackData.samples,n=samples.length,positions=[],uv=[],indices=[],normals=[];
- const half=4.95;
+ const half=trackData.halfWidth||4.95;
  for(let i=0;i<n;i++){
   const a=samples[i],right=new THREE.Vector3(a.tan.z,0,-a.tan.x).normalize(),p=a.p;
   positions.push(p.x-right.x*half,p.y+.08,p.z-right.z*half,p.x+right.x*half,p.y+.08,p.z+right.z*half);
@@ -331,11 +331,38 @@ function makeRoad(trackData){
  const edgeGeo=new THREE.BufferGeometry(),ep=[],ei=[];
  for(let i=0;i<n;i++){
   const a=samples[i],right=new THREE.Vector3(a.tan.z,0,-a.tan.x).normalize(),p=a.p;
-  for(const side of [-1,1]){const w=side*8.6;ep.push(p.x+right.x*w,p.y-.02,p.z+right.z*w);}
+  for(const side of [-1,1]){const w=side*(half+3.6);ep.push(p.x+right.x*w,p.y-.02,p.z+right.z*w);}
  }
  for(let i=0;i<n;i++){const j=(i+1)%n;ei.push(i*2,j*2,i*2+1,i*2+1,j*2,j*2+1);}
  edgeGeo.setAttribute("position",new THREE.Float32BufferAttribute(ep,3));edgeGeo.setIndex(ei);edgeGeo.computeVertexNormals();
  const edges=new THREE.Mesh(edgeGeo,edgeMat);edges.material.side=THREE.DoubleSide;worldGroup.add(edges);
+}
+function makeDitches(track){
+ const samples=trackData.samples,n=samples.length,half=trackData.halfWidth||4.95,offsets=[half+.25,half+.95,half+2.05,half+3.25],positions=[],colors=[],indices=[];
+ const tones=[[.24,.25,.22],[.19,.20,.18],[.16,.17,.15],[.27,.27,.23]];
+ for(let sideIndex=0;sideIndex<2;sideIndex++){
+  const side=sideIndex===0?-1:1,base=samples.length*sideIndex*offsets.length;
+  for(let i=0;i<n;i++){const sample=samples[i],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
+   for(let j=0;j<offsets.length;j++){const x=sample.p.x+right.x*side*offsets[j],z=sample.p.z+right.z*side*offsets[j];positions.push(x,terrainY(x,z,track)+.035+(j===1?.008:0),z);const c=tones[j];colors.push(c[0],c[1],c[2]);}}
+  for(let i=0;i<n;i++){const ni=(i+1)%n;for(let j=0;j<offsets.length-1;j++){const a=base+i*offsets.length+j,b=a+1,c=base+ni*offsets.length+j,d=c+1;indices.push(a,c,b,b,c,d);}}
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const ditch=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x554a3b,vertexColors:true,roughness:1,side:THREE.DoubleSide}));ditch.receiveShadow=true;worldGroup.add(ditch);
+}
+function makeRiver(track){
+ const samples=trackData.samples,n=samples.length,step=2,width=8.5,positions=[],uv=[],indices=[],bankPositions=[];
+ for(let i=0;i<n;i+=step){const sample=samples[i],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),offset=66+Math.sin(sample.progress*Math.PI*4+track.seed)*18+Math.sin(sample.progress*Math.PI*9)*7,cx=sample.p.x+right.x*offset,cz=sample.p.z+right.z*offset;
+  for(const side of [-1,1]){const x=cx+right.x*side*width,z=cz+right.z*side*width;positions.push(x,terrainY(x,z,track)+.12,z);uv.push(side<0?0:1,sample.progress*16);}
+  if(i>0){const v=positions.length/3-2,prev=v-2;indices.push(prev,v,prev+1,prev+1,v,v+1);}
+  if(i%16===0)for(const side of [-1,1]){const bx=cx+right.x*side*(width+1.8),bz=cz+right.z*side*(width+1.8);bankPositions.push(bx,terrainY(bx,bz,track)+.20,bz);}
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
+ const waterMat=new THREE.MeshStandardMaterial({color:weather==="snow"?0x819093:0x263f43,roughness:.19,metalness:.24,transparent:true,opacity:.94,side:THREE.DoubleSide}),water=new THREE.Mesh(geo,waterMat);water.receiveShadow=true;water.renderOrder=2;worldGroup.add(water);
+ const bankGeo=new THREE.DodecahedronGeometry(1,1),bankMat=new THREE.MeshStandardMaterial({color:0x68675a,roughness:1}),banks=new THREE.InstancedMesh(bankGeo,bankMat,bankPositions.length/3),dummy=new THREE.Object3D();
+ for(let i=0;i<bankPositions.length/3;i++){const x=bankPositions[i*3],y=bankPositions[i*3+1],z=bankPositions[i*3+2],scale=.7+(i%5)*.22;dummy.position.set(x,y,z);dummy.scale.set(scale*1.7,scale*.6,scale);dummy.rotation.set(i*.31,i*.71,i*.17);dummy.updateMatrix();banks.setMatrixAt(i,dummy.matrix);}
+ banks.instanceMatrix.needsUpdate=true;worldGroup.add(banks);
+ const glintPositions=[];for(let i=0;i<n;i+=12){const sample=samples[i],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),offset=66+Math.sin(sample.progress*Math.PI*4+track.seed)*18+Math.sin(sample.progress*Math.PI*9)*7,cx=sample.p.x+right.x*offset,cz=sample.p.z+right.z*offset;glintPositions.push(cx-right.x*4,terrainY(cx,cz,track)+.15,cz-right.z*4,cx+right.x*4,terrainY(cx,cz,track)+.15,cz+right.z*4);}
+ const glintGeo=new THREE.BufferGeometry();glintGeo.setAttribute("position",new THREE.Float32BufferAttribute(glintPositions,3));worldGroup.add(new THREE.LineSegments(glintGeo,new THREE.LineBasicMaterial({color:0x9aaea8,transparent:true,opacity:.14})));
 }
 function nearRoad(x,z,margin=28){
  const index=trackData?.spatialIndex,cell=trackData?.spatialCell||64;if(!index)return false;
@@ -344,10 +371,10 @@ function nearRoad(x,z,margin=28){
  return false;
 }
 function makeForest(track){
- const rnd=seeded(track.seed*319),count=track.trees,treeGeo=new THREE.ConeGeometry(1,1,9),trunkGeo=new THREE.CylinderGeometry(.12,.2,1,7);
- const trunks=new THREE.InstancedMesh(trunkGeo,new THREE.MeshStandardMaterial({color:0x594738,roughness:1}),count);
- const foliageA=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x718087:track.id==="coast"?0x52634a:0x34523c,roughness:1}),count);
- const foliageB=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x9aa7aa:track.id==="alpine"?0x47684a:0x3e6041,roughness:1}),count);
+ const rnd=seeded(track.seed*319),count=track.id==="serpent"?Math.max(track.trees,6900):track.trees,treeGeo=new THREE.ConeGeometry(1,1,9),trunkGeo=new THREE.CylinderGeometry(.12,.2,1,7);
+ const trunks=new THREE.InstancedMesh(trunkGeo,new THREE.MeshStandardMaterial({color:0x4a4038,roughness:1}),count);
+ const foliageA=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x718087:track.id==="coast"?0x435044:0x2d4437,roughness:1}),count);
+ const foliageB=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x9aa7aa:track.id==="alpine"?0x3e5946:0x354b3b,roughness:1}),count);
  const broadleaf=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({color:0x4b6544,roughness:1}),Math.floor(count*.18));
  const dummy=new THREE.Object3D();let placed=0,broad=0,tries=0;
  while(placed<count&&tries<count*12){
@@ -368,7 +395,7 @@ function makeForest(track){
  rocks.instanceMatrix.needsUpdate=true;worldGroup.add(rocks);
 }
 function makeGroundCover(track){
- const rnd=seeded(track.seed*711),count=settings.quality==="low"?1200:settings.quality==="high"?5800:3200,geo=new THREE.ConeGeometry(.42,1.25,5),mat=new THREE.MeshStandardMaterial({color:0x687b50,roughness:1});
+ const rnd=seeded(track.seed*711),count=settings.quality==="low"?1800:settings.quality==="high"?7600:4600,geo=new THREE.ConeGeometry(.42,1.25,5),mat=new THREE.MeshStandardMaterial({color:0x687b50,roughness:1});
  const grass=new THREE.InstancedMesh(geo,mat,count),dummy=new THREE.Object3D();let placed=0,tries=0;
  while(placed<count&&tries<count*5){tries++;const x=(rnd()-.5)*9400,z=(rnd()-.5)*9400;if(nearRoad(x,z,8))continue;const scale=.24+rnd()*.8;dummy.position.set(x,terrainY(x,z,track)+scale*.45,z);dummy.scale.set(scale*.55,scale,scale*.55);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();grass.setMatrixAt(placed++,dummy.matrix);}
  grass.count=placed;grass.instanceMatrix.needsUpdate=true;worldGroup.add(grass);
@@ -408,7 +435,7 @@ function makeTown(track){
 function makeEnvironment(track){
  scene.background=new THREE.Color(track.id==="serpent"?0x9a9c8b:track.id==="alpine"?0x9baeb5:track.id==="coast"?0x9bb2b6:0x9cad9c);
  scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.00010:.000075);
- makeTerrain(track);makeRoad(trackData);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
+ makeTerrain(track);makeRoad(trackData);makeDitches(track);makeRiver(track);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
  if(!environmentSun){environmentSun=new THREE.DirectionalLight(0xffe3b3,2.1);environmentSun.position.set(-300,650,250);environmentSun.shadow.mapSize.set(1024,1024);environmentSun.shadow.camera.left=-250;environmentSun.shadow.camera.right=250;environmentSun.shadow.camera.top=250;environmentSun.shadow.camera.bottom=-250;scene.add(environmentSun);}
  environmentSun.castShadow=settings.shadows&&settings.quality==="high";applyAtmosphere();
 }
@@ -720,7 +747,7 @@ function resetCar(){
 }
 function inputState(){
  const steerLeft=!!(keys.KeyA||keys.ArrowLeft),steerRight=!!(keys.KeyD||keys.ArrowRight);
- const steer=(steerRight?1:0)-(steerLeft?1:0);
+ const steer=(steerLeft?1:0)-(steerRight?1:0);
  const throttle=(keys.KeyW||keys.ArrowUp)?1:0,brake=(keys.KeyS||keys.ArrowDown)?1:0;
  return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake:!!keys.Space};
 }
@@ -729,12 +756,13 @@ function physicsStep(dt){
   const s=carState,spec=CARS[selectedCar],input=inputState(),speed=Math.abs(s.vLong),speedKmh=speed*3.6;
   const frontTyre=tyreSpecs[tyre],weatherGrip={dry:1,damp:.90,wet:.76,storm:.62,snow:.54}[weather]||1,track=TRACKS[selectedTrack];
   let lateralGrip=frontTyre.mu*spec.baseGrip*track.grip*settings.surface*weatherGrip;
-  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),onRoad=roadOffset<5.9;
-  if(!onRoad)lateralGrip*=roadOffset<10?.70:clamp(1-(roadOffset-10)*.035,.38,.70);
+  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),roadHalf=trackData.halfWidth||4.95,onRoad=roadOffset<roadHalf+.9;
+  if(!onRoad)lateralGrip*=roadOffset<roadHalf+4?.66:clamp(1-(roadOffset-roadHalf-4)*.035,.34,.66);
+  const inDitch=roadOffset>roadHalf+.7&&roadOffset<roadHalf+3.6;
   const steeringLimit=.55/(1+speed*.012)*settings.steer/.7,targetSteer=input.steer*steeringLimit;
   s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*7.5));
   const handbrakeTarget=input.handbrake&&speed>3?1:0;
-  if(input.handbrake&&!s.handbrakeWasOn&&speed>7&&Math.abs(input.steer)>.12)s.vLat-=input.steer*speed*.16;
+  if(input.handbrake&&!s.handbrakeWasOn&&speed>7&&Math.abs(input.steer)>.12){s.vLat-=input.steer*speed*.17;s.yawRate-=input.steer*clamp(speed/20,.25,1)*.24;}
   s.handbrakeWasOn=input.handbrake;
   s.handbrakeBlend+=(handbrakeTarget-s.handbrakeBlend)*(1-Math.exp(-dt*(handbrakeTarget>s.handbrakeBlend?13:7)));
   const a=spec.wheelbase*.53,b=spec.wheelbase*.47;
@@ -743,7 +771,8 @@ function physicsStep(dt){
   const rearGripFactor=1-.68*s.handbrakeBlend,frontGrip=lateralGrip*(.88+settings.frontDiff*.16),rearGrip=lateralGrip*rearGripFactor*(.88+settings.rearDiff*.18);
   const frontSlip=Math.atan2(s.vLat+a*s.yawRate,Math.max(1.3,Math.abs(s.vLong)))-s.steer,rearSlip=Math.atan2(s.vLat-b*s.yawRate,Math.max(1.3,Math.abs(s.vLong)));
   const cf=spec.mass*7.2*(settings.spring/.58),cr=spec.mass*7.8*(settings.spring/.58);
-  const fyFront=clamp(-cf*frontSlip,-frontGrip*fzFront,frontGrip*fzFront),fyRear=clamp(-cr*rearSlip,-rearGrip*fzRear,rearGrip*fzRear);
+  const fyFront=-frontGrip*fzFront*Math.sin(1.34*Math.atan(8.2*frontSlip));
+  const fyRear=-rearGrip*fzRear*Math.sin(1.30*Math.atan(8.0*rearSlip));
   const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.27;
   const yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.8+.55),latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*.42;
   s.yawRate+=yawAccel*dt;s.latAccel=latAccel;s.vLat+=latAccel*dt;
@@ -755,10 +784,12 @@ function physicsStep(dt){
   const rpmNorm=clamp((s.rpm-1200)/(spec.rpm-1200),0,1),torqueAtRpm=spec.torque*(.72+.28*Math.sin(Math.PI*rpmNorm));
   const torqueForce=torqueAtRpm*ratio*settings.finalDrive*.55/.405,tractionCut=settings.tcs>0?Math.max(.35,1-settings.tcs*Math.max(0,Math.abs(s.vLat)/(speed+2)-.11)*2.5):1;
   const engineForce=input.throttle*Math.min(spec.force,torqueForce)*settings.power*tractionCut;
-  const frontBrake=spec.mass*9.81*1.05*input.brake*settings.brakeBias,rearBrake=spec.mass*9.81*1.05*input.brake*(1-settings.brakeBias);
-  const handForce=spec.mass*9.81*.42*s.handbrakeBlend,drag=.62*speed*speed+spec.mass*9.81*.020,longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
+  const brakeDemand=Math.pow(input.brake,1.12);
+  const frontBrake=spec.mass*9.81*.72*brakeDemand*settings.brakeBias,rearBrake=spec.mass*9.81*.72*brakeDemand*(1-settings.brakeBias);
+  const handForce=spec.mass*9.81*.30*s.handbrakeBlend,drag=.56*speed*speed+spec.mass*9.81*.018,longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
   s.longAccel=longAcc;s.vLong+=longAcc*dt;if(input.brake&&settings.abs>0&&Math.abs(s.vLong)<.8)s.vLong=0;
   s.vLong=clamp(s.vLong,-8,spec.maxSpeed*(.94+settings.power*.06));if(input.handbrake&&s.vLong<0)s.vLong=0;
+  if(inDitch){s.vLong*=Math.exp(-dt*1.05);s.vLat*=Math.exp(-dt*.42);s.yawRate*=Math.exp(-dt*.26);}
   s.yaw+=s.yawRate*dt;
   const vx=Math.sin(s.yaw)*s.vLong+Math.cos(s.yaw)*s.vLat,vz=Math.cos(s.yaw)*s.vLong-Math.sin(s.yaw)*s.vLat;
   s.x+=vx*dt;s.z+=vz*dt;s.travel+=Math.hypot(vx,vz)*dt;
