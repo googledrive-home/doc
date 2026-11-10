@@ -209,12 +209,12 @@ const TRACKS={
  ]}
 };
 const CARS={
- falcon:{name:"FALCON R5",description:"Short wheelbase · agile rotation · forgiving gravel balance",hp:340,mass:1280,drive:"AWD",wheelbase:2.55,width:1.88,length:4.15,color:0xd64c3e,accent:0xe4c27c,front:0.56,engine:"front",baseGrip:.94,force:8500,maxSpeed:58,body:"hatch",rpm:7200},
- stratos:{name:"APEX RS",description:"Longer wheelbase · stable at speed · strong mid-corner traction",hp:395,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:1.0,force:9400,maxSpeed:62,body:"sedan",rpm:7600},
- coupe:{name:"GRAVEL GT",description:"Wide stance · rear-biased balance · powerful rotation on loose exits",hp:420,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.98,force:9900,maxSpeed:64,body:"coupe",rpm:7800}
+ falcon:{name:"FALCON R5",description:"Short-wheelbase AWD · sharp turn-in · progressive gravel rotation",hp:340,torque:510,mass:1280,drive:"AWD",wheelbase:2.55,width:1.88,length:4.15,color:0xd64c3e,accent:0xe4c27c,front:0.56,engine:"front",baseGrip:.91,force:8500,maxSpeed:52.0,body:"hatch",rpm:7200},
+ stratos:{name:"APEX RS",description:"Long-wheelbase AWD · planted braking · stable fast-stage balance",hp:395,torque:545,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:.96,force:9400,maxSpeed:52.5,body:"sedan",rpm:7500},
+ coupe:{name:"GRAVEL GT",description:"Wide-track AWD · rear-biased balance · lively exits and rotation",hp:420,torque:570,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.94,force:9900,maxSpeed:51.5,body:"coupe",rpm:7700}
 };
-const DEFAULTS={power:1,finalDrive:4.1,shift:.65,spring:.58,damper:.54,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,autoGear:true,driftAssist:false};
-let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="dry",tyre="gravel";
+const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,autoGear:true,driftAssist:false};
+let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="dry",tyre="gravel",timeOfDay="morning";
 let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial;
 let gameActive=false,paused=false,stageFinished=false,elapsed=0,previousFrame=0,frameSamples=0,fpsStart=0,fps=60,adaptiveScale=1;
 let keys={},carState=null,nearestIndex=0,stageStartIndex=0,stageMeters=0,stageTargetMeters=0,cameraMode=0,qualityTimer=0;
@@ -225,9 +225,10 @@ const tyreSpecs={gravel:{mu:.83,wear:1,name:"GRAVEL SOFT"},hard:{mu:.76,wear:.64
 function setLoad(p,label){$("loadFill").style.width=p+"%";$("loadPct").textContent=p+"%";$("loadStep").textContent=label;}
 function seeded(seed){let x=seed>>>0;return()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 function terrainY(x,z,track=TRACKS[selectedTrack]){
- const hills=Math.sin(x*.0011+track.seed)*8+Math.cos(z*.00135-track.seed*.3)*9+Math.sin((x+z)*.0021)*4.2+Math.cos((x-z)*.00068)*8;
- const ridge=Math.sin((x*.00055+z*.00082)+track.seed)*Math.cos(z*.0007-x*.00034)*12;
- return hills+ridge;
+ const hills=Math.sin(x*.0011+track.seed)*11+Math.cos(z*.00135-track.seed*.3)*13+Math.sin((x+z)*.0021)*6.2+Math.cos((x-z)*.00068)*12;
+ const ridge=Math.sin((x*.00055+z*.00082)+track.seed)*Math.cos(z*.0007-x*.00034)*17;
+ const folds=Math.sin(x*.0031+track.seed*1.7)*Math.cos(z*.0026-track.seed)*3.4+Math.sin((x-z)*.0042)*2.2;
+ return hills+ridge+folds;
 }
 function makeRoadTexture(){
  const c=document.createElement("canvas");c.width=256;c.height=512;const ctx=c.getContext("2d");
@@ -239,20 +240,20 @@ function makeRoadTexture(){
 }
 function makeRoute(track){
  const seed=track.seed,control=[];
- for(let i=0;i<40;i++){
-  const a=i/40*Math.PI*2;
-  const radiusX=2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2);
-  const radiusZ=2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed);
-  const x=Math.cos(a)*radiusX,z=Math.sin(a)*radiusZ;
+ for(let i=0;i<92;i++){
+  const a=i/92*Math.PI*2;
+  const radiusX=2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2)+190*Math.sin(a*13+seed*.7)+88*Math.sin(a*21-seed);
+  const radiusZ=2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed)+205*Math.cos(a*11-seed*.4)+92*Math.sin(a*19+seed*.3);
+  const x=Math.cos(a)*radiusX+Math.sin(a*5+seed)*70,z=Math.sin(a)*radiusZ+Math.cos(a*4-seed)*65;
   control.push(new THREE.Vector3(x,terrainY(x,z,track)+.24,z));
  }
- let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.48);
- let pts=curve.getSpacedPoints(1800),length=0;
+ let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
+ let pts=curve.getSpacedPoints(3000),length=0;
  for(let i=1;i<pts.length;i++)length+=pts[i].distanceTo(pts[i-1]);
  const scale=track.full/length;
  control.forEach(p=>{p.x*=scale;p.z*=scale;p.y=terrainY(p.x,p.z,track)+.24;});
- curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.48);
- const count=1600,points=curve.getSpacedPoints(count);points.pop();
+ curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
+ const count=3200,points=curve.getSpacedPoints(count);points.pop();
  const samples=points.map((p,i)=>{p.y=terrainY(p.x,p.z,track)+.24;const tan=curve.getTangentAt(i/count).normalize();return{p,tan,progress:i/count};});
  return{curve,samples,length:track.full,control};
 }
@@ -274,7 +275,7 @@ function makeTerrain(track){
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
  const samples=trackData.samples,n=samples.length,positions=[],uv=[],indices=[],normals=[];
- const half=5.7;
+ const half=4.95;
  for(let i=0;i<n;i++){
   const a=samples[i],right=new THREE.Vector3(a.tan.z,0,-a.tan.x).normalize(),p=a.p;
   positions.push(p.x-right.x*half,p.y+.08,p.z-right.z*half,p.x+right.x*half,p.y+.08,p.z+right.z*half);
