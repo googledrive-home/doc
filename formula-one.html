@@ -3713,6 +3713,7 @@ const TARGET_RENDER_INTERVAL_MS=1000/30;
 let performanceSampleStart=0,performanceSampleFrames=0,lastMeasuredRenderFps=30;
 let currentSessionMode="practice",raceStartState="none",raceStartTimer=0,raceStartReleaseAt=4.4,raceStartLit=0,raceStartPenalty=0,raceStartJumpReported=false;
 let formationLapEnabled=true,formationLapActive=false,formationGridSettling=false,formationGridSettleTimer=0,formationLapDistanceRemaining=0,formationLapLastProgress=0,formationLapDistanceTravelled=0,aiUpdateAccumulator=0;
+let aiAggression=.78,aiVariation=.82,aiCarScale=1.07,aiNameTagOpacity=.65,vehicleCollisionsEnabled=true,adaptivePixelScale=1;
 let raceFlag="GREEN",raceFlagTimer=0,raceControlMessageTimer=0,aiFieldRecoveryTimer=0;
 let pitServiceOpen=false,pitServiceActive=false,pitServiceTimer=0,pitServiceSelectedTyre="medium",pitPlanOpen=false,pitServiceCalledThisEntry=false;
 let pitServicePlan={repairMode:"full",frontWingClicks:0,release:"manual"},aiIncidentRadioCooldown=0;
@@ -5912,8 +5913,8 @@ function makeDriverNameTag(driverName,team,number,personality){
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  texture.generateMipmaps=false;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
  texture.anisotropy=Math.min(8,renderer?.capabilities?.getMaxAnisotropy?.()||4);
- const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
- sprite.name="AI team timing tag";sprite.position.set(0,3.18,0);sprite.scale.set(5.05,1.26,1);
+ const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:aiNameTagOpacity,depthTest:false,depthWrite:false,toneMapped:false}));
+ sprite.name="AI team timing tag";sprite.position.set(0,3.32,0);sprite.scale.set(5.35,1.34,1);
  sprite.renderOrder=1000;sprite.frustumCulled=true;return sprite;
 }
 function collectOpponentVehicleParts(root){
@@ -5932,7 +5933,7 @@ function upgradeOpponentVisualsToImportedModel(){
   if(bot.pitPhase)return;
   const previous=bot.root,root=cloneObject3DSafely(importedCarModelRoot);
   root.name="AI · "+bot.driverName;root.visible=true;
-  root.position.copy(previous.position);root.rotation.copy(previous.rotation);root.scale.copy(importedCarModelRoot.scale);
+  root.position.copy(previous.position);root.rotation.copy(previous.rotation);root.scale.copy(importedCarModelRoot.scale);bot.baseScale=root.scale.clone();root.scale.multiplyScalar(aiCarScale);
   const parts=collectOpponentVehicleParts(root);
   applyTeamSpecificLivery(root,bot.teamId,String(bot.number).padStart(2,"0"));
   if(bot.nameTag){previous.remove(bot.nameTag);root.add(bot.nameTag);}
@@ -6180,22 +6181,23 @@ function spawnOpponents(){
    addTeamSideDecals(root,team.id,String(i+1).padStart(2,"0"));
   }
   root.visible=true;root.traverse(object=>{object.visible=true;if(object.isMesh){object.frustumCulled=true;object.castShadow=false;object.receiveShadow=false;}});
+  const baseScale=root.scale.clone();root.scale.multiplyScalar(aiCarScale);
   const nameTag=makeDriverNameTag(driver.name,team,i+1,personality);root.add(nameTag);
-  const progress=gridSlot.progress,lineBias=((i*.6180339887498949)%1-.5)*2.2;
+  const progress=gridSlot.progress,lineBias=((i*.6180339887498949)%1-.5)*(2.8+1.0*aiVariation);
   const linePhase=(i*2.399963229728653)%(Math.PI*2),lineStyle=.82+(i%5)*.08;
-  const pace=base*(personality.pace||1)*(practice?.78:1);
+  const pace=base*(personality.pace||1)*(practice?.78:1)*(1+(((i*.7548776662466927)%1)-.5)*.06*aiVariation);
   const initialGap=((progress-playerProgress+1)%1)*aiLength,tyre=initialOpponentTyre(personality);
   const initialLaps=0;
   const bot={
    root,nameTag,progress,gridProgress:progress,speed:0,baseSpeed:pace,
-   baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,
-    lineAccuracy:difficulty.line,accelLimit:difficulty.accel,maxBrakeDecel:14,penaltyTime:0,speedProfile:null,
+   baseOffset:lineBias,formationOffset,linePhase,lineStyle,offset:formationOffset,targetOffset:formationOffset,baseScale,
+    lineAccuracy:clamp(difficulty.line+(personality.lineCommitment-1)*.28+(((i*.569840290998)%1)-.5)*.22*aiVariation,.62,.99),accelLimit:difficulty.accel,maxBrakeDecel:14,penaltyTime:0,speedProfile:null,
    number:i+1,driverId:driver.id,driverName:driver.name,teamName:team.name,teamId:team.id,personality,
    wheels,frontPivots,wheelSpin:0,laps:initialLaps,tyreCompound:tyre,tyreWear:1,pitStops:0,
    plannedPitLap:raceLaps>=5?Math.max(1,Math.min(raceLaps-2,Math.round(raceLaps*(personality.pitTiming||.5)))):Infinity,
    pendingPit:false,pitPhase:"",pitPathDistance:0,pitStopTimer:0,pitStopDone:false,pitCooldown:0,nextTyreCompound:tyre,
    formationDistance:0,formationLastProgress:progress,formationStartProgress:progress,formationComplete:false,formationParked:false,passCommitment:0,
-   contactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,
+   contactCooldown:0,playerContactCooldown:0,incidentTimer:0,incidentTargetOffset:formationOffset,
    playerAheadOfYou:initialGap>3&&initialGap<aiLength*.5,lastRestrictedOvertakeAt:-Infinity,lastAIOvertakeAt:-Infinity
   };
   bot.speedProfile=buildAISpeedProfile(bot,aiRoute,aiLength);
@@ -6207,6 +6209,12 @@ function spawnOpponents(){
  $("opponentValue").textContent=String(opponents.length).padStart(2,"0");
  const fieldStatus=$("aiFieldStatus");if(fieldStatus)fieldStatus.textContent=opponents.length+" / "+count+" AI ON TRACK";
  renderBroadcastTiming();
+}
+function applyOpponentVisualSettings(){
+ for(const bot of opponents){
+  if(bot.root&&bot.baseScale)bot.root.scale.copy(bot.baseScale).multiplyScalar(aiCarScale);
+  if(bot.nameTag?.material)bot.nameTag.material.opacity=aiNameTagOpacity;
+ }
 }
 
 function buildAISpeedProfile(bot,aiRoute,aiLength){
@@ -6261,7 +6269,7 @@ function updateOpponents(dt){
    const personality=bot.personality||AI_PERSONALITIES[2];
    const speedProfile=bot.speedProfile||(bot.speedProfile=buildAISpeedProfile(bot,aiRoute,aiLength));
    let target=lerp(speedProfile[index],speedProfile[next],f)*(0.90+0.10*clamp(bot.tyreWear??1,0,1));
-   const variation=1+Math.sin(elapsed*.73+bot.linePhase)*(1-personality.consistency)*.008;
+   const variation=1+Math.sin(elapsed*(.58+(bot.lineStyle||1)*.24)+bot.linePhase)*(1-personality.consistency)*(.025+aiVariation*.09);
    const tyrePace=bot.tyreCompound==="soft"?1.008:bot.tyreCompound==="hard"?.994:1;
    target*=variation*tyrePace*(.985+clamp(bot.tyreWear??1,0,1)*.015);
    if(trackWetness>.34&&bot.tyreCompound!=="intermediate"&&bot.tyreCompound!=="wet")target*=.90;
@@ -6293,7 +6301,8 @@ function updateOpponents(dt){
     desiredOffset=bot.offset;
     if(closestAhead&&closestGap<30)target=Math.min(target,Math.max(0,closestAhead.speed+clamp((closestGap-8)*.38,0,2.8)));
    }else if(blocked){
-    const preferred=personality.aggression>.72?(bot.baseOffset>=0?-laneLimit:laneLimit):(bot.offset>=0?-laneLimit*.62:laneLimit*.62);
+    const aggression=clamp((personality.aggression??.6)*(.58+aiAggression*.82),.12,1.25);
+    const preferred=aggression>.72?(bot.baseOffset>=0?-laneLimit:laneLimit):(bot.offset>=0?-laneLimit*.62:laneLimit*.62);
     let clear=true;
     for(const item of traffic){
      if(item.bot===bot)continue;
@@ -6378,7 +6387,7 @@ function updateOpponents(dt){
   // Interpolate between neighbouring route samples for continuous world-space motion.
   const u=((bot.progress%1)+1)%1*n,index=Math.floor(u)%n,f=u-index,next=(index+1)%n;
   const a=aiRoute[index],b=aiRoute[next];
-  bot.offset=lerp(bot.offset,bot.targetOffset,1-Math.exp(-dt*(formation?2.7:2.0)));
+  bot.offset=lerp(bot.offset,bot.targetOffset,1-Math.exp(-dt*(formation?2.5:1.55+aiAggression*.35)));
   const tx=lerp(a.tan.x,b.tan.x,f),tz=lerp(a.tan.z,b.tan.z,f),horizontal=Math.hypot(tx,tz)||1;
   const nx=tx/horizontal,nz=tz/horizontal,rightX=nz,rightZ=-nx;
   const x=lerp(a.p.x,b.p.x,f)+rightX*bot.offset,z=lerp(a.p.z,b.p.z,f)+rightZ*bot.offset;
@@ -6394,6 +6403,47 @@ function updateOpponents(dt){
   for(const wheel of bot.wheels)wheel.rotation.x=bot.wheelSpin;
  }
  resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt);
+ resolvePlayerOpponentCollisions(dt);
+}
+
+function resolvePlayerOpponentCollisions(dt){
+ if(!vehicleCollisionsEnabled||!running||paused||pitLaneDriving||formationLapActive||formationGridSettling||raceStartState==="gridReady"||raceStartState==="countdown"||!car||!carRoot)return;
+ const collisionRadius=2.55,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
+ car.contactCooldown=Math.max(0,(car.contactCooldown||0)-dt);
+ for(const bot of opponents){
+  if(bot.pitPhase||!bot.root?.visible)continue;
+  bot.playerContactCooldown=Math.max(0,(bot.playerContactCooldown||0)-dt);
+  const dx=car.x-bot.root.position.x,dz=car.z-bot.root.position.z,distance=Math.hypot(dx,dz);
+  if(distance>=collisionRadius)continue;
+  const nx=distance>.001?dx/distance:Math.sin(car.yaw),nz=distance>.001?dz/distance:Math.cos(car.yaw);
+  const penetration=collisionRadius-distance;
+  car.x+=nx*penetration*.62;car.z+=nz*penetration*.62;
+  const botYaw=bot.root.rotation.y,botRightX=Math.cos(botYaw),botRightZ=-Math.sin(botYaw);
+  const side=Math.sign((car.x-bot.root.position.x)*botRightX+(car.z-bot.root.position.z)*botRightZ)||1;
+  bot.targetOffset=clamp(bot.targetOffset-side*Math.max(.3,penetration*.48),-laneLimit+.5,laneLimit-.5);
+  bot.offset=lerp(bot.offset,bot.targetOffset,.45);
+  const playerVx=car.u*Math.sin(car.yaw)+car.v*Math.cos(car.yaw),playerVz=car.u*Math.cos(car.yaw)-car.v*Math.sin(car.yaw);
+  const botVx=bot.speed*Math.sin(botYaw),botVz=bot.speed*Math.cos(botYaw);
+  const closing=Math.max(0,-((playerVx-botVx)*nx+(playerVz-botVz)*nz));
+  if(bot.playerContactCooldown<=0&&car.contactCooldown<=0&&closing>1.5){
+   const impulse=clamp(closing*.22,.35,6),nextVx=playerVx+nx*impulse,nextVz=playerVz+nz*impulse;
+   car.u=nextVx*Math.sin(car.yaw)+nextVz*Math.cos(car.yaw);
+   car.v=nextVx*Math.cos(car.yaw)-nextVz*Math.sin(car.yaw);
+   bot.speed=Math.max(0,bot.speed-impulse*.22);
+   bot.playerContactCooldown=.34;car.contactCooldown=.28;
+   if(closing>17){
+    applyCrashDamage(clamp((closing-10)/65,0,.32),side,"side");
+    if(aiIncidentRadioCooldown<=0){
+     showRaceControlMessage("CAR CONTACT · CHECK THE CAR","yellow",3.2);
+     showTeamRadio("Contact with "+bot.driverName+". Check the car and keep it on the road.");
+     aiIncidentRadioCooldown=4.5;
+    }
+   }
+  }
+  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex??null);car.routeIndex=nearestInfo.index;
+  carRoot.position.set(car.x,car.y,car.z);carRoot.updateMatrixWorld(true);
+  break;
+ }
 }
 
 function resolveOpponentIncidents(aiRoute,aiLength,laneLimit,dt){
@@ -7478,7 +7528,7 @@ function positionCarAtStart(fromPitBox=false,fromGrid=false,gridDistance=0){
  carRoot.position.set(gridX,sample.p.y+.045,gridZ);carRoot.rotation.set(-slope,yaw,0);
  car={x:gridX,z:gridZ,y:sample.p.y+.045,yaw,u:0,v:0,vy:0,r:0,steer:0,gear:1,rpm:4500,
   wear:1,tempF:88,tempR:90,engineTemp:92,gearboxTemp:82,brakeTempF:180,brakeTempR:160,
-  wheelHealth:{FL:100,FR:100,RL:100,RR:100},slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,
+  wheelHealth:{FL:100,FR:100,RL:100,RR:100},slip:0,wheelSpin:0,shiftTimer:0,longAccel:0,lateralAccel:0,throttle:0,brake:0,surfaceGrip:1,contactCooldown:0,
   pitch:0,roll:0,pitchRate:0,rollRate:0,airborne:false,barrierCooldown:0,landingCooldown:0,ersEnergy:100,ersDeploy:false,
   drsArmed:false,drsActive:false,brakeBias:brakeBiasSetting,powerMode:powerModeSetting,diffMode:differentialSetting,radioMessage:0,reverse:false,routeIndex:startIndex};
  nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;
