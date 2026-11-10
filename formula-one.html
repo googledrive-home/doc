@@ -762,6 +762,13 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     </div>
    </section>
   </div>
+  <section class="settings-group"><h3>AI field & collisions</h3>
+    <div class="field"><div class="range-head"><label for="aiAggressionRange">AI aggression</label><output id="aiAggressionValue">78%</output></div><input id="aiAggressionRange" type="range" min="0" max="100" step="5" value="78"></div>
+    <div class="field"><div class="range-head"><label for="aiVariationRange">AI pace & line variation</label><output id="aiVariationValue">82%</output></div><input id="aiVariationRange" type="range" min="0" max="100" step="5" value="82"></div>
+    <div class="field"><div class="range-head"><label for="aiCarScaleRange">AI car size</label><output id="aiCarScaleValue">107%</output></div><input id="aiCarScaleRange" type="range" min="100" max="115" step="1" value="107"></div>
+    <div class="field"><div class="range-head"><label for="aiNameTagOpacityRange">Driver tag opacity</label><output id="aiNameTagOpacityValue">65%</output></div><input id="aiNameTagOpacityRange" type="range" min="35" max="100" step="5" value="65"></div>
+    <div class="settings-options compact"><label><input type="checkbox" id="vehicleCollisionsSetting" checked><span><b>Vehicle-to-vehicle collisions</b><small>Cars make contact, lose speed and move away from impacts.</small></span></label></div>
+   </section>
   <section class="settings-group"><h3>Vehicle engineering</h3>
     <div class="two">
      <div class="field"><div class="range-head"><label for="brakeBiasRange">Front brake bias</label><output id="brakeBiasValue">58%</output></div><input id="brakeBiasRange" type="range" min="52" max="68" step="1" value="58"></div>
@@ -8913,7 +8920,8 @@ function returnToMenu(){running=false;paused=false;pitPlanOpen=false;$("pitPlanO
  $("gameModeSelect").value=gameMode;$("trackSelect").disabled=gameMode==="championship";$("opponentCountSelect").disabled=gameMode!=="quick";$("opponentCountSelect").value=gameMode==="quick"?String(quickOpponentSelection):"0";$("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
  startMenuBackdrop();document.querySelector(".pausecard .eyebrow").textContent="Session paused";document.querySelector(".pausecard h2").textContent="PAUSED";document.querySelector(".pausecard p").textContent="Take a break or adjust the conditions before heading back onto the circuit.";}
 function qualityPixelRatio(){
- return graphicsQuality==="low"?.90:graphicsQuality==="high"?1.25:1.0;
+ const qualityBase=graphicsQuality==="low"?.90:graphicsQuality==="high"?1.25:1.0;
+ return qualityBase*adaptivePixelScale;
 }
 function applyRenderResolution(){
  if(!renderer)return;
@@ -8928,7 +8936,8 @@ function monitorPerformance(now){
  if(span<1800)return;
  lastMeasuredRenderFps=performanceSampleFrames*1000/span;
  performanceSampleFrames=0;performanceSampleStart=now;
- // Resolution stays fixed; the scene is optimised through culling and render scheduling.
+ const nextScale=lastMeasuredRenderFps<28.5?Math.max(.58,adaptivePixelScale*.88):lastMeasuredRenderFps>29.6?Math.min(1,adaptivePixelScale+.025):adaptivePixelScale;
+ if(Math.abs(nextScale-adaptivePixelScale)>.004){adaptivePixelScale=nextScale;applyRenderResolution();if(renderer)renderer.shadowMap.enabled=graphicsQuality==="high"&&adaptivePixelScale>.72;}
 }
 function applyGraphicsQuality(){
  if(!renderer)return;
@@ -8977,7 +8986,7 @@ function animate(now){
    if(keys.KeyK)profile.pitch=clamp(profile.pitch+lookStep,-35,35);
    physicsAccumulator=Math.min(physicsAccumulator+frameDt,.12);
    const fixed=1/120;let steps=0;
-   while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);aiUpdateAccumulator+=fixed;if(aiUpdateAccumulator>=1/60){updateOpponents(aiUpdateAccumulator);aiUpdateAccumulator=0;}physicsAccumulator-=fixed;steps++;}
+   while(physicsAccumulator>=fixed&&steps<12){updatePhysics(fixed);aiUpdateAccumulator+=fixed;if(aiUpdateAccumulator>=1/30){updateOpponents(aiUpdateAccumulator);aiUpdateAccumulator=0;}physicsAccumulator-=fixed;steps++;}
    updateRain(frameDt);hudAccumulator+=frameDt;
    if(hudAccumulator>=.08){updateHud(getGrip(),car.surfaceGrip);hudAccumulator=0;}
    audioAccumulator+=frameDt;if(audioAccumulator>=1/30){updateAudio(car.throttle,car.brake,car.slip);audioAccumulator=0;}
@@ -9030,10 +9039,10 @@ const F1_SETTINGS_OLDEST_KEY="apexFormulaRacingSettingsV3";
 const F1_SETTINGS_V2_KEY="apexFormulaRacingSettingsV2";
 const F1_SETTINGS_V1_KEY="apexFormulaRacingSettingsV1";
 function saveGameSettings(){
- try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:9,
+ try{localStorage.setItem(F1_SETTINGS_STORAGE_KEY,JSON.stringify({schemaVersion:10,
   displayOptions,cameraProfiles,showHaloColumn,showSteeringWheel,showDriverHands,cameraShake,lookToApex,
   cameraSensitivity,steeringResponse,steeringWheelLock,brakeStrength,downforceScale,brakeBiasSetting,
-  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality,racingLineEnabled
+  differentialSetting,powerModeSetting,masterVolume,engineVolume,effectsVolume,soundEnabled,graphicsQuality,racingLineEnabled,aiAggression,aiVariation,aiCarScale,aiNameTagOpacity,vehicleCollisionsEnabled
  }));}catch(_){}
 }
 function loadGameSettings(){
@@ -9057,6 +9066,9 @@ function loadGameSettings(){
    masterVolume=num(saved.masterVolume,.85,0,1);engineVolume=num(saved.engineVolume,.95,0,1);effectsVolume=num(saved.effectsVolume,.75,0,1);
    soundEnabled=saved.soundEnabled!==false;
    if(["low","medium","high"].includes(saved.graphicsQuality))graphicsQuality=saved.graphicsQuality;
+   aiAggression=num(saved.aiAggression,.78,0,1);aiVariation=num(saved.aiVariation,.82,0,1);
+   aiCarScale=num(saved.aiCarScale,1.07,1,1.15);aiNameTagOpacity=num(saved.aiNameTagOpacity,.65,.35,1);
+   vehicleCollisionsEnabled=saved.vehicleCollisionsEnabled!==false;
  racingLineEnabled=saved.racingLineEnabled===true;
   }
  }catch(error){console.warn("Some saved settings could not be read; using race defaults.",error);}
@@ -9072,6 +9084,11 @@ function syncSettingsUI(){
  $("showHaloColumnSetting").checked=showHaloColumn;$("showSteeringWheelSetting").checked=showSteeringWheel;
  $("showDriverHandsSetting").checked=showDriverHands;$("cameraShakeSetting").checked=cameraShake>0;
  $("autoLookSetting").checked=lookToApex>0;
+ $("aiAggressionRange").value=Math.round(aiAggression*100);$("aiAggressionValue").textContent=Math.round(aiAggression*100)+"%";
+ $("aiVariationRange").value=Math.round(aiVariation*100);$("aiVariationValue").textContent=Math.round(aiVariation*100)+"%";
+ $("aiCarScaleRange").value=Math.round(aiCarScale*100);$("aiCarScaleValue").textContent=Math.round(aiCarScale*100)+"%";
+ $("aiNameTagOpacityRange").value=Math.round(aiNameTagOpacity*100);$("aiNameTagOpacityValue").textContent=Math.round(aiNameTagOpacity*100)+"%";
+ $("vehicleCollisionsSetting").checked=vehicleCollisionsEnabled;
  $("cameraSensitivityRange").value=cameraSensitivity;$("cameraSensitivityValue").textContent=cameraSensitivity.toFixed(2);
  $("lookApexRange").value=Math.round(lookToApex*100);$("lookApexValue").textContent=Math.round(lookToApex*100)+"%";
  $("masterVolumeRange").value=Math.round(masterVolume*100);$("masterVolumeValue").textContent=Math.round(masterVolume*100)+"%";
@@ -9128,6 +9145,11 @@ function bindSettings(){
  $("cameraShakeSetting").addEventListener("change",e=>{cameraShake=e.target.checked?1:0;});
  $("autoLookSetting").addEventListener("change",e=>{lookToApex=e.target.checked?.25:0;$("lookApexRange").value=Math.round(lookToApex*100);$("lookApexValue").textContent=Math.round(lookToApex*100)+"%";});
  $("racingLineSetting").addEventListener("change",e=>{racingLineEnabled=e.target.checked;updateRacingLineVisibility();saveGameSettings();});
+  $("aiAggressionRange").addEventListener("input",e=>{aiAggression=Number(e.target.value)/100;$("aiAggressionValue").textContent=e.target.value+"%";});
+  $("aiVariationRange").addEventListener("input",e=>{aiVariation=Number(e.target.value)/100;$("aiVariationValue").textContent=e.target.value+"%";});
+  $("aiCarScaleRange").addEventListener("input",e=>{aiCarScale=Number(e.target.value)/100;$("aiCarScaleValue").textContent=e.target.value+"%";applyOpponentVisualSettings();});
+  $("aiNameTagOpacityRange").addEventListener("input",e=>{aiNameTagOpacity=Number(e.target.value)/100;$("aiNameTagOpacityValue").textContent=e.target.value+"%";applyOpponentVisualSettings();});
+  $("vehicleCollisionsSetting").addEventListener("change",e=>{vehicleCollisionsEnabled=e.target.checked;});
  const cameraRanges=[["camXRange","x","camXValue","m"],["camYRange","y","camYValue","m"],["camZRange","z","camZValue","m"],["camPitchRange","pitch","camPitchValue","°"],["camYawRange","yaw","camYawValue","°"],["camFovRange","fov","camFovValue","°"]];
  cameraRanges.forEach(([id,key,out,unit])=>$(id).addEventListener("input",e=>{
   const index=Number($("cameraProfileSelect").value),p=cameraProfiles[index];p[key]=Number(e.target.value);
