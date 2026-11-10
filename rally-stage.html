@@ -44,6 +44,12 @@ select{padding:10px 11px;border:1px solid #ffffff22;border-radius:7px;background
 .secondary{padding:9px 11px;border:1px solid #ffffff25;border-radius:7px;background:#17242c;color:#e5ecee;font-size:9px;font-weight:900;letter-spacing:.08em}
 .action:hover,.secondary:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .note{font-size:8px;line-height:1.5;color:#7f8e94}
+.track-preview{padding:9px;border:1px solid #ffffff19;border-radius:8px;background:linear-gradient(145deg,#101a21,#0a1117);display:grid;gap:7px}
+.track-preview-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#aebbc0;font-size:8px;letter-spacing:.15em;font-weight:950;text-transform:uppercase}
+.track-preview-head b{color:var(--accent2);font-variant-numeric:tabular-nums}
+#trackPreview{display:block;width:100%;height:136px;border:1px solid #ffffff12;border-radius:5px;background:#10191e}
+.track-preview-foot{display:flex;justify-content:space-between;gap:8px;color:#788990;font-size:7px;letter-spacing:.1em;text-transform:uppercase}
+@media(max-width:760px){#trackPreview{height:112px}}
 #hud{position:fixed;inset:0;z-index:5;display:none;pointer-events:none}
 .hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}#pacePanel{position:absolute;top:66px;left:50%;transform:translateX(-50%);width:min(430px,58vw);padding:10px 16px;text-align:center;border-color:#d7b47766;background:#07121be8}#paceMain{font-size:clamp(14px,2.2vw,22px);font-weight:1000;letter-spacing:.16em;color:#f1d6a6}#paceSub{font-size:8px;letter-spacing:.16em;color:#a9b7bb;margin-top:4px;text-transform:uppercase}#conditionsHud{position:absolute;right:12px;top:66px;font-size:8px;letter-spacing:.12em;color:#cfdbdd}
 .hud-panel{padding:10px 12px;border:1px solid #ffffff27;border-radius:8px;background:#081119d9;box-shadow:0 7px 30px #0005;backdrop-filter:blur(9px)}
@@ -110,13 +116,13 @@ input[type=range]{accent-color:#d4aa70}
 </head>
 <body>
 <canvas id="world"></canvas>
-<div id="loading"><div class="load-card"><strong>GRAVEL // RALLY STAGE</strong><p>Building three open-road environments, gravel surfaces and the rally fleet.</p><div class="loadbar"><div id="loadFill"></div></div><div id="loadText"><span id="loadStep">Preparing terrain</span><b id="loadPct">0%</b></div></div></div>
+<div id="loading"><div class="load-card"><strong>GRAVEL // RALLY STAGE</strong><p>Building four rally environments, detailed gravel roads and the rally fleet.</p><div class="loadbar"><div id="loadFill"></div></div><div id="loadText"><span id="loadStep">Preparing terrain</span><b id="loadPct">0%</b></div></div></div>
 <div id="menu">
  <div class="menu-shell">
   <section class="menu-story">
    <div class="kicker">Independent Rally Championship · Stage Control</div>
    <h1>GRAVEL<span>RALLY</span></h1>
-   <p>Four long-distance rally routes, including the corner-heavy Serpent Ridge mountain challenge. Forest roads, high passes and exposed moorland. Choose a car, tune its chassis and find your own rhythm on loose gravel.</p>
+   <p>Four rally routes: forest stages, high mountain passes, exposed moorland and the corner-heavy Serpent Ridge. Prepare your car, read the road and manage the changing gravel conditions.</p>
    <div class="story-meta"><div class="pill"><b>04</b> LONG ROUTES</div><div class="pill"><b>20</b> SELECTABLE STAGES</div><div class="pill"><b>03</b> RALLY CARS</div><div class="pill"><b>AWD</b> GRAVEL MODEL</div></div>
   </section>
   <section class="menu-config">
@@ -125,6 +131,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="car-summary"><div class="car-silhouette" id="carArt"><svg viewBox="0 0 180 80"><path d="M12 52 L27 42 L42 38 L57 20 L117 20 L137 38 L158 43 L169 53 L165 62 L15 62Z" fill="#d74f3f" stroke="#f3d5a5" stroke-width="2"/><path d="M59 24 L112 24 L130 39 L48 39Z" fill="#1a2c34" stroke="#7e9aa0"/><circle cx="45" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/><circle cx="135" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/></svg></div><div><strong id="carName">FALCON R5</strong><small id="carDesc">Short wheelbase · agile rotation · forgiving gravel balance</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div></div></div>
    <div class="field"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Highland Forest · 23.4 km</option><option value="alpine">Alpine Valley · 24.8 km</option><option value="coast">Moorland Coast · 21.6 km</option><option value="serpent">Serpent Ridge · 28.6 km · Corner challenge</option></select></div>
    <div class="field"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
+    <div class="track-preview"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
    <div class="two"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</select></div></div><div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
    <button class="action" id="startBtn">START RALLY STAGE</button>
    <div class="note">Keyboard: W / ↑ throttle · S / ↓ brake · A / D steering · SPACE handbrake · Q / E gears · C camera · R reset · ESC pause.</div>
@@ -454,16 +461,17 @@ function makeLiveryTexture(spec){
  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 function makeWheel(){
- const assembly=new THREE.Group(),tireMat=material(0x14191b,.92),rubberSide=material(0x22282b,.8),rimMat=material(0xb4b9b6,.32,.78),dark=material(0x293238,.48,.72),brakeMat=material(0x6c7377,.36,.65);
- const tyre=new THREE.Mesh(new THREE.CylinderGeometry(.405,.405,.28,28,1),tireMat);tyre.rotation.z=Math.PI/2;tyre.castShadow=true;assembly.add(tyre);
- const outer=new THREE.Mesh(new THREE.TorusGeometry(.31,.035,7,28),rubberSide);outer.rotation.y=Math.PI/2;outer.position.x=.146;assembly.add(outer);
- const rim=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,.295,24),rimMat);rim.rotation.z=Math.PI/2;assembly.add(rim);
- const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.04,20),brakeMat);disc.rotation.z=Math.PI/2;disc.position.x=.18;assembly.add(disc);
- for(let j=0;j<12;j++){const a=j/12*Math.PI*2;addBox(assembly,new THREE.BoxGeometry(.045,.235,.055),dark,[.19,Math.sin(a)*.135,Math.cos(a)*.135],[1,1,1],[a,0,0]);}
-  addBox(assembly,new THREE.BoxGeometry(.075,.18,.14),material(0x9b372d,.52,.2),[.235,.08,0],[1,1,1]);
-  for(let j=0;j<20;j++){const a=j/20*Math.PI*2,treadBlock=new THREE.Mesh(new THREE.BoxGeometry(.20,.035,.07),rubberSide);treadBlock.position.set(0,.405*Math.sin(a),.405*Math.cos(a));treadBlock.rotation.x=a;assembly.add(treadBlock);}
- const hub=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.31,12),dark);hub.rotation.z=Math.PI/2;assembly.add(hub);
- const tread=new THREE.Mesh(new THREE.BoxGeometry(.30,.035,.035),rubberSide);tread.position.set(0,.4,0);assembly.add(tread);
+ const assembly=new THREE.Group(),tireMat=material(0x111619,.94),rubberSide=material(0x252b2d,.84),rimMat=material(0xaeb8b8,.29,.82),dark=material(0x20292e,.43,.76),brakeMat=material(0x687278,.31,.72),caliperMat=material(0x9d3e30,.48,.18);
+ const tyre=new THREE.Mesh(new THREE.CylinderGeometry(.405,.405,.30,48,3),tireMat);tyre.rotation.z=Math.PI/2;tyre.castShadow=true;tyre.receiveShadow=true;assembly.add(tyre);
+ for(const side of [-1,1]){const sidewall=new THREE.Mesh(new THREE.TorusGeometry(.326,.031,8,48),rubberSide);sidewall.rotation.y=Math.PI/2;sidewall.position.x=side*.153;assembly.add(sidewall);const bead=new THREE.Mesh(new THREE.TorusGeometry(.276,.012,6,40),dark);bead.rotation.y=Math.PI/2;bead.position.x=side*.158;assembly.add(bead);}
+ const rim=new THREE.Mesh(new THREE.CylinderGeometry(.262,.262,.304,40),rimMat);rim.rotation.z=Math.PI/2;assembly.add(rim);
+ const disc=new THREE.Mesh(new THREE.CylinderGeometry(.224,.224,.045,36),brakeMat);disc.rotation.z=Math.PI/2;disc.position.x=.174;assembly.add(disc);
+ for(let j=0;j<10;j++){const a=j/10*Math.PI*2;for(const side of [-1,1])addBox(assembly,new THREE.BoxGeometry(.045,.205,.042),dark,[side*.205,Math.sin(a)*.112,Math.cos(a)*.112],[1,1,1],[a,0,0]);const hole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.012,10),dark);hole.rotation.z=Math.PI/2;hole.position.set(.205,Math.sin(a)*.183,Math.cos(a)*.183);assembly.add(hole);}
+ addBox(assembly,new THREE.BoxGeometry(.075,.19,.15),caliperMat,[.205,.05,.17],[1,1,1]);
+ for(let j=0;j<8;j++){const a=j/8*Math.PI*2,bolt=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.018,10),dark);bolt.rotation.z=Math.PI/2;bolt.position.set(.222,Math.sin(a)*.088,Math.cos(a)*.088);assembly.add(bolt);}
+ const hub=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.32,20),dark);hub.rotation.z=Math.PI/2;assembly.add(hub);
+ for(let j=0;j<34;j++){const a=j/34*Math.PI*2,treadBlock=new THREE.Mesh(new THREE.BoxGeometry(.20,.032,.065),rubberSide);treadBlock.position.set((j%2?-.06:.06),.405*Math.sin(a),.405*Math.cos(a));treadBlock.rotation.x=a;treadBlock.rotation.y=(j%2?-.12:.12);assembly.add(treadBlock);}
+ for(let side of [-1,1]){const line=new THREE.Mesh(new THREE.TorusGeometry(.392,.008,5,44),dark);line.rotation.y=Math.PI/2;line.position.x=side*.11;assembly.add(line);}
  return assembly;
 }
 function smoothShellGeometry(spec,stations,segments=32){
@@ -483,16 +491,27 @@ function makeCar(spec){
  const w=spec.width,L=spec.length;
  const chassis=new THREE.Group();root.add(chassis);
  // Continuous smooth shell and rounded greenhouse.
-  const bodyStations=[[-.50,.62,.57,.88],[-.44,.88,.51,1.00],[-.29,.98,.49,1.08],[-.05,1.00,.49,1.09],[.24,.98,.51,1.07],[.43,.88,.55,1.00],[.50,.68,.61,.91]];
-  const shell=new THREE.Mesh(smoothShellGeometry(spec,bodyStations,40),bodyMat);shell.material.side=THREE.DoubleSide;shell.castShadow=true;shell.receiveShadow=true;chassis.add(shell);
-  const canopyStations=[[-.34,.50,1.02,1.17],[-.27,.76,1.02,1.52],[-.10,.80,1.03,1.70],[.09,.73,1.02,1.59],[.19,.53,1.02,1.18]];
+  const bodyStations=[[-.50,.58,.57,.86],[-.47,.76,.53,.94],[-.40,.88,.50,1.00],[-.31,.96,.49,1.06],[-.20,.99,.49,1.09],[-.06,1.00,.49,1.10],[.10,1.00,.50,1.10],[.25,.98,.51,1.08],[.37,.92,.54,1.04],[.45,.82,.57,.99],[.50,.66,.62,.90]];
+  const shell=new THREE.Mesh(smoothShellGeometry(spec,bodyStations,64),bodyMat);shell.material.side=THREE.DoubleSide;shell.castShadow=true;shell.receiveShadow=true;chassis.add(shell);
+  const canopyStations=[[-.36,.46,1.02,1.15],[-.31,.62,1.02,1.37],[-.25,.75,1.03,1.53],[-.14,.80,1.04,1.68],[-.02,.79,1.04,1.70],[.08,.74,1.03,1.63],[.15,.64,1.02,1.48],[.20,.51,1.02,1.20]];
   const canopyMat=new THREE.MeshStandardMaterial({color:0x19303a,roughness:.18,metalness:.32,transparent:true,opacity:.54,side:THREE.DoubleSide,depthWrite:false});
-  const canopy=new THREE.Mesh(smoothShellGeometry(spec,canopyStations,32),canopyMat);canopy.castShadow=false;chassis.add(canopy);
-  const roof=new THREE.Mesh(new THREE.SphereGeometry(1,36,24),bodyMat);roof.scale.set(w*.39,.095,L*.19);roof.position.set(0,1.68,-.10);chassis.add(roof);
+  const canopy=new THREE.Mesh(smoothShellGeometry(spec,canopyStations,56),canopyMat);canopy.castShadow=false;chassis.add(canopy);
+  const roof=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),bodyMat);roof.scale.set(w*.39,.095,L*.19);roof.position.set(0,1.68,-.10);chassis.add(roof);
   // Separate doors, arches, mirrors and side protection.
  for(const side of [-1,1]){
+  for(const wheelZ of [1.0,-1.0]){
+   const archPoints=[];
+   for(let q=0;q<=24;q++){const angle=q/24*Math.PI;archPoints.push(new THREE.Vector3(side*(w*.505),.42+.47*Math.sin(angle),wheelZ+.47*Math.cos(angle)));}
+   const archCurve=new THREE.CatmullRomCurve3(archPoints);
+   const arch=new THREE.Mesh(new THREE.TubeGeometry(archCurve,48,.047,8,false),carbon);arch.castShadow=true;chassis.add(arch);
+   const archLip=new THREE.Mesh(new THREE.TubeGeometry(archCurve,48,.018,6,false),accent);archLip.position.x=side*.012;chassis.add(archLip);
+  }
   addBox(chassis,new THREE.BoxGeometry(.07,.34,1.13),bodyMat,[side*w*.49,.91,-.03],[1,1,1]);
   addBox(chassis,new THREE.BoxGeometry(.19,.13,1.02),carbon,[side*w*.50,.48,-.02],[1,1,1]);
+  addBox(chassis,new THREE.BoxGeometry(.012,.42,.012),carbon,[side*w*.505,.96,-.10],[1,1,1]);
+  addBox(chassis,new THREE.BoxGeometry(.075,.035,.025),metal,[side*w*.535,.99,-.18],[1,1,1]);
+  addBox(chassis,new THREE.BoxGeometry(.025,.26,.04),metal,[side*w*.54,.92,-.48],[1,1,1]);
+  addBox(chassis,new THREE.BoxGeometry(.035,.20,.035),carbon,[side*w*.55,.89,.18],[1,1,1]);
   addBox(chassis,new THREE.BoxGeometry(.17,.12,.25),accent,[side*w*.52,1.37,.30],[1,1,1]);
   for(const z of [.96,-.96]){
    const flare=addBox(chassis,new THREE.BoxGeometry(.22,.18,.88),bodyMat,[side*w*.51,.77,z],[1,1,1]);flare.rotation.z=side*.06;
@@ -504,13 +523,26 @@ function makeCar(spec){
  // Front grille, lights, rally bumper, skid plate and rear exhausts.
  addBox(chassis,new THREE.BoxGeometry(.92,.18,.08),carbon,[0,.70,L*.52],[1,1,1]);
  for(const side of [-1,1]){
-  const head=addBox(chassis,new THREE.BoxGeometry(.42,.11,.09),lamp,[side*.63,.91,L*.51],[1,1,1]);head.rotation.y=side*.1;
+  const lampPod=new THREE.Mesh(new THREE.SphereGeometry(.155,28,20),lamp);lampPod.scale.set(1,.78,.42);lampPod.position.set(side*.63,.91,L*.515);lampPod.castShadow=true;chassis.add(lampPod);
+  const lampBezel=new THREE.Mesh(new THREE.TorusGeometry(.145,.018,8,28),metal);lampBezel.position.set(side*.63,.91,L*.515+.015);chassis.add(lampBezel);
+  const auxiliary=new THREE.Mesh(new THREE.SphereGeometry(.105,24,18),lamp);auxiliary.scale.set(1,.88,.45);auxiliary.position.set(side*.24,.79,L*.535);chassis.add(auxiliary);
+  const head=addBox(chassis,new THREE.BoxGeometry(.42,.045,.055),carbon,[side*.63,.69,L*.50],[1,1,1]);head.rotation.y=side*.1;
   addBox(chassis,new THREE.BoxGeometry(.33,.08,.09),red,[side*.67,.68,-L*.49],[1,1,1]);
   addBox(chassis,new THREE.BoxGeometry(.22,.12,.12),carbon,[side*.42,.47,L*.55],[1,1,1]);
   addCylinder(chassis,.075,.075,.18,metal,[side*.45,.40,-L*.51],[0,0,Math.PI/2]);
   addBox(chassis,new THREE.BoxGeometry(.06,.18,.02),metal,[side*.47,.95,L*.515],[1,1,1],[0,0,0]);
  }
  addBox(chassis,new THREE.BoxGeometry(w*.72,.09,.52),carbon,[0,.36,.13],[1,1,1]);
+ addBox(chassis,new THREE.BoxGeometry(w*.78,.055,.045),metal,[0,.61,L*.525],[1,1,1]);
+ addBox(chassis,new THREE.BoxGeometry(w*.70,.07,.045),metal,[0,.62,-L*.505],[1,1,1]);
+ for(let i=0;i<7;i++)addBox(chassis,new THREE.BoxGeometry(.055,.035,.025),carbon,[-.36+i*.12,.70,L*.525],[1,1,1]);
+ for(let side of [-1,1]){
+  addBox(chassis,new THREE.BoxGeometry(.16,.035,.10),carbon,[side*w*.57,1.40,.53],[1,1,1],[0,side*.24,0]);
+  const mirror=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),metal);mirror.scale.set(1,.65,.42);mirror.position.set(side*w*.62,1.42,.58);chassis.add(mirror);
+ }
+ for(let side of [-1,1])addBox(chassis,new THREE.BoxGeometry(.018,.018,.62),carbon,[side*.25,1.15,.94],[1,1,1],[.12,0,side*.16]);
+ addBox(chassis,new THREE.BoxGeometry(.10,.035,.34),carbon,[0,1.80,-.08],[1,1,1]);
+ addCylinder(chassis,.018,.018,.35,metal,[0,1.95,-.76],[Math.PI/2,0,0]);
  // Hood louvers, roof scoop, antenna and spoiler.
  for(let k=0;k<5;k++)addBox(chassis,new THREE.BoxGeometry(.48,.025,.045),carbon,[0,1.08,.78+k*.13],[1,1,1]);
  addBox(chassis,new THREE.BoxGeometry(.45,.17,.36),carbon,[0,1.82,-.05],[1,1,1]);
@@ -534,6 +566,46 @@ function makeCar(spec){
  addCylinder(steering,.035,.035,.05,metal,[0,0,0],[Math.PI/2,0,0]);
  addBox(cockpit,new THREE.BoxGeometry(.16,.36,.18),carbon,[.34,1.28,.15],[1,1,1]);
  addBox(cockpit,new THREE.BoxGeometry(.56,.15,.23),carbon,[0,1.30,1.0],[1,1,1]);
+ // Seat shells, side bolsters and multi-point harnesses.
+ for(const side of [-1,1]){
+  addBox(cockpit,new THREE.BoxGeometry(.11,.48,.44),carbon,[side*.64,1.28,-.22],[1,1,1],[0,0,side*.12]);
+  addBox(cockpit,new THREE.BoxGeometry(.09,.22,.32),accent,[side*.51,1.37,-.22],[1,1,1]);
+  addBox(cockpit,new THREE.BoxGeometry(.065,.42,.025),red,[side*.39,1.43,-.43],[1,1,1],[0,0,side*.22]);
+  addBox(cockpit,new THREE.BoxGeometry(.065,.42,.025),red,[side*.39,1.43,-.03],[1,1,1],[0,0,-side*.22]);
+  addBox(cockpit,new THREE.BoxGeometry(.08,.10,.035),metal,[side*.39,1.28,-.22],[1,1,1]);
+  addBox(cockpit,new THREE.BoxGeometry(.08,.08,.04),carbon,[side*.39,1.20,-.22],[1,1,1]);
+ }
+ // Dashboard binnacle with individual analogue dials and a central rally display.
+ addBox(cockpit,new THREE.BoxGeometry(1.42,.20,.33),carbon,[0,1.48,.76],[1,1,1],[.08,0,0]);
+ for(let i=0;i<5;i++){
+  const gx=-.53+i*.265,gy=1.56,gz=.94;
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(i===2?.088:.066,i===2?.088:.066,.025,24),material(0x172329,.38,.18));face.rotation.x=Math.PI/2;face.position.set(gx,gy,gz);cockpit.add(face);
+  const bezel=new THREE.Mesh(new THREE.TorusGeometry(i===2?.092:.07,.012,8,28),metal);bezel.position.set(gx,gy,gz+.016);cockpit.add(bezel);
+  for(let tick=0;tick<9;tick++){const ang=-.72+tick*.18;addBox(cockpit,new THREE.BoxGeometry(.006,.018,.007),accent,[gx+Math.sin(ang)*.047,gy+Math.cos(ang)*.047,gz+.031],[1,1,1]);}
+  addBox(cockpit,new THREE.BoxGeometry(.008,i===2?.060:.045,.009),red,[gx+.01,gy+.005,gz+.034],[1,1,1],[0,0,-.3+i*.14]);
+ }
+ addBox(cockpit,new THREE.BoxGeometry(.25,.115,.025),material(0x173c3d,.22,.32),[.02,1.55,.95],[1,1,1]);
+ for(let i=0;i<6;i++)addBox(cockpit,new THREE.BoxGeometry(.045,.028,.018),red,[-.52+i*.19,1.39,.945],[1,1,1]);
+ // Steering spokes, shifter, hydraulic handbrake and pedals.
+ addBox(steering,new THREE.BoxGeometry(.035,.29,.03),metal,[0,0,.012],[1,1,1]);
+ addBox(steering,new THREE.BoxGeometry(.28,.035,.03),metal,[0,0,.012],[1,1,1]);
+ addBox(steering,new THREE.BoxGeometry(.045,.07,.04),accent,[0,0,.03],[1,1,1]);
+ addCylinder(cockpit,.035,.045,.21,metal,[.36,1.32,.40],[.2,0,0]);
+ addBox(cockpit,new THREE.BoxGeometry(.055,.30,.045),carbon,[.36,1.48,.40],[1,1,1],[0,0,-.13]);
+ addBox(cockpit,new THREE.BoxGeometry(.045,.26,.04),red,[.54,1.43,.37],[1,1,1],[0,0,-.1]);
+ addBox(cockpit,new THREE.BoxGeometry(.62,.055,.08),carbon,[0,.75,.92],[1,1,1]);
+ for(let i=0;i<3;i++)addBox(cockpit,new THREE.BoxGeometry(.12,.045,.20),metal,[-.30+i*.30,.68,1.02],[1,1,1],[.22,0,0]);
+ // Roll cage cross-bracing, roof bars, fire extinguisher and door trim.
+ const cageMat=material(0x9aa4a5,.34,.72),cagePaths=[
+  [[-.64,1.78,-.70],[-.62,1.95,-.35],[-.58,1.98,.18],[-.55,1.77,.78]],
+  [[.64,1.78,-.70],[.62,1.95,-.35],[.58,1.98,.18],[.55,1.77,.78]],
+  [[-.62,1.95,-.35],[0,2.00,-.35],[.62,1.95,-.35]],
+  [[-.64,1.78,-.70],[0,1.89,-.70],[.64,1.78,-.70]],
+  [[-.55,1.77,.78],[0,1.94,.78],[.55,1.77,.78]]
+ ];
+ for(const path of cagePaths){const curve=new THREE.CatmullRomCurve3(path.map(p=>new THREE.Vector3(p[0],p[1],p[2])));const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,24,.027,8,false),cageMat);tube.castShadow=true;cockpit.add(tube);}
+ const extinguisher=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.44,18),red);extinguisher.rotation.z=Math.PI/2;extinguisher.position.set(.63,1.02,-.66);cockpit.add(extinguisher);
+ addBox(cockpit,new THREE.BoxGeometry(.12,.045,.035),metal,[.63,1.25,-.66],[1,1,1]);
  // Engine block, turbo/intake, gearbox, centre differential and driveshaft are independent visual assemblies.
  const engine=new THREE.Group();engine.position.set(0,.35,spec.engine==="front"?1.18:.35);root.add(engine);
  addBox(engine,new THREE.BoxGeometry(.86,.44,.84),material(0x39434a,.6,.55),[0,0,0],[1,1,1]);
