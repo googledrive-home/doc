@@ -3731,18 +3731,18 @@ const CHAMPIONSHIP_TRACK_ORDER=["spa","monza","silverstone","monaco","suzuka","l
 const CHAMPIONSHIP_TRACK_LABELS=["SPA","MONZA","SILVERSTONE","MONACO","SUZUKA","LAGUNA SECA"];
 const CHAMPIONSHIP_POINTS=[25,18,15,12,10,8,6,4,2,1];
 const TEAM_LIVERIES=[
-{id:"redbull",name:"ORACLE RED BULL RACING",mark:"RB",primary:"#142c56",accent:"#e7bf45"},
-{id:"ferrari",name:"SCUDERIA FERRARI",mark:"SF",primary:"#dc0000",accent:"#f5eee1"},
-{id:"mercedes",name:"MERCEDES-AMG PETRONAS",mark:"AMG",primary:"#00a19b",accent:"#e7ecec"},
-{id:"mclaren",name:"MCLAREN",mark:"MCL",primary:"#ff8700",accent:"#202020"},
-{id:"astonmartin",name:"ASTON MARTIN",mark:"AM",primary:"#00665e",accent:"#c7a56a"},
-{id:"alpine",name:"BWT ALPINE",mark:"A",primary:"#0878d1",accent:"#f28caf"},
-{id:"williams",name:"WILLIAMS RACING",mark:"W",primary:"#0755c9",accent:"#f0f3f7"},
-{id:"haas",name:"MONEYGRAM HAAS",mark:"H",primary:"#e5e7e8",accent:"#d71920"},
-{id:"racingbulls",name:"RACING BULLS",mark:"VCARB",primary:"#18345f",accent:"#48c3df"},
-{id:"sauber",name:"KICK SAUBER",mark:"KICK",primary:"#009b68",accent:"#f1f1eb"}
+ {id:"redbull",name:"ORACLE RED BULL RACING",mark:"RB",primary:"#142c56",accent:"#e7bf45"},
+ {id:"ferrari",name:"SCUDERIA FERRARI HP",mark:"SF",primary:"#dc0000",accent:"#f5eee1"},
+ {id:"mercedes",name:"MERCEDES-AMG PETRONAS",mark:"AMG",primary:"#00a19b",accent:"#e7ecec"},
+ {id:"mclaren",name:"MCLAREN MASTERCARD",mark:"MCL",primary:"#ff8700",accent:"#202020"},
+ {id:"astonmartin",name:"ASTON MARTIN ARAMCO",mark:"AM",primary:"#00665e",accent:"#c7a56a"},
+ {id:"alpine",name:"BWT ALPINE",mark:"A",primary:"#0878d1",accent:"#f28caf"},
+ {id:"williams",name:"ATLASSIAN WILLIAMS",mark:"W",primary:"#0755c9",accent:"#f0f3f7"},
+ {id:"haas",name:"TGR HAAS F1 TEAM",mark:"H",primary:"#e5e7e8",accent:"#d71920"},
+ {id:"racingbulls",name:"VISA CASH APP RACING BULLS",mark:"VCARB",primary:"#18345f",accent:"#48c3df"},
+ {id:"audi",name:"AUDI REVOLUT F1 TEAM",mark:"AUDI",primary:"#89969a",accent:"#e8ecec"},
+ {id:"cadillac",name:"CADILLAC F1 TEAM",mark:"CAD",primary:"#20272d",accent:"#d8dadd"}
 ];
-const CHAMPIONSHIP_AI_NAMES=["Alex Carter","Noah Hayes","Luca Moretti","Ethan Brooks","Oliver Reed","Mateo Rossi","Leo Martin","Kai Tanaka","Daniel Novak","Theo Laurent","Carlos Silva","Jack Evans","Finn Walker","Hugo Meyer","Arjun Patel","Oscar Lind","Max Turner","Samir Khan","Ben Foster"];
 const AI_PERSONALITIES=[
  {id:"attacker",label:"Attacker",pace:1.018,aggression:.94,consistency:.78,tyreCare:.78,lineCommitment:1.12,pitTiming:.43},
  {id:"smooth",label:"Smooth",pace:.995,aggression:.42,consistency:.97,tyreCare:1.24,lineCommitment:.82,pitTiming:.62},
@@ -3750,21 +3750,50 @@ const AI_PERSONALITIES=[
  {id:"strategist",label:"Strategist",pace:1.012,aggression:.64,consistency:.93,tyreCare:1.10,lineCommitment:1.02,pitTiming:.50},
  {id:"rain-specialist",label:"Rain specialist",pace:1.004,aggression:.72,consistency:.90,tyreCare:1.06,lineCommitment:1.08,pitTiming:.48}
 ];
-const CHAMPIONSHIP_AI_DRIVERS=CHAMPIONSHIP_AI_NAMES.map((name,index)=>{
- const team=TEAM_LIVERIES[index%TEAM_LIVERIES.length],personality=AI_PERSONALITIES[index%AI_PERSONALITIES.length];
- return {id:"ai"+(index+1),name,team:team.name,teamId:team.id,personality};
-});
-const CHAMPIONSHIP_TEAMS=["APEX GP",...TEAM_LIVERIES.map(team=>team.name)];
+const CHAMPIONSHIP_AI_DRIVERS=[
+ {id:"lando-norris",name:"Lando Norris",teamId:"mclaren"},
+ {id:"oscar-piastri",name:"Oscar Piastri",teamId:"mclaren"},
+ {id:"charles-leclerc",name:"Charles Leclerc",teamId:"ferrari"},
+ {id:"lewis-hamilton",name:"Lewis Hamilton",teamId:"ferrari"},
+ {id:"max-verstappen",name:"Max Verstappen",teamId:"redbull"},
+ {id:"isack-hadjar",name:"Isack Hadjar",teamId:"redbull"},
+ {id:"george-russell",name:"George Russell",teamId:"mercedes"},
+ {id:"kimi-antonelli",name:"Kimi Antonelli",teamId:"mercedes"},
+ {id:"fernando-alonso",name:"Fernando Alonso",teamId:"astonmartin"},
+ {id:"lance-stroll",name:"Lance Stroll",teamId:"astonmartin"},
+ {id:"pierre-gasly",name:"Pierre Gasly",teamId:"alpine"},
+ {id:"franco-colapinto",name:"Franco Colapinto",teamId:"alpine"},
+ {id:"alex-albon",name:"Alexander Albon",teamId:"williams"},
+ {id:"carlos-sainz",name:"Carlos Sainz",teamId:"williams"},
+ {id:"esteban-ocon",name:"Esteban Ocon",teamId:"haas"},
+ {id:"oliver-bearman",name:"Oliver Bearman",teamId:"haas"},
+ {id:"liam-lawson",name:"Liam Lawson",teamId:"racingbulls"},
+ {id:"arvid-lindblad",name:"Arvid Lindblad",teamId:"racingbulls"},
+ {id:"nico-hulkenberg",name:"Nico Hülkenberg",teamId:"audi"},
+ {id:"gabriel-bortoleto",name:"Gabriel Bortoleto",teamId:"audi"},
+ {id:"sergio-perez",name:"Sergio Perez",teamId:"cadillac"},
+ {id:"valtteri-bottas",name:"Valtteri Bottas",teamId:"cadillac"}
+].map((driver,index)=>({...driver,team:TEAM_LIVERIES.find(team=>team.id===driver.teamId).name,personality:AI_PERSONALITIES[index%AI_PERSONALITIES.length]}));
+const CHAMPIONSHIP_TEAMS=TEAM_LIVERIES.map(team=>team.name);
 let gameMode="quick",quickTrackSelection="spa",quickOpponentSelection=8,championshipState=null;
+let selectedCareerDriverId="max-verstappen",currentSessionLapTarget=3;
 const TIME_TRIAL_STORAGE_KEY="apexFormulaTimeTrialV1";
 let timeTrialBest=Infinity,timeTrialGhostData=[],ghostRoot=null,ghostEnabled=true,lapRecording=[],lapRecordAccumulator=0;
 let broadcastActive=false,broadcastReturnCamera=0,broadcastShotIndex=0,broadcastShotTimer=0,broadcastCircuitProgress=0,teamRadioTimer=0,tyreWearRadioLap=-1;
 let trafficRadioScanTimer=0,trafficRadioCooldown=0,lastRadioRacePosition=0;
+function getSelectedCareerDriver(){
+ return CHAMPIONSHIP_AI_DRIVERS.find(driver=>driver.id===selectedCareerDriverId)||CHAMPIONSHIP_AI_DRIVERS[4];
+}
+function getQualifyingResult(roundNumber=(championshipState?.round||0)+1){
+ if(!championshipState||!Array.isArray(championshipState.qualifyingResults))return null;
+ const result=championshipState.qualifyingResults.find(item=>item.round===roundNumber);
+ return result&&result.playerDriverId===selectedCareerDriverId?result:null;
+}
 function makeEmptyChampionship(){
- const driverPoints={player:0},teamPoints={};
+ const driverPoints={},teamPoints={};
  CHAMPIONSHIP_AI_DRIVERS.forEach(driver=>driverPoints[driver.id]=0);
  CHAMPIONSHIP_TEAMS.forEach(team=>teamPoints[team]=0);
- return {round:0,driverPoints,teamPoints,results:[]};
+ return {round:0,driverPoints,teamPoints,results:[],qualifyingResults:[]};
 }
 function loadChampionship(){
  const fresh=makeEmptyChampionship();
@@ -3775,7 +3804,8 @@ function loadChampionship(){
   return {...fresh,...saved,round,
    driverPoints:{...fresh.driverPoints,...(saved.driverPoints&&typeof saved.driverPoints==="object"?saved.driverPoints:{})},
    teamPoints:{...fresh.teamPoints,...(saved.teamPoints&&typeof saved.teamPoints==="object"?saved.teamPoints:{})},
-   results:Array.isArray(saved.results)?saved.results.slice(-CHAMPIONSHIP_TRACK_ORDER.length):[]
+   results:Array.isArray(saved.results)?saved.results.slice(-CHAMPIONSHIP_TRACK_ORDER.length):[],
+   qualifyingResults:Array.isArray(saved.qualifyingResults)?saved.qualifyingResults.slice(-CHAMPIONSHIP_TRACK_ORDER.length):[]
   };
  }catch(_){return fresh;}
 }
