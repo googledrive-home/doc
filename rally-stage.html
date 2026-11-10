@@ -45,7 +45,7 @@ select{padding:10px 11px;border:1px solid #ffffff22;border-radius:7px;background
 .action:hover,.secondary:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .note{font-size:8px;line-height:1.5;color:#7f8e94}
 #hud{position:fixed;inset:0;z-index:5;display:none;pointer-events:none}
-.hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}#pacePanel{position:absolute;top:66px;left:50%;transform:translateX(-50%);width:min(430px,58vw);padding:10px 16px;text-align:center;border-color:#d7b47766;background:#07121be8}#paceMain{font-size:clamp(14px,2.2vw,22px);font-weight:1000;letter-spacing:.16em;color:#f1d6a6}#paceSub{font-size:8px;letter-spacing:.16em;color:#a9b7bb;margin-top:4px;text-transform:uppercase}#conditionsHud{position:absolute;right:12px;top:66px;font-size:8px;letter-spacing:.12em;color:#cfdbdd}
 .hud-panel{padding:10px 12px;border:1px solid #ffffff27;border-radius:8px;background:#081119d9;box-shadow:0 7px 30px #0005;backdrop-filter:blur(9px)}
 .hud-brand{font-size:9px;letter-spacing:.2em;font-weight:1000;color:var(--accent2)}
 .hud-brand small{display:block;margin-top:4px;font-size:7px;color:#9ba9ae;letter-spacing:.12em}
@@ -100,7 +100,7 @@ input[type=range]{accent-color:#d4aa70}
 .hidden{display:none!important}
 @media(max-width:760px){
  .menu-shell{grid-template-columns:1fr}.menu-story{padding:18px;border-right:0;border-bottom:1px solid #ffffff13}.menu-story h1{font-size:54px;margin:10px 0}.menu-story p{font-size:10px}.story-meta{margin-top:12px}.menu-config{padding:16px}.two{gap:7px}.segment-list{grid-template-columns:1fr 1fr}
- .hud-top{top:7px;left:7px;right:7px}.hud-panel{padding:7px 9px}.hudbtn{padding:7px 8px;font-size:7px}
+ .hud-top{top:7px;left:7px;right:7px}.hud-panel{padding:7px 9px}.hudbtn{padding:7px 8px;font-size:7px}#pacePanel{top:55px;width:min(340px,68vw);padding:7px 10px}#paceSub{font-size:6px}#conditionsHud{top:55px;right:7px;font-size:6px}
  #speedPanel{left:7px;bottom:7px;min-width:125px}#speed{font-size:38px}
  #stagePanel{right:7px;bottom:7px;width:43vw}.hud-bottom{display:none}
  .settings-grid{grid-template-columns:1fr}.modal-card{padding:13px}
@@ -117,7 +117,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="kicker">Independent Rally Championship · Stage Control</div>
    <h1>GRAVEL<span>RALLY</span></h1>
    <p>Three long-distance rally routes. Forest roads, mountain passes and open moorland. Choose a car, tune its chassis and find your own rhythm on loose gravel.</p>
-   <div class="story-meta"><div class="pill"><b>03</b> LONG ROUTES</div><div class="pill"><b>12</b> SELECTABLE STAGES</div><div class="pill"><b>03</b> RALLY CARS</div><div class="pill"><b>AWD</b> GRAVEL MODEL</div></div>
+   <div class="story-meta"><div class="pill"><b>03</b> LONG ROUTES</div><div class="pill"><b>15</b> SELECTABLE STAGES</div><div class="pill"><b>03</b> RALLY CARS</div><div class="pill"><b>AWD</b> GRAVEL MODEL</div></div>
   </section>
   <section class="menu-config">
    <div class="menu-head"><h2>Rally preparation</h2><button class="secondary" id="openSettings">SETUP & SETTINGS</button></div>
@@ -125,7 +125,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="car-summary"><div class="car-silhouette" id="carArt"><svg viewBox="0 0 180 80"><path d="M12 52 L27 42 L42 38 L57 20 L117 20 L137 38 L158 43 L169 53 L165 62 L15 62Z" fill="#d74f3f" stroke="#f3d5a5" stroke-width="2"/><path d="M59 24 L112 24 L130 39 L48 39Z" fill="#1a2c34" stroke="#7e9aa0"/><circle cx="45" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/><circle cx="135" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/></svg></div><div><strong id="carName">FALCON R5</strong><small id="carDesc">Short wheelbase · agile rotation · forgiving gravel balance</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div></div></div>
    <div class="field"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Highland Forest · 23.4 km</option><option value="alpine">Alpine Valley · 24.8 km</option><option value="coast">Moorland Coast · 21.6 km</option></select></div>
    <div class="field"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
-   <div class="two"><div class="field"><label for="weatherSelect">Stage conditions</label><select id="weatherSelect"><option value="dry">Dry gravel</option><option value="damp">Damp / compact</option><option value="wet">Wet gravel</option></select></div><div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div></div>
+   <div class="two"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</select></div></div><div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
    <button class="action" id="startBtn">START RALLY STAGE</button>
    <div class="note">Keyboard: W / ↑ throttle · S / ↓ brake · A / D steering · SPACE handbrake · Q / E gears · C camera · R reset · ESC pause.</div>
   </section>
@@ -136,7 +136,7 @@ input[type=range]{accent-color:#d4aa70}
   <div class="hud-panel hud-brand">GRAVEL // RALLY STAGE<small id="hudCarName">FALCON R5 · AWD</small></div>
   <div class="hud-actions"><button class="hudbtn" id="cameraBtn">CAMERA · CHASE</button><button class="hudbtn" id="setupBtn">CAR SETUP</button><button class="hudbtn" id="pauseBtn">PAUSE</button><button class="hudbtn" id="garageBtn">GARAGE</button></div>
  </div>
- <div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div></div>
+ <div class="hud-panel" id="pacePanel"><div id="paceMain">STRAIGHT AHEAD</div><div id="paceSub">PACE NOTES · READY</div></div><div id="conditionsHud">MORNING · DRY GRAVEL</div><div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div></div>
  <div class="hud-panel" id="stagePanel"><div class="hud-brand" id="stageName">PINE RIDGE SPRINT</div><div id="stageMeta">HIGHLAND FOREST · 5.2 KM</div><div class="progress-track"><div id="stageProgress"></div></div><div id="stageTime" style="margin-top:7px;font-size:11px;font-variant-numeric:tabular-nums">00:00.000</div></div>
  <div class="hud-bottom"><div class="hud-chip">SURFACE <b id="surfaceText">GRAVEL</b></div><div class="hud-chip">SLIP <b id="slipText">0°</b></div><div class="hud-chip" id="driftReadout">DRIFT · READY</div><div class="hud-chip">HANDBRAKE <b id="handbrakeText">OFF</b></div></div>
 </div>
@@ -189,33 +189,37 @@ import * as THREE from "three";
 
 const $=id=>document.getElementById(id);
 const TRACKS={
- highland:{id:"highland",name:"HIGHLAND FOREST",full:23400,seed:13,grip:.82,trees:1650,town:[.16,.57,.82],color:0x53684c,stages:[
-  {id:"pine",name:"PINE RIDGE SPRINT",km:5.2,start:0,desc:"Fast pine bends · flowing crests"},
-  {id:"river",name:"RIVER BEND",km:6.0,start:.23,desc:"Tight forest road · damp hairpins"},
-  {id:"quarry",name:"OLD QUARRY RUN",km:5.7,start:.49,desc:"Rocky cuts · rough braking zones"},
-  {id:"village",name:"VILLAGE FINALE",km:6.5,start:.75,desc:"Open fields · narrow town lanes"}
+ highland:{id:"highland",name:"HIGHLAND FOREST",full:23400,seed:13,grip:.80,trees:5200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
+  {id:"pine",name:"PINE RIDGE SPRINT",km:5.2,start:0,desc:"Fast crests · linked medium bends"},
+  {id:"river",name:"RIVER BEND",km:6.0,start:.23,desc:"Tight hairpins · narrow forest cuts"},
+  {id:"quarry",name:"OLD QUARRY RUN",km:5.7,start:.49,desc:"Off-camber turns · rough braking zones"},
+  {id:"village",name:"VILLAGE FINALE",km:6.5,start:.75,desc:"Blind entries · fast-to-tight transitions"},
+  {id:"full",name:"FULL HIGHLAND STAGE",km:23.4,start:0,desc:"Complete 23.4 km rally · every corner",full:true}
  ]},
- alpine:{id:"alpine",name:"ALPINE VALLEY",full:24800,seed:27,grip:.86,trees:1050,town:[.29,.66],color:0x65735c,stages:[
-  {id:"pass",name:"NORTH PASS",km:6.0,start:0,desc:"Climbing gravel · blind crests"},
-  {id:"lake",name:"LAKE DESCENT",km:5.5,start:.24,desc:"Fast downhill · off-camber turns"},
-  {id:"tunnel",name:"TUNNEL RIDGE",km:6.8,start:.46,desc:"Mountain edge · rocky tunnels"},
-  {id:"valley",name:"VALLEY FINALE",km:6.5,start:.72,desc:"Long sweepers · village finish"}
+ alpine:{id:"alpine",name:"ALPINE VALLEY",full:24800,seed:27,grip:.84,trees:3600,town:[.18,.39,.62,.82],color:0x65735c,stages:[
+  {id:"pass",name:"NORTH PASS",km:6.0,start:0,desc:"Long climbs · blind crests · tight 2s"},
+  {id:"lake",name:"LAKE DESCENT",km:5.5,start:.24,desc:"Steep descent · off-camber switchbacks"},
+  {id:"tunnel",name:"TUNNEL RIDGE",km:6.8,start:.46,desc:"Narrow ledges · linked hairpins"},
+  {id:"valley",name:"VALLEY FINALE",km:6.5,start:.72,desc:"Fast sweepers · village braking zones"},
+  {id:"full",name:"FULL ALPINE STAGE",km:24.8,start:0,desc:"Complete 24.8 km mountain rally",full:true}
  ]},
- coast:{id:"coast",name:"MOORLAND COAST",full:21600,seed:41,grip:.78,trees:620,town:[.12,.45,.74],color:0x68735a,stages:[
-  {id:"cliff",name:"COASTLINE RUN",km:5.4,start:0,desc:"Exposed cliffs · crosswind bends"},
-  {id:"wind",name:"WIND FARM LOOP",km:5.2,start:.25,desc:"Open moorland · quick transitions"},
-  {id:"farm",name:"FARMLAND CUT",km:5.6,start:.49,desc:"Stone walls · farm access roads"},
-  {id:"sunset",name:"SUNSET FINALE",km:5.4,start:.75,desc:"Rolling fields · fast gravel sweeps"}
+ coast:{id:"coast",name:"MOORLAND COAST",full:21600,seed:41,grip:.76,trees:2300,town:[.12,.32,.56,.78],color:0x68735a,stages:[
+  {id:"cliff",name:"COASTLINE RUN",km:5.4,start:0,desc:"Exposed drops · quick direction changes"},
+  {id:"wind",name:"WIND FARM LOOP",km:5.2,start:.25,desc:"Blind brows · tightening bends"},
+  {id:"farm",name:"FARMLAND CUT",km:5.6,start:.49,desc:"Stone walls · narrow farm lanes"},
+  {id:"sunset",name:"SUNSET FINALE",km:5.4,start:.75,desc:"Long downhill bends · deceptive hairpins"},
+  {id:"full",name:"FULL MOORLAND STAGE",km:21.6,start:0,desc:"Complete 21.6 km coastal rally",full:true}
  ]}
 };
 const CARS={
- falcon:{name:"FALCON R5",description:"Short wheelbase · agile rotation · forgiving gravel balance",hp:340,mass:1280,drive:"AWD",wheelbase:2.55,width:1.88,length:4.15,color:0xd64c3e,accent:0xe4c27c,front:0.56,engine:"front",baseGrip:.94,force:8500,maxSpeed:58,body:"hatch",rpm:7200},
- stratos:{name:"APEX RS",description:"Longer wheelbase · stable at speed · strong mid-corner traction",hp:395,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:1.0,force:9400,maxSpeed:62,body:"sedan",rpm:7600},
- coupe:{name:"GRAVEL GT",description:"Wide stance · rear-biased balance · powerful rotation on loose exits",hp:420,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.98,force:9900,maxSpeed:64,body:"coupe",rpm:7800}
+ falcon:{name:"FALCON R5",description:"Short-wheelbase AWD · sharp turn-in · progressive gravel rotation",hp:340,torque:510,mass:1280,drive:"AWD",wheelbase:2.55,width:1.88,length:4.15,color:0xd64c3e,accent:0xe4c27c,front:0.56,engine:"front",baseGrip:.91,force:6400,maxSpeed:48.8,body:"hatch",rpm:7200},
+ stratos:{name:"APEX RS",description:"Long-wheelbase AWD · planted braking · stable fast-stage balance",hp:395,torque:545,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:.96,force:6700,maxSpeed:49.2,body:"sedan",rpm:7500},
+ coupe:{name:"GRAVEL GT",description:"Wide-track AWD · rear-biased balance · lively exits and rotation",hp:420,torque:570,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.94,force:7000,maxSpeed:48.5,body:"coupe",rpm:7700}
 };
-const DEFAULTS={power:1,finalDrive:4.1,shift:.65,spring:.58,damper:.54,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,autoGear:true,driftAssist:false};
-let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="dry",tyre="gravel";
-let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial;
+const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,autoGear:true,driftAssist:false};
+let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="dry",tyre="gravel",timeOfDay="morning";
+let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial,grassTexture=null;
+let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,paceNoteTimer=0;
 let gameActive=false,paused=false,stageFinished=false,elapsed=0,previousFrame=0,frameSamples=0,fpsStart=0,fps=60,adaptiveScale=1;
 let keys={},carState=null,nearestIndex=0,stageStartIndex=0,stageMeters=0,stageTargetMeters=0,cameraMode=0,qualityTimer=0;
 let wheelAssemblies=[],suspensionParts=[],dustPoints,dustPositions,dustLives=[],dustVelocity=[],dustAccumulator=0;
@@ -225,36 +229,52 @@ const tyreSpecs={gravel:{mu:.83,wear:1,name:"GRAVEL SOFT"},hard:{mu:.76,wear:.64
 function setLoad(p,label){$("loadFill").style.width=p+"%";$("loadPct").textContent=p+"%";$("loadStep").textContent=label;}
 function seeded(seed){let x=seed>>>0;return()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 function terrainY(x,z,track=TRACKS[selectedTrack]){
- const hills=Math.sin(x*.0011+track.seed)*8+Math.cos(z*.00135-track.seed*.3)*9+Math.sin((x+z)*.0021)*4.2+Math.cos((x-z)*.00068)*8;
- const ridge=Math.sin((x*.00055+z*.00082)+track.seed)*Math.cos(z*.0007-x*.00034)*12;
- return hills+ridge;
+ const hills=Math.sin(x*.0011+track.seed)*11+Math.cos(z*.00135-track.seed*.3)*13+Math.sin((x+z)*.0021)*6.2+Math.cos((x-z)*.00068)*12;
+ const ridge=Math.sin((x*.00055+z*.00082)+track.seed)*Math.cos(z*.0007-x*.00034)*17;
+ const folds=Math.sin(x*.0031+track.seed*1.7)*Math.cos(z*.0026-track.seed)*3.4+Math.sin((x-z)*.0042)*2.2;
+ return hills+ridge+folds;
 }
 function makeRoadTexture(){
- const c=document.createElement("canvas");c.width=256;c.height=512;const ctx=c.getContext("2d");
- ctx.fillStyle="#655b4d";ctx.fillRect(0,0,c.width,c.height);
- const rnd=seeded(881);
- for(let i=0;i<18000;i++){const shade=Math.floor(65+rnd()*75);ctx.fillStyle="rgba("+shade+","+Math.floor(shade*.91)+","+Math.floor(shade*.79)+","+(rnd()*.34)+")";const r=.4+rnd()*2.6;ctx.fillRect(rnd()*256,rnd()*512,r,r);}
- ctx.strokeStyle="rgba(30,25,21,.17)";ctx.lineWidth=5;for(let y=0;y<512;y+=72){ctx.beginPath();ctx.moveTo(35,y);ctx.bezierCurveTo(70,y+20,145,y-10,220,y+18);ctx.stroke();}
- const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,24);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
+ const c=document.createElement("canvas");c.width=c.height=1024;const ctx=c.getContext("2d"),rnd=seeded(881);
+ ctx.fillStyle="#696052";ctx.fillRect(0,0,1024,1024);
+ for(let i=0;i<62000;i++){
+  const shade=Math.floor(48+rnd()*105),alpha=.08+rnd()*.31,r=.35+rnd()*3.2;
+  ctx.fillStyle="rgba("+shade+","+Math.floor(shade*.91)+","+Math.floor(shade*.79)+","+alpha+")";
+  const x=rnd()*1024,y=rnd()*1024;ctx.beginPath();ctx.ellipse(x,y,r,r*(.45+rnd()*.9),rnd()*3.14,0,Math.PI*2);ctx.fill();
+ }
+ for(const x of [185,350,670,835]){
+  ctx.strokeStyle="rgba(36,31,26,.16)";ctx.lineWidth=34;ctx.beginPath();ctx.moveTo(x,0);ctx.bezierCurveTo(x+18,340,x-22,650,x+12,1024);ctx.stroke();
+  ctx.strokeStyle="rgba(181,159,129,.10)";ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(x-24,0);ctx.bezierCurveTo(x-6,340,x-46,650,x-12,1024);ctx.stroke();
+ }
+ for(let i=0;i<60;i++){const x=rnd()*1024,y=rnd()*1024,r=8+rnd()*28;ctx.fillStyle="rgba(40,36,31,"+(.04+rnd()*.08)+")";ctx.beginPath();ctx.ellipse(x,y,r,r*.25,rnd(),0,Math.PI*2);ctx.fill();}
+ const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,68);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+}
+function makeGrassTexture(){
+ const c=document.createElement("canvas");c.width=c.height=512;const ctx=c.getContext("2d"),rnd=seeded(9127);
+ ctx.fillStyle="#53634a";ctx.fillRect(0,0,512,512);
+ for(let i=0;i<26000;i++){const v=Math.floor(55+rnd()*70),a=.08+rnd()*.2;ctx.fillStyle="rgba("+Math.floor(v*.82)+","+v+","+Math.floor(v*.72)+","+a+")";const x=rnd()*512,y=rnd()*512;ctx.fillRect(x,y,.8+rnd()*2.2,.8+rnd()*4);}
+ const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(78,78);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
 }
 function makeRoute(track){
  const seed=track.seed,control=[];
- for(let i=0;i<40;i++){
-  const a=i/40*Math.PI*2;
-  const radiusX=2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2);
-  const radiusZ=2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed);
-  const x=Math.cos(a)*radiusX,z=Math.sin(a)*radiusZ;
+ for(let i=0;i<92;i++){
+  const a=i/92*Math.PI*2;
+  const radiusX=2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2)+190*Math.sin(a*13+seed*.7)+88*Math.sin(a*21-seed);
+  const radiusZ=2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed)+205*Math.cos(a*11-seed*.4)+92*Math.sin(a*19+seed*.3);
+  const x=Math.cos(a)*radiusX+Math.sin(a*5+seed)*70,z=Math.sin(a)*radiusZ+Math.cos(a*4-seed)*65;
   control.push(new THREE.Vector3(x,terrainY(x,z,track)+.24,z));
  }
- let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.48);
- let pts=curve.getSpacedPoints(1800),length=0;
+ let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
+ let pts=curve.getSpacedPoints(3000),length=0;
  for(let i=1;i<pts.length;i++)length+=pts[i].distanceTo(pts[i-1]);
  const scale=track.full/length;
  control.forEach(p=>{p.x*=scale;p.z*=scale;p.y=terrainY(p.x,p.z,track)+.24;});
- curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.48);
- const count=1600,points=curve.getSpacedPoints(count);points.pop();
+ curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
+ const count=3200,points=curve.getSpacedPoints(count);points.pop();
  const samples=points.map((p,i)=>{p.y=terrainY(p.x,p.z,track)+.24;const tan=curve.getTangentAt(i/count).normalize();return{p,tan,progress:i/count};});
- return{curve,samples,length:track.full,control};
+ const cellSize=64,spatialIndex=new Map();
+ for(const sample of samples){const cx=Math.floor(sample.p.x/cellSize),cz=Math.floor(sample.p.z/cellSize),key=cx+":"+cz;if(!spatialIndex.has(key))spatialIndex.set(key,[]);spatialIndex.get(key).push(sample.p);}
+ return{curve,samples,length:track.full,control,spatialIndex,spatialCell:cellSize};
 }
 function makeTerrain(track){
  const size=9800,segments=settings.quality==="low"?100:150;
@@ -263,18 +283,19 @@ function makeTerrain(track){
  for(let i=0;i<p.count;i++){
   const x=p.getX(i),z=p.getZ(i),h=terrainY(x,z,track);p.setY(i,h);
   const variation=Math.sin(x*.012+track.seed)*Math.cos(z*.01)*.035;
-  const base=track.id==="coast"?[.36,.42,.30]:track.id==="alpine"?[.32,.40,.29]:[.25,.36,.23];
+  const base=weather==="snow"?[.72,.77,.81]:track.id==="coast"?[.36,.42,.30]:track.id==="alpine"?[.32,.40,.29]:[.25,.36,.23];
   const tint=clamp01(.75+(h+20)/100+variation);
   c.push(base[0]*tint,base[1]*tint,base[2]*tint);
  }
  geo.setAttribute("color",new THREE.Float32BufferAttribute(c,3));geo.computeVertexNormals();
- const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0});
+ grassTexture=grassTexture||makeGrassTexture();
+ const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:1,metalness:0});
  const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=settings.shadows&&settings.quality!=="low";mesh.frustumCulled=true;worldGroup.add(mesh);
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
  const samples=trackData.samples,n=samples.length,positions=[],uv=[],indices=[],normals=[];
- const half=5.7;
+ const half=4.95;
  for(let i=0;i<n;i++){
   const a=samples[i],right=new THREE.Vector3(a.tan.z,0,-a.tan.x).normalize(),p=a.p;
   positions.push(p.x-right.x*half,p.y+.08,p.z-right.z*half,p.x+right.x*half,p.y+.08,p.z+right.z*half);
@@ -282,7 +303,8 @@ function makeRoad(trackData){
  }
  for(let i=0;i<n;i++){const j=(i+1)%n, a=i*2,b=a+1,c=j*2,d=c+1;indices.push(a,c,b,b,c,d);}
  const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
- const road=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:roadTexture,color:0xffffff,roughness:1,metalness:0,side:THREE.DoubleSide}));
+ const roadTint=weather==="snow"?0xc4cdd2:weather==="storm"||weather==="wet"?0x777f82:weather==="damp"?0xb4ab99:0xffffff;
+ const road=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:weather==="snow"?null:roadTexture,color:roadTint,roughness:weather==="wet"||weather==="storm"?.82:1,metalness:weather==="wet"||weather==="storm"?.035:0,side:THREE.DoubleSide}));
  road.receiveShadow=settings.shadows&&settings.quality==="high";road.frustumCulled=true;worldGroup.add(road);
  const edgeMat=new THREE.MeshStandardMaterial({color:0x9c8d74,roughness:1});
  const edgeGeo=new THREE.BufferGeometry(),ep=[],ei=[];
@@ -295,31 +317,48 @@ function makeRoad(trackData){
  const edges=new THREE.Mesh(edgeGeo,edgeMat);edges.material.side=THREE.DoubleSide;worldGroup.add(edges);
 }
 function nearRoad(x,z,margin=28){
- const s=trackData.samples,n=s.length,step=15;
- for(let i=0;i<n;i+=4){const dx=x-s[i].p.x,dz=z-s[i].p.z;if(dx*dx+dz*dz<margin*margin)return true;}
+ const index=trackData?.spatialIndex,cell=trackData?.spatialCell||64;if(!index)return false;
+ const x0=Math.floor((x-margin)/cell),x1=Math.floor((x+margin)/cell),z0=Math.floor((z-margin)/cell),z1=Math.floor((z+margin)/cell),limit=margin*margin;
+ for(let cx=x0;cx<=x1;cx++)for(let cz=z0;cz<=z1;cz++){const bucket=index.get(cx+":"+cz);if(!bucket)continue;for(const p of bucket){const dx=x-p.x,dz=z-p.z;if(dx*dx+dz*dz<limit)return true;}}
  return false;
 }
 function makeForest(track){
- const rnd=seeded(track.seed*319),count=track.trees,treeGeo=new THREE.ConeGeometry(1,1,7),trunkGeo=new THREE.CylinderGeometry(.12,.2,1,6);
+ const rnd=seeded(track.seed*319),count=track.trees,treeGeo=new THREE.ConeGeometry(1,1,9),trunkGeo=new THREE.CylinderGeometry(.12,.2,1,7);
  const trunks=new THREE.InstancedMesh(trunkGeo,new THREE.MeshStandardMaterial({color:0x594738,roughness:1}),count);
- const crowns=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:track.id==="coast"?0x516348:0x36543b,roughness:1}),count);
- const dummy=new THREE.Object3D();let placed=0,tries=0;
+ const foliageA=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x718087:track.id==="coast"?0x52634a:0x34523c,roughness:1}),count);
+ const foliageB=new THREE.InstancedMesh(treeGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x9aa7aa:track.id==="alpine"?0x47684a:0x3e6041,roughness:1}),count);
+ const broadleaf=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({color:0x4b6544,roughness:1}),Math.floor(count*.18));
+ const dummy=new THREE.Object3D();let placed=0,broad=0,tries=0;
  while(placed<count&&tries<count*12){
-  tries++;const x=(rnd()-.5)*9000,z=(rnd()-.5)*9000;
-  if(nearRoad(x,z,track.id==="highland"?34:26))continue;
-  const h=terrainY(x,z,track),scale=.75+rnd()*1.8;
-  dummy.position.set(x,h+1.5*scale,z);dummy.scale.set(.75*scale,3*scale,.75*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
-  dummy.position.set(x,h+3.2*scale,z);dummy.scale.set(2.2*scale,3.7*scale,2.2*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();crowns.setMatrixAt(placed,dummy.matrix);
+  tries++;const x=(rnd()-.5)*9600,z=(rnd()-.5)*9600;
+  if(nearRoad(x,z,track.id==="highland"?25:22))continue;
+  const h=terrainY(x,z,track),scale=.85+rnd()*2.1;
+  dummy.position.set(x,h+1.35*scale,z);dummy.scale.set(.68*scale,2.7*scale,.68*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
+  dummy.position.set(x,h+3.0*scale,z);dummy.scale.set(2.1*scale,3.4*scale,2.1*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();foliageA.setMatrixAt(placed,dummy.matrix);
+  dummy.position.set(x,h+4.25*scale,z);dummy.scale.set(1.45*scale,2.6*scale,1.45*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();foliageB.setMatrixAt(placed,dummy.matrix);
+  if(rnd()<.18&&broad<broadleaf.count){dummy.position.set(x+2,h+1.5*scale,z+1.4);dummy.scale.set(1.45*scale,1.1*scale,1.5*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();broadleaf.setMatrixAt(broad++,dummy.matrix);}
   placed++;
  }
- trunks.count=placed;crowns.count=placed;trunks.instanceMatrix.needsUpdate=true;crowns.instanceMatrix.needsUpdate=true;
- trunks.castShadow=false;crowns.castShadow=false;trunks.receiveShadow=false;crowns.receiveShadow=false;worldGroup.add(trunks,crowns);
- const rockCount=settings.quality==="low"?280:520,rockGeo=new THREE.DodecahedronGeometry(1,0),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount);
- for(let i=0;i<rockCount;i++){
-  const x=(rnd()-.5)*8800,z=(rnd()-.5)*8800;if(nearRoad(x,z,22)){i--;continue;}
-  dummy.position.set(x,terrainY(x,z)+.25,z);const sc=.3+rnd()*2;dummy.scale.set(sc,sc*.5,sc*1.2);dummy.rotation.set(rnd(),rnd()*6,rnd());dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix);
- }
+ trunks.count=placed;foliageA.count=placed;foliageB.count=placed;broadleaf.count=broad;
+ [trunks,foliageA,foliageB,broadleaf].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=false;m.receiveShadow=false;worldGroup.add(m);});
+ const rockCount=settings.quality==="low"?420:settings.quality==="high"?1450:950,rockGeo=new THREE.DodecahedronGeometry(1,1);
+ const rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount);
+ for(let i=0;i<rockCount;i++){const x=(rnd()-.5)*9400,z=(rnd()-.5)*9400;if(nearRoad(x,z,17)){i--;continue;}dummy.position.set(x,terrainY(x,z,track)+.25,z);const sc=.3+rnd()*2.4;dummy.scale.set(sc,sc*.5,sc*1.3);dummy.rotation.set(rnd(),rnd()*6,rnd());dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix);}
  rocks.instanceMatrix.needsUpdate=true;worldGroup.add(rocks);
+}
+function makeGroundCover(track){
+ const rnd=seeded(track.seed*711),count=settings.quality==="low"?1200:settings.quality==="high"?5800:3200,geo=new THREE.ConeGeometry(.42,1.25,5),mat=new THREE.MeshStandardMaterial({color:0x687b50,roughness:1});
+ const grass=new THREE.InstancedMesh(geo,mat,count),dummy=new THREE.Object3D();let placed=0,tries=0;
+ while(placed<count&&tries<count*5){tries++;const x=(rnd()-.5)*9400,z=(rnd()-.5)*9400;if(nearRoad(x,z,8))continue;const scale=.24+rnd()*.8;dummy.position.set(x,terrainY(x,z,track)+scale*.45,z);dummy.scale.set(scale*.55,scale,scale*.55);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();grass.setMatrixAt(placed++,dummy.matrix);}
+ grass.count=placed;grass.instanceMatrix.needsUpdate=true;worldGroup.add(grass);
+}
+function makeRoadsideDetails(track){
+ const samples=trackData.samples,postGeo=new THREE.BoxGeometry(.16,1.2,.16),postMat=new THREE.MeshStandardMaterial({color:0x8f8067,roughness:1}),posts=new THREE.InstancedMesh(postGeo,postMat,Math.floor(samples.length/22)*2),dummy=new THREE.Object3D();let k=0;
+ for(let i=8;i<samples.length;i+=22){const p=samples[i],right=new THREE.Vector3(p.tan.z,0,-p.tan.x).normalize();for(const side of [-1,1]){const x=p.p.x+right.x*side*7.7,z=p.p.z+right.z*side*7.7;dummy.position.set(x,terrainY(x,z,track)+.55,z);dummy.scale.set(1,1,.75);dummy.rotation.y=Math.atan2(p.tan.x,p.tan.z);dummy.updateMatrix();posts.setMatrixAt(k++,dummy.matrix);}}
+ posts.count=k;posts.instanceMatrix.needsUpdate=true;worldGroup.add(posts);
+ const bushCount=settings.quality==="low"?360:900,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x9aa7a8:0x425a3b,roughness:1}),bushCount),rand=seeded(track.seed*913);
+ for(let i=0;i<bushCount;i++){const p=samples[Math.floor(rand()*samples.length)],right=new THREE.Vector3(p.tan.z,0,-p.tan.x).normalize(),side=rand()<.5?-1:1,offset=10+rand()*30,x=p.p.x+right.x*side*offset,z=p.p.z+right.z*side*offset,sc=.5+rand()*1.7;dummy.position.set(x,terrainY(x,z,track)+sc*.55,z);dummy.scale.set(sc*1.2,sc*.7,sc);dummy.rotation.y=rand()*6.28;dummy.updateMatrix();bushes.setMatrixAt(i,dummy.matrix);}
+ bushes.instanceMatrix.needsUpdate=true;worldGroup.add(bushes);
 }
 function makeTown(track){
  const rnd=seeded(track.seed*41),bodies=[],roofs=[],doors=[],windows=[];
@@ -348,8 +387,46 @@ function makeTown(track){
 function makeEnvironment(track){
  scene.background=new THREE.Color(track.id==="alpine"?0x9baeb5:track.id==="coast"?0x9bb2b6:0x9cad9c);
  scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.00010:.000075);
- makeTerrain(track);makeRoad(trackData);makeForest(track);makeTown(track);
- const sun=new THREE.DirectionalLight(0xffe3b3,track.id==="coast"?2.0:2.25);sun.position.set(-300,650,250);sun.castShadow=settings.shadows&&settings.quality==="high";sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-250;sun.shadow.camera.right=250;sun.shadow.camera.top=250;sun.shadow.camera.bottom=-250;scene.add(sun);
+ makeTerrain(track);makeRoad(trackData);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
+ if(!environmentSun){environmentSun=new THREE.DirectionalLight(0xffe3b3,2.1);environmentSun.position.set(-300,650,250);environmentSun.shadow.mapSize.set(1024,1024);environmentSun.shadow.camera.left=-250;environmentSun.shadow.camera.right=250;environmentSun.shadow.camera.top=250;environmentSun.shadow.camera.bottom=-250;scene.add(environmentSun);}
+ environmentSun.castShadow=settings.shadows&&settings.quality==="high";applyAtmosphere();
+}
+function applyAtmosphere(){
+ if(!scene)return;
+ const sky={dawn:0xb4a39b,morning:0x9cad9c,afternoon:0xaab8b7,sunset:0xc18d74,night:0x1a2836};
+ let color=new THREE.Color(sky[timeOfDay]||sky.morning);
+ if(weather==="storm")color.lerp(new THREE.Color(0x687783),.48);else if(weather==="wet")color.lerp(new THREE.Color(0x84969b),.25);else if(weather==="snow")color.lerp(new THREE.Color(0xc6d1d8),.42);
+ if(scene.background?.isColor)scene.background.copy(color);else scene.background=color;
+ if(scene.fog){scene.fog.color.copy(color);const base=settings.quality==="low"?.00010:.000075;scene.fog.density=weather==="storm"?base*1.75:weather==="snow"?base*1.45:weather==="wet"?base*1.22:base;}
+ const tf={dawn:.66,morning:1,afternoon:1.05,sunset:.70,night:.20}[timeOfDay]||1, wf={dry:1,damp:.91,wet:.78,storm:.58,snow:.73}[weather]||1;
+ if(environmentSun){
+  environmentSun.intensity=(selectedTrack==="coast"?2.0:2.2)*tf*wf;
+  environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffc58f:0xffe3b3);
+  const sunPosition={dawn:[-520,210,420],morning:[-300,650,250],afternoon:[280,720,-120],sunset:[620,180,-440],night:[-180,75,120]}[timeOfDay]||[-300,650,250];
+  environmentSun.position.set(sunPosition[0],sunPosition[1],sunPosition[2]);
+ }
+ if(environmentHemi)environmentHemi.intensity=1.55*wf*(.55+.45*tf);
+ if(environmentFill)environmentFill.intensity=2.2*wf*tf*.72;
+ if(environmentAmbient)environmentAmbient.intensity=.25*wf*(.65+.35*tf);
+ if(renderer)renderer.toneMappingExposure=timeOfDay==="night"?.88:timeOfDay==="sunset"?.98:1.14;
+ const wl={dry:"DRY GRAVEL",damp:"DAMP GRAVEL",wet:"WET GRAVEL",storm:"HEAVY RAIN",snow:"SNOW / ICE"}[weather]||"GRAVEL",tl={dawn:"DAWN",morning:"MORNING",afternoon:"AFTERNOON",sunset:"SUNSET",night:"NIGHT"}[timeOfDay]||"MORNING";
+ if($("conditionsHud"))$("conditionsHud").textContent=tl+" · "+wl;makePrecipitation();
+}
+function makePrecipitation(){
+ if(precipitation){scene.remove(precipitation);precipitation.geometry.dispose();precipitation.material.dispose();precipitation=null;precipitationData=null;}
+ if(weather!=="wet"&&weather!=="storm"&&weather!=="snow")return;
+ const snow=weather==="snow",count=weather==="storm"?620:snow?360:420,base=new Float32Array(count*3),positions=new Float32Array(count*(snow?3:6)),cx=carState?.x||0,cz=carState?.z||0;
+ for(let i=0;i<count;i++){base[i*3]=cx+(Math.random()-.5)*58;base[i*3+1]=2+Math.random()*34;base[i*3+2]=cz+(Math.random()-.5)*58;}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
+ const material=snow?new THREE.PointsMaterial({color:0xe5edf2,size:.15,transparent:true,opacity:.78,depthWrite:false}):new THREE.LineBasicMaterial({color:0xc2d0d8,transparent:true,opacity:weather==="storm"?.42:.25,depthWrite:false});
+ precipitation=snow?new THREE.Points(geometry,material):new THREE.LineSegments(geometry,material);precipitation.frustumCulled=false;precipitationData={base,count,snow};scene.add(precipitation);
+}
+function updatePrecipitation(dt){
+ if(!precipitation||!precipitationData||!carState)return;
+ const {base,count,snow}=precipitationData,attribute=precipitation.geometry.attributes.position,array=attribute.array,wind=weather==="storm"?-3.2:-1.4,fall=snow?2.5:weather==="storm"?24:18;
+ for(let i=0;i<count;i++){const j=i*3;base[j]+=wind*dt;base[j+1]-=fall*dt;base[j+2]+=(snow?1.1:.25)*dt;if(base[j+1]<-2){base[j]=(Math.random()-.5)*58;base[j+1]=22+Math.random()*18;base[j+2]=(Math.random()-.5)*58;}
+  const x=carState.x+base[j],y=base[j+1],z=carState.z+base[j+2];if(snow){array[j]=x;array[j+1]=y;array[j+2]=z;}else{const k=i*6;array[k]=x;array[k+1]=y;array[k+2]=z;array[k+3]=x+.22;array[k+4]=y-1.15;array[k+5]=z+.10;}}
+ attribute.needsUpdate=true;
 }
 function material(color,rough=0.65,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});}
 function addBox(parent,geo,mat,pos,scale,rot){const m=new THREE.Mesh(geo,mat);m.position.set(pos[0],pos[1],pos[2]);m.scale.set(scale[0],scale[1],scale[2]);if(rot)m.rotation.set(rot[0],rot[1],rot[2]);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
@@ -368,10 +445,22 @@ function makeWheel(){
  const outer=new THREE.Mesh(new THREE.TorusGeometry(.31,.035,7,28),rubberSide);outer.rotation.y=Math.PI/2;outer.position.x=.146;assembly.add(outer);
  const rim=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,.295,24),rimMat);rim.rotation.z=Math.PI/2;assembly.add(rim);
  const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.04,20),brakeMat);disc.rotation.z=Math.PI/2;disc.position.x=.18;assembly.add(disc);
- for(let j=0;j<8;j++){const a=j/8*Math.PI*2;const spoke=addBox(assembly,new THREE.BoxGeometry(.045,.21,.055),dark,[.19,Math.sin(a)*.12,Math.cos(a)*.12],[1,1,1],[a,0,0]);}
+ for(let j=0;j<12;j++){const a=j/12*Math.PI*2;addBox(assembly,new THREE.BoxGeometry(.045,.235,.055),dark,[.19,Math.sin(a)*.135,Math.cos(a)*.135],[1,1,1],[a,0,0]);}
+  addBox(assembly,new THREE.BoxGeometry(.075,.18,.14),material(0x9b372d,.52,.2),[.235,.08,0],[1,1,1]);
+  for(let j=0;j<20;j++){const a=j/20*Math.PI*2,treadBlock=new THREE.Mesh(new THREE.BoxGeometry(.20,.035,.07),rubberSide);treadBlock.position.set(0,.405*Math.sin(a),.405*Math.cos(a));treadBlock.rotation.x=a;assembly.add(treadBlock);}
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.31,12),dark);hub.rotation.z=Math.PI/2;assembly.add(hub);
  const tread=new THREE.Mesh(new THREE.BoxGeometry(.30,.035,.035),rubberSide);tread.position.set(0,.4,0);assembly.add(tread);
  return assembly;
+}
+function smoothShellGeometry(spec,stations,segments=32){
+ const positions=[],uv=[],indices=[];
+ for(let i=0;i<stations.length;i++){
+  const [zRatio,widthFactor,bottom,top]=stations[i];
+  for(let j=0;j<=segments;j++){const a=j/segments*Math.PI*2,x=Math.cos(a)*(spec.width*.5*widthFactor),y=bottom+(Math.sin(a)*.5+.5)*(top-bottom),z=zRatio*spec.length;positions.push(x,y,z);uv.push(j/segments,(z/spec.length)+.5);}
+ }
+ const ring=segments+1;
+ for(let i=0;i<stations.length-1;i++)for(let j=0;j<segments;j++){const a=i*ring+j,b=a+1,c=a+ring,d=c+1;indices.push(a,c,b,b,c,d);}
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
 }
 function makeCar(spec){
  const root=new THREE.Group();root.name=spec.name;
@@ -379,16 +468,14 @@ function makeCar(spec){
  const accent=material(spec.accent,.38,.25),carbon=material(0x141b1f,.7,.25),glass=new THREE.MeshStandardMaterial({color:0x172a32,roughness:.12,metalness:.32,transparent:true,opacity:.85}),rubber=material(0x14191c,.9),metal=material(0x7d8a8b,.32,.8),red=material(0xc0392b,.35,.2),lamp=new THREE.MeshStandardMaterial({color:0xe1e0cb,emissive:0x777566,emissiveIntensity:.8});
  const w=spec.width,L=spec.length;
  const chassis=new THREE.Group();root.add(chassis);
- addBox(chassis,new THREE.BoxGeometry(w*.91,.37,L*.88),carbon,[0,.55,-.02],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w,.48,L*.58),bodyMat,[0,.83,.19],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.93,.28,L*.30),bodyMat,[0,.82,L*.32],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.91,.27,L*.28),bodyMat,[0,.84,-L*.31],[1,1,1]);
- const roofLength=spec.body==="hatch"?1.42:1.56,roofZ=spec.body==="coupe"?-.18:-.12;
- addBox(chassis,new THREE.BoxGeometry(w*.79,.13,roofLength),bodyMat,[0,1.66,roofZ],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.78,.48,roofLength*.82),glass,[0,1.39,roofZ],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.83,.12,.13),accent,[0,1.71,roofZ+roofLength*.51],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.88,.09,.14),accent,[0,1.71,roofZ-roofLength*.51],[1,1,1]);
- // Separate doors, arches, mirrors and side protection.
+ // Continuous smooth shell and rounded greenhouse.
+  const bodyStations=[[-.50,.62,.57,.88],[-.44,.88,.51,1.00],[-.29,.98,.49,1.08],[-.05,1.00,.49,1.09],[.24,.98,.51,1.07],[.43,.88,.55,1.00],[.50,.68,.61,.91]];
+  const shell=new THREE.Mesh(smoothShellGeometry(spec,bodyStations,40),bodyMat);shell.material.side=THREE.DoubleSide;shell.castShadow=true;shell.receiveShadow=true;chassis.add(shell);
+  const canopyStations=[[-.34,.50,1.02,1.17],[-.27,.76,1.02,1.52],[-.10,.80,1.03,1.70],[.09,.73,1.02,1.59],[.19,.53,1.02,1.18]];
+  const canopyMat=new THREE.MeshStandardMaterial({color:0x19303a,roughness:.18,metalness:.32,transparent:true,opacity:.54,side:THREE.DoubleSide,depthWrite:false});
+  const canopy=new THREE.Mesh(smoothShellGeometry(spec,canopyStations,32),canopyMat);canopy.castShadow=false;chassis.add(canopy);
+  const roof=new THREE.Mesh(new THREE.SphereGeometry(1,36,24),bodyMat);roof.scale.set(w*.39,.095,L*.19);roof.position.set(0,1.68,-.10);chassis.add(roof);
+  // Separate doors, arches, mirrors and side protection.
  for(const side of [-1,1]){
   addBox(chassis,new THREE.BoxGeometry(.07,.34,1.13),bodyMat,[side*w*.49,.91,-.03],[1,1,1]);
   addBox(chassis,new THREE.BoxGeometry(.19,.13,1.02),carbon,[side*w*.50,.48,-.02],[1,1,1]);
@@ -457,19 +544,19 @@ function makeCar(spec){
  });
  root.userData={steering,engine,gearUnit,cockpit,bodyMat,chassis};return root;
 }
-function clearWorld(){if(worldGroup){scene.remove(worldGroup);worldGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();});}worldGroup=new THREE.Group();scene.add(worldGroup);}
+function clearWorld(){if(worldGroup){scene.remove(worldGroup);worldGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(m=>m.dispose());}});}worldGroup=new THREE.Group();scene.add(worldGroup);}
 function buildWorld(){
  const track=TRACKS[selectedTrack];clearWorld();trackData=makeRoute(track);nearestIndex=0;stageStartIndex=0;
- makeEnvironment(track);roadTexture=roadTexture||makeRoadTexture();
+ roadTexture=roadTexture||makeRoadTexture();grassTexture=grassTexture||makeGrassTexture();makeEnvironment(track);
 }
 function buildVehicle(){
- if(vehicleRoot){scene.remove(vehicleRoot);vehicleRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
+ if(vehicleRoot){scene.remove(vehicleRoot);vehicleRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(m=>m.dispose());}});}
  const spec=CARS[selectedCar];carRig=makeCar(spec);vehicleRoot=carRig;scene.add(vehicleRoot);
 }
 function stageSelection(){
  const track=TRACKS[selectedTrack],stage=track.stages[selectedStage];
  stageStartIndex=Math.floor(stage.start*trackData.samples.length)%trackData.samples.length;
- stageTargetMeters=stage.km*1000;stageMeters=0;nearestIndex=stageStartIndex;elapsed=0;stageFinished=false;
+ stageTargetMeters=stage.full?track.full:stage.km*1000;stageMeters=0;nearestIndex=stageStartIndex;elapsed=0;stageFinished=false;
 }
 function placeCar(){
  if(!trackData||!vehicleRoot)return;
@@ -477,7 +564,7 @@ function placeCar(){
  const s=trackData.samples[stageStartIndex],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
  const x=s.p.x+right.x*.1,z=s.p.z+right.z*.1;
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(x,terrainY(x,z)+.305,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
- carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,damage:0,wear:0,travel:0};
+ carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,handbrakeWasOn:false,damage:0,wear:0,travel:0};
  wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);});
 }
 function buildDust(){
@@ -511,9 +598,9 @@ function initScene(){
  renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=settings.shadows&&settings.quality!=="low";renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eafa6);scene.fog=new THREE.FogExp2(0x9eafa6,.00008);
  camera=new THREE.PerspectiveCamera(settings.fov,innerWidth/innerHeight,.1,18000);camera.position.set(0,8,-14);
- scene.add(new THREE.HemisphereLight(0xe1e8df,0x53604b,1.55));
- const fill=new THREE.DirectionalLight(0xffefda,2.2);fill.position.set(-200,500,180);scene.add(fill);
- scene.add(new THREE.AmbientLight(0xffffff,.25));
+ environmentHemi=new THREE.HemisphereLight(0xe1e8df,0x53604b,1.55);scene.add(environmentHemi);
+ environmentFill=new THREE.DirectionalLight(0xffefda,2.2);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
+ environmentAmbient=new THREE.AmbientLight(0xffffff,.25);scene.add(environmentAmbient);
  roadTexture=makeRoadTexture();buildWorld();buildVehicle();buildDust();placeCar();updateCamera(.016,true);
 }
 function updateRenderQuality(){
@@ -546,93 +633,63 @@ function resetCar(){
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+.305,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
 }
 function inputState(){
- const steer=(keys.KeyA||keys.ArrowLeft?-1:0)+(keys.KeyD||keys.ArrowRight?1:0);
+ const steerLeft=!!(keys.KeyA||keys.ArrowLeft),steerRight=!!(keys.KeyD||keys.ArrowRight);
+ const steer=(steerRight?1:0)-(steerLeft?1:0);
  const throttle=(keys.KeyW||keys.ArrowUp)?1:0,brake=(keys.KeyS||keys.ArrowDown)?1:0;
  return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake:!!keys.Space};
 }
 function physicsStep(dt){
- if(!carState||!gameActive||paused||stageFinished)return;
- const s=carState,spec=CARS[selectedCar],input=inputState();
- const speed=Math.abs(s.vLong),speedKmh=speed*3.6;
- const frontTyre=tyreSpecs[tyre],wet=weather==="wet"?.72:weather==="damp"?.88:1;
- const track=TRACKS[selectedTrack],surfaceBase=track.grip*(settings.surface)*wet;
- let lateralGrip=frontTyre.mu*spec.baseGrip*surfaceBase;
- const roadInfo=nearestRoad(s.x,s.z);
- const onRoad=Math.abs(roadInfo.offset)<5.9;
- if(!onRoad)lateralGrip*=Math.abs(roadInfo.offset)<10?.70:.48;
- const steeringLimit=.55*(1/(1+speed*.012))*settings.steer/.7;
- const targetSteer=input.steer*steeringLimit;
- s.steer+= (targetSteer-s.steer)*(1-Math.exp(-dt*7.5));
- const a=spec.wheelbase*.53,b=spec.wheelbase*.47;
- const frontLoad=spec.mass*9.81*(b/spec.wheelbase)-s.longAccel*spec.mass*.62/spec.wheelbase;
- const rearLoad=spec.mass*9.81*(a/spec.wheelbase)+s.longAccel*spec.mass*.62/spec.wheelbase;
- const rideFactor=1+(settings.ride-.22)*.65;
- const fzFront=Math.max(900,frontLoad*rideFactor),fzRear=Math.max(900,rearLoad*rideFactor);
- const rearGripFactor=input.handbrake?.20:1;
- const frontGrip=lateralGrip*(.88+settings.frontDiff*.16);
- const rearGrip=lateralGrip*rearGripFactor*(.88+settings.rearDiff*.18);
- const frontSlip=Math.atan2(s.vLat+a*s.yawRate,Math.max(1.3,Math.abs(s.vLong)))-s.steer;
- const rearSlip=Math.atan2(s.vLat-b*s.yawRate,Math.max(1.3,Math.abs(s.vLong)));
- const cf=spec.mass*7.2*(settings.spring/.58),cr=spec.mass*7.8*(settings.spring/.58);
- const fyFront=clamp(-cf*frontSlip,-frontGrip*fzFront,frontGrip*fzFront);
- const fyRear=clamp(-cr*rearSlip,-rearGrip*fzRear,rearGrip*fzRear);
- const lateralForce=fyFront*Math.cos(s.steer)+fyRear;
- const yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear;
- const inertia=spec.mass*spec.wheelbase*spec.wheelbase*.27;
- const yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.8+.55);
- const latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*.42;
- s.yawRate+=yawAccel*dt;s.latAccel=latAccel;s.vLat+=latAccel*dt;
- // Engine torque, gearbox and final drive are separate from tyre forces.
- if(settings.autoGear){
-  if(s.rpm>spec.rpm*(.82+.15*settings.shift)&&s.gear<6)s.gear++;
-  else if(s.rpm<spec.rpm*(.48-.16*settings.shift)&&s.gear>1)s.gear--;
- }else{
-  if(keys.KeyE){s.gear=Math.min(6,s.gear+1);keys.KeyE=false;}
-  if(keys.KeyQ){s.gear=Math.max(1,s.gear-1);keys.KeyQ=false;}
+  if(!carState||!gameActive||paused||stageFinished)return;
+  const s=carState,spec=CARS[selectedCar],input=inputState(),speed=Math.abs(s.vLong),speedKmh=speed*3.6;
+  const frontTyre=tyreSpecs[tyre],weatherGrip={dry:1,damp:.90,wet:.76,storm:.62,snow:.54}[weather]||1,track=TRACKS[selectedTrack];
+  let lateralGrip=frontTyre.mu*spec.baseGrip*track.grip*settings.surface*weatherGrip;
+  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),onRoad=roadOffset<5.9;
+  if(!onRoad)lateralGrip*=roadOffset<10?.70:clamp(1-(roadOffset-10)*.035,.38,.70);
+  const steeringLimit=.55/(1+speed*.012)*settings.steer/.7,targetSteer=input.steer*steeringLimit;
+  s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*7.5));
+  const handbrakeTarget=input.handbrake&&speed>3?1:0;
+  if(input.handbrake&&!s.handbrakeWasOn&&speed>7&&Math.abs(input.steer)>.12)s.vLat-=input.steer*speed*.16;
+  s.handbrakeWasOn=input.handbrake;
+  s.handbrakeBlend+=(handbrakeTarget-s.handbrakeBlend)*(1-Math.exp(-dt*(handbrakeTarget>s.handbrakeBlend?13:7)));
+  const a=spec.wheelbase*.53,b=spec.wheelbase*.47;
+  const frontLoad=spec.mass*9.81*(b/spec.wheelbase)-s.longAccel*spec.mass*.62/spec.wheelbase,rearLoad=spec.mass*9.81*(a/spec.wheelbase)+s.longAccel*spec.mass*.62/spec.wheelbase;
+  const rideFactor=1+(settings.ride-.22)*.65,fzFront=Math.max(900,frontLoad*rideFactor),fzRear=Math.max(900,rearLoad*rideFactor);
+  const rearGripFactor=1-.68*s.handbrakeBlend,frontGrip=lateralGrip*(.88+settings.frontDiff*.16),rearGrip=lateralGrip*rearGripFactor*(.88+settings.rearDiff*.18);
+  const frontSlip=Math.atan2(s.vLat+a*s.yawRate,Math.max(1.3,Math.abs(s.vLong)))-s.steer,rearSlip=Math.atan2(s.vLat-b*s.yawRate,Math.max(1.3,Math.abs(s.vLong)));
+  const cf=spec.mass*7.2*(settings.spring/.58),cr=spec.mass*7.8*(settings.spring/.58);
+  const fyFront=clamp(-cf*frontSlip,-frontGrip*fzFront,frontGrip*fzFront),fyRear=clamp(-cr*rearSlip,-rearGrip*fzRear,rearGrip*fzRear);
+  const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.27;
+  const yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.8+.55),latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*.42;
+  s.yawRate+=yawAccel*dt;s.latAccel=latAccel;s.vLat+=latAccel*dt;
+  const ratios=[3.32,2.67,2.21,1.86,1.60,1.39,1.22];
+  if(settings.autoGear){if(s.rpm>spec.rpm*(.82+.08*settings.shift)&&s.gear<7)s.gear++;else if(s.rpm<spec.rpm*(.34+.10*settings.shift)&&s.gear>1)s.gear--;}
+  else{if(keys.KeyE){s.gear=Math.min(7,s.gear+1);keys.KeyE=false;}if(keys.KeyQ){s.gear=Math.max(1,s.gear-1);keys.KeyQ=false;}}
+  const ratio=ratios[s.gear-1],wheelRpm=speed/.405*60/(Math.PI*2),coupledRpm=wheelRpm*ratio*settings.finalDrive;
+  const rpm=clamp(Math.max(1200,coupledRpm),1100,spec.rpm);s.rpm+=(rpm-s.rpm)*(1-Math.exp(-dt*5));
+  const rpmNorm=clamp((s.rpm-1200)/(spec.rpm-1200),0,1),torqueAtRpm=spec.torque*(.72+.28*Math.sin(Math.PI*rpmNorm));
+  const torqueForce=torqueAtRpm*ratio*settings.finalDrive*.55/.405,tractionCut=settings.tcs>0?Math.max(.35,1-settings.tcs*Math.max(0,Math.abs(s.vLat)/(speed+2)-.11)*2.5):1;
+  const engineForce=input.throttle*Math.min(spec.force,torqueForce)*settings.power*tractionCut;
+  const frontBrake=spec.mass*9.81*1.05*input.brake*settings.brakeBias,rearBrake=spec.mass*9.81*1.05*input.brake*(1-settings.brakeBias);
+  const handForce=spec.mass*9.81*.42*s.handbrakeBlend,drag=.62*speed*speed+spec.mass*9.81*.020,longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
+  s.longAccel=longAcc;s.vLong+=longAcc*dt;if(input.brake&&settings.abs>0&&Math.abs(s.vLong)<.8)s.vLong=0;
+  s.vLong=clamp(s.vLong,-8,spec.maxSpeed*(.94+settings.power*.06));if(input.handbrake&&s.vLong<0)s.vLong=0;
+  s.yaw+=s.yawRate*dt;
+  const vx=Math.sin(s.yaw)*s.vLong+Math.cos(s.yaw)*s.vLat,vz=Math.cos(s.yaw)*s.vLong-Math.sin(s.yaw)*s.vLat;
+  s.x+=vx*dt;s.z+=vz*dt;s.travel+=Math.hypot(vx,vz)*dt;
+  const ground=terrainY(s.x,s.z,track);vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305,s.z);
+  vehicleRoot.rotation.set(-clamp(s.longAccel*.006,-.08,.08),s.yaw,clamp(-s.latAccel*.008,-.13,.13),"YXZ");
+  const driftAngle=Math.atan2(s.vLat,Math.max(1,Math.abs(s.vLong)))*180/Math.PI;s.slip=driftAngle;
+  wheelAssemblies.forEach((w,i)=>{w.pivot.rotation.y=w.front?s.steer:0;w.wheel.rotation.x-=s.vLong*dt/.405;
+   const wx=s.x+Math.cos(s.yaw)*w.baseX+Math.sin(s.yaw)*w.baseZ,wz=s.z-Math.sin(s.yaw)*w.baseX+Math.cos(s.yaw)*w.baseZ;
+   const springTravel=clamp(terrainY(wx,wz,track)-ground,-.16,.16);w.pivot.position.y=.42+springTravel;
+   const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-springTravel,.7,1.3);susp.spring.scale.y=susp.strut.scale.y;});
+  const drift=Math.abs(driftAngle)>9&&speedKmh>25&&Math.abs(input.steer)>.06;
+  if(drift&&Math.abs(s.vLat)>2){dustAccumulator+=dt;if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(-speed*.5));}}}
+  nearestIndex=roadInfo.index;stageMeters=((nearestIndex-stageStartIndex+trackData.samples.length)%trackData.samples.length)/trackData.samples.length*trackData.length;
+  if(stageMeters>=stageTargetMeters){stageMeters=stageTargetMeters;finishStage();}
+  if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);
+  paceNoteTimer+=dt;if(paceNoteTimer>.16){paceNoteTimer=0;updatePaceNotes();}updateCarHud(input,drift);
  }
- const ratios=[3.18,2.42,1.87,1.51,1.25,1.02],ratio=ratios[s.gear-1]*settings.finalDrive/4.1;
- const rpm=clamp(1200+speed*ratio*24,1100,spec.rpm);s.rpm+=(rpm-s.rpm)*(1-Math.exp(-dt*5));
- const gearPull=clamp(1.12-(s.gear-1)*.105,.52,1.12),power=settings.power;
- const tractionCut=settings.tcs>0?Math.max(.35,1-settings.tcs*Math.max(0,Math.abs(s.vLat)/(speed+2)-.11)*2.5):1;
- const engineForce=input.throttle*spec.force*power*gearPull*tractionCut;
- const frontBrake=spec.mass*9.81*8.7*input.brake*settings.brakeBias;
- const rearBrake=spec.mass*9.81*8.7*input.brake*(1-settings.brakeBias);
- const handForce=input.handbrake?spec.mass*9.81*1.5:0;
- const drag=.48*speed*speed+spec.mass*9.81*.016;
- const longAcc=(engineForce-frontBrake-rearBrake-handForce-drag)/spec.mass;
- s.longAccel=longAcc;s.vLong+=longAcc*dt;
- if(input.brake&&settings.abs>0&&Math.abs(s.vLong)<.8)s.vLong=0;
- s.vLong=clamp(s.vLong,-9,spec.maxSpeed*power);
- if(input.handbrake&&s.vLong<0)s.vLong=0;
- s.yaw+=s.yawRate*dt;
- const steerVelocityX=Math.sin(s.yaw)*s.vLong+Math.cos(s.yaw)*s.vLat;
- const steerVelocityZ=Math.cos(s.yaw)*s.vLong-Math.sin(s.yaw)*s.vLat;
- s.x+=steerVelocityX*dt;s.z+=steerVelocityZ*dt;
- s.travel+=Math.hypot(steerVelocityX,steerVelocityZ)*dt;
- const ground=terrainY(s.x,s.z,track),ride= settings.ride;
- vehicleRoot.userData.chassis.position.y=(ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305,s.z);
- vehicleRoot.rotation.set(-clamp(s.longAccel*.006,-.08,.08),s.yaw,clamp(-s.latAccel*.008,-.13,.13),"YXZ");
- const driftAngle=Math.atan2(s.vLat,Math.max(1,Math.abs(s.vLong)))*180/Math.PI;s.slip=driftAngle;
- wheelAssemblies.forEach((w,i)=>{
-  w.pivot.rotation.y=w.front?s.steer:0;
-  w.wheel.rotation.x-=s.vLong*dt/.405;
-  const wx=s.x+Math.cos(s.yaw)*w.baseX+Math.sin(s.yaw)*w.baseZ;
-  const wz=s.z-Math.sin(s.yaw)*w.baseX+Math.cos(s.yaw)*w.baseZ;
-  const springTravel=clamp(terrainY(wx,wz,track)-ground,-.16,.16);
-  w.pivot.position.y=.42+springTravel;
-  const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-springTravel,.7,1.3);susp.spring.scale.y=susp.strut.scale.y;
- });
- const drift=Math.abs(driftAngle)>9&&speedKmh>25&&Math.abs(input.steer)>.06;
- if(drift&&Math.abs(s.vLat)>2){
-  dustAccumulator+=dt;
-  if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(-speed*.5));}}
- }
- const route=roadInfo;nearestIndex=route.index;
- stageMeters=((nearestIndex-stageStartIndex+trackData.samples.length)%trackData.samples.length)/trackData.samples.length*trackData.length;
- if(stageMeters>=stageTargetMeters){stageMeters=stageTargetMeters;finishStage();}
- if(speedKmh>7&&Math.abs(route.offset)>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);
- updateCarHud(input,drift);
-}
 function nearestRoad(x,z){
  const arr=trackData.samples,n=arr.length;let best=Infinity,bestIndex=nearestIndex,offset=0;
  for(let step=-35;step<=45;step++){
@@ -641,6 +698,15 @@ function nearestRoad(x,z){
  }
  return{index:bestIndex,offset,distance:Math.sqrt(best)};
 }
+function wrapAngle(angle){while(angle>Math.PI)angle-=Math.PI*2;while(angle<-Math.PI)angle+=Math.PI*2;return angle;}
+function updatePaceNotes(){
+ if(!trackData||!trackData.samples.length)return;
+ const arr=trackData.samples,n=arr.length,at=step=>arr[(nearestIndex+step)%n],nearA=at(10),nearB=at(20),farB=at(34),heading=p=>Math.atan2(p.tan.x,p.tan.z);
+ const nearTurn=wrapAngle(heading(nearB)-heading(nearA)),farTurn=wrapAngle(heading(farB)-heading(nearB)),magnitude=Math.abs(nearTurn)*180/Math.PI,grade=farB.p.y-nearA.p.y;
+ const pace=magnitude<7?"FLAT":magnitude<16?"5":magnitude<27?"4":magnitude<40?"3":magnitude<57?"2":"1",direction=nearTurn>0?"RIGHT":"LEFT",tightening=Math.abs(farTurn)>Math.abs(nearTurn)+.16,terrain=grade>7?"UPHILL":grade<-7?"DOWNHILL":"";
+ $("paceMain").textContent=pace==="FLAT"?"STRAIGHT AHEAD":direction+" "+pace;
+ $("paceSub").textContent="PACE NOTE · IN 75 M"+(tightening?" · TIGHTENS":"")+(terrain?" · "+terrain:"");
+}
 function updateCarHud(input,drift){
  if(!$("hud").style.display||!carState)return;
  const speed=Math.round(Math.abs(carState.vLong)*3.6);$("speed").textContent=String(speed).padStart(3,"0");
@@ -648,7 +714,7 @@ function updateCarHud(input,drift){
  $("revFill").style.width=(carState.rpm/CARS[selectedCar].rpm*100)+"%";
  $("slipText").textContent=Math.round(carState.slip)+"°";$("handbrakeText").textContent=input.handbrake?"ON":"OFF";
  $("driftReadout").textContent=drift?"DRIFT · "+Math.abs(Math.round(carState.slip))+"°":"DRIFT · READY";
- $("driftReadout").style.color=drift?"#f2d7a6":"#c5d0d2";$("surfaceText").textContent=Math.abs(nearestRoad(carState.x,carState.z).offset)>6?"LOOSE VERGE":weather==="wet"?"WET GRAVEL":weather==="damp"?"COMPACT":"GRAVEL";
+ $("driftReadout").style.color=drift?"#f2d7a6":"#c5d0d2";$("surfaceText").textContent=Math.abs(nearestRoad(carState.x,carState.z).offset)>6?"LOOSE VERGE":({dry:"GRAVEL",damp:"COMPACT",wet:"WET GRAVEL",storm:"MUD / RAIN",snow:"SNOW / ICE"}[weather]||"GRAVEL");
  $("stageProgress").style.width=(stageMeters/stageTargetMeters*100)+"%";
  $("stageTime").textContent=formatTime(elapsed);$("speedPanel").style.display=settings.hud?"block":"none";$("stagePanel").style.display=settings.hud?"block":"none";
 }
@@ -663,7 +729,7 @@ function finishStage(){
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function setMenuStageOptions(){
  const track=TRACKS[selectedTrack];selectedStage=clamp(selectedStage,0,track.stages.length-1);
- $("stageList").innerHTML=track.stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+s.km.toFixed(1)+' KM · '+s.desc+'</small></button>').join("");
+ $("stageList").innerHTML=track.stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+(s.full?(track.full/1000).toFixed(1):s.km.toFixed(1))+' KM · '+s.desc+'</small></button>').join("");
  document.querySelectorAll(".segment").forEach(b=>b.addEventListener("click",()=>{selectedStage=Number(b.dataset.stage);setMenuStageOptions();}));
 }
 function updateCarCard(){
@@ -680,8 +746,8 @@ function startStage(){
  const spec=CARS[selectedCar];placeCar();gameActive=true;paused=false;stageFinished=false;elapsed=0;if(engineAudio?.state==="suspended")engineAudio.resume();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");
  $("hudCarName").textContent=spec.name+" · AWD";$("stageName").textContent=TRACKS[selectedTrack].stages[selectedStage].name;
- $("stageMeta").textContent=TRACKS[selectedTrack].name+" · "+TRACKS[selectedTrack].stages[selectedStage].km.toFixed(1)+" KM";
- $("cameraBtn").textContent="CAMERA · "+CAMERAS[cameraMode];previousFrame=performance.now();updateCarHud({handbrake:false},false);
+ $("stageMeta").textContent=TRACKS[selectedTrack].name+" · "+(TRACKS[selectedTrack].stages[selectedStage].full?(TRACKS[selectedTrack].full/1000).toFixed(1):TRACKS[selectedTrack].stages[selectedStage].km.toFixed(1))+" KM";
+ $("cameraBtn").textContent="CAMERA · "+CAMERAS[cameraMode];previousFrame=performance.now();applyAtmosphere();updatePaceNotes();updateCarHud({handbrake:false},false);
 }
 function returnGarage(){
  gameActive=false;paused=false;stageFinished=false;$("hud").style.display="none";$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");$("menu").style.display="grid";
@@ -700,7 +766,6 @@ function bindSettings(){
  $("rideRange").addEventListener("input",e=>{settings.ride=Number(e.target.value)/100;});
  $("qualitySelect").addEventListener("change",e=>{settings.quality=e.target.value;updateRenderQuality();});
  [["shadowCheck","shadows"],["dustCheck","dust"],["hudCheck","hud"],["autoGearCheck","autoGear"],["driftAssistCheck","driftAssist"]].forEach(([id,key])=>$(id).addEventListener("change",e=>{settings[key]=e.target.checked;updateRenderQuality();}));
- $("weatherSelect").addEventListener("change",e=>weather=e.target.value);
  $("tyreSelect").addEventListener("change",e=>tyre=e.target.value);
  $("saveSettings").addEventListener("click",()=>{localStorage.setItem("gravel-rally-settings",JSON.stringify(settings));$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}});
  $("resetSetup").addEventListener("click",()=>{settings={...DEFAULTS};syncSettingsUi();updateRenderQuality();});
@@ -722,6 +787,8 @@ function loadSettings(){
 }
 function bindUI(){
  $("trackSelect").addEventListener("change",()=>{selectedTrack=$("trackSelect").value;selectedStage=0;setMenuStageOptions();buildPreviewWorld();});
+ $("weatherSelect").addEventListener("change",()=>{weather=$("weatherSelect").value;buildPreviewWorld();});
+ $("timeSelect").addEventListener("change",()=>{timeOfDay=$("timeSelect").value;applyAtmosphere();});
  $("carSelect").addEventListener("change",()=>{selectedCar=$("carSelect").value;updateCarCard();buildVehicle();placeCar();updateCamera(.016,true);});
  $("startBtn").addEventListener("click",startStage);$("openSettings").addEventListener("click",openSettings);
  $("setupBtn").addEventListener("click",openSettings);$("closeSettings").addEventListener("click",()=>{$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}});
@@ -749,7 +816,7 @@ function animate(now){
  const dt=Math.min(.045,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
  if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateAudio();}
  else if(dustPoints)updateDust(dt*.25);
- updateCamera(dt);
+ updatePrecipitation(dt);updateCamera(dt);
  renderer.render(scene,camera);
  if(now-fpsStart>1000){fps=frameSamples*1000/Math.max(1,now-fpsStart);frameSamples=0;fpsStart=now;$("perf").textContent=Math.round(fps)+" FPS · ADAPTIVE QUALITY";
   if(fps<28&&adaptiveScale>.58){adaptiveScale=Math.max(.58,adaptiveScale*.90);updateRenderQuality();}
