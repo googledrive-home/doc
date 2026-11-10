@@ -251,7 +251,7 @@ let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadText
 let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,paceNoteTimer=0;
 let gameActive=false,paused=false,stageFinished=false,elapsed=0,previousFrame=0,frameSamples=0,fpsStart=0,fps=60,adaptiveScale=1;
 let keys={},carState=null,nearestIndex=0,stageStartIndex=0,stageMeters=0,stageTargetMeters=0,cameraMode=0,qualityTimer=0;
-let wheelAssemblies=[],suspensionParts=[],dustPoints,dustPositions,dustLives=[],dustVelocity=[],dustAccumulator=0;
+let wheelAssemblies=[],suspensionParts=[],dustPoints,dustPositions,dustLives=[],dustVelocity=[],dustAccumulator=0,smokePoints,smokePositions,smokeLives=[],smokeVelocity=[];
 let engineAudio=null,engineOsc=null,engineGain=null,lastGear=1,shiftCooldown=0,shiftHandTimer=0,wiperTimer=0,wiperOn=false,gameMode="quickplay",flowStep=0,cameraYaw=0,cameraPitch=.10,collisionTimer=0;
 let worldColliders=[],collisionGrid=new Map(),collisionCellSize=22,subaruBodyGeometry=null,subaruWheelGeometry=null,subaruAssetsPromise=null,windshieldBuildUp=0;
 const CAMERAS=["CHASE","HOOD","COCKPIT","BUMPER"];
@@ -789,7 +789,8 @@ function syncWindshieldOverlay(){
 function updateWindshield(dt){
  const wet=["wet","storm","snow"].includes(weather),automatic=settings.wipers&&wet,active=wiperOn||automatic;
  if(wet)windshieldBuildUp=clamp(windshieldBuildUp+dt*(weather==="storm"?.105:.065),0,1);
- else windshieldBuildUp=Math.max(0,windshieldBuildUp-dt*.008);
+ else if(settings.dust&&carState&&Math.abs(carState.vLong)>12){const edge=Math.abs(nearestRoad(carState.x,carState.z).offset)>(trackData.halfWidth||3.65);windshieldBuildUp=clamp(windshieldBuildUp+dt*(edge?.024:.008),0,1);}
+ else windshieldBuildUp=Math.max(0,windshieldBuildUp-dt*.004);
  if(active)windshieldBuildUp=Math.max(0,windshieldBuildUp-dt*(weather==="storm"?.72:.95));
  wiperTimer+=dt;
  if(vehicleRoot?.userData?.wipers)vehicleRoot.userData.wipers.forEach((w,i)=>{w.rotation.x=0;w.rotation.y=0;w.rotation.z=active?Math.sin(wiperTimer*5.5+i*.18)*.34:0;});
@@ -820,7 +821,7 @@ function applySubaruAssets(){
  if(!vehicleRoot)return;const spec=CARS[selectedCar],chassis=vehicleRoot.userData.chassis;
  if(subaruBodyGeometry&&!vehicleRoot.userData.subaruBody){
   const body=new THREE.Mesh(subaruBodyGeometry.clone(),new THREE.MeshStandardMaterial({color:0xffffff,map:makeLiveryTexture(spec),roughness:.34,metalness:.24,side:THREE.DoubleSide}));
-  body.position.y=.93;body.castShadow=true;body.receiveShadow=true;chassis.add(body);vehicleRoot.userData.shell.visible=false;vehicleRoot.userData.canopy.visible=false;vehicleRoot.userData.subaruBody=body;
+  body.position.y=.93;body.castShadow=true;body.receiveShadow=true;chassis.add(body);vehicleRoot.userData.shell.visible=false;vehicleRoot.userData.canopy.visible=true;vehicleRoot.userData.subaruBody=body;
  }
  if(subaruWheelGeometry&&!vehicleRoot.userData.subaruWheels){
   const wheelMat=material(0x9aa5a5,.32,.78);
@@ -863,9 +864,15 @@ function placeCar(){
 }
 function buildDust(){
  const count=210;dustPositions=new Float32Array(count*3);dustLives=Array(count).fill(0);dustVelocity=Array.from({length:count},()=>new THREE.Vector3());
+ for(let i=0;i<count;i++)dustPositions[i*3+1]=-10000;
  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(dustPositions,3));
  dustPoints=new THREE.Points(g,new THREE.PointsMaterial({color:0x998e7c,size:1.9,transparent:true,opacity:.38,depthWrite:false,sizeAttenuation:true}));
  dustPoints.frustumCulled=false;scene.add(dustPoints);
+ const smokeCount=56;smokePositions=new Float32Array(smokeCount*3);smokeLives=Array(smokeCount).fill(0);smokeVelocity=Array.from({length:smokeCount},()=>new THREE.Vector3());
+ for(let i=0;i<smokeCount;i++)smokePositions[i*3+1]=-10000;
+ const smokeGeometry=new THREE.BufferGeometry();smokeGeometry.setAttribute("position",new THREE.BufferAttribute(smokePositions,3));
+ smokePoints=new THREE.Points(smokeGeometry,new THREE.PointsMaterial({color:0x464b4b,size:3.3,transparent:true,opacity:.31,depthWrite:false,sizeAttenuation:true}));
+ smokePoints.frustumCulled=false;smokePoints.visible=false;scene.add(smokePoints);
 }
 function spawnDust(x,y,z,velocity){
  if(!settings.dust||!dustPoints)return;
@@ -877,12 +884,26 @@ function spawnDust(x,y,z,velocity){
 function updateDust(dt){
  if(!dustPoints)return;
  for(let i=0;i<dustLives.length;i++){
-  if(dustLives[i]>0){
-   dustLives[i]-=dt;dustPositions[i*3]+=dustVelocity[i].x*dt;dustPositions[i*3+1]+=dustVelocity[i].y*dt;dustPositions[i*3+2]+=dustVelocity[i].z*dt;
+  if(dustLives[i]>0){dustLives[i]-=dt;if(dustLives[i]<=0){dustPositions[i*3+1]=-10000;continue;}
+   dustPositions[i*3]+=dustVelocity[i].x*dt;dustPositions[i*3+1]+=dustVelocity[i].y*dt;dustPositions[i*3+2]+=dustVelocity[i].z*dt;
    dustVelocity[i].multiplyScalar(Math.max(0,1-dt*.9));
   }
  }
  dustPoints.geometry.attributes.position.needsUpdate=true;dustPoints.visible=settings.dust;
+}
+function spawnSmoke(x,y,z){
+ if(!smokePoints)return;let i=smokeLives.findIndex(v=>v<=0);if(i<0)i=Math.floor(Math.random()*smokeLives.length);
+ smokeLives[i]=1.1+Math.random()*.8;smokePositions[i*3]=x+(Math.random()-.5)*.15;smokePositions[i*3+1]=y;smokePositions[i*3+2]=z+(Math.random()-.5)*.15;
+ smokeVelocity[i].set((Math.random()-.5)*.55,.75+Math.random()*.55,-Math.abs(carState?.vLong||0)*.14);
+}
+function updateSmoke(dt){
+ if(!smokePoints)return;let active=false;
+ for(let i=0;i<smokeLives.length;i++)if(smokeLives[i]>0){
+  smokeLives[i]-=dt;if(smokeLives[i]<=0){smokePositions[i*3+1]=-10000;continue;}active=true;
+  smokePositions[i*3]+=smokeVelocity[i].x*dt;smokePositions[i*3+1]+=smokeVelocity[i].y*dt;smokePositions[i*3+2]+=smokeVelocity[i].z*dt;
+  smokeVelocity[i].multiplyScalar(Math.max(0,1-dt*.45));
+ }
+ smokePoints.geometry.attributes.position.needsUpdate=true;smokePoints.visible=active;
 }
 function initScene(){
  const canvas=$("world");
@@ -988,8 +1009,8 @@ function physicsStep(dt){
    const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-w.travel*.9,.72,1.25);susp.spring.scale.y=susp.strut.scale.y;});
   resolveWorldCollision(s,dt);animateCockpitControls(input,dt);updateWindshield(dt);
   const drift=Math.abs(driftAngle)>9&&speedKmh>25&&Math.abs(input.steer)>.06;
-  if((drift&&Math.abs(s.vLat)>2)||(!onRoad&&speed>5)){dustAccumulator+=dt;if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(-speed*.38));}}}
-  if(s.damage>.12&&speed>4&&Math.random()<dt*(1+s.damage*9)){const p=vehicleRoot.localToWorld(new THREE.Vector3(.42,.38,-2.05));spawnDust(p.x,p.y,p.z,new THREE.Vector3((Math.random()-.5)*.4,.9,-speed*.18));}
+  if((drift&&Math.abs(s.vLat)>2)||(!onRoad&&speed>5)||(speedKmh>18&&input.throttle>.22)){dustAccumulator+=dt;if(dustAccumulator>.025){dustAccumulator=0;const forward=new THREE.Vector3(Math.sin(s.yaw),0,Math.cos(s.yaw));for(const side of [-1,1]){const p=vehicleRoot.localToWorld(new THREE.Vector3(side*.92,.12,-1.6));spawnDust(p.x,p.y,p.z,forward.clone().multiplyScalar(speed*.38));}}}
+  if(s.damage>.12&&speed>4&&Math.random()<dt*(1+s.damage*9)){const p=vehicleRoot.localToWorld(new THREE.Vector3(.42,.38,-2.05));spawnSmoke(p.x,p.y,p.z);}
   nearestIndex=roadInfo.index;stageMeters=((nearestIndex-stageStartIndex+trackData.samples.length)%trackData.samples.length)/trackData.samples.length*trackData.length;
   if(stageMeters>=stageTargetMeters){stageMeters=stageTargetMeters;finishStage();}
   if(speedKmh>7&&roadOffset>8)s.damage=clamp(s.damage+dt*.0007*speedKmh,0,.35);if(vehicleRoot?.userData?.exhaustGlow){
@@ -1174,8 +1195,8 @@ function animateGearControls(){
 function animate(now){
  requestAnimationFrame(animate);
  const dt=Math.min(.045,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
- if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateAudio();}
- else if(dustPoints)updateDust(dt*.25);
+ if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateSmoke(dt);updateAudio();}
+ else{if(dustPoints)updateDust(dt*.25);if(smokePoints)updateSmoke(dt*.25);}
  updatePrecipitation(dt);updateCamera(dt);
  renderer.render(scene,camera);
  if(now-fpsStart>1000){fps=frameSamples*1000/Math.max(1,now-fpsStart);frameSamples=0;fpsStart=now;$("perf").textContent=Math.round(fps)+" FPS · ADAPTIVE QUALITY";
