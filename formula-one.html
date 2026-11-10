@@ -504,7 +504,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     </div>
     <div class="menuright">
       <div class="menu-section-head"><div><div class="eyebrow">RACE WEEKEND</div><h2>Grid configuration</h2></div><button class="secondary" id="menuSettingsBtn">⚙ SETTINGS</button></div>
-      <div class="field"><label for="gameModeSelect">Game mode</label><select id="gameModeSelect"><option value="quick" selected>Quick race · single event</option><option value="timeTrial">Time Trial · personal best ghost</option><option value="championship">World championship · 6 rounds</option></select></div>
+      <div class="field"><label for="gameModeSelect">Game mode</label><select id="gameModeSelect"><option value="quick" selected>Quick race · single event</option><option value="timeTrial">Time Trial · personal best ghost</option><option value="championship">Career mode · 2026 grid · 6 rounds</option></select></div>
+       <div class="field"><label for="careerDriverSelect">Career driver · 2026 grid</label><select id="careerDriverSelect"></select></div>
       <div class="two"><div class="field"><label for="trackSelect">Select Grand Prix circuit</label><select id="trackSelect"><option value="spa">Spa-Francorchamps · Belgium</option><option value="monza">Autodromo Nazionale Monza · Italy</option><option value="laguna">WeatherTech Raceway Laguna Seca · USA</option><option value="silverstone">Silverstone GP · United Kingdom</option><option value="monaco">Monaco GP · Monaco</option><option value="suzuka">Suzuka · Japan</option></select></div><div class="field"><label>Season standings</label><button class="secondary" id="championshipOpenBtn" type="button">VIEW CHAMPIONSHIP</button></div></div>
       <div class="field"><label>Choose your team livery</label><div class="team-livery-grid" id="liveryPalette">
 <button class="team-swatch active" data-team-id="redbull" style="--p:#142c56;--a:#e7bf45">Red Bull</button>
@@ -516,7 +517,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <button class="team-swatch" data-team-id="williams" style="--p:#0755c9;--a:#f0f3f7">Williams</button>
 <button class="team-swatch" data-team-id="haas" style="--p:#e5e7e8;--a:#d71920">Haas</button>
 <button class="team-swatch" data-team-id="racingbulls" style="--p:#18345f;--a:#48c3df">Racing Bulls</button>
-<button class="team-swatch" data-team-id="sauber" style="--p:#009b68;--a:#f1f1eb">Sauber</button>
+<button class="team-swatch" data-team-id="audi" style="--p:#89969a;--a:#e8ecec">Audi</button>
+ <button class="team-swatch" data-team-id="cadillac" style="--p:#20272d;--a:#d8dadd">Cadillac</button>
 </div><small class="team-livery-note">Team-inspired liveries; no official logos.</small></div>
       <div class="two">
         <div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="soft">Soft</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="intermediate">Intermediate</option><option value="wet">Full wet</option></select></div>
@@ -524,7 +526,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       </div>
       <div class="two">
         <div class="field"><label for="transmissionSelect">Transmission</label><select id="transmissionSelect"><option value="automatic" selected>Automatic · 8-speed</option><option value="sequential">Sequential paddles</option><option value="manual">Manual + clutch</option></select></div>
-        <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="4">4 cars</option><option value="8" selected>8 cars</option><option value="12">12 cars</option><option value="16">16 cars</option><option value="19">19 cars · full grid</option></select></div>
+        <div class="field"><label for="opponentCountSelect">AI opponents</label><select id="opponentCountSelect"><option value="0">Solo practice</option><option value="4">4 cars</option><option value="8" selected>8 cars</option><option value="12">12 cars</option><option value="16">16 cars</option><option value="19">19 cars</option><option value="21">21 cars · full 22-driver field</option></select></div>
       </div>
       <div class="two">
         <div class="field"><label for="aiSkillSelect">Opponent pace</label><select id="aiSkillSelect"><option value="veryEasy">Very easy</option><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="veryHard">Very hard</option></select></div>
@@ -3822,20 +3824,37 @@ function renderChampionship(){
   const status=i<round?"COMPLETED":i===round&&!complete?"NEXT ROUND":"UPCOMING";
   return '<div class="championship-round '+state+'"><b>R'+(i+1)+' · '+CHAMPIONSHIP_TRACK_LABELS[i]+'</b>'+status+'</div>';
  }).join("");
- const drivers=[{id:"player",name:"YOU",team:"APEX GP"}].concat(CHAMPIONSHIP_AI_DRIVERS)
-  .map(driver=>({...driver,points:Number(championshipState.driverPoints[driver.id])||0}))
+ const careerDriver=getSelectedCareerDriver();
+ const drivers=[careerDriver].concat(CHAMPIONSHIP_AI_DRIVERS.filter(driver=>driver.id!==careerDriver.id))
+  .map(driver=>({...driver,isPlayer:driver.id===careerDriver.id,points:Number(championshipState.driverPoints[driver.id])||0}))
   .sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
  $("driverStandings").innerHTML='<table><thead><tr><th>POS</th><th>DRIVER</th><th>TEAM</th><th>PTS</th></tr></thead><tbody>'+
-  drivers.map((driver,i)=>'<tr class="'+(driver.id==="player"?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+driver.name+'</td><td>'+driver.team+'</td><td>'+driver.points+'</td></tr>').join("")+
+  drivers.map((driver,i)=>'<tr class="'+(driver.isPlayer?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+driver.name+(driver.isPlayer?" · YOU":"")+'</td><td>'+driver.team+'</td><td>'+driver.points+'</td></tr>').join("")+
   '</tbody></table>';
  const teams=CHAMPIONSHIP_TEAMS.map(team=>({team,points:Number(championshipState.teamPoints[team])||0}))
   .sort((a,b)=>b.points-a.points||a.team.localeCompare(b.team));
  $("teamStandings").innerHTML='<table><thead><tr><th>POS</th><th>CONSTRUCTOR</th><th>PTS</th></tr></thead><tbody>'+
-  teams.map((team,i)=>'<tr class="'+(team.team==="APEX GP"?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+team.team+'</td><td>'+team.points+'</td></tr>').join("")+
+  teams.map((team,i)=>'<tr class="'+(team.team===careerDriver.team?"you-row":"")+'"><td>'+(i+1)+'</td><td>'+team.team+'</td><td>'+team.points+'</td></tr>').join("")+
   '</tbody></table>';
  const latest=championshipState.results[championshipState.results.length-1];
  $("championshipLatest").textContent=latest?("Round "+latest.round+" · "+latest.track+" · Winner: "+latest.winner+" · Your finish: P"+latest.playerPosition+" · "+latest.playerPoints+" points"):"No rounds completed yet.";
  $("championshipHudBtn").style.display=gameMode==="championship"?"inline-block":"none";
+}
+function selectCareerDriver(driverId){
+ const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===driverId);if(!driver)return;
+ selectedCareerDriverId=driver.id;
+ const team=TEAM_LIVERIES.find(item=>item.id===driver.teamId);
+ if(team){
+  selectedTeamId=team.id;selectedLivery=team.primary;selectedAccent=team.accent;
+  document.querySelectorAll(".team-swatch").forEach(button=>button.classList.toggle("active",button.dataset.teamId===team.id));
+ }
+ if(championshipState){
+  championshipState.qualifyingResults=(championshipState.qualifyingResults||[]).filter(item=>item.round!==championshipState.round+1);
+  saveChampionship();renderChampionship();
+ }
+ const careerSelect=$("careerDriverSelect");if(careerSelect)careerSelect.value=driver.id;
+ if(carRoot){buildCar();if(car)positionCarAtStart();}
+ updatePitStationUI();
 }
 function openChampionship(){renderChampionship();$("championshipOverlay").classList.add("open");}
 function closeChampionship(){$("championshipOverlay").classList.remove("open");}
