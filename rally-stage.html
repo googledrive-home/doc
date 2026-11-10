@@ -402,10 +402,22 @@ function makeWheel(){
  const outer=new THREE.Mesh(new THREE.TorusGeometry(.31,.035,7,28),rubberSide);outer.rotation.y=Math.PI/2;outer.position.x=.146;assembly.add(outer);
  const rim=new THREE.Mesh(new THREE.CylinderGeometry(.255,.255,.295,24),rimMat);rim.rotation.z=Math.PI/2;assembly.add(rim);
  const disc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.04,20),brakeMat);disc.rotation.z=Math.PI/2;disc.position.x=.18;assembly.add(disc);
- for(let j=0;j<8;j++){const a=j/8*Math.PI*2;const spoke=addBox(assembly,new THREE.BoxGeometry(.045,.21,.055),dark,[.19,Math.sin(a)*.12,Math.cos(a)*.12],[1,1,1],[a,0,0]);}
+ for(let j=0;j<12;j++){const a=j/12*Math.PI*2;addBox(assembly,new THREE.BoxGeometry(.045,.235,.055),dark,[.19,Math.sin(a)*.135,Math.cos(a)*.135],[1,1,1],[a,0,0]);}
+  addBox(assembly,new THREE.BoxGeometry(.075,.18,.14),material(0x9b372d,.52,.2),[.235,.08,0],[1,1,1]);
+  for(let j=0;j<20;j++){const a=j/20*Math.PI*2,treadBlock=new THREE.Mesh(new THREE.BoxGeometry(.20,.035,.07),rubberSide);treadBlock.position.set(0,.405*Math.sin(a),.405*Math.cos(a));treadBlock.rotation.x=a;assembly.add(treadBlock);}
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.31,12),dark);hub.rotation.z=Math.PI/2;assembly.add(hub);
  const tread=new THREE.Mesh(new THREE.BoxGeometry(.30,.035,.035),rubberSide);tread.position.set(0,.4,0);assembly.add(tread);
  return assembly;
+}
+function smoothShellGeometry(spec,stations,segments=32){
+ const positions=[],uv=[],indices=[];
+ for(let i=0;i<stations.length;i++){
+  const [zRatio,widthFactor,bottom,top]=stations[i];
+  for(let j=0;j<=segments;j++){const a=j/segments*Math.PI*2,x=Math.cos(a)*(spec.width*.5*widthFactor),y=bottom+(Math.sin(a)*.5+.5)*(top-bottom),z=zRatio*spec.length;positions.push(x,y,z);uv.push(j/segments,(z/spec.length)+.5);}
+ }
+ const ring=segments+1;
+ for(let i=0;i<stations.length-1;i++)for(let j=0;j<segments;j++){const a=i*ring+j,b=a+1,c=a+ring,d=c+1;indices.push(a,c,b,b,c,d);}
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
 }
 function makeCar(spec){
  const root=new THREE.Group();root.name=spec.name;
@@ -413,16 +425,14 @@ function makeCar(spec){
  const accent=material(spec.accent,.38,.25),carbon=material(0x141b1f,.7,.25),glass=new THREE.MeshStandardMaterial({color:0x172a32,roughness:.12,metalness:.32,transparent:true,opacity:.85}),rubber=material(0x14191c,.9),metal=material(0x7d8a8b,.32,.8),red=material(0xc0392b,.35,.2),lamp=new THREE.MeshStandardMaterial({color:0xe1e0cb,emissive:0x777566,emissiveIntensity:.8});
  const w=spec.width,L=spec.length;
  const chassis=new THREE.Group();root.add(chassis);
- addBox(chassis,new THREE.BoxGeometry(w*.91,.37,L*.88),carbon,[0,.55,-.02],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w,.48,L*.58),bodyMat,[0,.83,.19],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.93,.28,L*.30),bodyMat,[0,.82,L*.32],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.91,.27,L*.28),bodyMat,[0,.84,-L*.31],[1,1,1]);
- const roofLength=spec.body==="hatch"?1.42:1.56,roofZ=spec.body==="coupe"?-.18:-.12;
- addBox(chassis,new THREE.BoxGeometry(w*.79,.13,roofLength),bodyMat,[0,1.66,roofZ],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.78,.48,roofLength*.82),glass,[0,1.39,roofZ],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.83,.12,.13),accent,[0,1.71,roofZ+roofLength*.51],[1,1,1]);
- addBox(chassis,new THREE.BoxGeometry(w*.88,.09,.14),accent,[0,1.71,roofZ-roofLength*.51],[1,1,1]);
- // Separate doors, arches, mirrors and side protection.
+ // Continuous smooth shell and rounded greenhouse.
+  const bodyStations=[[-.50,.62,.57,.88],[-.44,.88,.51,1.00],[-.29,.98,.49,1.08],[-.05,1.00,.49,1.09],[.24,.98,.51,1.07],[.43,.88,.55,1.00],[.50,.68,.61,.91]];
+  const shell=new THREE.Mesh(smoothShellGeometry(spec,bodyStations,40),bodyMat);shell.material.side=THREE.DoubleSide;shell.castShadow=true;shell.receiveShadow=true;chassis.add(shell);
+  const canopyStations=[[-.34,.50,1.02,1.17],[-.27,.76,1.02,1.52],[-.10,.80,1.03,1.70],[.09,.73,1.02,1.59],[.19,.53,1.02,1.18]];
+  const canopyMat=new THREE.MeshStandardMaterial({color:0x19303a,roughness:.18,metalness:.32,transparent:true,opacity:.54,side:THREE.DoubleSide,depthWrite:false});
+  const canopy=new THREE.Mesh(smoothShellGeometry(spec,canopyStations,32),canopyMat);canopy.castShadow=false;chassis.add(canopy);
+  const roof=new THREE.Mesh(new THREE.SphereGeometry(1,36,24),bodyMat);roof.scale.set(w*.39,.095,L*.19);roof.position.set(0,1.68,-.10);chassis.add(roof);
+  // Separate doors, arches, mirrors and side protection.
  for(const side of [-1,1]){
   addBox(chassis,new THREE.BoxGeometry(.07,.34,1.13),bodyMat,[side*w*.49,.91,-.03],[1,1,1]);
   addBox(chassis,new THREE.BoxGeometry(.19,.13,1.02),carbon,[side*w*.50,.48,-.02],[1,1,1]);
