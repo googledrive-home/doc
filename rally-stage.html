@@ -760,7 +760,7 @@ function resolveWorldCollision(state,dt){
  }
  state.vLong=vx*Math.sin(state.yaw)+vz*Math.cos(state.yaw);
  state.vLat=vx*Math.cos(state.yaw)-vz*Math.sin(state.yaw);
- vehicleRoot.position.x=state.x;vehicleRoot.position.z=state.z;vehicleRoot.position.y=terrainY(state.x,state.z)+.305+getSuspensionBodyOffset();
+ vehicleRoot.position.x=state.x;vehicleRoot.position.z=state.z;vehicleRoot.position.y=terrainY(state.x,state.z)+.305+getSuspensionBodyOffset()+(state.verticalOffset||0);
 }
 function getSuspensionBodyOffset(){
  if(!wheelAssemblies.length)return 0;
@@ -859,7 +859,7 @@ function placeCar(){
  const s=trackData.samples[stageStartIndex],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
  const x=s.p.x+right.x*.1,z=s.p.z+right.z*.1;
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(x,terrainY(x,z)+.305,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
- carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,handbrakeWasOn:false,damage:0,wear:0,travel:0};
+ carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,verticalOffset:0,verticalVelocity:0,lastCrestDrop:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,handbrakeWasOn:false,damage:0,wear:0,travel:0};
  wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);w.travel=0;w.travelVelocity=0;});lastGear=1;shiftHandTimer=0;windshieldBuildUp=0;wiperOn=false;syncWindshieldOverlay();
 }
 function buildDust(){
@@ -934,8 +934,8 @@ function updateCamera(dt,immediate=false){
  else{
   const distance=settings.cameraDistance,height=settings.cameraHeight,lookAhead=settings.cameraLookAhead,cy=Math.cos(cameraYaw),sy=Math.sin(cameraYaw);
   const offsetX=fx*distance*cy-fz*distance*sy,offsetZ=fz*distance*cy+fx*distance*sy;
-  desired=new THREE.Vector3(carState.x-offsetX,ground+height+Math.sin(clamp(cameraPitch,-.32,.55))*distance,carState.z-offsetZ);
-  const lookX=carState.x+fx*lookAhead,lookZ=carState.z+fz*lookAhead;target=new THREE.Vector3(lookX,terrainY(lookX,lookZ)+1.02,lookZ);
+  desired=new THREE.Vector3(carState.x-offsetX,ground+height+(carState.verticalOffset||0)+Math.sin(clamp(cameraPitch,-.32,.55))*distance,carState.z-offsetZ);
+  const lookX=carState.x+fx*lookAhead,lookZ=carState.z+fz*lookAhead;target=new THREE.Vector3(lookX,terrainY(lookX,lookZ)+1.02+(carState.verticalOffset||0)*.65,lookZ);
  }
  if(!camera.userData.ready||immediate){camera.position.copy(desired);camera.userData.ready=true;}else camera.position.lerp(desired,damp);
  camera.lookAt(target);
@@ -946,7 +946,7 @@ function setCamera(next=(cameraMode+1)%CAMERAS.length){cameraMode=((next%CAMERAS
 function resetCar(){
  if(!carState||!vehicleRoot)return;
  const idx=nearestIndex,s=trackData.samples[idx],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
- carState.x=s.p.x+right.x*0;carState.z=s.p.z+right.z*0;carState.yaw=Math.atan2(s.tan.x,s.tan.z);carState.vLong=0;carState.vLat=0;carState.yawRate=0;
+ carState.x=s.p.x+right.x*0;carState.z=s.p.z+right.z*0;carState.yaw=Math.atan2(s.tan.x,s.tan.z);carState.vLong=0;carState.vLat=0;carState.yawRate=0;carState.verticalOffset=0;carState.verticalVelocity=0;carState.lastCrestDrop=0;
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+.305,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
 }
 function inputState(){
@@ -963,6 +963,7 @@ function physicsStep(dt){
   const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),roadHalf=trackData.halfWidth||4.95,onRoad=roadOffset<roadHalf+.9;
   if(!onRoad)lateralGrip*=roadOffset<roadHalf+4?.66:clamp(1-(roadOffset-roadHalf-4)*.035,.34,.66);
   const inDitch=roadOffset>roadHalf+.7&&roadOffset<roadHalf+3.6;
+  if(s.verticalOffset>.12)lateralGrip*=.52;
   const steeringLimit=.55/(1+speed*.012)*settings.steer/.7,targetSteer=input.steer*steeringLimit;
   s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*7.5));
   const handbrakeTarget=input.handbrake&&speed>3?1:0;
@@ -999,13 +1000,19 @@ function physicsStep(dt){
   s.yaw+=s.yawRate*dt;
   const vx=Math.sin(s.yaw)*s.vLong+Math.cos(s.yaw)*s.vLat,vz=Math.cos(s.yaw)*s.vLong-Math.sin(s.yaw)*s.vLat;
   s.x+=vx*dt;s.z+=vz*dt;s.travel+=Math.hypot(vx,vz)*dt;
-  const ground=terrainY(s.x,s.z,track);vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305+getSuspensionBodyOffset(),s.z);
+  const ground=terrainY(s.x,s.z,track),headingX=Math.sin(s.yaw),headingZ=Math.cos(s.yaw);
+  const heightAhead=terrainY(s.x+headingX*5.2,s.z+headingZ*5.2,track),heightBehind=terrainY(s.x-headingX*5.2,s.z-headingZ*5.2,track);
+  const crestDrop=(heightAhead-ground)-(ground-heightBehind);
+  if(speedKmh>52&&crestDrop<-.55&&s.lastCrestDrop>=-.55)s.verticalVelocity=Math.max(s.verticalVelocity,Math.min(4.2,speed*.15*Math.min(1.8,Math.abs(crestDrop))));
+  s.lastCrestDrop=crestDrop;s.verticalVelocity-=18*dt;s.verticalOffset+=s.verticalVelocity*dt;
+  if(s.verticalOffset<=0){if(s.verticalOffset<-.01&&s.verticalVelocity< -3){const landing=vehicleRoot.localToWorld(new THREE.Vector3(0,.10,-.85));spawnDust(landing.x,landing.y,landing.z,new THREE.Vector3(0,1,speed));}s.verticalOffset=0;s.verticalVelocity=0;}
+  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(s.x,ground+.305+getSuspensionBodyOffset()+s.verticalOffset,s.z);
   vehicleRoot.rotation.set(-clamp(s.longAccel*.006,-.08,.08),s.yaw,clamp(-s.latAccel*.008,-.13,.13),"YXZ");
   const driftAngle=Math.atan2(s.vLat,Math.max(1,Math.abs(s.vLong)))*180/Math.PI;s.slip=driftAngle;
   wheelAssemblies.forEach((w,i)=>{w.pivot.rotation.y=w.front?s.steer:0;w.wheel.rotation.x-=s.vLong*dt/.405;
    const wx=s.x+Math.cos(s.yaw)*w.baseX+Math.sin(s.yaw)*w.baseZ,wz=s.z-Math.sin(s.yaw)*w.baseX+Math.cos(s.yaw)*w.baseZ;
    const cornerHeight=terrainY(wx,wz,track)-ground,pitchLoad=-s.longAccel*.0022*(w.front?1:-1),rollLoad=s.latAccel*.0018*w.side,targetTravel=clamp(cornerHeight*.62+pitchLoad+rollLoad,-.22,.22);
-   const springAcceleration=(targetTravel-w.travel)*(settings.spring*31+8)-w.travelVelocity*(settings.damper*15+3);w.travelVelocity+=springAcceleration*dt;w.travel=clamp(w.travel+w.travelVelocity*dt,-.24,.24);w.pivot.position.y=.42+w.travel;
+   const springAcceleration=(targetTravel-w.travel)*(settings.spring*31+8)-w.travelVelocity*(settings.damper*15+3);w.travelVelocity+=springAcceleration*dt;w.travel=clamp(w.travel+w.travelVelocity*dt,-.24,.24);w.pivot.position.y=.42+w.travel-Math.min(.22,(s.verticalOffset||0)*.30);
    const susp=suspensionParts[i];susp.strut.scale.y=clamp(1-w.travel*.9,.72,1.25);susp.spring.scale.y=susp.strut.scale.y;});
   resolveWorldCollision(s,dt);animateCockpitControls(input,dt);updateWindshield(dt);
   const drift=Math.abs(driftAngle)>9&&speedKmh>25&&Math.abs(input.steer)>.06;
