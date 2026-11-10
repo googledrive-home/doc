@@ -235,7 +235,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Wales · Forest stages · 23.4 km</option><option value="alpine">Finland · Crest & jump stages · 24.8 km</option><option value="coast">Acropolis · Rocky gravel stages · 21.6 km</option><option value="serpent">Col de Turini · Hairpin pass · 28.6 km</option></select></div>
    <div class="field" id="stageField"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
     <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
-   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
+   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet" selected>Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning">09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset" selected>18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet" selected>Wet rally</option></select></div>
    <div id="confirmSummary" class="flow-hidden"></div>
    <button class="action flow-hidden" id="startBtn">START RALLY STAGE</button>
    <div class="note">Controls: W accelerate · S brake / reverse · A / D steer · SPACE handbrake (or H alternate) · ← / → shift in manual · I / J / K / L camera · C view · V wipers.</div>
@@ -312,10 +312,10 @@ const CARS={
  stratos:{name:"SUBARU IMPREZA WRC · BLUE",description:"Subaru WRC blue livery · planted braking · stable fast-stage balance",hp:395,torque:545,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:.96,force:6700,maxSpeed:49.2,body:"sedan",rpm:7500},
  coupe:{name:"SUBARU IMPREZA WRC · GOLD",description:"Subaru WRC gold livery · rear-biased setup · lively stage exits",hp:420,torque:570,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.94,force:7000,maxSpeed:48.5,body:"coupe",rpm:7700}
 };
-const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:7.2,cameraHeight:2.8,cameraLookAhead:3.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
-let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="dry",tyre="gravel",timeOfDay="morning";
+const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"high",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:7.2,cameraHeight:2.8,cameraLookAhead:3.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
+let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="wet",tyre="wet",timeOfDay="sunset";
 let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial,grassTexture=null;
-let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,paceNoteTimer=0;
+let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,skyDome=null,skyTexture=null,skyCanvas=null,paceNoteTimer=0;
 let gameActive=false,paused=false,stageFinished=false,elapsed=0,previousFrame=0,frameSamples=0,fpsStart=0,fps=60,adaptiveScale=1;
 let keys={},carState=null,nearestIndex=0,stageStartIndex=0,stageMeters=0,stageTargetMeters=0,cameraMode=0,qualityTimer=0;
 let wheelAssemblies=[],suspensionParts=[],dustPoints,dustPositions,dustLives=[],dustVelocity=[],dustAccumulator=0,smokePoints,smokePositions,smokeLives=[],smokeVelocity=[];
@@ -430,7 +430,7 @@ function makeTerrain(track){
    addWorldCollider(x,z,8,"cliff-wall");
   }
  }
- ridge.count=k;ridge.instanceMatrix.needsUpdate=true;ridge.castShadow=false;ridge.receiveShadow=true;worldGroup.add(ridge);
+ ridge.count=k;ridge.instanceMatrix.needsUpdate=true;ridge.castShadow=settings.shadows&&settings.quality!=="low";ridge.receiveShadow=true;worldGroup.add(ridge);
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
@@ -444,8 +444,22 @@ function makeRoad(trackData){
  for(let i=0;i<n;i++){const j=(i+1)%n, a=i*2,b=a+1,c=j*2,d=c+1;indices.push(a,c,b,b,c,d);}
  const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
  const roadTint=weather==="snow"?0xc4cdd2:weather==="storm"||weather==="wet"?0x777f82:weather==="damp"?0xb4ab99:0xffffff;
- const road=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:weather==="snow"?null:roadTexture,color:roadTint,roughness:weather==="wet"||weather==="storm"?.82:1,metalness:weather==="wet"||weather==="storm"?.035:0,side:THREE.DoubleSide}));
- road.receiveShadow=settings.shadows&&settings.quality==="high";road.frustumCulled=true;worldGroup.add(road);
+ const wetSurface=weather==="wet"||weather==="storm";
+ const roadMaterial=new THREE.MeshPhysicalMaterial({map:weather==="snow"?null:roadTexture,color:roadTint,roughness:wetSurface?.40:weather==="damp"?.78:1,metalness:wetSurface?.10:weather==="damp"?.015:0,clearcoat:wetSurface?.58:weather==="damp"?.16:0,clearcoatRoughness:wetSurface?.18:.85,envMapIntensity:wetSurface?.48:.2,side:THREE.DoubleSide});
+ const road=new THREE.Mesh(geo,roadMaterial);
+ road.receiveShadow=settings.shadows&&settings.quality!=="low";road.frustumCulled=true;worldGroup.add(road);
+ if(wetSurface){
+  const rng=seeded(samples.length*(weather==="storm"?11:7)+91),puddleCount=weather==="storm"?230:150,dummy=new THREE.Object3D();
+  const puddleGeo=new THREE.PlaneGeometry(1,1);puddleGeo.rotateX(-Math.PI/2);
+  const puddleMat=new THREE.MeshPhysicalMaterial({color:0x657477,roughness:.10,metalness:.16,clearcoat:1,clearcoatRoughness:.07,transparent:true,opacity:weather==="storm"?.42:.30,depthWrite:false,side:THREE.DoubleSide});
+  const puddles=new THREE.InstancedMesh(puddleGeo,puddleMat,puddleCount);
+  for(let i=0;i<puddleCount;i++){
+   const sample=samples[Math.floor(rng()*samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),lateral=(rng()-.5)*half*1.45;
+   dummy.position.set(sample.p.x+right.x*lateral,sample.p.y+.105,sample.p.z+right.z*lateral);
+   dummy.rotation.set(0,Math.atan2(sample.tan.x,sample.tan.z)+(rng()-.5)*.16,0);dummy.scale.set(1.2+rng()*3.8,.16+rng()*.40,.7+rng()*1.4);dummy.updateMatrix();puddles.setMatrixAt(i,dummy.matrix);
+  }
+  puddles.instanceMatrix.needsUpdate=true;puddles.renderOrder=3;worldGroup.add(puddles);
+ }
  const edgeMat=new THREE.MeshStandardMaterial({color:0x9c8d74,roughness:1});
  const edgeGeo=new THREE.BufferGeometry(),ep=[],ei=[];
  for(let i=0;i<n;i++){
@@ -517,7 +531,7 @@ function makeForest(track){
   placed++;
  }
  trunks.count=placed;foliageA.count=placed;foliageB.count=placed;broad.count=broadCount;
- [trunks,foliageA,foliageB,broad].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=false;m.receiveShadow=false;worldGroup.add(m);});
+ [trunks,foliageA,foliageB,broad].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=settings.shadows&&settings.quality!=="low";m.receiveShadow=false;worldGroup.add(m);});
  // Collidable boulders and exposed rocks on the shoulders break up the tree line.
  const rockCount=settings.quality==="low"?650:settings.quality==="high"?1900:1250,rockGeo=new THREE.DodecahedronGeometry(1,1),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount),rockRand=seeded(track.seed*1301);let rockPlaced=0,rockTries=0;
  while(rockPlaced<rockCount&&rockTries<rockCount*2.5){
@@ -526,7 +540,7 @@ function makeForest(track){
   const scale=.45+rockRand()*2.1;dummy.position.set(x,terrainY(x,z,track)+scale*.28,z);dummy.scale.set(scale,scale*.58,scale*1.22);dummy.rotation.set(rockRand(),rockRand()*6,rockRand());dummy.updateMatrix();rocks.setMatrixAt(rockPlaced++,dummy.matrix);
   addWorldCollider(x,z,Math.max(.45,scale*.48),"rock");
  }
- rocks.count=rockPlaced;rocks.instanceMatrix.needsUpdate=true;rocks.castShadow=false;worldGroup.add(rocks);
+ rocks.count=rockPlaced;rocks.instanceMatrix.needsUpdate=true;rocks.castShadow=settings.shadows&&settings.quality!=="low";worldGroup.add(rocks);
  const bushCount=settings.quality==="low"?1100:settings.quality==="high"?3400:2300,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x8c9892:0x40533b,roughness:1}),bushCount);
  for(let i=0;i<bushCount;i++){const s=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rnd()<.5?-1:1,off=5.8+rnd()*24,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off,sc=.45+rnd()*1.7;dummy.position.set(x,terrainY(x,z,track)+sc*.45,z);dummy.scale.set(sc*1.3,sc*.72,sc);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();bushes.setMatrixAt(i,dummy.matrix);}
  bushes.instanceMatrix.needsUpdate=true;worldGroup.add(bushes);
@@ -591,44 +605,115 @@ function makeEnvironment(track){
  scene.background=new THREE.Color(track.id==="serpent"?0x65777a:track.id==="alpine"?0x71848c:track.id==="coast"?0x76868a:0x71817f);
  scene.fog=new THREE.FogExp2(scene.background,settings.quality==="low"?.0051:.0040);
  makeTerrain(track);makeRoad(trackData);makeDitches(track);makeRiver(track);makeForest(track);makeGroundCover(track);makeRoadsideDetails(track);makeTown(track);
- if(!environmentSun){environmentSun=new THREE.DirectionalLight(0xffe3b3,2.1);environmentSun.position.set(-300,650,250);environmentSun.shadow.mapSize.set(1024,1024);environmentSun.shadow.camera.left=-250;environmentSun.shadow.camera.right=250;environmentSun.shadow.camera.top=250;environmentSun.shadow.camera.bottom=-250;scene.add(environmentSun);}
- environmentSun.castShadow=settings.shadows&&settings.quality==="high";applyAtmosphere();
+ if(!environmentSun){
+  environmentSun=new THREE.DirectionalLight(0xffdfbd,2.65);environmentSun.position.set(-300,420,250);
+  environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);
+  environmentSun.shadow.camera.left=-260;environmentSun.shadow.camera.right=260;environmentSun.shadow.camera.top=260;environmentSun.shadow.camera.bottom=-260;
+  environmentSun.shadow.camera.near=2;environmentSun.shadow.camera.far=1800;environmentSun.shadow.camera.updateProjectionMatrix();
+  environmentSun.shadow.bias=-0.00012;environmentSun.shadow.normalBias=.035;environmentSun.shadow.radius=3.5;
+  scene.add(environmentSun);scene.add(environmentSun.target);
+ }
+ environmentSun.castShadow=settings.shadows&&settings.quality!=="low";environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);environmentSun.shadow.needsUpdate=true;applyAtmosphere();
+}
+function hexMix(a,b,t){
+ const ca=new THREE.Color(a),cb=new THREE.Color(b);return "#"+ca.lerp(cb,clamp01(t)).getHexString();
+}
+function createSkyDome(){
+ if(!skyCanvas){
+  skyCanvas=document.createElement("canvas");skyCanvas.width=2048;skyCanvas.height=1024;
+  skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;
+  skyTexture.wrapS=THREE.RepeatWrapping;skyTexture.anisotropy=8;
+ }
+ if(!skyDome){
+  const geometry=new THREE.SphereGeometry(7200,48,32);
+  const material=new THREE.MeshBasicMaterial({map:skyTexture,side:THREE.BackSide,depthWrite:false,fog:false});
+  skyDome=new THREE.Mesh(geometry,material);skyDome.frustumCulled=false;skyDome.renderOrder=-1000;scene.add(skyDome);
+ }
+ paintSkyDome();
+}
+function paintSkyDome(){
+ if(!skyCanvas||!skyTexture)return;
+ const ctx=skyCanvas.getContext("2d"),w=skyCanvas.width,h=skyCanvas.height;
+ const palettes={
+  dawn:["#1c3045","#657f8d","#dca080"],
+  morning:["#263f54","#7693a1","#b5c1c2"],
+  afternoon:["#234158","#7698aa","#c0c7c4"],
+  sunset:["#172c42","#a96550","#efb083"],
+  night:["#060e1b","#1d3040","#46545b"]
+ };
+ const p=palettes[timeOfDay]||palettes.sunset,cloud={dry:.10,damp:.40,wet:.70,storm:.94,snow:.76}[weather]??.1;
+ const top=hexMix(p[0],"#27323a",cloud*.70),horizon=hexMix(p[1],"#657176",cloud*.60),low=hexMix(p[2],"#85847d",cloud*.48);
+ const sky=ctx.createLinearGradient(0,0,0,h);
+ sky.addColorStop(0,top);sky.addColorStop(.48,horizon);sky.addColorStop(.73,low);sky.addColorStop(1,hexMix(low,"#333b3d",.24));
+ ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+ const sunPos={dawn:[.76,.57],morning:[.67,.34],afternoon:[.28,.32],sunset:[.82,.64],night:[.65,.42]}[timeOfDay]||[.82,.64];
+ if(timeOfDay!=="night"){
+  const sx=w*sunPos[0],sy=h*sunPos[1],radius=weather==="storm"?270:weather==="wet"?310:390;
+  const glow=ctx.createRadialGradient(sx,sy,3,sx,sy,radius);
+  glow.addColorStop(0,weather==="snow"?"rgba(225,231,228,.48)":"rgba(255,218,174,.70)");
+  glow.addColorStop(.16,"rgba(250,194,143,.24)");glow.addColorStop(1,"rgba(245,175,130,0)");
+  ctx.fillStyle=glow;ctx.fillRect(sx-radius,sy-radius,radius*2,radius*2);
+  ctx.fillStyle=weather==="storm"?"rgba(238,220,194,.58)":"rgba(255,229,195,.94)";
+  ctx.beginPath();ctx.arc(sx,sy,weather==="storm"?8:13,0,Math.PI*2);ctx.fill();
+ }
+ const rnd=seeded(4207+Math.round(cloud*100)+timeOfDay.length*31);
+ const cloudLayers=Math.round(18+cloud*180);
+ ctx.save();ctx.globalCompositeOperation="screen";
+ for(let i=0;i<cloudLayers;i++){
+  const x=rnd()*w,y=(.16+rnd()*.52)*h,rx=60+rnd()*230,ry=12+rnd()*42;
+  const alpha=(.035+rnd()*.075)*(.35+cloud);
+  const cg=ctx.createRadialGradient(x,y,2,x,y,rx);
+  cg.addColorStop(0,"rgba(190,201,201,"+alpha+")");cg.addColorStop(.56,"rgba(143,158,163,"+(alpha*.72)+")");cg.addColorStop(1,"rgba(90,108,117,0)");
+  ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(x,y,rx,ry,rnd()*.1,0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+ if(cloud>.45){
+  const band=ctx.createLinearGradient(0,h*.42,0,h*.82);
+  band.addColorStop(0,"rgba(35,46,54,0)");band.addColorStop(.42,"rgba(34,45,53,"+(cloud*.14)+")");band.addColorStop(1,"rgba(40,49,54,0)");
+  ctx.fillStyle=band;ctx.fillRect(0,h*.40,w,h*.44);
+ }
+ skyTexture.needsUpdate=true;
 }
 function applyAtmosphere(){
  if(!scene)return;
- const sky={dawn:0x77848b,morning:0x68777e,afternoon:0x78848a,sunset:0x86786f,night:0x111c25};
- let color=new THREE.Color(sky[timeOfDay]||sky.morning);
- if(weather==="storm")color.lerp(new THREE.Color(0x46545d),.60);else if(weather==="wet")color.lerp(new THREE.Color(0x596970),.38);else if(weather==="damp")color.lerp(new THREE.Color(0x65747a),.20);else if(weather==="snow")color.lerp(new THREE.Color(0x9ca9ad),.28);
+ const sky={dawn:0x6e8290,morning:0x718a98,afternoon:0x7897a6,sunset:0x9a6759,night:0x101d2b};
+ let color=new THREE.Color(sky[timeOfDay]||sky.sunset);
+ if(weather==="storm")color.lerp(new THREE.Color(0x38464e),.68);else if(weather==="wet")color.lerp(new THREE.Color(0x4b5d65),.48);else if(weather==="damp")color.lerp(new THREE.Color(0x65747a),.29);else if(weather==="snow")color.lerp(new THREE.Color(0xa5b0b4),.28);
  if(scene.background?.isColor)scene.background.copy(color);else scene.background=color;
- if(scene.fog){scene.fog.color.copy(color);const base=settings.quality==="low"?.00013:.000105;scene.fog.density=weather==="storm"?base*1.7:weather==="snow"?base*1.35:weather==="wet"?base*1.30:base*1.10;}
- const tf={dawn:.66,morning:1,afternoon:1.05,sunset:.70,night:.20}[timeOfDay]||1, wf={dry:1,damp:.91,wet:.78,storm:.58,snow:.73}[weather]||1;
+ paintSkyDome();
+ if(scene.fog){scene.fog.color.copy(color);const base=settings.quality==="low"?.00014:.000115;scene.fog.density=weather==="storm"?base*1.85:weather==="snow"?base*1.45:weather==="wet"?base*1.42:weather==="damp"?base*1.2:base;}
+ const tf={dawn:.78,morning:1,afternoon:1.06,sunset:.86,night:.16}[timeOfDay]||1,wf={dry:1,damp:.84,wet:.70,storm:.43,snow:.60}[weather]||1;
  if(environmentSun){
-  environmentSun.intensity=(selectedTrack==="coast"?.96:1.08)*tf*wf;
-  environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffc58f:0xffe3b3);
-  const sunPosition={dawn:[-520,210,420],morning:[-300,650,250],afternoon:[280,720,-120],sunset:[620,180,-440],night:[-180,75,120]}[timeOfDay]||[-300,650,250];
-  environmentSun.position.set(sunPosition[0],sunPosition[1],sunPosition[2]);
+  environmentSun.intensity=(selectedTrack==="coast"?2.25:2.55)*tf*wf;
+  environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffbd8d:0xffe3c5);
+  const sunPosition={dawn:[-520,210,420],morning:[-300,470,250],afternoon:[280,620,-120],sunset:[620,180,-440],night:[-180,75,120]}[timeOfDay]||[620,180,-440];
+  const focusX=carState?.x??0,focusZ=carState?.z??0,focusY=carState?terrainY(focusX,focusZ):0;
+  environmentSun.userData.sunOffset=sunPosition;
+  environmentSun.target.position.set(focusX,focusY,focusZ);
+  environmentSun.position.set(focusX+sunPosition[0],focusY+sunPosition[1],focusZ+sunPosition[2]);
  }
- if(environmentHemi)environmentHemi.intensity=.98*wf*(.65+.35*tf);
- if(environmentFill)environmentFill.intensity=.74*wf*tf*.72;
- if(environmentAmbient)environmentAmbient.intensity=.34*wf*(.75+.25*tf);
- if(renderer)renderer.toneMappingExposure=timeOfDay==="night"?.82:timeOfDay==="sunset"?.88:.94;
- const wl={dry:"DRY GRAVEL",damp:"DAMP GRAVEL",wet:"WET GRAVEL",storm:"HEAVY RAIN",snow:"SNOW / ICE"}[weather]||"GRAVEL",tl={dawn:"DAWN",morning:"MORNING",afternoon:"AFTERNOON",sunset:"SUNSET",night:"NIGHT"}[timeOfDay]||"MORNING";
- if($("conditionsHud"))$("conditionsHud").textContent=tl+" · "+wl;makePrecipitation();
+ if(environmentHemi)environmentHemi.intensity=.72*wf*(.72+.28*tf);
+ if(environmentFill)environmentFill.intensity=.43*wf*tf;
+ if(environmentAmbient)environmentAmbient.intensity=.17*wf*(.78+.22*tf);
+ if(renderer)renderer.toneMappingExposure=timeOfDay==="night"?.76:weather==="storm"?.90:timeOfDay==="sunset"?1.03:.98;
+ const wl={dry:"DRY GRAVEL",damp:"DAMP GRAVEL",wet:"WET GRAVEL",storm:"HEAVY RAIN",snow:"SNOW / ICE"}[weather]||"GRAVEL",tl={dawn:"DAWN",morning:"MORNING",afternoon:"AFTERNOON",sunset:"SUNSET",night:"NIGHT"}[timeOfDay]||"SUNSET";
+ if($("conditionsHud"))$("conditionsHud").textContent=tl+" · "+wl;
+ makePrecipitation();
 }
 function makePrecipitation(){
  if(precipitation){scene.remove(precipitation);precipitation.geometry.dispose();precipitation.material.dispose();precipitation=null;precipitationData=null;}
  if(weather!=="wet"&&weather!=="storm"&&weather!=="snow")return;
- const snow=weather==="snow",count=weather==="storm"?620:snow?360:420,base=new Float32Array(count*3),positions=new Float32Array(count*(snow?3:6)),cx=carState?.x||0,cz=carState?.z||0;
+ const snow=weather==="snow",count=weather==="storm"?1480:snow?420:weather==="wet"?920:420,base=new Float32Array(count*3),positions=new Float32Array(count*(snow?3:6)),cx=carState?.x||0,cz=carState?.z||0;
  for(let i=0;i<count;i++){base[i*3]=cx+(Math.random()-.5)*58;base[i*3+1]=2+Math.random()*34;base[i*3+2]=cz+(Math.random()-.5)*58;}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
- const material=snow?new THREE.PointsMaterial({color:0xe5edf2,size:.15,transparent:true,opacity:.78,depthWrite:false}):new THREE.LineBasicMaterial({color:0xc2d0d8,transparent:true,opacity:weather==="storm"?.42:.25,depthWrite:false});
+ const material=snow?new THREE.PointsMaterial({color:0xe5edf2,size:.15,transparent:true,opacity:.78,depthWrite:false}):new THREE.LineBasicMaterial({color:0xd1dce0,transparent:true,opacity:weather==="storm"?.58:.38,depthWrite:false});
  precipitation=snow?new THREE.Points(geometry,material):new THREE.LineSegments(geometry,material);precipitation.frustumCulled=false;precipitationData={base,count,snow};scene.add(precipitation);
 }
 function updatePrecipitation(dt){
  if(!precipitation||!precipitationData||!carState)return;
  const {base,count,snow}=precipitationData,attribute=precipitation.geometry.attributes.position,array=attribute.array,wind=weather==="storm"?-3.2:-1.4,fall=snow?2.5:weather==="storm"?24:18;
  for(let i=0;i<count;i++){const j=i*3;base[j]+=wind*dt;base[j+1]-=fall*dt;base[j+2]+=(snow?1.1:.25)*dt;if(base[j+1]<-2){base[j]=(Math.random()-.5)*58;base[j+1]=22+Math.random()*18;base[j+2]=(Math.random()-.5)*58;}
-  const x=carState.x+base[j],y=base[j+1],z=carState.z+base[j+2];if(snow){array[j]=x;array[j+1]=y;array[j+2]=z;}else{const k=i*6;array[k]=x;array[k+1]=y;array[k+2]=z;array[k+3]=x+.22;array[k+4]=y-1.15;array[k+5]=z+.10;}}
+  const x=carState.x+base[j],y=base[j+1],z=carState.z+base[j+2];if(snow){array[j]=x;array[j+1]=y;array[j+2]=z;}else{const k=i*6;array[k]=x;array[k+1]=y;array[k+2]=z;array[k+3]=x+.18;array[k+4]=y-(weather==="storm"?1.85:1.55);array[k+5]=z+.12;}}
  attribute.needsUpdate=true;
 }
 function material(color,rough=0.65,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});}
@@ -1041,16 +1126,18 @@ function initScene(){
  renderer.setSize(innerWidth,innerHeight,false);renderer.shadowMap.enabled=settings.shadows&&settings.quality!=="low";renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x68777e);scene.fog=new THREE.FogExp2(0x68777e,.000105);
  camera=new THREE.PerspectiveCamera(settings.fov,innerWidth/innerHeight,.1,18000);camera.position.set(0,8,-14);
- environmentHemi=new THREE.HemisphereLight(0xe1e8df,0x53604b,1.55);scene.add(environmentHemi);
- environmentFill=new THREE.DirectionalLight(0xffefda,2.2);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
- environmentAmbient=new THREE.AmbientLight(0xffffff,.25);scene.add(environmentAmbient);
+ createSkyDome();
+ environmentHemi=new THREE.HemisphereLight(0xd5e0e6,0x343a34,.82);scene.add(environmentHemi);
+ environmentFill=new THREE.DirectionalLight(0xffd7b1,.48);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
+ environmentAmbient=new THREE.AmbientLight(0xc8d0d3,.16);scene.add(environmentAmbient);
  roadTexture=makeRoadTexture();buildWorld();buildVehicle();buildDust();placeCar();updateCamera(.016,true);loadSubaruAssets();
 }
 function updateRenderQuality(){
  if(!renderer)return;
  const base=settings.quality==="low"?.78:settings.quality==="high"?1.35:1;
  renderer.setPixelRatio(Math.min(devicePixelRatio,base*adaptiveScale));renderer.setSize(innerWidth,innerHeight,false);
- renderer.shadowMap.enabled=settings.shadows&&settings.quality!=="low"&&adaptiveScale>.78;
+ renderer.shadowMap.enabled=settings.shadows&&settings.quality!=="low"&&adaptiveScale>.72;
+ if(environmentSun){environmentSun.castShadow=settings.shadows&&settings.quality!=="low"&&adaptiveScale>.72;environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);environmentSun.shadow.needsUpdate=true;}
 }
 function updateCamera(dt,immediate=false){
  if(!carState||!vehicleRoot||!camera)return;
@@ -1444,6 +1531,8 @@ function animate(now){
  if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateSmoke(dt);updateAudio();}
  else{if(dustPoints)updateDust(dt*.25);if(smokePoints)updateSmoke(dt*.25);}
  updatePrecipitation(dt);updateCamera(dt);
+ if(environmentSun&&carState&&environmentSun.userData.sunOffset){const o=environmentSun.userData.sunOffset,fx=carState.x,fy=terrainY(fx,carState.z),fz=carState.z;environmentSun.target.position.set(fx,fy,fz);environmentSun.position.set(fx+o[0],fy+o[1],fz+o[2]);}
+ if(skyDome&&camera)skyDome.position.copy(camera.position);
  renderer.render(scene,camera);
  if(now-fpsStart>1000){fps=frameSamples*1000/Math.max(1,now-fpsStart);frameSamples=0;fpsStart=now;$("perf").textContent=Math.round(fps)+" FPS · ADAPTIVE QUALITY";
   if(settings.adaptiveQuality&&fps<Math.max(24,settings.targetFps*.48)&&adaptiveScale>.58){adaptiveScale=Math.max(.58,adaptiveScale*.90);updateRenderQuality();}
