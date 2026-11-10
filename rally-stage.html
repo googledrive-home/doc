@@ -235,7 +235,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Wales · Forest stages · 23.4 km</option><option value="alpine">Finland · Crest & jump stages · 24.8 km</option><option value="coast">Acropolis · Rocky gravel stages · 21.6 km</option><option value="serpent">Col de Turini · Hairpin pass · 28.6 km</option></select></div>
    <div class="field" id="stageField"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
     <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
-   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet" selected>Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning">09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset" selected>18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
+   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet" selected>Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning">09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset" selected>18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet" selected>Wet rally</option></select></div>
    <div id="confirmSummary" class="flow-hidden"></div>
    <button class="action flow-hidden" id="startBtn">START RALLY STAGE</button>
    <div class="note">Controls: W accelerate · S brake / reverse · A / D steer · SPACE handbrake (or H alternate) · ← / → shift in manual · I / J / K / L camera · C view · V wipers.</div>
@@ -687,8 +687,10 @@ function applyAtmosphere(){
   environmentSun.intensity=(selectedTrack==="coast"?2.25:2.55)*tf*wf;
   environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffbd8d:0xffe3c5);
   const sunPosition={dawn:[-520,210,420],morning:[-300,470,250],afternoon:[280,620,-120],sunset:[620,180,-440],night:[-180,75,120]}[timeOfDay]||[620,180,-440];
-  environmentSun.position.set(sunPosition[0],sunPosition[1],sunPosition[2]);
-  if(environmentSun.target)environmentSun.target.position.set(0,0,0);
+  const focusX=carState?.x??0,focusZ=carState?.z??0,focusY=carState?terrainY(focusX,focusZ):0;
+  environmentSun.userData.sunOffset=sunPosition;
+  environmentSun.target.position.set(focusX,focusY,focusZ);
+  environmentSun.position.set(focusX+sunPosition[0],focusY+sunPosition[1],focusZ+sunPosition[2]);
  }
  if(environmentHemi)environmentHemi.intensity=.72*wf*(.72+.28*tf);
  if(environmentFill)environmentFill.intensity=.43*wf*tf;
@@ -1529,6 +1531,7 @@ function animate(now){
  if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateSmoke(dt);updateAudio();}
  else{if(dustPoints)updateDust(dt*.25);if(smokePoints)updateSmoke(dt*.25);}
  updatePrecipitation(dt);updateCamera(dt);
+ if(environmentSun&&carState&&environmentSun.userData.sunOffset){const o=environmentSun.userData.sunOffset,fx=carState.x,fy=terrainY(fx,carState.z),fz=carState.z;environmentSun.target.position.set(fx,fy,fz);environmentSun.position.set(fx+o[0],fy+o[1],fz+o[2]);}
  if(skyDome&&camera)skyDome.position.copy(camera.position);
  renderer.render(scene,camera);
  if(now-fpsStart>1000){fps=frameSamples*1000/Math.max(1,now-fpsStart);frameSamples=0;fpsStart=now;$("perf").textContent=Math.round(fps)+" FPS · ADAPTIVE QUALITY";
