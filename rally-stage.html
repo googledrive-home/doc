@@ -859,7 +859,7 @@ function placeCar(){
  const x=s.p.x+right.x*.1,z=s.p.z+right.z*.1;
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(x,terrainY(x,z)+.305,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
  carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,handbrakeWasOn:false,damage:0,wear:0,travel:0};
- wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);w.travel=0;w.travelVelocity=0;});
+ wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);w.travel=0;w.travelVelocity=0;});lastGear=1;shiftHandTimer=0;windshieldBuildUp=0;wiperOn=false;syncWindshieldOverlay();
 }
 function buildDust(){
  const count=210;dustPositions=new Float32Array(count*3);dustLives=Array(count).fill(0);dustVelocity=Array.from({length:count},()=>new THREE.Vector3());
@@ -1190,7 +1190,7 @@ async function boot(){
   loadSettings();setLoad(10,"Preparing renderer");initScene();setLoad(82,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
   window.addEventListener("resize",resize);previousFrame=performance.now();fpsStart=previousFrame;requestAnimationFrame(animate);
-  setLoad(100,"Ready to drive");$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
+  setLoad(90,"Loading Subaru WRC model");if(subaruAssetsPromise)await Promise.race([subaruAssetsPromise,new Promise(resolve=>setTimeout(resolve,9000))]);setLoad(100,"Ready to drive");$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
  }catch(error){console.error(error);$("loadStep").textContent="Could not start: "+error.message;}
 }
 boot();
