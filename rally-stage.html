@@ -399,7 +399,12 @@ function applyAtmosphere(){
  if(scene.background?.isColor)scene.background.copy(color);else scene.background=color;
  if(scene.fog){scene.fog.color.copy(color);const base=settings.quality==="low"?.00010:.000075;scene.fog.density=weather==="storm"?base*1.75:weather==="snow"?base*1.45:weather==="wet"?base*1.22:base;}
  const tf={dawn:.66,morning:1,afternoon:1.05,sunset:.70,night:.20}[timeOfDay]||1, wf={dry:1,damp:.91,wet:.78,storm:.58,snow:.73}[weather]||1;
- if(environmentSun){environmentSun.intensity=(selectedTrack==="coast"?2.0:2.2)*tf*wf;environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffc58f:0xffe3b3);}
+ if(environmentSun){
+  environmentSun.intensity=(selectedTrack==="coast"?2.0:2.2)*tf*wf;
+  environmentSun.color.set(weather==="snow"?0xdce6eb:timeOfDay==="sunset"||timeOfDay==="dawn"?0xffc58f:0xffe3b3);
+  const sunPosition={dawn:[-520,210,420],morning:[-300,650,250],afternoon:[280,720,-120],sunset:[620,180,-440],night:[-180,75,120]}[timeOfDay]||[-300,650,250];
+  environmentSun.position.set(sunPosition[0],sunPosition[1],sunPosition[2]);
+ }
  if(environmentHemi)environmentHemi.intensity=1.55*wf*(.55+.45*tf);
  if(environmentFill)environmentFill.intensity=2.2*wf*tf*.72;
  if(environmentAmbient)environmentAmbient.intensity=.25*wf*(.65+.35*tf);
@@ -545,7 +550,7 @@ function buildWorld(){
  roadTexture=roadTexture||makeRoadTexture();grassTexture=grassTexture||makeGrassTexture();makeEnvironment(track);
 }
 function buildVehicle(){
- if(vehicleRoot){scene.remove(vehicleRoot);vehicleRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
+ if(vehicleRoot){scene.remove(vehicleRoot);vehicleRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(m=>m.dispose());}});}
  const spec=CARS[selectedCar];carRig=makeCar(spec);vehicleRoot=carRig;scene.add(vehicleRoot);
 }
 function stageSelection(){
