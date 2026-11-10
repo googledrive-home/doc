@@ -4004,9 +4004,10 @@ function applyGameModeSelection(){
  if(gameMode==="championship"&&nextMode==="quick"){opponentCount=quickOpponentSelection;$("opponentCountSelect").value=String(opponentCount);}
  gameMode=nextMode;
  const inSeason=gameMode==="championship",inTimeTrial=gameMode==="timeTrial";
+ $("careerDriverSelect").disabled=!inSeason;$("careerDriverSelect").value=selectedCareerDriverId;
  $("trackSelect").disabled=inSeason;$("opponentCountSelect").disabled=inSeason||inTimeTrial;
  if(inSeason){
-  opponentCount=19;$("opponentCountSelect").value="19";
+  opponentCount=21;$("opponentCountSelect").value="21";
   activeTrack=CHAMPIONSHIP_TRACK_ORDER[Math.min(championshipState.round,CHAMPIONSHIP_TRACK_ORDER.length-1)];
   $("trackSelect").value=activeTrack;
  }else if(inTimeTrial){opponentCount=0;$("opponentCountSelect").value="0";}
@@ -9320,6 +9321,9 @@ function bindControls(){
  $("timeOfDayRange").addEventListener("input",timeChange);$("liveTime").addEventListener("input",timeChange);
  const forecastChange=e=>{weatherEvolutionEnabled=e.target.value==="dynamic";weatherForecastTimer=0;weatherForecastRefresh=0;syncWeatherInputs();if(weatherEvolutionEnabled)showRaceControlMessage("DYNAMIC FORECAST ENABLED","info",2.8);};
  $("weatherEvolutionSelect").addEventListener("change",forecastChange);$("liveWeatherEvolution").addEventListener("change",forecastChange);
+ $("careerDriverSelect").innerHTML=CHAMPIONSHIP_AI_DRIVERS.map(driver=>'<option value="'+driver.id+'">'+driver.name+' · '+driver.team+'</option>').join("");
+ $("careerDriverSelect").value=selectedCareerDriverId;$("careerDriverSelect").disabled=gameMode!=="championship";
+ $("careerDriverSelect").addEventListener("change",event=>selectCareerDriver(event.target.value));
  $("gameModeSelect").addEventListener("change",applyGameModeSelection);
  $("championshipOpenBtn").addEventListener("click",openChampionship);$("championshipHudBtn").addEventListener("click",openChampionship);
  $("championshipCloseBtn").addEventListener("click",closeChampionship);$("championshipDoneBtn").addEventListener("click",closeChampionship);
@@ -9327,7 +9331,12 @@ function bindControls(){
  $("liveryPalette").addEventListener("click",e=>{
  const b=e.target.closest("[data-team-id]");if(!b)return;const team=TEAM_LIVERIES.find(x=>x.id===b.dataset.teamId);if(!team)return;
  document.querySelectorAll(".team-swatch").forEach(x=>x.classList.remove("active"));b.classList.add("active");
- selectedTeamId=team.id;selectedLivery=team.primary;selectedAccent=team.accent;buildCar();if(car)positionCarAtStart();updatePitStationUI();
+ selectedTeamId=team.id;selectedLivery=team.primary;selectedAccent=team.accent;
+ if(gameMode==="championship"){
+  const chosenDriver=CHAMPIONSHIP_AI_DRIVERS.find(driver=>driver.teamId===team.id);
+  if(chosenDriver){selectedCareerDriverId=chosenDriver.id;$("careerDriverSelect").value=chosenDriver.id;championshipState.qualifyingResults=(championshipState.qualifyingResults||[]).filter(item=>item.round!==championshipState.round+1);saveChampionship();}
+ }
+ buildCar();if(car)positionCarAtStart();updatePitStationUI();
 });
  $("tyreSelect").addEventListener("change",()=>{tyreCompound=$("tyreSelect").value;});
  $("assistSelect").addEventListener("change",()=>{assistMode=$("assistSelect").value;});
