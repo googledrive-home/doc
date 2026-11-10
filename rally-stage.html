@@ -206,12 +206,16 @@ input[type=range]{accent-color:#d4aa70}
 <div id="loading"><div class="loading-glow"></div><div class="loading-layout"><div class="loading-brand"><span>GRAVEL</span><b>RALLY</b><small>WORLD RALLY STAGE PROGRAMME</small></div><div class="loading-track-art"><div class="loading-mountain mountain-a"></div><div class="loading-mountain mountain-b"></div><div class="loading-road-shape"></div><div class="loading-car-mark">WRX</div><div class="loading-stage-tag">STAGE PREPARATION <i></i></div></div><div class="load-card"><div class="load-card-head"><strong>PREPARING YOUR STAGE</strong><span>01 / 04</span></div><p>Building the road, forest, Subaru rally car, cockpit systems and gravel simulation.</p><div class="loadbar"><div id="loadFill"></div></div><div id="loadText"><span id="loadStep">Preparing terrain</span><b id="loadPct">0%</b></div></div></div></div>
 <script>
 window.__rallyModuleStarted=false;
+const rallyStep=document.getElementById("loadStep"),rallyPct=document.getElementById("loadPct"),rallyFill=document.getElementById("loadFill");
+if(rallyStep)rallyStep.textContent="Loading the 3D engine";
+if(rallyPct)rallyPct.textContent="4%";
+if(rallyFill)rallyFill.style.width="4%";
 window.__rallyModuleWatchdog=setTimeout(()=>{
  if(window.__rallyModuleStarted)return;
- const step=document.getElementById("loadStep"),pct=document.getElementById("loadPct");
- if(step)step.textContent="The 3D engine did not load. Check your connection, then refresh this game.";
- if(pct)pct.textContent="!";
-},12000);
+ if(rallyStep)rallyStep.textContent="The 3D engine did not start. The browser could not load the game scripts.";
+ if(rallyPct)rallyPct.textContent="ERROR";
+ if(rallyFill){rallyFill.style.width="100%";rallyFill.style.background="#d56b56";}
+},8000);
 </script>
 <div id="windshieldDirt" aria-hidden="true"></div>
 <div id="introScreen" class="front-screen open"><div class="front-shell intro-shell">
@@ -284,8 +288,6 @@ window.__rallyModuleWatchdog=setTimeout(()=>{
 <script type="module">
 import * as THREE from "three";
 import { STLLoader } from "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/STLLoader.js";
-window.__rallyModuleStarted=true;clearTimeout(window.__rallyModuleWatchdog);
-
 const $=id=>document.getElementById(id);
 const TRACKS={
  highland:{id:"highland",name:"WELSH FOREST RALLY",full:23400,seed:13,grip:.80,trees:7200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
@@ -1608,6 +1610,7 @@ function initSettingsTabs(){
 }
 
 async function boot(){
+ window.__rallyModuleStarted=true;clearTimeout(window.__rallyModuleWatchdog);
  try{
   loadSettings();setLoad(7,"Starting the 3D renderer");await nextPaint();await initScene();setLoad(88,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
