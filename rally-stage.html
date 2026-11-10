@@ -235,7 +235,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Wales · Forest stages · 23.4 km</option><option value="alpine">Finland · Crest & jump stages · 24.8 km</option><option value="coast">Acropolis · Rocky gravel stages · 21.6 km</option><option value="serpent">Col de Turini · Hairpin pass · 28.6 km</option></select></div>
    <div class="field" id="stageField"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
     <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
-   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
+   <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
    <div id="confirmSummary" class="flow-hidden"></div>
    <button class="action flow-hidden" id="startBtn">START RALLY STAGE</button>
    <div class="note">Controls: W accelerate · S brake / reverse · A / D steer · SPACE handbrake (or H alternate) · ← / → shift in manual · I / J / K / L camera · C view · V wipers.</div>
@@ -498,16 +498,22 @@ function makeForest(track){
  const pineB=new THREE.MeshStandardMaterial({color:weather==="snow"?0xaeb9b2:0x2d4d37,roughness:1});
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,count),foliageA=new THREE.InstancedMesh(pineGeo,pineA,count),foliageB=new THREE.InstancedMesh(pineGeo,pineB,count);
  const broad=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({color:0x3c5539,roughness:1}),Math.floor(count*.12));
+ // Place hundreds of grove centres first, then build tree clusters around them.
+ const groveCount=Math.max(150,Math.round(count/75)),groves=[];
+ for(let i=0;i<groveCount;i++){
+  const sample=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),side=rnd()<.5?-1:1,offset=15+rnd()*53;
+  groves.push({x:sample.p.x+right.x*side*offset,z:sample.p.z+right.z*side*offset,tx:sample.tan.x,tz:sample.tan.z,rx:right.x,rz:right.z,side});
+ }
  const dummy=new THREE.Object3D();let placed=0,broadCount=0,tries=0;
  while(placed<count&&tries<count*3.5){
-  tries++;const sample=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize();
-  const side=rnd()<.5?-1:1,offset=10+Math.pow(rnd(),1.55)*104,x=sample.p.x+right.x*side*offset+(rnd()-.5)*7,z=sample.p.z+right.z*side*offset+(rnd()-.5)*7;
+  tries++;const grove=groves[Math.floor(rnd()*groves.length)],along=(rnd()+rnd()-1)*48,across=(rnd()+rnd()-1)*30;
+  const x=grove.x+grove.tx*along+grove.rx*across,z=grove.z+grove.tz*along+grove.rz*across;
   if(nearRoad(x,z,8))continue;
   const h=terrainY(x,z,track),scale=.85+rnd()*2.1,lean=(rnd()-.5)*.16;
   dummy.position.set(x,h+1.3*scale,z);dummy.scale.set(.7*scale,2.6*scale,.7*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
   dummy.position.set(x,h+2.75*scale,z);dummy.scale.set(2.0*scale,3.3*scale,2.0*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();foliageA.setMatrixAt(placed,dummy.matrix);
   dummy.position.set(x,h+4.0*scale,z);dummy.scale.set(1.38*scale,2.35*scale,1.38*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();foliageB.setMatrixAt(placed,dummy.matrix);
-  if(rnd()<.12&&broadCount<broad.count){dummy.position.set(x+side*2,h+1.55*scale,z-1.5);dummy.scale.set(1.45*scale,1.1*scale,1.35*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();broad.setMatrixAt(broadCount++,dummy.matrix);}
+  if(rnd()<.12&&broadCount<broad.count){dummy.position.set(x+grove.side*2,h+1.55*scale,z-1.5);dummy.scale.set(1.45*scale,1.1*scale,1.35*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();broad.setMatrixAt(broadCount++,dummy.matrix);}
   if(placed%3===0)addWorldCollider(x,z,Math.max(.55,scale*.17),"tree");
   placed++;
  }
