@@ -45,7 +45,7 @@ select{padding:10px 11px;border:1px solid #ffffff22;border-radius:7px;background
 .action:hover,.secondary:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .note{font-size:8px;line-height:1.5;color:#7f8e94}
 #hud{position:fixed;inset:0;z-index:5;display:none;pointer-events:none}
-.hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}#pacePanel{position:absolute;top:66px;left:50%;transform:translateX(-50%);width:min(430px,58vw);padding:10px 16px;text-align:center;border-color:#d7b47766;background:#07121be8}#paceMain{font-size:clamp(14px,2.2vw,22px);font-weight:1000;letter-spacing:.16em;color:#f1d6a6}#paceSub{font-size:8px;letter-spacing:.16em;color:#a9b7bb;margin-top:4px;text-transform:uppercase}#conditionsHud{position:absolute;right:12px;top:66px;font-size:8px;letter-spacing:.12em;color:#cfdbdd}
 .hud-panel{padding:10px 12px;border:1px solid #ffffff27;border-radius:8px;background:#081119d9;box-shadow:0 7px 30px #0005;backdrop-filter:blur(9px)}
 .hud-brand{font-size:9px;letter-spacing:.2em;font-weight:1000;color:var(--accent2)}
 .hud-brand small{display:block;margin-top:4px;font-size:7px;color:#9ba9ae;letter-spacing:.12em}
@@ -100,7 +100,7 @@ input[type=range]{accent-color:#d4aa70}
 .hidden{display:none!important}
 @media(max-width:760px){
  .menu-shell{grid-template-columns:1fr}.menu-story{padding:18px;border-right:0;border-bottom:1px solid #ffffff13}.menu-story h1{font-size:54px;margin:10px 0}.menu-story p{font-size:10px}.story-meta{margin-top:12px}.menu-config{padding:16px}.two{gap:7px}.segment-list{grid-template-columns:1fr 1fr}
- .hud-top{top:7px;left:7px;right:7px}.hud-panel{padding:7px 9px}.hudbtn{padding:7px 8px;font-size:7px}
+ .hud-top{top:7px;left:7px;right:7px}.hud-panel{padding:7px 9px}.hudbtn{padding:7px 8px;font-size:7px}#pacePanel{top:55px;width:min(340px,68vw);padding:7px 10px}#paceSub{font-size:6px}#conditionsHud{top:55px;right:7px;font-size:6px}
  #speedPanel{left:7px;bottom:7px;min-width:125px}#speed{font-size:38px}
  #stagePanel{right:7px;bottom:7px;width:43vw}.hud-bottom{display:none}
  .settings-grid{grid-template-columns:1fr}.modal-card{padding:13px}
@@ -125,7 +125,7 @@ input[type=range]{accent-color:#d4aa70}
    <div class="car-summary"><div class="car-silhouette" id="carArt"><svg viewBox="0 0 180 80"><path d="M12 52 L27 42 L42 38 L57 20 L117 20 L137 38 L158 43 L169 53 L165 62 L15 62Z" fill="#d74f3f" stroke="#f3d5a5" stroke-width="2"/><path d="M59 24 L112 24 L130 39 L48 39Z" fill="#1a2c34" stroke="#7e9aa0"/><circle cx="45" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/><circle cx="135" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/></svg></div><div><strong id="carName">FALCON R5</strong><small id="carDesc">Short wheelbase · agile rotation · forgiving gravel balance</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div></div></div>
    <div class="field"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Highland Forest · 23.4 km</option><option value="alpine">Alpine Valley · 24.8 km</option><option value="coast">Moorland Coast · 21.6 km</option></select></div>
    <div class="field"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
-   <div class="two"><div class="field"><label for="weatherSelect">Stage conditions</label><select id="weatherSelect"><option value="dry">Dry gravel</option><option value="damp">Damp / compact</option><option value="wet">Wet gravel</option></select></div><div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div></div>
+   <div class="two"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet">Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning" selected>09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset">18:30 · Sunset</option><option value="night">22:00 · Night</select></div></div><div class="field"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet">Wet rally</option></select></div>
    <button class="action" id="startBtn">START RALLY STAGE</button>
    <div class="note">Keyboard: W / ↑ throttle · S / ↓ brake · A / D steering · SPACE handbrake · Q / E gears · C camera · R reset · ESC pause.</div>
   </section>
@@ -136,7 +136,7 @@ input[type=range]{accent-color:#d4aa70}
   <div class="hud-panel hud-brand">GRAVEL // RALLY STAGE<small id="hudCarName">FALCON R5 · AWD</small></div>
   <div class="hud-actions"><button class="hudbtn" id="cameraBtn">CAMERA · CHASE</button><button class="hudbtn" id="setupBtn">CAR SETUP</button><button class="hudbtn" id="pauseBtn">PAUSE</button><button class="hudbtn" id="garageBtn">GARAGE</button></div>
  </div>
- <div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div></div>
+ <div class="hud-panel" id="pacePanel"><div id="paceMain">STRAIGHT AHEAD</div><div id="paceSub">PACE NOTES · READY</div></div><div id="conditionsHud">MORNING · DRY GRAVEL</div><div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div></div>
  <div class="hud-panel" id="stagePanel"><div class="hud-brand" id="stageName">PINE RIDGE SPRINT</div><div id="stageMeta">HIGHLAND FOREST · 5.2 KM</div><div class="progress-track"><div id="stageProgress"></div></div><div id="stageTime" style="margin-top:7px;font-size:11px;font-variant-numeric:tabular-nums">00:00.000</div></div>
  <div class="hud-bottom"><div class="hud-chip">SURFACE <b id="surfaceText">GRAVEL</b></div><div class="hud-chip">SLIP <b id="slipText">0°</b></div><div class="hud-chip" id="driftReadout">DRIFT · READY</div><div class="hud-chip">HANDBRAKE <b id="handbrakeText">OFF</b></div></div>
 </div>
@@ -189,23 +189,26 @@ import * as THREE from "three";
 
 const $=id=>document.getElementById(id);
 const TRACKS={
- highland:{id:"highland",name:"HIGHLAND FOREST",full:23400,seed:13,grip:.82,trees:1650,town:[.16,.57,.82],color:0x53684c,stages:[
-  {id:"pine",name:"PINE RIDGE SPRINT",km:5.2,start:0,desc:"Fast pine bends · flowing crests"},
-  {id:"river",name:"RIVER BEND",km:6.0,start:.23,desc:"Tight forest road · damp hairpins"},
-  {id:"quarry",name:"OLD QUARRY RUN",km:5.7,start:.49,desc:"Rocky cuts · rough braking zones"},
-  {id:"village",name:"VILLAGE FINALE",km:6.5,start:.75,desc:"Open fields · narrow town lanes"}
+ highland:{id:"highland",name:"HIGHLAND FOREST",full:23400,seed:13,grip:.80,trees:5200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
+  {id:"pine",name:"PINE RIDGE SPRINT",km:5.2,start:0,desc:"Fast crests · linked medium bends"},
+  {id:"river",name:"RIVER BEND",km:6.0,start:.23,desc:"Tight hairpins · narrow forest cuts"},
+  {id:"quarry",name:"OLD QUARRY RUN",km:5.7,start:.49,desc:"Off-camber turns · rough braking zones"},
+  {id:"village",name:"VILLAGE FINALE",km:6.5,start:.75,desc:"Blind entries · fast-to-tight transitions"},
+  {id:"full",name:"FULL HIGHLAND STAGE",km:23.4,start:0,desc:"Complete 23.4 km rally · every corner",full:true}
  ]},
- alpine:{id:"alpine",name:"ALPINE VALLEY",full:24800,seed:27,grip:.86,trees:1050,town:[.29,.66],color:0x65735c,stages:[
-  {id:"pass",name:"NORTH PASS",km:6.0,start:0,desc:"Climbing gravel · blind crests"},
-  {id:"lake",name:"LAKE DESCENT",km:5.5,start:.24,desc:"Fast downhill · off-camber turns"},
-  {id:"tunnel",name:"TUNNEL RIDGE",km:6.8,start:.46,desc:"Mountain edge · rocky tunnels"},
-  {id:"valley",name:"VALLEY FINALE",km:6.5,start:.72,desc:"Long sweepers · village finish"}
+ alpine:{id:"alpine",name:"ALPINE VALLEY",full:24800,seed:27,grip:.84,trees:3600,town:[.18,.39,.62,.82],color:0x65735c,stages:[
+  {id:"pass",name:"NORTH PASS",km:6.0,start:0,desc:"Long climbs · blind crests · tight 2s"},
+  {id:"lake",name:"LAKE DESCENT",km:5.5,start:.24,desc:"Steep descent · off-camber switchbacks"},
+  {id:"tunnel",name:"TUNNEL RIDGE",km:6.8,start:.46,desc:"Narrow ledges · linked hairpins"},
+  {id:"valley",name:"VALLEY FINALE",km:6.5,start:.72,desc:"Fast sweepers · village braking zones"},
+  {id:"full",name:"FULL ALPINE STAGE",km:24.8,start:0,desc:"Complete 24.8 km mountain rally",full:true}
  ]},
- coast:{id:"coast",name:"MOORLAND COAST",full:21600,seed:41,grip:.78,trees:620,town:[.12,.45,.74],color:0x68735a,stages:[
-  {id:"cliff",name:"COASTLINE RUN",km:5.4,start:0,desc:"Exposed cliffs · crosswind bends"},
-  {id:"wind",name:"WIND FARM LOOP",km:5.2,start:.25,desc:"Open moorland · quick transitions"},
-  {id:"farm",name:"FARMLAND CUT",km:5.6,start:.49,desc:"Stone walls · farm access roads"},
-  {id:"sunset",name:"SUNSET FINALE",km:5.4,start:.75,desc:"Rolling fields · fast gravel sweeps"}
+ coast:{id:"coast",name:"MOORLAND COAST",full:21600,seed:41,grip:.76,trees:2300,town:[.12,.32,.56,.78],color:0x68735a,stages:[
+  {id:"cliff",name:"COASTLINE RUN",km:5.4,start:0,desc:"Exposed drops · quick direction changes"},
+  {id:"wind",name:"WIND FARM LOOP",km:5.2,start:.25,desc:"Blind brows · tightening bends"},
+  {id:"farm",name:"FARMLAND CUT",km:5.6,start:.49,desc:"Stone walls · narrow farm lanes"},
+  {id:"sunset",name:"SUNSET FINALE",km:5.4,start:.75,desc:"Long downhill bends · deceptive hairpins"},
+  {id:"full",name:"FULL MOORLAND STAGE",km:21.6,start:0,desc:"Complete 21.6 km coastal rally",full:true}
  ]}
 };
 const CARS={
@@ -470,7 +473,7 @@ function buildVehicle(){
 function stageSelection(){
  const track=TRACKS[selectedTrack],stage=track.stages[selectedStage];
  stageStartIndex=Math.floor(stage.start*trackData.samples.length)%trackData.samples.length;
- stageTargetMeters=stage.km*1000;stageMeters=0;nearestIndex=stageStartIndex;elapsed=0;stageFinished=false;
+ stageTargetMeters=stage.full?track.full:stage.km*1000;stageMeters=0;nearestIndex=stageStartIndex;elapsed=0;stageFinished=false;
 }
 function placeCar(){
  if(!trackData||!vehicleRoot)return;
@@ -664,7 +667,7 @@ function finishStage(){
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function setMenuStageOptions(){
  const track=TRACKS[selectedTrack];selectedStage=clamp(selectedStage,0,track.stages.length-1);
- $("stageList").innerHTML=track.stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+s.km.toFixed(1)+' KM · '+s.desc+'</small></button>').join("");
+ $("stageList").innerHTML=track.stages.map((s,i)=>'<button type="button" class="segment '+(i===selectedStage?'active':'')+'" data-stage="'+i+'"><b>'+s.name+'</b><small>'+(s.full?(track.full/1000).toFixed(1):s.km.toFixed(1))+' KM · '+s.desc+'</small></button>').join("");
  document.querySelectorAll(".segment").forEach(b=>b.addEventListener("click",()=>{selectedStage=Number(b.dataset.stage);setMenuStageOptions();}));
 }
 function updateCarCard(){
@@ -681,7 +684,7 @@ function startStage(){
  const spec=CARS[selectedCar];placeCar();gameActive=true;paused=false;stageFinished=false;elapsed=0;if(engineAudio?.state==="suspended")engineAudio.resume();
  $("menu").style.display="none";$("hud").style.display="block";$("pauseScreen").classList.remove("open");$("finishScreen").classList.remove("open");
  $("hudCarName").textContent=spec.name+" · AWD";$("stageName").textContent=TRACKS[selectedTrack].stages[selectedStage].name;
- $("stageMeta").textContent=TRACKS[selectedTrack].name+" · "+TRACKS[selectedTrack].stages[selectedStage].km.toFixed(1)+" KM";
+ $("stageMeta").textContent=TRACKS[selectedTrack].name+" · "+(TRACKS[selectedTrack].stages[selectedStage].full?(TRACKS[selectedTrack].full/1000).toFixed(1):TRACKS[selectedTrack].stages[selectedStage].km.toFixed(1))+" KM";
  $("cameraBtn").textContent="CAMERA · "+CAMERAS[cameraMode];previousFrame=performance.now();updateCarHud({handbrake:false},false);
 }
 function returnGarage(){
@@ -723,6 +726,8 @@ function loadSettings(){
 }
 function bindUI(){
  $("trackSelect").addEventListener("change",()=>{selectedTrack=$("trackSelect").value;selectedStage=0;setMenuStageOptions();buildPreviewWorld();});
+  $("weatherSelect").addEventListener("change",()=>{weather=$("weatherSelect").value;applyAtmosphere();});
+  $("timeSelect").addEventListener("change",()=>{timeOfDay=$("timeSelect").value;applyAtmosphere();});
  $("carSelect").addEventListener("change",()=>{selectedCar=$("carSelect").value;updateCarCard();buildVehicle();placeCar();updateCamera(.016,true);});
  $("startBtn").addEventListener("click",startStage);$("openSettings").addEventListener("click",openSettings);
  $("setupBtn").addEventListener("click",openSettings);$("closeSettings").addEventListener("click",()=>{$("modal").classList.remove("open");if(resumeAfterSettings){paused=false;previousFrame=performance.now();resumeAfterSettings=false;}});
