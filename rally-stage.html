@@ -559,7 +559,7 @@ function placeCar(){
  const s=trackData.samples[stageStartIndex],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize();
  const x=s.p.x+right.x*.1,z=s.p.z+right.z*.1;
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(x,terrainY(x,z)+.305,z);vehicleRoot.rotation.set(0,Math.atan2(s.tan.x,s.tan.z),0);
- carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,damage:0,wear:0,travel:0};
+ carState={x,z,yaw:vehicleRoot.rotation.y,vLong:0,vLat:0,yawRate:0,gear:1,rpm:1400,engineTemp:90,slip:0,latAccel:0,longAccel:0,steer:0,throttle:0,brake:0,handbrake:false,handbrakeBlend:0,handbrakeWasOn:false,damage:0,wear:0,travel:0};
  wheelAssemblies.forEach(w=>{w.pivot.rotation.y=0;w.wheel.rotation.set(0,0,0);});
 }
 function buildDust(){
@@ -643,6 +643,8 @@ function physicsStep(dt){
   const steeringLimit=.55/(1+speed*.012)*settings.steer/.7,targetSteer=input.steer*steeringLimit;
   s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*7.5));
   const handbrakeTarget=input.handbrake&&speed>3?1:0;
+  if(input.handbrake&&!s.handbrakeWasOn&&speed>7&&Math.abs(input.steer)>.12)s.vLat-=input.steer*speed*.16;
+  s.handbrakeWasOn=input.handbrake;
   s.handbrakeBlend+=(handbrakeTarget-s.handbrakeBlend)*(1-Math.exp(-dt*(handbrakeTarget>s.handbrakeBlend?13:7)));
   const a=spec.wheelbase*.53,b=spec.wheelbase*.47;
   const frontLoad=spec.mass*9.81*(b/spec.wheelbase)-s.longAccel*spec.mass*.62/spec.wheelbase,rearLoad=spec.mass*9.81*(a/spec.wheelbase)+s.longAccel*spec.mass*.62/spec.wheelbase;
@@ -780,7 +782,7 @@ function loadSettings(){
 }
 function bindUI(){
  $("trackSelect").addEventListener("change",()=>{selectedTrack=$("trackSelect").value;selectedStage=0;setMenuStageOptions();buildPreviewWorld();});
- $("weatherSelect").addEventListener("change",()=>{weather=$("weatherSelect").value;applyAtmosphere();});
+ $("weatherSelect").addEventListener("change",()=>{weather=$("weatherSelect").value;buildPreviewWorld();});
  $("timeSelect").addEventListener("change",()=>{timeOfDay=$("timeSelect").value;applyAtmosphere();});
  $("carSelect").addEventListener("change",()=>{selectedCar=$("carSelect").value;updateCarCard();buildVehicle();placeCar();updateCamera(.016,true);});
  $("startBtn").addEventListener("click",startStage);$("openSettings").addEventListener("click",openSettings);
