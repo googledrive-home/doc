@@ -390,6 +390,9 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
  .formation-guide{position:fixed;top:104px;left:50%;z-index:16;display:none;grid-template-columns:auto auto auto;align-items:center;gap:13px;max-width:min(720px,92vw);padding:10px 15px;border:1px solid #ffffff35;border-left:3px solid #f1c65a;border-radius:9px;background:#07111eeb;box-shadow:0 12px 38px #0009;transform:translateX(-50%);backdrop-filter:blur(8px)}
  .formation-guide.open{display:grid}.formation-guide small{color:#9db0bf;font-size:8px;font-weight:950;letter-spacing:.13em}.formation-guide strong{color:#f7d474;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}.formation-guide span{color:#f1f5f7;font-size:10px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
  .formation-option label{display:flex;align-items:center;gap:8px;color:#d5e0e8!important;font-size:8px!important;letter-spacing:.06em}.formation-option input{accent-color:#ff765e}
+.grid-start-control{position:fixed;z-index:18;top:158px;left:50%;transform:translateX(-50%);display:none;min-width:min(310px,92vw);padding:13px 16px;border:1px solid #ffd36f77;border-radius:12px;background:#07111dec;box-shadow:0 16px 46px #000b;text-align:center;pointer-events:auto}
+.grid-start-control.open{display:grid;gap:9px}.grid-start-control small{color:#b5c4cf;font-size:8px;font-weight:950;letter-spacing:.14em}.grid-start-control .action{width:100%;padding:12px 16px}
+@media(max-width:760px){.grid-start-control{top:126px;min-width:250px;padding:10px 12px}}
  @media(max-width:760px){.formation-guide{top:74px;grid-template-columns:1fr auto;gap:5px 10px;padding:8px 10px}.formation-guide small{grid-column:1/-1}.formation-guide strong{font-size:16px}.formation-guide span{font-size:8px}}
 </style>
 <style id="pitStrategyStyles">
@@ -689,6 +692,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <div id="pauseOverlay" class="overlay"><div class="pausecard"><div class="eyebrow">Session paused</div><h2>PAUSED</h2><p>Take a break or adjust the conditions before heading back onto the circuit.</p><div class="pauseactions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseWeatherBtn">WEATHER</button><button class="secondary" id="cameraPauseBtn">CHANGE CAMERA</button><button class="secondary" id="settingsPauseBtn">SETTINGS</button><button class="secondary" id="restartBtn">RESTART LAP</button><button class="secondary" id="menuBtn" style="grid-column:1/-1">RETURN TO GARAGE</button></div></div></div>
 <div id="raceStartOverlay" class="race-start-overlay" aria-live="polite"><div class="race-start-panel"><small>APEX GRAND PRIX · START PROCEDURE</small><div id="raceStartLamps" class="race-start-lamps"><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i><i class="race-start-lamp"></i></div><strong id="raceStartLabel">GET READY</strong></div></div>
 <div id="formationGuide" class="formation-guide" aria-live="polite"><small>FORMATION LAP · RETURN TO START GRID</small><strong id="formationDistance">0 m</strong><span id="formationDirection">STRAIGHT · FOLLOW THE LINE</span></div>
+<div id="gridStartControl" class="grid-start-control" aria-live="polite"><small>ALL CARS PARKED · CONFIRM YOUR GRID SLOT</small><button id="gridStartBtn" class="action" type="button">START LIGHTS →</button></div>
 <div id="raceControlBanner" class="race-control-banner" aria-live="polite">GREEN FLAG</div>
 <div id="pitServiceOverlay" class="pit-service-overlay pit-cinematic-overlay" aria-label="Cinematic pit stop" aria-live="polite">
  <section class="pit-cinematic-card">
@@ -5823,20 +5827,53 @@ function updateFormationGuide(){
  }
  $("formationDirection").textContent=direction+" · FOLLOW THE LINE";guide.classList.add("open");
 }
+function beginRaceStartSequence(){
+ if(!running||paused||raceStartState!=="gridReady")return;
+ keys.KeyW=false;keys.ArrowUp=false;
+ if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;car.contactCooldown=0;}
+ raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartJumpReported=false;
+ raceStartReleaseAt=4.0+Math.random()*1.25;
+ $("gridStartControl")?.classList.remove("open");
+ showRaceControlMessage("GRID CONFIRMED · START LIGHTS SEQUENCE","info",2.5);
+ showTeamRadio("Grid confirmed. Hold position for the start lights.");
+}
 function updateRaceStart(dt){
  const overlay=$("raceStartOverlay"),lamps=$("raceStartLamps"),label=$("raceStartLabel");
  if(!overlay||!lamps||!label)return;
  if(formationLapActive){overlay.classList.remove("open");updateFormationGuide();return;}
  if(formationGridSettling){
   overlay.classList.remove("open");formationGridSettleTimer+=dt;
-  if(opponents.every(bot=>bot.formationParked)){
-   formationGridSettling=false;formationGridSettleTimer=0;
+  const allParked=opponents.every(bot=>bot.formationParked);
+  if(allParked||formationGridSettleTimer>=12){
+   if(!allParked){
+    for(const bot of opponents){
+     if(bot.formationParked)continue;
+     bot.formationComplete=true;bot.formationParked=true;bot.formationDistance=circuitRouteLength||routeLength;
+     bot.progress=bot.formationStartProgress;bot.speed=0;bot.offset=bot.formationOffset;bot.targetOffset=bot.formationOffset;
+     const slot=circuitSlotAtProgress(bot.formationStartProgress);
+     if(slot&&bot.root){
+      const rightX=slot.tangent.z,rightZ=-slot.tangent.x,rightLength=Math.hypot(rightX,rightZ)||1;
+      const yaw=Math.atan2(slot.tangent.x,slot.tangent.z),slope=Math.atan2(slot.tangent.y,rightLength);
+      bot.root.position.set(slot.point.x+rightX/rightLength*bot.formationOffset,slot.point.y+.035,slot.point.z+rightZ/rightLength*bot.formationOffset);
+      bot.root.rotation.set(-slope,yaw,0,"YXZ");
+     }
+    }
+   }
+   formationGridSettling=false;formationGridSettleTimer=0;raceStartState="gridReady";
    opponents.forEach(bot=>{bot.laps=0;bot.speed=0;});
-   showRaceControlMessage("GRID COMPLETE · LIGHTS INCOMING","info",3.0);
-   showTeamRadio("All cars are in their grid slots. Stand by for lights out.");
+   if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;}
+   $("gridStartControl").classList.add("open");
+   showRaceControlMessage("GRID COMPLETE · PRESS START LIGHTS","info",4.0);
+   showTeamRadio("All cars are parked. Press START LIGHTS when you are ready.");
   }
   return;
  }
+ if(raceStartState==="gridReady"){
+  overlay.classList.remove("open");$("gridStartControl").classList.add("open");
+  if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;}
+  return;
+ }
+ $("gridStartControl").classList.remove("open");
  $("formationGuide").classList.remove("open");
  if(raceStartState==="countdown"){
   overlay.classList.add("open");raceStartTimer+=dt;
@@ -6200,7 +6237,7 @@ function buildAISpeedProfile(bot,aiRoute,aiLength){
 }
 
 function updateOpponents(dt){
- if(!opponents.length||(raceStartState==="countdown"&&!formationGridSettling))return;
+ if(!opponents.length||((raceStartState==="countdown"||raceStartState==="gridReady")&&!formationGridSettling))return;
  const aiRoute=circuitRoute.length?circuitRoute:route,aiLength=circuitRouteLength||routeLength,n=aiRoute.length;
  if(n<2||!aiLength)return;
  const ds=aiLength/n,laneLimit=Math.max(2.1,circuitRoadWidth*.5-2.4);
@@ -7557,10 +7594,10 @@ function completeFormationLap(){
  // The player has completed the formation distance and is already back at the grid; hold here rather than repositioning the car.
  if(car){car.u=0;car.v=0;car.throttle=0;car.brake=1;nearestInfo=findNearest(car.x,car.z,car.y,car.routeIndex);car.routeIndex=nearestInfo.index;}
  formationLapLastProgress=nearestInfo?.progress??0;formationLapDistanceTravelled=0;previousProgress=nearestInfo?.progress??previousProgress;
- raceStartState="countdown";raceStartTimer=0;raceStartLit=0;raceStartJumpReported=false;
- raceStartReleaseAt=4.0+Math.random()*1.25;raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
- $("raceStartOverlay").classList.remove("open");
- showRaceControlMessage("FORMATION LAP COMPLETE · CARS RETURNING TO GRID","info",3.6);
+ raceStartState="gridReady";raceStartTimer=0;raceStartLit=0;raceStartJumpReported=false;
+ raceFlag="GREEN";raceFlagTimer=0;aiUpdateAccumulator=0;
+ $("raceStartOverlay").classList.remove("open");$("gridStartControl").classList.remove("open");
+ showRaceControlMessage("FORMATION LAP COMPLETE · AI FIELD RETURNING TO GRID","info",3.6);
 }
 function updatePhysics(dt){
  if(pitServiceOpen){
@@ -7569,6 +7606,7 @@ function updatePhysics(dt){
   if(!(pitCinematic.active&&pitCinematic.phase==="approach")){car.u=0;car.v=0;car.throttle=0;car.brake=1;}
   elapsed+=dt;return;
  }
+ if(raceStartState==="gridReady"){car.u=0;car.v=0;car.throttle=0;car.brake=1;elapsed+=dt;return;}
  car.barrierCooldown=Math.max(0,(car.barrierCooldown||0)-dt);
  car.landingCooldown=Math.max(0,(car.landingCooldown||0)-dt);
  const throttleHeld=!!(keys.KeyW||keys.ArrowUp),throttleRequest=throttleHeld&&raceStartState!=="countdown"?1:0;
@@ -8743,7 +8781,7 @@ function startSession(sessionMode="practice"){
  aiFieldRecoveryTimer=0;weatherForecastTimer=0;weatherForecastRefresh=0;weatherRainWarningSent=false;
  clearGhostCar();lapRecording=[];lapRecordAccumulator=0;timeTrialBest=Infinity;timeTrialGhostData=[];
  if(sessionMode==="timeTrial"){loadTimeTrialRecord();bestLap=timeTrialBest;ghostEnabled=true;}else updateGhostToggleUI();
- formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;
+ formationLapActive=!startInPit&&sessionMode!=="timeTrial"&&formationLapEnabled;formationGridSettling=false;formationGridSettleTimer=0;$("gridStartControl").classList.remove("open");
  formationLapDistanceRemaining=circuitRouteLength||routeLength;formationLapDistanceTravelled=0;
  raceStartState=startInPit?"none":formationLapActive?"formation":"countdown";
  raceStartTimer=0;raceStartLit=0;raceStartPenalty=0;raceStartJumpReported=false;raceStartReleaseAt=4.0+Math.random()*1.25;aiUpdateAccumulator=0;
@@ -9184,7 +9222,7 @@ function bindControls(){
  safeBind("camera look",bindCameraLook);
  const safeClick=(id,handler)=>{const element=$(id);if(!element){console.warn("Missing game control: "+id);return;}element.addEventListener("click",event=>{try{handler(event);}catch(error){showError(error);}});};
  safeBind("pit station controls",bindPitStation);safeBind("pit service controls",bindPitService);safeBind("pit strategy controls",bindPitPlan);
- safeClick("startBtn",openPitStation);safeClick("pitStopBtn",handlePitButtonAction);safeClick("broadcastBtn",toggleBroadcast);safeClick("ghostToggleBtn",toggleTimeTrialGhost);
+ safeClick("startBtn",openPitStation);safeClick("gridStartBtn",beginRaceStartSequence);safeClick("pitStopBtn",handlePitButtonAction);safeClick("broadcastBtn",toggleBroadcast);safeClick("ghostToggleBtn",toggleTimeTrialGhost);
  safeClick("cameraBtn",cycleCamera);safeClick("cameraPauseBtn",cycleCamera);
  safeClick("weatherBtn",()=>{$("weatherPanel").classList.toggle("open");syncWeatherInputs();});
  safeClick("pauseBtn",pauseGame);safeClick("resumeBtn",resumeGame);
