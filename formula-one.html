@@ -4015,13 +4015,29 @@ function applyGameModeSelection(){
  builtTrackId=null;const chosenTrack=trackDefs[activeTrack],chosenOfficial=OFFICIAL_F1_TRACK_POINTS[activeTrack];activeTrackPoints=chosenOfficial?chosenOfficial.map(([x,z])=>[x,z,0]):activeTrack==="monza"?buildMonzaPoints():chosenTrack.points.slice();updatePreview();syncActiveTrackLabels();$("championshipHudBtn").style.display=inSeason?"inline-block":"none";
  renderChampionship();
 }
-function completeChampionshipRound(){
- if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return null;
- const playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
- const participants=[{id:"player",name:"YOU",team:"APEX GP",distance:raceLaps+playerProgress-raceStartPenalty/120,isPlayer:true}];
+function completeChampionshipQualifying(){
+ if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return "";
+ const player=getSelectedCareerDriver(),playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
+ const participants=[{id:player.id,name:player.name,team:player.team,distance:(currentSessionLapTarget||3)+playerProgress-raceStartPenalty/120,isPlayer:true}];
  for(const bot of opponents){
   const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
-  if(!driver)continue;
+  if(!driver||driver.id===player.id)continue;
+  participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,bot.laps+bot.progress-(bot.penaltyTime||0)/120)});
+ }
+ participants.sort((a,b)=>b.distance-a.distance);
+ const playerPosition=participants.findIndex(item=>item.isPlayer)+1,round=championshipState.round+1;
+ const record={round,playerDriverId:player.id,playerPosition,order:participants.map(item=>item.id)};
+ championshipState.qualifyingResults=(championshipState.qualifyingResults||[]).filter(item=>item.round!==round).concat(record);
+ saveChampionship();renderChampionship();
+ return " Qualifying position: P"+playerPosition+" of "+participants.length+". The race grid is saved.";
+}
+function completeChampionshipRound(){
+ if(gameMode!=="championship"||!championshipState||championshipState.round>=CHAMPIONSHIP_TRACK_ORDER.length)return null;
+ const player=getSelectedCareerDriver(),playerProgress=nearestInfo?clamp(nearestInfo.progress,0,.999):0;
+ const participants=[{id:player.id,name:player.name,team:player.team,distance:raceLaps+playerProgress-raceStartPenalty/120,isPlayer:true}];
+ for(const bot of opponents){
+  const driver=CHAMPIONSHIP_AI_DRIVERS.find(item=>item.id===bot.driverId);
+  if(!driver||driver.id===player.id)continue;
   participants.push({id:driver.id,name:driver.name,team:driver.team,distance:Math.max(0,bot.laps+bot.progress-(bot.penaltyTime||0)/120)});
  }
  participants.sort((a,b)=>b.distance-a.distance);
@@ -7983,12 +7999,13 @@ function updatePhysics(dt){
   trackRubber=clamp(trackRubber+.012*(1-trackWetness*.45),0,.085);
   showTeamRadio("Lap "+lap+" complete. Keep it tidy and manage the tyre temperatures.");
   lap++;lapStart=elapsed;
-  if(lap>raceLaps&&currentSessionMode!=="timeTrial"){
+  if(lap>(currentSessionLapTarget||raceLaps)&&currentSessionMode!=="timeTrial"){
    running=false;paused=true;silenceAudio();
+   const qualifyingResult=currentSessionMode==="qualifying"?completeChampionshipQualifying():"";
    const championshipResult=currentSessionMode==="championship"?completeChampionshipRound():"";
-   document.querySelector(".pausecard .eyebrow").textContent=currentSessionMode==="championship"?"Championship round complete":"Chequered flag";
-   document.querySelector(".pausecard h2").textContent="FINISH";
-   document.querySelector(".pausecard p").textContent="Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+"."+(raceStartPenalty>0?" Race-control penalties: +"+raceStartPenalty.toFixed(1)+" seconds.":"")+(championshipResult||"");
+   document.querySelector(".pausecard .eyebrow").textContent=currentSessionMode==="qualifying"?"Career qualifying complete":currentSessionMode==="championship"?"Championship round complete":"Chequered flag";
+   document.querySelector(".pausecard h2").textContent=currentSessionMode==="qualifying"?"QUALIFIED":"FINISH";
+   document.querySelector(".pausecard p").textContent=currentSessionMode==="qualifying"?"Your qualifying result is saved."+qualifyingResult+" Return to the garage to start the race.":"Session complete — "+raceLaps+" lap"+(raceLaps===1?"":"s")+" finished. Your best lap was "+(Number.isFinite(bestLap)?fmtTime(bestLap):"not recorded")+"."+(raceStartPenalty>0?" Race-control penalties: +"+raceStartPenalty.toFixed(1)+" seconds.":"")+(championshipResult||"");
    $("pauseOverlay").style.display="grid";
   }
  }
