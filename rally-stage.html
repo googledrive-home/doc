@@ -268,11 +268,14 @@ function makeRoute(track){
  const controlCount=track.cornerHeavy?192:92;
  for(let i=0;i<controlCount;i++){
   const a=i/controlCount*Math.PI*2;
-  const radiusX=track.cornerHeavy?2760+270*Math.sin(a*3+seed)+125*Math.cos(a*5-seed*.2)+165*Math.sin(a*15+seed*.7)+132*Math.sin(a*27-seed)+96*Math.cos(a*39+seed*.4)+62*Math.sin(a*49-seed*.6):2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2)+190*Math.sin(a*13+seed*.7)+88*Math.sin(a*21-seed);
-  const radiusZ=track.cornerHeavy?2510+300*Math.cos(a*2+seed*.3)+118*Math.sin(a*7+seed)+172*Math.cos(a*17-seed*.4)+136*Math.sin(a*29+seed*.3)+88*Math.cos(a*41-seed)+58*Math.sin(a*51+seed*.2):2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed)+205*Math.cos(a*11-seed*.4)+92*Math.sin(a*19+seed*.3);
-  const tangential=track.cornerHeavy?Math.sin(a*23+seed)*58+Math.cos(a*37-seed)*26:0;
-  const x=Math.cos(a)*radiusX+Math.sin(a*5+seed)*70+Math.cos(a)*tangential;
-  const z=Math.sin(a)*radiusZ+Math.cos(a*4-seed)*65+Math.sin(a)*tangential;
+  const radiusX=track.cornerHeavy
+   ?2760+270*Math.sin(a*3+seed)+125*Math.cos(a*5-seed*.2)+100*Math.sin(a*15+seed*.7)+70*Math.sin(a*23-seed)+45*Math.cos(a*31+seed*.4)+25*Math.sin(a*39-seed*.6)+12*Math.cos(a*47+seed)
+   :2820+330*Math.sin(a*3+seed)+145*Math.cos(a*5-seed*.2)+190*Math.sin(a*13+seed*.7)+88*Math.sin(a*21-seed);
+  const radiusZ=track.cornerHeavy
+   ?2510+300*Math.cos(a*2+seed*.3)+118*Math.sin(a*7+seed)+84*Math.cos(a*17-seed*.4)+58*Math.sin(a*25+seed*.3)+38*Math.cos(a*33-seed)+21*Math.sin(a*41+seed*.2)+10*Math.cos(a*49-seed*.1)
+   :2550+360*Math.cos(a*2+seed*.3)+130*Math.sin(a*7+seed)+205*Math.cos(a*11-seed*.4)+92*Math.sin(a*19+seed*.3);
+  const x=Math.cos(a)*radiusX+Math.sin(a*5+seed)*70;
+  const z=Math.sin(a)*radiusZ+Math.cos(a*4-seed)*65;
   control.push(new THREE.Vector3(x,terrainY(x,z,track)+.24,z));
  }
  let curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
