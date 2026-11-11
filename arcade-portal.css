@@ -110,6 +110,7 @@ body>#bgDecor,body>header,body>main,body>footer{display:none!important}
 .portal-stat-tile strong{display:block;margin-top:6px;font-size:23px;font-weight:950;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
 .portal-profile-form{display:grid;gap:8px;margin-top:14px}
 .portal-field{display:grid;gap:5px}
+.portal-field[hidden]{display:none!important}
 .portal-field label{font-size:8px;color:var(--portal-muted);font-weight:900;letter-spacing:.12em;text-transform:uppercase}
 .portal-field input{width:100%;height:40px;padding:0 11px;border:1px solid var(--portal-line);border-radius:10px;background:#0b1423;color:var(--portal-text);font-size:11px;outline:none}
 .portal-field input:focus{border-color:var(--portal-accent)}
