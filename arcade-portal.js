@@ -15,8 +15,7 @@
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Neon Runner":"neon-runner","Memory Match":"memory-match","Moto X3M":"moto-x3m",
   "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes",
-  "Cube Engine":"cube-engine",
-  "Dust Racing 2D":"dust-racing-2d","Racing Car Game":"racing-car-game"
+  "Cube Engine":"cube-engine","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
  };
  const photos={
   "drift-arena":"assets/drift-track-1.webp",
@@ -27,7 +26,7 @@
  };
  const genreFor=(title,isExternal)=>{
   if(isExternal)return "External Games";
-  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage","Dust Racing 2D","Racing Car Game"].includes(title))return "Racing";
+  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage"].includes(title))return "Racing";
   if(["Tennis Rally","Hockey","8 Ball Pool"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Industrial Site Ops","Cube Engine"].includes(title))return "Simulation";
   if(title==="Memory Match")return "Puzzle";
@@ -133,7 +132,7 @@
   if(!title)continue;
   const id=gameIdByTitle[title]||"";
   const rawOnclick=(source.querySelector(".play-card button")?.getAttribute("onclick")||"");
-  const external=rawOnclick.includes("openExternal(");
+  const external=rawOnclick.includes("openExternal(")||rawOnclick.includes("openPasswordProtectedGame(");
   const genre=genreFor(title,external);
   const paragraph=source.querySelector("p");
   const icon=source.querySelector(".art-icon,.icon");

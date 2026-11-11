@@ -122,9 +122,10 @@ body[data-decor="high"] #bgDecor .bg-shape{display:grid}
 <section class="card external wide" style="--accent:var(--cyan)" onclick="openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')"><span class="tag">Garden Gnomes</span><h2>Garden Gnomes</h2><p>Open the Google Garden Gnomes game directly in a separate tab.</p><div class="play-card"><div class="icon art-icon" data-art="Garden Gnomes"></div><div><strong>Garden Gnomes</strong><span>Opens directly in a new tab</span></div><button class="btn" onclick="event.stopPropagation();openExternal('https://www.google.com/logos/2018/gnomes/gnomes18.html')">OPEN →</button></div></section></section>
 
 <section class="card" style="--accent:#65d6e8"><span class="tag">HTML5 Voxel Sandbox</span><h2>Cube Engine</h2><p>Run the original Cube Engine browser source locally in PlaySpace. Responsive controls and lower render distance make it more suitable for ChromeOS.</p><div class="play-card"><div class="icon">🧊</div><div><strong>Cube Engine · Web</strong><span>Original HTML5 canvas source · build and explore</span></div><button class="btn" onclick="openStandaloneGame('games/index.html#cube','Cube Engine')">PLAY →</button></div></section>
+<section class="card" style="--accent:#a9bce5"><span class="tag">Password Protected</span><h2>Eaglercraft Singleplayer</h2><p>Open the Eaglercraft singleplayer page after entering the site password.</p><div class="play-card"><div class="icon">⛏️</div><div><strong>Eaglercraft Singleplayer</strong><span>Enter password to unlock</span></div><button class="btn" onclick="openPasswordProtectedGame()">UNLOCK →</button></div></section>
 
-<section class="card" style="--accent:#e8c777"><span class="tag">Browser Edition</span><h2>Dust Racing 2D</h2><p>Playable top-down dirt circuit racing with AI cars, three laps and ChromeOS keyboard or touchscreen controls. Independent browser adaptation of the supplied desktop project.</p><div class="play-card"><div class="icon">🏁</div><div><strong>Dust Racing 2D · Web</strong><span>3 laps · 7 AI racers · keyboard and touch</span></div><button class="btn" onclick="openStandaloneGame('games/index.html#dust','Dust Racing 2D · Web')">RACE →</button></div></section>
-<section class="card" style="--accent:#ff9d72"><span class="tag">Browser Edition</span><h2>Racing Car Game</h2><p>Playable perspective-road racer with traffic, lane controls and local high scores. Independent browser edition designed to run without a Unity plugin.</p><div class="play-card"><div class="icon">🏎️</div><div><strong>Racing Car Game · Web</strong><span>Canvas racer · keyboard · touchscreen</span></div><button class="btn" onclick="openStandaloneGame('games/index.html#racing','Racing Car Game · Web')">RACE →</button></div></section>
+
+
 </div></main><footer>Google Drive · bright UI · fullscreen play · sound effects</footer>
 
 <div id="gameModal"><div class="game-shell" id="gameShell"><div class="topbar"><h2 id="gameTitle">Game</h2><div class="spacer"></div><button class="tiny btn" id="soundGame">🔊</button><button class="tiny btn" id="pauseGameBtn">⏸ Pause</button><button class="tiny btn" id="gameSettingsBtn">⚙ Game Settings</button><button class="tiny btn" id="fullscreenBtn">⛶ Fullscreen</button><button class="tiny btn close" id="closeBtn">✕ Exit</button></div><div class="game-area">
@@ -1407,12 +1408,19 @@ function drawBossBird(x,y,pulse){
   sctx.restore();
 }
 function openExternal(url){window.open(url,'_blank','noopener,noreferrer')}
+function openPasswordProtectedGame(){
+  const entered=window.prompt('Enter the password to unlock Eaglercraft:');
+  if(entered===null)return;
+  if(entered!=='1612'){
+    window.alert('That password is incorrect.');
+    return;
+  }
+  openExternal('https://samdan9.github.io/eaglecraftsingleplayer/Singleplayer.html');
+}
 
 const STANDALONE_GAMES = new Map([
   ['games/index.html#pool','8 Ball Pool'],
   ['games/index.html#cube','Cube Engine'],
-  ['games/index.html#dust','Dust Racing 2D · Web'],
-  ['games/index.html#racing','Racing Car Game · Web'],
   ['drone-simulator.html','FPV Drone Simulator'],
   ['drift-arena.html','Drift Arena'],
   ['open-world-drive.html','Open World Drive'],
