@@ -250,9 +250,14 @@
    const clone=button.cloneNode(true);
    clone.className="portal-primary";
    clone.removeAttribute("style");
-   const handler=clone.getAttribute("onclick");
-   if(handler)clone.setAttribute("onclick",handler+';document.getElementById("portalGameDetail").classList.remove("open")');
-   clone.addEventListener("click",()=>setCurrentGame(game.title),true);
+   clone.removeAttribute("onclick");
+   clone.addEventListener("click",event=>{
+    event.preventDefault();
+    if(!button){return;}
+    setCurrentGame(game.title);
+    button.click();
+    closeGameDetail();
+   });
    actions.appendChild(clone);
   });
   if(!game.buttons.length){
