@@ -2,12 +2,10 @@
 (() => {
  "use strict";
  const API_BASE="https://hockey-multiplayer.onrender.com";
- const TOKEN_KEY="hockeyAccountToken";
+ const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let account=null,accountStats=null,accountToken="",authMode="login",pendingLaunch=null;
- let selectedGenre="All Games",selectedGame=null,catalogStats={},portalSession=null,heartbeatTimer=null,externalWindow=null,externalPoll=null;
- let playerIdentity=null,devPasswordInMemory="",devRefreshTimer=null;
+ let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null;
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
@@ -42,15 +40,6 @@
    '<nav class="portal-nav" aria-label="Main navigation">',
     '<div class="portal-nav-label">LIBRARY</div>',
     '<button class="portal-nav-item active" data-view="games"><span class="portal-nav-icon">▦</span><span class="portal-nav-label-text">Games</span><span class="portal-nav-count" id="gameCountBadge">21</span></button>',
-    '<div class="portal-subnav" id="genreSubnav">',
-     '<button class="active" data-genre="All Games">All games</button>',
-     '<button data-genre="Racing">Racing</button>',
-     '<button data-genre="Sports">Sports</button>',
-     '<button data-genre="Simulation">Simulation</button>',
-     '<button data-genre="Arcade">Arcade</button>',
-     '<button data-genre="Puzzle">Puzzle</button>',
-     '<button data-genre="External Games">External games</button>',
-    '</div>',
     '<div class="portal-nav-label">PERSONAL</div>',
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
@@ -58,19 +47,19 @@
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">⌘</span><span class="portal-nav-label-text">Dev mode</span><span class="portal-nav-count">LOCK</span></button>',
    '</nav>',
-   '<div class="portal-sidebar-foot"><button class="portal-profile-chip" id="sidebarProfile"><span class="portal-avatar" id="sidebarAvatar">?</span><span class="portal-profile-copy"><b id="sidebarName">Guest player</b><small id="sidebarStatus">Sign in to sync your stats</small></span><span aria-hidden="true">›</span></button></div>',
+   '<div class="portal-sidebar-foot"><button class="portal-profile-chip" id="sidebarProfile"><span class="portal-avatar" id="sidebarAvatar">?</span><span class="portal-profile-copy"><b id="sidebarName">Player</b><small id="sidebarStatus">Your username</small></span><span aria-hidden="true">›</span></button></div>',
   '</aside>',
   '<section class="portal-content">',
    '<header class="portal-topbar"><div><div class="portal-page-kicker" id="portalPageKicker">PLAYER LIBRARY</div><div class="portal-page-title" id="portalPageTitle">Games</div></div>',
     '<label class="portal-search"><span>⌕</span><input id="portalSearch" type="search" placeholder="Search games..." aria-label="Search games"></label>',
-    '<button class="portal-top-action" id="portalQuickSignIn">Sign in</button>',
+    '<button class="portal-top-action" id="portalQuickSignIn">Change username</button>',
     '<button class="portal-account-button" id="portalAccountButton"><span class="portal-avatar" id="topAvatar">?</span><span id="topAccountName">Guest</span></button>',
    '</header>',
    '<div class="portal-views" id="portalViews">',
     '<section class="portal-view active" id="portalGamesView" data-page="games">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">PICK UP WHERE YOU LEFT OFF</div><h1>Your next game<br>starts here.</h1><p>One library for every game. Browse by genre, open a game to see its details, and keep your profile and play history together.</p></div><div class="portal-live-pill"><span class="portal-live-dot"></span><span id="portalOnlineTotal">Checking live players</span></div></div>',
-     '<div class="portal-filter-row" id="portalFilterRow"></div>',
-     '<div id="portalGameGroups"></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYSPACE LIBRARY</div><h1>Browse games</h1><p>Choose a category to explore its games.</p></div></div>',
+     '<div class="portal-category-tabs" id="portalFilterRow" role="tablist" aria-label="Game categories"></div>',
+     '<div id="portalCategoryView" hidden><div class="portal-category-toolbar"><button class="portal-secondary" id="portalBackToCategories" type="button">← All categories</button><div><div class="portal-eyebrow">GAME CATEGORY</div><h2 id="portalCategoryTitle"></h2></div></div><div id="portalGameGroups"></div></div>',
     '</section>',
     '<section class="portal-view" id="portalSettingsView" data-page="settings">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">MAKE IT YOURS</div><h1>Settings</h1><p>Personalise the library, your themes, layout, audio and motion. These preferences are saved in this browser.</p></div></div>',
@@ -81,11 +70,11 @@
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
     '<section class="portal-view" id="portalProfileView" data-page="profile">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER ACCOUNT</div><h1>Your profile</h1><p>Your sign-in is shared with Hockey Online. Passwords are verified by the game server and are not saved as readable text in this website.</p></div></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Change the username shown around the site.</p></div></div>',
      '<div id="portalProfileContent"></div>',
     '</section>',
     '<section class="portal-view" id="portalDevView" data-page="dev">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">SYSTEM OVERVIEW</div><h1>Developer mode</h1><p>Live site and game activity. Access is checked by the server; the developer password is never saved in this browser.</p></div></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">SYSTEM OVERVIEW</div><h1>Developer mode</h1><p>Basic server and multiplayer-room information.</p></div></div>',
      '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to view live player and service metrics.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
      '<div class="portal-dev-metrics" id="portalDevMetrics"></div>',
     '</section>',
@@ -93,7 +82,6 @@
   '</section>',
  '</div>',
  '<div class="portal-detail-backdrop" id="portalGameDetail" role="dialog" aria-modal="true" aria-label="Game details"><article class="portal-detail-card"><div class="portal-detail-cover" id="portalDetailCover"><button class="portal-modal-close" type="button" id="portalDetailClose" aria-label="Close">✕</button><div class="portal-cover-art" id="portalDetailArt"></div></div><div class="portal-detail-body"><div class="portal-detail-heading"><div><div class="portal-eyebrow" id="portalDetailGenre"></div><h2 id="portalDetailTitle">Game title</h2><p id="portalDetailDescription"></p></div></div><div class="portal-detail-actions" id="portalDetailPlay"></div><div class="portal-detail-stats"><div class="portal-detail-stat"><small>Players right now</small><b id="portalDetailPlayers">—</b></div></div></div></article></div>',
- '<div class="portal-auth-backdrop" id="portalAuthModal" role="dialog" aria-modal="true" aria-label="Player sign in"><section class="portal-auth-card"><button class="portal-modal-close" type="button" id="portalAuthClose" aria-label="Close">✕</button><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2 id="portalAuthTitle">Welcome back</h2><p id="portalAuthSubtitle">Sign in once. Your player profile is shared across the games.</p></div></div><div class="portal-auth-tabs"><button type="button" class="active" id="portalLoginTab">SIGN IN</button><button type="button" id="portalRegisterTab">CREATE ACCOUNT</button></div><form class="portal-auth-form" id="portalAuthForm"><div class="portal-field" id="portalAuthNameField" hidden><label for="portalAuthName">Player name</label><input id="portalAuthName" type="text" maxlength="18" autocomplete="nickname" placeholder="Your name"></div><div class="portal-field"><label for="portalAuthEmail">Email address</label><input id="portalAuthEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com"></div><div class="portal-field"><label for="portalAuthPassword">Password</label><input id="portalAuthPassword" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters"></div><button class="portal-primary" id="portalAuthSubmit" type="submit">Sign in</button><div class="portal-status" id="portalAuthStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Passwords are hashed on the server using scrypt. Only a random sign-in session token is kept in this browser. You can use the same account in Hockey Online.</div></section></div>',
  '<div class="portal-toast" id="portalToast" role="status" aria-live="polite"></div>'
  ].join("");
  app.innerHTML=portalMarkup;
