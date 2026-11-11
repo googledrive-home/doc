@@ -167,6 +167,29 @@ const TOTAL_SLOTS={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":4 };
 const playerCapacity=state=>state?.gameType==="goalie"?1:(CAPACITY[state?.mode]||2);
 const codes=new Map();
 const activeRooms=new Map();
+const portalPresence=new Map();
+const PORTAL_PRESENCE_TTL_MS=75_000;
+const PORTAL_PRESENCE_LIMIT=2000;
+function cleanPortalPresenceText(value,maxLength){
+ return String(value??"").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").replace(/\\s+/g," ").trim().slice(0,maxLength);
+}
+function prunePortalPresence(now=Date.now()){
+ for(const [sessionId,entry] of portalPresence){
+  if(now-entry.lastSeen>PORTAL_PRESENCE_TTL_MS)portalPresence.delete(sessionId);
+ }
+}
+app.post("/portal/presence",(req,res)=>{
+ const sessionId=String(req.body?.sessionId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
+ const name=cleanPortalPresenceText(req.body?.username,24);
+ const game=cleanPortalPresenceText(req.body?.game,60)||"Browsing library";
+ if(sessionId.length<16||!name)return res.status(400).json({error:"A valid site session and username are required."});
+ const now=Date.now();
+ prunePortalPresence(now);
+ if(!portalPresence.has(sessionId)&&portalPresence.size>=PORTAL_PRESENCE_LIMIT)return res.status(429).json({error:"The live player list is full right now."});
+ portalPresence.set(sessionId,{name,game,lastSeen:now});
+ res.setHeader("Cache-Control","no-store");
+ res.json({ok:true});
+});
 
 app.post("/portal/admin/metrics",(req,res)=>{
  const configured=String(process.env.DEV_MODE_PASSWORD||"");
@@ -177,18 +200,21 @@ app.post("/portal/admin/metrics",(req,res)=>{
   if(!loginRateLimit(req,"portal-dev"))return res.status(429).json({error:"Too many developer sign-in attempts. Try again later."});
   return res.status(401).json({error:"Developer password is incorrect."});
  }
- const rooms=[...activeRooms.values()].map(room=>({
-  game:room.state?.game||"hockey",
-  status:room.state?.status||"unknown"
- }));
+ const now=Date.now();
+ prunePortalPresence(now);
+ const latestByName=new Map();
+ for(const player of portalPresence.values()){
+  const key=player.name.toLocaleLowerCase();
+  const previous=latestByName.get(key);
+  if(!previous||player.lastSeen>previous.lastSeen)latestByName.set(key,player);
+ }
+ const players=[...latestByName.values()]
+  .sort((a,b)=>a.name.localeCompare(b.name))
+  .map(({name,game})=>({name,game}));
  res.setHeader("Cache-Control","no-store");
- res.json({
-  server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576),node:process.version},
-  rooms:{active:rooms.length,list:rooms},
-  updatedAt:Date.now()
- });
+ res.json({players,updatedAt:now});
 });
-const competitions=new Map();
+
 function competitionStandings(comp){
  const table=new Map(comp.teams.map(t=>[t.id,{id:t.id,name:t.name,captain:t.captain,played:0,wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0,goalDifference:0,points:0}]));
  if(comp.format==="league")for(const match of comp.matches){if(match.status!=="complete"||match.homeScore===null||match.awayScore===null)continue;
