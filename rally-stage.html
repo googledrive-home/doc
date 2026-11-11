@@ -1432,7 +1432,7 @@ function resetCar(){
 }
 function inputState(){
  const down=code=>!!(keys[code]||driveKeys[code]);
- let steer=(down("KeyD")?1:0)-(down("KeyA")?1:0);if(settings.invertSteer)steer=-steer;
+ let steer=(down("KeyA")?1:0)-(down("KeyD")?1:0);if(settings.invertSteer)steer=-steer;
  let throttle=down("KeyW")?1:0,brake=down("KeyS")?1:0;if(settings.swapPedals)[throttle,brake]=[brake,throttle];
  const handbrake=settings.alternateHandbrake?down("KeyH"):down("Space");
  return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake};
@@ -1442,12 +1442,12 @@ function physicsStep(dt){
  const s=carState,spec=CARS[selectedCar],input=inputState(),speed=Math.abs(s.vLong),speedKmh=speed*3.6,track=TRACKS[selectedTrack];
  collisionTimer=Math.max(0,collisionTimer-dt);shiftCooldown=Math.max(0,shiftCooldown-dt);shiftHandTimer=Math.max(0,shiftHandTimer-dt);
  const tyreData=tyreSpecs[tyre],weatherGrip={dry:1,damp:.91,wet:.77,storm:.64,snow:.55}[weather]||1;
- let grip=tyreData.mu*spec.baseGrip*track.grip*settings.surface*weatherGrip;
+ let grip=tyreData.mu*spec.baseGrip*track.grip*settings.surface*weatherGrip*1.34;
  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),roadHalf=trackData.halfWidth||2.9,onRoad=roadOffset<roadHalf+1.0,inDitch=roadOffset>roadHalf+.7&&roadOffset<roadHalf+4.2;
  if(!onRoad)grip*=roadOffset<roadHalf+5?.63:clamp(1-(roadOffset-roadHalf-5)*.026,.27,.63);
  if(s.verticalOffset>.12)grip*=.55;
- const steeringLimit=(1.08*settings.steer/.70)/(1+speed*.0055),targetSteer=input.steer*steeringLimit;
- s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*25));
+ const steeringLimit=(.86*settings.steer/.70)/(1+speed*.0085),targetSteer=input.steer*steeringLimit;
+ s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*17));
  const handTarget=input.handbrake&&speed>3?1:0;
  if(input.handbrake&&!s.handbrakeWasOn&&speed>6&&Math.abs(input.steer)>.04){
   s.vLat+=input.steer*speed*.10;
@@ -1463,9 +1463,9 @@ function physicsStep(dt){
  const frontSlip=Math.atan2(s.vLat+a*s.yawRate,denom)-s.steer*direction,rearSlip=Math.atan2(s.vLat-b*s.yawRate,denom);
  const fyFront=-frontGrip*frontLoad*Math.sin(1.30*Math.atan(7.3*frontSlip));
  const fyRear=-rearGrip*rearLoad*Math.sin(1.27*Math.atan(7.0*rearSlip));
- const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.23;
+ const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.27;
  let yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.05+.30);
- let latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*(s.handbrakeBlend>.08?.14:.40);
+ let latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*(s.handbrakeBlend>.08?.18:1.02);
  if(s.handbrakeBlend>.04&&speed>5){
   const hb=s.handbrakeBlend;
   yawAccel+=input.steer*hb*clamp(speed/9,0,2.6)*1.05;
@@ -1475,9 +1475,9 @@ function physicsStep(dt){
  if(settings.driftAssist){yawAccel-=s.yawRate*.9;latAccel-=s.vLat*.32;}
  s.yawRate+=yawAccel*dt;
  const reverseDirection=s.vLong<-.1?-1:1;
- const desiredYawRate=reverseDirection*clamp(speed*Math.tan(s.steer*.78)/spec.wheelbase,-2.85,2.85);
- const driftLoad=clamp(Math.abs(s.vLat)/(Math.max(3,speed)*.28),0,1);
- const steerFollow=6.4*(1-s.handbrakeBlend*.80)*(1-driftLoad*.58);
+ const desiredYawRate=reverseDirection*clamp(speed*Math.tan(s.steer*.58)/spec.wheelbase,-1.85,1.85);
+ const driftLoad=clamp(Math.abs(s.vLat)/(Math.max(3,speed)*.34),0,1);
+ const steerFollow=2.9*(1-s.handbrakeBlend*.78)*(1-driftLoad*.48);
  s.yawRate+=(desiredYawRate-s.yawRate)*(1-Math.exp(-dt*steerFollow));
  s.latAccel=latAccel;s.vLat+=latAccel*dt;
  const ratios=[3.48,2.36,1.78,1.42,1.16,.96],upLimits=[15.5,23,30.5,38,46,60],downLimits=[0,7,12.5,19,27,35];
