@@ -1414,14 +1414,23 @@ const STANDALONE_GAMES = new Map([
 function openStandaloneGame(file,title,launchMode=''){
   if(!STANDALONE_GAMES.has(file)) return;
   const shell=$('standaloneGameShell'),frame=$('standaloneGameFrame');
-  shell.classList.toggle('rally-standalone',file==='rally-stage.html');
+  const rallyMode=file==='rally-stage.html';
+  shell.classList.toggle('rally-standalone',rallyMode);
+  // Apply the compact rally-only header in the host page as well as CSS, so it
+  // cannot leave the title/help strip consuming vertical space.
+  $('standaloneGameTitle').style.display=rallyMode?'none':'';
+  const rallyHint=$('standaloneGameBar').querySelector('span');
+  if(rallyHint)rallyHint.style.display=rallyMode?'none':'';
+  $('standaloneGameBar').style.height=rallyMode?'40px':'';
+  $('standaloneGameBar').style.minHeight=rallyMode?'40px':'';
+  frame.style.height=rallyMode?'calc(100% - 40px)':'';
   $('standaloneGameTitle').textContent=title||STANDALONE_GAMES.get(file);
   shell.style.display='flex';
   document.body.style.overflow='hidden';
   frame.title=$('standaloneGameTitle').textContent;
   const target=new URL('./'+file,window.location.href);
   if(file==='formula-one.html')target.searchParams.set('build','apex-camera-culling-30fps-20261109-v8');
-  if(file==='rally-stage.html')target.searchParams.set('build','rally-loading-'+Date.now());
+  if(file==='rally-stage.html')target.searchParams.set('build','rally-worldspace-steering-'+Date.now());
   if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
 }
