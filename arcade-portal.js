@@ -165,7 +165,10 @@
   showView("games");
  }));
  $p("portalSearch").addEventListener("input",renderGameList);
- $p("portalCollapse").addEventListener("click",()=>portalShell.classList.toggle("collapsed"));
+ $p("portalCollapse").addEventListener("click",()=>{
+  const collapsed=portalShell.classList.toggle("collapsed");
+  portalSettings.sidebarExpanded=!collapsed;savePortalSettings();
+ });
  $p("sidebarProfile").addEventListener("click",()=>{showView("profile");if(!account)showAuth();});
  $p("portalAccountButton").addEventListener("click",()=>{showView("profile");if(!account)showAuth();});
  $p("portalQuickSignIn").addEventListener("click",()=>showAuth());
@@ -395,6 +398,13 @@
  window.addEventListener("storage",event=>{
   if(event.key===TOKEN_KEY){loadAccount();}
  });
+ const originalEnterGameFS=window.enterGameFS;
+ if(typeof originalEnterGameFS==="function"){
+  window.enterGameFS=async function(){
+   if(!portalSettings.openGameFullscreen)return;
+   return originalEnterGameFS.apply(this,arguments);
+  };
+ }
  const originalOpenGame=window.openGame;
  if(typeof originalOpenGame==="function"){
   window.openGame=function(type){
@@ -413,6 +423,7 @@
  }
  window.openExternal=function(url){
   if(!account||!accountToken){showAuth();setAuthStatus("Sign in before opening external games.");return null;}
+  if(portalSettings.confirmExternal&&!window.confirm("This game opens on an external website. Continue?"))return null;
   const win=window.open(url,"_blank");
   if(win)try{win.opener=null;}catch(error){}
   const game=games.find(g=>g.external&&g.buttons.some(b=>(b.getAttribute("onclick")||"").includes(url)));
@@ -484,7 +495,7 @@
   host.querySelectorAll("[data-setting-key]").forEach(control=>control.addEventListener("change",()=>{
    const key=control.dataset.settingKey;
    portalSettings[key]=control.type==="checkbox"?control.checked:control.type==="range"?Number(control.value):control.value;
-   applyPortalSettings();
+   applyPortalSettings();savePortalSettings();
   }));
   $p("portalSaveSettings").addEventListener("click",()=>{savePortalSettings();$p("portalSettingsStatus").textContent="Settings saved in this browser.";});
   $p("portalResetSettings").addEventListener("click",()=>{portalSettings={...settingDefaults};applyPortalSettings();savePortalSettings();renderSettings();});
