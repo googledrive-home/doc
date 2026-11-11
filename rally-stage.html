@@ -379,7 +379,6 @@ try{
  ];
  THREE=await firstAvailableRallyEngine(sources);
  window.__rallyEngineReady=true;
- clearTimeout(window.__rallyModuleWatchdog);
  rallyBootProgress("3D engine loaded · preparing terrain",10);
 }catch(error){
  const details=error?.errors
@@ -1718,7 +1717,7 @@ function initSettingsTabs(){
 }
 
 async function boot(){
- window.__rallyModuleStarted=true;clearTimeout(window.__rallyModuleWatchdog);
+ window.__rallyModuleStarted=true;
  try{
   loadSettings();setLoad(7,"Starting the 3D renderer");await nextPaint();await initScene();setLoad(88,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
