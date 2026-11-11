@@ -286,29 +286,58 @@ window.__rallyModuleWatchdog=setTimeout(()=>{
 <div id="pauseScreen"><div class="dialog"><div class="kicker">Stage control</div><h2>PAUSED</h2><p>Car and stage timer are paused. Adjust your setup or return to the service area.</p><div class="dialog-actions"><button class="action" id="resumeBtn">RESUME</button><button class="secondary" id="pauseSetupBtn">CAR SETUP</button><button class="secondary" id="pauseGarageBtn">GARAGE</button></div></div></div>
 <div id="finishScreen"><div class="dialog"><div class="kicker">Stage complete</div><h2>FINISH LINE</h2><p id="finishSummary">Stage time recorded.</p><div class="dialog-actions"><button class="action" id="finishGarageBtn">BACK TO GARAGE</button><button class="action hidden" id="nextStageBtn">NEXT STAGE</button><button class="secondary" id="restartStageBtn">RESTART STAGE</button></div></div></div>
 <script type="module">
-/* Mark the module as running before loading dependencies so the watchdog can
-   distinguish a dependency error from a script that never executed. */
+/* Start the module watchdog only after THREE has actually loaded. A dynamic
+   import can otherwise remain pending forever in embedded browsers. */
 window.__rallyModuleStarted=true;
-clearTimeout(window.__rallyModuleWatchdog);
-
-let THREE;
-try {
- THREE=await import(new URL("./assets/vendor/three.module.min.js",import.meta.url).href);
-} catch(localEngineError) {
- console.error("Local Three.js load failed; trying the CDN fallback.",localEngineError);
- try {
-  THREE=await import("https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js");
- } catch(remoteEngineError) {
-  const message="Three.js could not load. Local: "+(localEngineError?.message||localEngineError)+"; CDN: "+(remoteEngineError?.message||remoteEngineError);
-  console.error("Gravel Rally engine startup failed:",message);
-  const step=document.getElementById("loadStep"),pct=document.getElementById("loadPct"),fill=document.getElementById("loadFill");
-  if(step)step.textContent=message.slice(0,220);
-  if(pct)pct.textContent="ERROR";
-  if(fill){fill.style.width="100%";fill.style.background="#d56b56";}
-  throw new Error(message);
+const bootStep=document.getElementById("loadStep");
+const bootPct=document.getElementById("loadPct");
+const bootFill=document.getElementById("loadFill");
+function rallyBootProgress(label,pct){
+ if(bootStep)bootStep.textContent=label;
+ if(bootPct)bootPct.textContent=pct+"%";
+ if(bootFill){bootFill.style.width=pct+"%";bootFill.style.background="";}
+}
+function rallyBootError(message){
+ clearTimeout(window.__rallyModuleWatchdog);
+ console.error("Gravel Rally engine startup failed:",message);
+ if(bootStep)bootStep.textContent=message;
+ if(bootStep)bootStep.title=message;
+ if(bootPct)bootPct.textContent="ERROR";
+ if(bootFill){bootFill.style.width="100%";bootFill.style.background="#d56b56";}
+}
+function importRallyEngine(url,label,timeoutMs=12000){
+ rallyBootProgress(label,6);
+ let timer;
+ return Promise.race([
+  import(url),
+  new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timed out after "+Math.round(timeoutMs/1000)+" seconds")),timeoutMs);})
+ ]).finally(()=>clearTimeout(timer));
+}
+let THREE=null;
+const rallyEngineSources=[
+ {url:new URL("./assets/vendor/three.module.min.js",import.meta.url).href,label:"Loading bundled 3D engine"},
+ {url:"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",label:"Trying backup 3D engine (CDN 1)"},
+ {url:"https://unpkg.com/three@0.166.1/build/three.module.js",label:"Trying backup 3D engine (CDN 2)"},
+ {url:"https://esm.sh/three@0.166.1",label:"Trying backup 3D engine (CDN 3)"}
+];
+const rallyEngineErrors=[];
+for(const source of rallyEngineSources){
+ try{
+  THREE=await importRallyEngine(source.url,source.label,source.url.startsWith("http")?10000:12000);
+  if(THREE?.WebGLRenderer)break;
+  throw new Error("The downloaded module did not expose WebGLRenderer");
+ }catch(error){
+  rallyEngineErrors.push(source.label+": "+(error?.message||String(error)));
+  console.warn("Gravel Rally engine source failed:",source.label,error);
  }
 }
-
+if(!THREE?.WebGLRenderer){
+ const detail=rallyEngineErrors.join(" | ");
+ rallyBootError("3D ENGINE FAILED · "+detail.slice(0,190));
+ throw new Error("Unable to load Three.js. "+detail);
+}
+clearTimeout(window.__rallyModuleWatchdog);
+rallyBootProgress("3D engine loaded · preparing terrain",10);
 const $=id=>document.getElementById(id);
 const TRACKS={
  highland:{id:"highland",name:"WELSH FOREST RALLY",full:23400,seed:13,grip:.80,trees:7200,town:[.13,.37,.62,.84],color:0x53684c,stages:[
