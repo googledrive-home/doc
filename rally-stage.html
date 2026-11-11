@@ -320,21 +320,41 @@ function importRallyEngine(url,label,timeoutMs=12000){
   import(url),
   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timed out after "+Math.round(timeoutMs/1000)+" seconds")),timeoutMs);})
  ]).then(module=>{
-  if(!module?.WebGLRenderer)throw new Error(label+" did not provide WebGLRenderer");
+  if(!module||!module.WebGLRenderer)throw new Error(label+" did not provide WebGLRenderer");
   return module;
  }).finally(()=>clearTimeout(timer));
+}
+function firstAvailableRallyEngine(sources){
+ return new Promise((resolve,reject)=>{
+  let remaining=sources.length,settled=false;
+  const failures=[];
+  sources.forEach(source=>{
+   importRallyEngine(source.url,source.label,12000).then(module=>{
+    if(settled)return;
+    settled=true;
+    resolve(module);
+   }).catch(error=>{
+    failures.push(source.label+": "+(error&&error.message?error.message:String(error)));
+    remaining--;
+    if(remaining===0&&!settled){
+     settled=true;
+     reject(new Error(failures.join(" | ")));
+    }
+   });
+  });
+ });
 }
 let THREE=null;
 try{
  rallyBootProgress("Loading bundled 3D engine",6);
- const localEngineUrl=new URL("./assets/vendor/three.module.min.js",document.baseURI).href;
+ const baseUrl=document.baseURI||window.location.href;
+ const localEngineUrl=new URL("./assets/vendor/three.module.min.js",baseUrl).href;
  const sources=[
   {url:localEngineUrl,label:"Bundled Three.js"},
   {url:"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",label:"jsDelivr Three.js"},
   {url:"https://unpkg.com/three@0.166.1/build/three.module.js",label:"unpkg Three.js"}
  ];
- const attempts=sources.map(source=>importRallyEngine(source.url,source.label,12000));
- THREE=await Promise.any(attempts);
+ THREE=await firstAvailableRallyEngine(sources);
  window.__rallyEngineReady=true;
  clearTimeout(window.__rallyModuleWatchdog);
  rallyBootProgress("3D engine loaded · preparing terrain",10);
