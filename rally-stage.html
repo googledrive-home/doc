@@ -216,15 +216,37 @@ if(rallyFill)rallyFill.style.width="4%";
 /* Never let the loader sit at 4% forever, even if a module is blocked before
    its first line executes. This timer is cleared only after Three.js loads. */
 window.__rallyModuleWatchdog=setTimeout(()=>{
- if(window.__rallyEngineReady||window.__rallyBootFailed)return;
- const message=window.__rallyModuleStarted
-  ?"3D ENGINE TIMEOUT · The game script started, but the 3D engine did not finish loading. Check that this browser allows JavaScript modules."
-  :"3D ENGINE NOT STARTED · This browser or embedded frame blocked the game's JavaScript module.";
+ if(window.__rallyBootComplete||window.__rallyBootFailed)return;
+ const message=window.__rallyEngineReady
+  ?"WORLD BUILD TIMEOUT · The 3D engine loaded, but terrain construction did not finish. Check the browser console for the exact failing step."
+  :window.__rallyModuleStarted
+   ?"3D ENGINE TIMEOUT · The game script started, but the 3D engine did not finish loading."
+   :"3D ENGINE NOT STARTED · This browser or embedded frame blocked the game's JavaScript module.";
  if(rallyStep)rallyStep.textContent=message;
  if(rallyPct)rallyPct.textContent="ERROR";
  if(rallyFill){rallyFill.style.width="100%";rallyFill.style.background="#d56b56";}
  console.error(message);
-},20000);
+},45000);
+/* Catch top-level module errors too; otherwise an exception before boot()
+   can leave the progress text frozen at 10 percent. */
+window.addEventListener("error",event=>{
+ if(window.__rallyBootComplete||window.__rallyBootFailed)return;
+ const detail=event.error?.stack||event.message||"Unknown JavaScript error";
+ window.__rallyBootFailed=true;
+ clearTimeout(window.__rallyModuleWatchdog);
+ if(rallyStep)rallyStep.textContent=("SCRIPT ERROR · "+detail).slice(0,220);
+ if(rallyPct)rallyPct.textContent="ERROR";
+ if(rallyFill){rallyFill.style.width="100%";rallyFill.style.background="#d56b56";}
+});
+window.addEventListener("unhandledrejection",event=>{
+ if(window.__rallyBootComplete||window.__rallyBootFailed)return;
+ const detail=event.reason?.stack||event.reason?.message||String(event.reason||"Unknown promise error");
+ window.__rallyBootFailed=true;
+ clearTimeout(window.__rallyModuleWatchdog);
+ if(rallyStep)rallyStep.textContent=("STARTUP ERROR · "+detail).slice(0,220);
+ if(rallyPct)rallyPct.textContent="ERROR";
+ if(rallyFill){rallyFill.style.width="100%";rallyFill.style.background="#d56b56";}
+});
 </script>
 <div id="windshieldDirt" aria-hidden="true"></div>
 <div id="introScreen" class="front-screen open"><div class="front-shell intro-shell">
@@ -1671,7 +1693,6 @@ function animate(now){
  frameSamples++;
 }
 function resize(){if(!renderer||!camera)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);}
-async 
 function initSettingsTabs(){
  const nav=$("settingsTabs");if(!nav)return;
  const groups=[...document.querySelectorAll(".settings-group")];
@@ -1702,7 +1723,7 @@ async function boot(){
   loadSettings();setLoad(7,"Starting the 3D renderer");await nextPaint();await initScene();setLoad(88,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
   window.addEventListener("resize",resize);previousFrame=performance.now();fpsStart=previousFrame;requestAnimationFrame(animate);
-  setLoad(90,"Loading Subaru WRC model");if(subaruAssetsPromise)await Promise.race([subaruAssetsPromise,new Promise(resolve=>setTimeout(resolve,9000))]);setLoad(100,"Ready to drive");$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
+  setLoad(90,"Loading Subaru WRC model");if(subaruAssetsPromise)await Promise.race([subaruAssetsPromise,new Promise(resolve=>setTimeout(resolve,9000))]);setLoad(100,"Ready to drive");window.__rallyBootComplete=true;$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
  }catch(error){console.error("Gravel Rally startup failed:",error);$("loadStep").textContent="Startup failed: "+(error?.message||"unknown error");$("loadPct").textContent="ERROR";$("loadFill").style.background="#d56b56";}
 }
 boot();
