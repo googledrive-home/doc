@@ -14,7 +14,9 @@
   "Reaction Game":"reaction-game","Click Test":"click-test","Neon Breaker":"neon-breaker",
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Neon Runner":"neon-runner","Memory Match":"memory-match","Moto X3M":"moto-x3m",
-  "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes"
+  "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes",
+  "Cube Engine":"cube-engine","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
+  "Dust Racing 2D":"dust-racing-2d","Racing Car Game":"racing-car-game"
  };
  const photos={
   "drift-arena":"assets/drift-track-1.webp",
@@ -131,7 +133,7 @@
   if(!title)continue;
   const id=gameIdByTitle[title]||"";
   const rawOnclick=(source.querySelector(".play-card button")?.getAttribute("onclick")||"");
-  const external=rawOnclick.includes("openExternal(");
+  const external=rawOnclick.includes("openExternal(")||rawOnclick.includes("openPasswordProtectedGame(");
   const genre=genreFor(title,external);
   const paragraph=source.querySelector("p");
   const icon=source.querySelector(".art-icon,.icon");
