@@ -1,0 +1,2789 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#091827">
+<title>PlaySpace · Browser Games</title>
+<style>
+:root{color-scheme:dark;--bg:#081522;--line:#304b61;--muted:#a9bbca;--gold:#e8c777;--cyan:#59d9ec}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#20445a,transparent 48%),var(--bg);color:#f2f7fc;font:14px system-ui,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px clamp(12px,3vw,26px);border-bottom:1px solid #ffffff1b}.kicker{color:var(--cyan);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}h1{margin:3px 0;font-size:clamp(22px,3.6vw,34px);letter-spacing:-.05em}header p{margin:3px 0 0;color:var(--muted);font-size:11px}
+main{width:min(1160px,96vw);margin:18px auto 30px}.game{display:none}.game.active{display:block}.panel{padding:clamp(8px,1.8vw,16px);border:1px solid #ffffff20;border-radius:18px;background:linear-gradient(145deg,#172e43,#0b1b2a);box-shadow:0 18px 55px #0006}
+canvas{display:block;width:100%;height:auto;border-radius:11px;touch-action:pan-y;background:#182c3b}.tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:12px}
+button{min-height:40px;padding:0 14px;border:1px solid #ffffff26;border-radius:10px;background:#234157;color:#f4f8fb;font:800 11px system-ui;cursor:pointer;touch-action:none}button.primary{border:0;background:linear-gradient(120deg,#f0d18a,#d59c50);color:#1b252a}button:disabled{opacity:.45;cursor:not-allowed}
+.range{display:flex;align-items:center;gap:9px;flex:1;min-width:170px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#ffffff07;color:var(--muted);font-size:11px}.range input{width:100%;accent-color:var(--gold)}
+.status{margin-top:10px;min-height:38px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#ffffff07;color:#d8e5ec;font-size:11px;line-height:1.5}.help{margin:10px 2px 0;color:var(--muted);font-size:11px;line-height:1.6}
+.hud{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.hud span{flex:1;min-width:85px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#ffffff07}.hud small{display:block;color:var(--muted);font-size:9px}.hud b{display:block;margin-top:2px}
+#poolCanvas{aspect-ratio:11/6}#dustCanvas{aspect-ratio:1280/820;background:#59794b}#raceCanvas{aspect-ratio:900/540;background:#75adc1}
+.pad{display:none;justify-content:center;gap:8px;margin-top:10px}.pad button{width:58px;height:43px;font-size:17px}
+@media(max-width:760px){header{align-items:flex-start;flex-direction:column}.pad{display:flex}.tools button{flex:1}.range{flex-basis:100%}}
+</style>
+<style>html,
+body
+{
+	width:  100%;
+	height: 100%;
+	margin: 0px;
+	font-family: sans-serif;
+	font-size: 12px;
+}
+
+input,
+select
+{
+	font-family: sans-serif;
+	font-size: 12px;
+}
+
+a
+{
+    text-decoration: none;
+    border-bottom: dotted 1px #ffffff;
+    color: #ffffff;
+}
+
+h1
+{
+	margin: 0;
+	font-size: 15px;
+	text-shadow: #888 0px 1px 0;
+	text-align: center;
+	background: none no-repeat top center;
+	padding-top: 1em;
+	margin: 0.5em 0;
+}
+
+h2
+{
+	margin: 0;
+	font-size: 12px;
+	padding-left: 3px;
+}
+
+#canvas
+{
+	float: left;
+	background-color: #7BACFF;
+	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#7BACFF), to(#ffffff));
+	background: linear-gradient(#7BACFF, #ffffff);
+}
+
+joystick
+{
+ 	display:none;
+ 	height: 50px;
+ 	width: 50px;
+ 	border-radius: 50%;
+}
+
+#joystick 
+{
+	background-color:red;
+	position: fixed;
+	left: 100px;
+	bottom: 100px;
+}
+
+#controls
+{
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: #222;
+	width: 200px;
+	color: #fff;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+form
+{
+	padding: 0;
+	margin: 0;
+}
+
+ul
+{
+	padding-left: 2em;
+}
+
+#cube .cube-layout{display:grid;grid-template-columns:245px minmax(0,1fr);height:clamp(480px,72vh,720px);min-height:480px;overflow:hidden;border:1px solid #ffffff22;border-radius:14px;background:#172b36}
+#cube #controls{position:static;inset:auto;width:auto;height:100%;padding:12px;color:#fff;background:#14222c;overflow:auto;font-size:12px}
+#cube #controls h1{background:none;padding:0;margin:0 0 10px;text-align:left;font-size:17px;color:#f5f8f4}
+#cube #controls h2{margin:13px 0 6px;font-size:12px;color:#b9d5dc}
+#cube #controls ul{padding-left:17px;margin:6px 0;line-height:1.8}
+#cube #controls li{margin:3px 0}
+#cube #controls input[type=range]{width:100%}
+#cube #controls select,#cube #controls input[type=text]{max-width:100%;background:#203a47;color:#fff;border:1px solid #ffffff2b;border-radius:5px;padding:5px}
+#cube .cube-viewport{position:relative;min-width:0;min-height:0}
+#cube #canvas{float:none;display:block;width:100%;height:100%;background:linear-gradient(#7bacff,#fff);touch-action:none}
+#cube #joystick{z-index:12;width:58px;height:58px;opacity:.78;touch-action:none}
+#cube .cube-note{color:#8fa7b5;font-size:10px;line-height:1.5}
+@media(max-width:760px){#cube .cube-layout{grid-template-columns:1fr;grid-template-rows:minmax(270px,1fr) 230px;height:78vh;min-height:540px}#cube #controls{grid-row:2;padding:8px 12px}#cube #controls ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 10px;font-size:11px}#cube #controls h2{margin-top:6px}#cube #canvas{height:100%}}
+</style>
+</head><body>
+<header><div><div class="kicker">PlaySpace · Locally hosted games</div><h1 id="pageTitle">8 Ball Pool</h1><p id="pageSubtitle">Standalone ChromeOS browser game · trackpad · keyboard · touchscreen</p></div><div class="kicker">No separate game websites</div></header>
+<main>
+<section class="game" data-game="pool"><div class="panel"><canvas id="poolCanvas" width="1100" height="600" aria-label="Eight ball pool table"></canvas>
+<div class="tools"><label class="range">Shot power <input id="poolPower" type="range" min="12" max="100" value="58"><b id="poolPowerVal">58%</b></label><button class="primary" id="poolShoot">Take shot</button><button id="poolReset">New rack</button></div>
+<div class="hud"><span><small>Turn</small><b id="poolTurn">Player 1</b></span><span><small>Groups</small><b id="poolGroups">Open table</b></span></div><div class="status" id="poolStatus">Player 1 breaks. Move the pointer to aim, then take your shot.</div></div><p class="help">Local two-player rules: the first pocketed group sets solids or stripes; clear your group before pocketing the 8 ball. Move the pointer to aim and shoot. Space or Enter also shoots.</p></section>
+<section class="game" data-game="cube"><div class="panel">
+<div class="cube-layout">
+<aside id="controls">
+<h1>Cube Engine · World Builder</h1>
+<p class="cube-note">Original HTML5 canvas source, hosted locally with ChromeOS-friendly controls.</p>
+<h2>Controls</h2><ul><li>WASD: move</li><li>Arrow keys: look</li><li>Pg Up / Down: vertical movement</li><li>Space: jump</li></ul>
+<h2>Options</h2><ul>
+<li>HUD <input type="checkbox" checked onchange="renderer.hud=this.checked"></li>
+<li>Gravity <input type="checkbox" checked onchange="player.gravity=this.checked"></li>
+<li>Collision <input type="checkbox" checked onchange="player.collision=this.checked"></li>
+<li>Performance graph <input type="checkbox" onchange="renderer.graph=this.checked"></li>
+<li>Map <input type="checkbox" onchange="renderer.map=this.checked"></li>
+<li>Render distance <input type="range" min="20" max="120" value="42" onchange="renderer.changeRenderDist(this.value)"></li>
+<li>Render mode <select onchange="renderer.renderMode=Number(this.value)"><option value="0" selected>Plain colour · fast</option><option value="1">Textured</option></select></li>
+<li>Block type <select id="type"><option value="grass">Grass</option><option value="dirt">Dirt</option><option value="stone">Stone</option><option value="wood">Wood</option><option value="sand">Sand</option><option value="glass">Glass</option><option value="bricks">Brick</option><option value="water">Water</option><option value="snow">Snow</option><option value="leaves">Leaves</option><option value="blue">Blue</option></select></li>
+</ul>
+<h2>World save</h2><ul>
+<li>Seed <input type="text" id="seed" value="3" size="5"> <button type="button" id="cubeGenerate">Generate</button></li>
+<li>Save as <select id="saveas"><option value="world1">world1</option><option value="world2">world2</option><option value="world3">world3</option></select></li>
+<li><button type="button" id="cubeSaveWorld">Save world</button></li>
+<li>Load <select id="load"></select> <button type="button" id="cubeLoadWorld">Load</button></li>
+<li><button type="button" id="cubeJoystickToggle">Touch joystick</button></li>
+</ul>
+</aside><div class="cube-viewport"><canvas id="canvas" tabindex="1"></canvas><joystick id="joystick" style="display:none"></joystick></div>
+</div></div><p class="help">Original Cube Engine HTML5 source, bundled locally from the supplied repository with responsive layout and lower default render distance for ChromeOS.</p></section>
+<section class="game" data-game="dust"><div class="panel"><canvas id="dustCanvas" width="1280" height="820" aria-label="Top-down dirt circuit race"></canvas><div class="hud"><span><small>Lap</small><b id="dustLap">1 / 3</b></span><span><small>Position</small><b id="dustPos">1st</b></span><span><small>Speed</small><b id="dustSpeed">0 km/h</b></span><span><small>Time</small><b id="dustTime">0:00.0</b></span></div><div class="tools"><button id="dustReset">Restart race</button></div><div class="pad"><button data-dust="left">◀</button><button data-dust="down">▼</button><button data-dust="up">▲</button><button data-dust="right">▶</button></div></div><p class="help">WASD or arrow keys steer and accelerate; Down brakes or reverses. Touch controls appear on smaller screens. Independent browser adaptation: the supplied original is a native Qt/C++ desktop game.</p></section>
+<section class="game" data-game="racing"><div class="panel"><canvas id="raceCanvas" width="900" height="540" aria-label="Perspective traffic racer"></canvas><div class="hud"><span><small>Distance</small><b id="raceDistance">0 m</b></span><span><small>Score</small><b id="raceScore">0</b></span><span><small>Speed</small><b id="raceSpeed">0 km/h</b></span><span><small>Best</small><b id="raceBest">0</b></span></div><div class="tools"><button class="primary" id="raceReset">Start / Restart</button></div><div class="pad"><button data-race="left">◀</button><button data-race="down">▼</button><button data-race="up">▲</button><button data-race="right">▶</button></div></div><p class="help">Left / Right or A / D change lanes, Up accelerates and Down slows down. Avoid traffic. Independent browser edition: the Unity repository does not include a WebGL build.</p></section>
+<footer class="help">Cube Engine source: Nurgak/Cube-engine by Karl Kangur. Upstream README states WTFPL 2.0. Original browser scripts are included with responsive layout and render-distance adjustments.</footer>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),started=new Set(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),mod=(n,m)=>((n%m)+m)%m;
+function activate(){let mode=(location.hash.slice(1)||"pool").toLowerCase();if(!["pool","cube","dust","racing"].includes(mode))mode="pool";document.querySelectorAll(".game").forEach(s=>s.classList.toggle("active",s.dataset.game===mode));let t={pool:["8 Ball Pool","New locally hosted browser billiards"],cube:["Cube Engine · Web","Original HTML5 canvas sandbox · locally hosted"],dust:["Dust Racing 2D · Web","Playable dirt-track racer · browser adaptation"],racing:["Racing Car Game · Web","Playable traffic racer · browser adaptation"]}[mode];$("pageTitle").textContent=t[0];$("pageSubtitle").textContent=t[1];if(!started.has(mode)){started.add(mode);({pool:initPool,cube:initCube,dust:initDust,racing:initRace})[mode]();}}
+window.addEventListener("hashchange",activate);
+function initPool(){
+ const c=$("poolCanvas"),g=c.getContext("2d"),W=1100,H=600,R=10.5,E={l:92,r:1008,t:82,b:518},holes=[[78,68],[550,58],[1022,68],[78,532],[550,542],[1022,532]],col={1:"#f0d34f",2:"#347ac7",3:"#c9433e",4:"#7652a8",5:"#e58b34",6:"#39965d",7:"#9e3a32",8:"#20252a",9:"#f0d34f",10:"#347ac7",11:"#c9433e",12:"#7652a8",13:"#e58b34",14:"#39965d",15:"#9e3a32"};
+ let balls=[],cue,angle=0,turn=0,groups=[null,null],moving=false,contact=false,scratch=false,pocketed=[],over=false,last=0;const make=(n,x,y)=>({n,x,y,vx:0,vy:0,on:true});
+ function reset(){balls=[];cue=make(0,322,300);balls.push(cue);let ns=[1,9,2,10,8,3,11,4,12,5,13,6,14,7,15],k=0;for(let row=0;row<5;row++)for(let q=0;q<=row;q++)balls.push(make(ns[k++],735+row*21.8,300+(q-row/2)*22.4));turn=0;groups=[null,null];moving=contact=scratch=over=false;pocketed=[];$("poolStatus").textContent="Player 1 breaks. Move the pointer to aim, then take your shot.";hud();draw();}
+ function remaining(gr){return balls.filter(b=>b.on&&((b.n>0&&b.n<8&&gr==="solids")||(b.n>8&&gr==="stripes"))).length;}
+ function hud(){$("poolTurn").textContent=over?"Match over":"Player "+(turn+1);$("poolGroups").textContent=groups[0]||groups[1]?(groups[0]||"—")+" / "+(groups[1]||"—"):"Open table";$("poolShoot").disabled=moving||over;}
+ function aimPoint(e){let r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+ c.addEventListener("pointermove",e=>{let p=aimPoint(e);if(cue.on&&!moving)angle=Math.atan2(p.y-cue.y,p.x-cue.x);draw();});
+ c.addEventListener("pointerdown",e=>{if(!moving&&!over&&cue.on){let p=aimPoint(e);angle=Math.atan2(p.y-cue.y,p.x-cue.x);draw();}});
+ $("poolPower").oninput=e=>$("poolPowerVal").textContent=e.target.value+"%";$("poolShoot").onclick=shoot;$("poolReset").onclick=reset;
+ window.addEventListener("keydown",e=>{if(!document.querySelector('[data-game="pool"]').classList.contains("active"))return;if(e.code==="Space"||e.code==="Enter"){e.preventDefault();shoot();}if(!moving&&!over&&(e.key==="ArrowLeft"||e.key==="ArrowRight")){angle+=e.key==="ArrowLeft"?-.06:.06;draw();}});
+ function shoot(){if(moving||over||!cue.on)return;let v=130+Number($("poolPower").value)*6.8;cue.vx=Math.cos(angle)*v;cue.vy=Math.sin(angle)*v;moving=true;contact=scratch=false;pocketed=[];$("poolStatus").textContent="Player "+(turn+1)+" is taking a shot…";hud();}
+ function sink(b){b.on=false;b.vx=b.vy=0;if(!b.n)scratch=true;else pocketed.push(b);}
+ function update(dt){if(!moving)return;for(let b of balls){if(!b.on)continue;b.x+=b.vx*dt;b.y+=b.vy*dt;let dr=Math.pow(.986,dt*60);b.vx*=dr;b.vy*=dr;if(Math.hypot(b.vx,b.vy)<4)b.vx=b.vy=0;if(holes.some(h=>Math.hypot(b.x-h[0],b.y-h[1])<27)){sink(b);continue;}if(b.x<E.l+R){b.x=E.l+R;b.vx=Math.abs(b.vx)*.84;}if(b.x>E.r-R){b.x=E.r-R;b.vx=-Math.abs(b.vx)*.84;}if(b.y<E.t+R){b.y=E.t+R;b.vy=Math.abs(b.vy)*.84;}if(b.y>E.b-R){b.y=E.b-R;b.vy=-Math.abs(b.vy)*.84;}}
+ let a=balls.filter(b=>b.on);for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){let u=a[i],v=a[j],dx=v.x-u.x,dy=v.y-u.y,d=Math.hypot(dx,dy),mn=R*2;if(d>=mn||!d)continue;let nx=dx/d,ny=dy/d,o=mn-d;u.x-=nx*o/2;u.y-=ny*o/2;v.x+=nx*o/2;v.y+=ny*o/2;let rel=(v.vx-u.vx)*nx+(v.vy-u.vy)*ny;if(rel<0){let im=-.97*rel;u.vx-=im*nx;u.vy-=im*ny;v.vx+=im*nx;v.vy+=im*ny;if(!u.n||!v.n)contact=true;}}
+ if(!balls.some(b=>b.on&&Math.hypot(b.vx,b.vy)>4)){moving=false;finish();}}
+ function finish(){let before=groups[turn]?remaining(groups[turn]):null;if(!groups[turn]&&!groups[1-turn]){let f=pocketed.find(b=>b.n!==8);if(f){let gr=f.n<8?"solids":"stripes";groups[turn]=gr;groups[1-turn]=gr==="solids"?"stripes":"solids";}}let own=groups[turn],made=pocketed.some(b=>own&&(own==="solids"?b.n>0&&b.n<8:b.n>8)),eight=pocketed.some(b=>b.n===8);if(eight){over=true;$("poolStatus").textContent=own&&before===0&&contact&&!scratch?"Player "+(turn+1)+" wins!":"The 8 ball was pocketed too early or after a foul. Player "+(2-turn)+" wins!";}else if(scratch||!contact){turn=1-turn;if(scratch){cue.x=322;cue.y=300;cue.on=true;cue.vx=cue.vy=0;}$("poolStatus").textContent="Foul. Player "+(turn+1)+" takes the next turn.";}else if(made)$("poolStatus").textContent="Good shot. Player "+(turn+1)+" stays at the table.";else{turn=1-turn;$("poolStatus").textContent="Player "+(turn+1)+" is up.";}pocketed=[];scratch=contact=false;hud();draw();}
+ function ballDraw(b){g.save();g.translate(b.x,b.y);g.shadowColor="#0009";g.shadowBlur=5;g.shadowOffsetY=3;let gr=g.createRadialGradient(-4,-5,1,0,0,R+2);gr.addColorStop(0,"#fff");gr.addColorStop(.28,b.n?col[b.n]:"#f5f5ed");gr.addColorStop(1,"#171d22");g.fillStyle=gr;g.beginPath();g.arc(0,0,R,0,Math.PI*2);g.fill();g.shadowColor="transparent";g.shadowBlur=g.shadowOffsetY=0;if(b.n>=9){g.save();g.beginPath();g.arc(0,0,R-.5,0,Math.PI*2);g.clip();g.fillStyle="#fff";g.fillRect(-R,-4,2*R,8);g.restore();}if(b.n){g.fillStyle="#fff";g.beginPath();g.arc(0,0,5.2,0,Math.PI*2);g.fill();g.fillStyle="#1b2226";g.font="bold 6.5px system-ui";g.textAlign="center";g.textBaseline="middle";g.fillText(String(b.n),0,.4);}g.restore();}
+ function draw(){g.clearRect(0,0,W,H);g.fillStyle="#3e2819";g.beginPath();g.roundRect(15,12,1070,576,34);g.fill();g.fillStyle="#987044";g.beginPath();g.roundRect(30,27,1040,546,27);g.fill();g.fillStyle="#075137";g.beginPath();g.roundRect(63,52,974,496,20);g.fill();let gr=g.createLinearGradient(70,50,1030,550);gr.addColorStop(0,"#0a6840");gr.addColorStop(1,"#03452e");g.fillStyle=gr;g.beginPath();g.roundRect(78,67,944,466,15);g.fill();g.strokeStyle="#a7d9ae55";g.lineWidth=2;g.strokeRect(92,82,916,436);for(let h of holes){g.fillStyle="#020a08";g.beginPath();g.arc(h[0],h[1],22,0,2*Math.PI);g.fill();g.strokeStyle="#d6b77c";g.lineWidth=3;g.stroke();}if(cue.on&&!moving&&!over){let dx=Math.cos(angle),dy=Math.sin(angle),pw=Number($("poolPower").value);g.save();g.setLineDash([8,7]);g.strokeStyle="#f7f2d8bb";g.lineWidth=2;g.beginPath();g.moveTo(cue.x,cue.y);g.lineTo(cue.x+dx*420,cue.y+dy*420);g.stroke();g.restore();g.strokeStyle="#dfc18e";g.lineWidth=5;g.beginPath();g.moveTo(cue.x-dx*(36+pw*.9),cue.y-dy*(36+pw*.9));g.lineTo(cue.x-dx*17,cue.y-dy*17);g.stroke();}for(let b of balls)if(b.on)ballDraw(b);if(over){g.fillStyle="#04131dcc";g.fillRect(330,245,440,110);g.fillStyle="#fff";g.font="900 32px system-ui";g.textAlign="center";g.fillText("MATCH COMPLETE",550,292);}}
+ function frame(now){let dt=Math.min(.035,(now-last)/1000||.016);last=now;update(dt);draw();requestAnimationFrame(frame);}reset();last=performance.now();requestAnimationFrame(frame);
+}
+function initCube(){
+(()=>{
+/*
+ * File:    player.js
+ *
+ * Defines player viewpoint for rendering and does collision detection.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+function Player(world)
+{
+	this.world = world;
+	
+	// player position is limited by Number.MAX_VALUE (1.798e308) and Number.MIN_VALUE (5e-324)
+	this.position = this.world.spawn;
+	this.rotation = {x: 0, y: 0, z: 0};
+	this.chunk = {x: 0, z: 0};
+	
+	// player bounding box used for collision detection
+	//    +------+
+	//   /|     /|
+	//  +-+----+ |
+	//  | |    | | height
+	//  | |    | |
+	//  | +----| |
+	//  |/     |/ 2*size
+	//  +------+
+	//    2*size
+	
+	this.delta = {x: 0, y: 0, z: 0};
+	this.height = 1.7;
+	this.size = 0.3;
+	this.speed = 5;
+	this.rSpeed = 2.5;
+	this.velocity = 0;
+	this.fallSpeed = 8;
+	this.jumpSpeed = 8;
+	this.acceleration = 21;
+	this.gravity = true;
+	this.collision = true;
+	this.firstUpdate = true;
+	this.lastUpdate = new Date().getTime();
+	this.rotationMatrix = [];
+	this.keys = {};
+	this.collisionNodes = [];
+	
+	var player = this;
+	document.onkeydown = function(event)
+	{
+		player.onKeyEvent(event.keyCode, true);
+	}
+	
+	document.onkeyup = function(event)
+	{
+		player.onKeyEvent(event.keyCode, false);
+	}
+	this.joystick = new SQUARIFIC.framework.TouchControl(document.getElementById("joystick"), {pretendArrowKeys: true, mindistance: 25, middletop: 25, middleleft: 25});
+	this.joystick.on("pretendKeydown", 
+		function (event) {
+			player.onKeyEvent(event.keyCode, true);
+		}
+	);
+	this.joystick.on("pretendKeyup",
+		function (event) {
+			player.onKeyEvent(event.keyCode, false);
+		}
+	);
+	
+	this.spawn();
+}
+
+// taken from Overv's WebCraft: https://github.com/Overv/WebCraft
+Player.prototype.onKeyEvent = function(keyCode, state)
+{
+	var key = String.fromCharCode(keyCode).toLowerCase();
+	this.keys[key] = state;
+	this.keys[keyCode] = state;
+}
+
+Player.prototype.spawn = function()
+{
+	this.position = this.world.spawn;
+	this.rotation = {x: 0, y: 0, z: 0};
+	this.chunk = {
+		x: Math.floor(this.world.spawn.x/16),
+		z: Math.floor(this.world.spawn.z/16)
+	};
+	this.world.mapGrid9(this.chunk.x, this.chunk.z);
+}
+
+// ############################################################ PLAYER MOVEMENT
+
+Player.prototype.update = function()
+{
+	this.elapsed = (new Date().getTime()-this.lastUpdate)/1000;
+	this.lastUpdate = new Date().getTime();
+	
+	// player rotation
+	
+	// [left arrow]
+	if(this.keys[37])
+	{
+		this.rotation.y += this.rSpeed*this.elapsed;
+	}
+	// [right arrow]
+	if(this.keys[39])
+	{
+		this.rotation.y -= this.rSpeed*this.elapsed;
+	}
+	// [up arrow] or [down arrow]
+	if(this.keys[38] || this.keys[40])
+	{
+		// limit pitch
+		dy = (this.keys[38]?1:-1)*this.elapsed*this.rSpeed;
+		
+		if(this.rotation.x+dy <= 1.5708 && this.rotation.x+dy >= -1.5708)
+		{
+			this.rotation.x += dy;
+		}
+		else if(this.rotation.x+dy > 1.5708 || this.rotation.x+dy < -1.5708)
+		{
+			this.rotation.x = (dy>0?1:-1)*1.5708;
+		}
+	}
+	
+	// update rotation trigonometry
+	this.rotTrig = {
+		cosx: Math.cos(this.rotation.x),
+		sinx: Math.sin(this.rotation.x),
+		cosy: Math.cos(this.rotation.y),
+		siny: Math.sin(this.rotation.y)
+	};
+	
+	// player movement based on player rotation
+	var dx = this.speed*this.elapsed*this.rotTrig.siny;
+	var dy = this.speed*this.elapsed;
+	var dz = this.speed*this.elapsed*this.rotTrig.cosy;
+	
+	// reset movement delta
+	this.delta.x = 0
+	this.delta.z = 0;
+	
+	// without gravity stop falling
+	if(!this.gravity)
+	{
+		this.delta.y = 0;
+		this.velocity = 0;
+	}
+	
+	// get player movement deltas with key input
+	if(this.keys['w'])
+	{
+		this.delta.x -= dx;
+		this.delta.z += dz;
+	}
+	if(this.keys['s'])
+	{
+		this.delta.x += dx;
+		this.delta.z -= dz;
+	}
+	if(this.keys['d'])
+	{
+		this.delta.x += dz;
+		this.delta.z += dx;
+	}
+	if(this.keys['a'])
+	{
+		this.delta.x -= dz;
+		this.delta.z -= dx;
+	}
+	// [space]
+	if(this.keys[32] && this.gravity && !this.delta.y)
+	{
+		this.velocity = this.jumpSpeed;
+	}
+	// [pg up]
+	if(this.keys[33] && !this.gravity)
+	{
+		this.delta.y += dy;
+	}
+	// [pg down]
+	if(this.keys[34] && !this.gravity)
+	{
+		this.delta.y -= dy;
+	}
+	
+	// gravity and terminal velocity
+	if(this.gravity && this.velocity > -this.fallSpeed)
+	{
+		this.velocity -= this.acceleration * this.elapsed;
+	}
+	if(this.gravity && this.velocity < -this.fallSpeed)
+	{
+		this.velocity = -this.acceleration;
+	}
+
+	this.delta.y = this.velocity * this.elapsed;
+
+	if (this.firstUpdate) {
+		// collision detection doesn't seem to work on the first update
+		this.delta.y = 0;
+		this.firstUpdate = false;
+	}
+	if(this.collision)
+	{
+		this.collisionDetection();
+	}
+
+	// apply movement
+	this.position.x += this.delta.x;
+	this.position.y += this.delta.y;
+	this.position.z += this.delta.z;
+	
+	// check for chunk change
+	var cx = Math.floor(this.position.x/16);
+	var cz = Math.floor(this.position.z/16);
+	
+	// update map if player has changed chunks
+	if(cx != this.chunk.x || cz != this.chunk.z)
+	{
+		this.chunk.x = cx;
+		this.chunk.z = cz;
+		this.world.mapGrid9(this.chunk.x, this.chunk.z);
+	}
+}
+
+// ############################################################ COLLISION DETECTION
+
+Player.prototype.collisionDetection = function()
+{
+	var rPos = {
+		x: Math.floor(this.position.x),
+		y: Math.floor(this.position.y),
+		z: Math.floor(this.position.z)
+	};
+	
+	// gather potential collision nodes
+	for(var x = rPos.x-1; x <= rPos.x+1; x++)
+	{
+		for(var y = rPos.y-2; y <= rPos.y+1; y++)
+		{
+			for(var z = rPos.z-1; z <= rPos.z+1; z++)
+			{
+				if((node = this.world.getNode(x, y, z)) && node.type.solid)
+				{
+					this.collisionNodes.push(node);
+				}
+			}
+		}
+	}
+	
+	for(var i in this.collisionNodes)
+	{
+		var node = this.collisionNodes[i];
+		
+		// collision on x axis
+		if(
+			this.delta.x &&
+			this.position.z+this.size > node.z &&
+			this.position.z-this.size-1 < node.z &&
+			this.position.y+this.height+0.2 > node.y &&
+			this.position.y-1 < node.y
+		)
+		{
+			if(this.position.x+this.size+this.delta.x >= node.x && this.position.x < node.x+0.5)
+			{
+				this.delta.x = 0;
+				this.position.x = node.x-this.size;
+			}
+			else if(this.position.x-this.size+this.delta.x <= node.x+1 && this.position.x > node.x+0.5)
+			{
+				this.delta.x = 0;
+				this.position.x = node.x+1+this.size;
+			}
+		}
+		
+		// collision on z axis
+		if(
+			this.delta.z &&
+			this.position.x+this.size > node.x &&
+			this.position.x-this.size-1 < node.x &&
+			this.position.y+this.height+0.2 > node.y &&
+			this.position.y-1 < node.y
+		)
+		{
+			// player behind the node
+			if(this.position.z+this.size+this.delta.z >= node.z && this.position.z < node.z+0.5)
+			{
+				this.delta.z = 0;
+				this.position.z = node.z-this.size;
+			}
+			// player in front of the node
+			else if(this.position.z-this.size+this.delta.z <= node.z+1 && this.position.z > node.z+0.5)
+			{
+				this.delta.z = 0;
+				this.position.z = node.z+1+this.size;
+			}
+		}
+		
+		// collision on y axis
+		if(
+			this.position.x+this.size > node.x &&
+			this.position.x-this.size-1 < node.x &&
+			this.position.z+this.size > node.z &&
+			this.position.z-this.size-1 < node.z
+		)
+		{
+			// hit the ceiling
+			if(this.position.y+this.height+0.2+this.delta.y >= node.y && this.position.y < node.y)
+			{
+				this.delta.y = -0.01;
+				this.velocity = 0;
+				this.position.y = node.y-this.height-0.2;
+			}
+			
+			// down on the floor
+			if(this.position.y+this.delta.y <= node.y+1)
+			{
+				this.delta.y = 0;
+				this.velocity = 0;
+				this.position.y = node.y+1;
+			}
+		}
+	}
+	
+	this.collisionNodes.length = 0;
+}
+
+Player.prototype.nodeCollision = function(node)
+{
+	if(
+		this.position.x+this.size > node.x &&
+		this.position.x-this.size < node.x+1 &&
+		this.position.z+this.size > node.z &&
+		this.position.z-this.size < node.z+1 &&
+		this.position.y+0.2 > node.y &&
+		this.position.y < node.y+1
+	)
+	{
+		return true;
+	}
+	return false;
+}
+
+/*
+ * File:    save.js
+ *
+ * Saves game state with player information to file or locally.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+function Save(world, player)
+{
+	this.world = world;
+	this.player = player;
+	
+	this.getSavedWorlds();
+}
+
+Save.prototype.removeLocalSave = function()
+{
+	window.localStorage.removeItem(document.getElementById("load").value);
+	this.getSavedWorlds();
+}
+
+// populate saved games select input
+Save.prototype.getSavedWorlds = function()
+{
+	var options = [];
+	for(var key in window.localStorage)
+	{
+		if(key.indexOf("world") === 0)
+		{
+			options.push('<option value="'+key+'">'+key+' ('+((window.localStorage[key].length/1024)|0)+'KB)</option>');
+		}
+	}
+	options.sort();
+	document.getElementById("load").innerHTML = options.join("");
+}
+
+// ############################################################ SAVE METHODS
+
+Save.prototype.saveLocally = function()
+{
+	try
+	{
+		window.localStorage.setItem(document.getElementById("saveas").value, this.getSaveData());
+	}
+	catch(e)
+	{
+		switch(e.code)
+		{
+			// data wasn't successfully saved due to quota exceed
+			case 22: alert("Could not save world: not enough space."); break;
+			default: alert("Could not save world. Error code "+e.code);
+		}
+	}
+	
+	this.getSavedWorlds();
+}
+
+Save.prototype.saveToFile = function()
+{
+	document.location = "data:text/octet-stream,"+this.getSaveData();
+}
+
+Save.prototype.getSaveData = function()
+{
+	var chunk_x = Math.floor(this.player.position.x/16);
+	var chunk_z = Math.floor(this.player.position.z/16);
+	
+	var saveNodes = [];
+	for(var i in this.world.chunks)
+	{
+		if(Math.abs(this.world.chunks[i].x-chunk_x) <= 1 && Math.abs(this.world.chunks[i].z-chunk_z) <= 1)
+		{
+			for(var j in this.world.chunks[i].nodes)
+			{
+				saveNodes.push({
+					x: this.world.chunks[i].nodes[j].x,
+					y: this.world.chunks[i].nodes[j].y,
+					z: this.world.chunks[i].nodes[j].z,
+					t: this.world.chunks[i].nodes[j].type.id
+				});
+			}
+		}
+	}
+	
+	// add all player, spawnpoint and node data
+	var saveData = {
+		player: {
+			x: this.player.position.x.toFixed(2),
+			y: this.player.position.y.toFixed(2),
+			z: this.player.position.z.toFixed(2),
+			rx: this.player.rotation.x.toFixed(2),
+			ry: this.player.rotation.y.toFixed(2),
+			rz: this.player.rotation.z.toFixed(2)
+		},
+		spawn: {
+			x: this.world.spawn.x,
+			y: this.world.spawn.y,
+			z: this.world.spawn.z
+		},
+		seed: this.world.map.seed,
+		nodes: saveNodes
+	};
+	
+	return JSON.stringify(saveData); 
+}
+
+// ############################################################ LOAD METHODS
+
+Save.prototype.loadLocalSave = function()
+{
+	if(worldName = document.getElementById("load").value)
+	{
+		this.loadWorld(window.localStorage.getItem(worldName));
+	}
+}
+
+Save.prototype.loadFromFile = function(file)
+{
+	var reader = new FileReader();
+	
+	reader.onload = function(e)
+	{
+		this.loadWorld(e.target.result);
+	}
+	
+	reader.onerror = function(e)
+	{
+		switch(reader.error.code)
+		{
+			// file was uploaded with file:// protocol
+			case 2: alert("You cannot load files when running locally due to security reasons."); break;
+			default: alert("Could not load file. Error code: "+reader.error.code);
+		}
+	}
+	
+	reader.readAsText(file);
+}
+
+Save.prototype.loadWorld = function(worldData)
+{
+	worldData = JSON.parse(worldData);
+	this.world.chunks = {};
+	this.world.seed = parseInt(worldData.seed);
+	for(var i in worldData.nodes)
+	{
+		var node = worldData.nodes[i];
+		this.world.addNode(parseInt(node.x), parseInt(node.y), parseInt(node.z), nodeType.getTypeName(parseInt(node.t)));
+	}
+	
+	// restore player position
+	this.player.position = {
+		x: parseFloat(worldData.player.x),
+		y: parseFloat(worldData.player.y),
+		z: parseFloat(worldData.player.z),
+	};
+	
+	// restore player rotation
+	this.player.rotation = {
+		x: parseFloat(worldData.player.rx),
+		y: parseFloat(worldData.player.ry),
+		z: parseFloat(worldData.player.rz),
+	};
+}
+/*
+ * File:    map.js
+ *
+ * Map class: generates a continous heightmap based on a seed, one chunk at the time.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+function Map(seed)
+{
+	this.seed = seed;
+	this.cache = {};
+}
+
+// ############################################################ PERLIN NOISE
+// http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
+
+Map.prototype.getAbsoluteHeight = function(x, z)
+{
+	return (10*this.getHeight(x, z)+5)|0;
+}
+
+// returns height value between 0 and 1
+Map.prototype.getHeight = function(x, z)
+{
+	var cx = Math.floor(x/16);
+	var cz = Math.floor(z/16);
+	
+	var lx = ((x%16)+16)%16;
+	var lz = ((z%16)+16)%16;
+	
+	if(this.cache[cx+'_'+cz])
+	{
+		return this.cache[cx+'_'+cz][lx][lz];
+	}
+	
+	this.cache[cx+'_'+cz] = [];
+	
+	var corners = this.getCorners(cx, cz);
+	
+	var a, b;
+	for(var x = 0; x < 16; x++)
+	{
+		this.cache[cx+'_'+cz][x] = [];
+	
+		a = this.interpolate(corners[0], corners[1], x/16);
+		b = this.interpolate(corners[2], corners[3], x/16);
+		
+		for(var z = 0; z < 16; z++)
+		{
+			this.cache[cx+'_'+cz][x][z] = this.interpolate(a, b, z/16);
+		}
+	}
+	
+	return this.cache[cx+'_'+cz][lx][lz];
+}
+
+// returns corner heigt values for giver chunk
+Map.prototype.getCorners = function(cx, cz)
+{
+	// 2-a-3
+	// z   |
+	// 0-b-1
+	
+	return [
+		this.noise(cx*16, cz*16),
+		this.noise(cx*16+16, cz*16),
+		this.noise(cx*16, cz*16+16),
+		this.noise(cx*16+16, cz*16+16)
+	];
+}
+
+// returns a value between 0 and 1
+Map.prototype.noise = function(x, y)
+{
+	var k = x+y*this.seed;
+	n = (k<<13)^k;
+	return ((n*(n*n*60493+19990303)+1376312589)&0x7fffffff)/2147483648;
+}
+
+Map.prototype.interpolate = function(a, b, x)
+{
+	var f = (1.0-Math.cos(x*3.1415927))*0.5;
+	return a*(1.0-f)+b*f;
+}
+
+/*
+ * File:    node.js
+ *
+ * Contains node class and defines node types.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+//  coordinates     indexes     system       faces
+//                                             front
+//   011---111    3-----7                 +-----+
+//   /|    /|    /|    /|                /|top /|
+// 010+--110|   2-+---6 |   y           +-+---+ | right
+//  |001--|101  | 1---|-5   | z    left | +---|-/
+//  |/    |/    |/    |/    |/          |/back|/
+// 000---100    0-----4     +----x      +-----+
+//                                        bottom
+//
+// face order: front, back, right, left, top, bottom
+
+// node face constants
+const FACE = {
+	FRONT:  1,
+	BACK:   2,
+	RIGHT:  4,
+	LEFT:   8,
+	TOP:    16,
+	BOTTOM: 32
+}
+
+// rendering vertex order
+const VERTEX = {
+	FRONT:  [7, 5, 1, 3],
+	BACK:   [2, 0, 4, 6],
+	RIGHT:  [6, 4, 5, 7],
+	LEFT:   [3, 1, 0, 2],
+	TOP:    [2, 6, 7, 3],
+	BOTTOM: [0, 1, 5, 4]
+}
+
+// vertex offset from node origin
+const OFFSET = [
+	{x: 0,	y: 0,	z: 0},
+	{x: 0,	y: 0,	z: 1},
+	{x: 0,	y: 1,	z: 0},
+	{x: 0,	y: 1,	z: 1},
+	{x: 1,	y: 0,	z: 0},
+	{x: 1,	y: 0,	z: 1},
+	{x: 1,	y: 1,	z: 0},
+	{x: 1,	y: 1,	z: 1}
+];
+
+// node definition, private: do not call directly
+// only the world can add a new node with addNode(x, y, z, type)
+function Node(x, y, z, type)
+{
+	this.x = x;
+	this.y = y;
+	this.z = z;
+	this.type = nodeType[type];
+	
+	// at first all faces are visible
+	this.sides = 0x3f; // = 0b111111
+	// bit | face
+	// ----+--------
+	// 0   | front
+	// 1   | back
+	// 2   | right
+	// 3   | left
+	// 4   | top
+	// 5   | bottom
+}
+
+// node definitions
+const nodeType = {};
+
+// restore type to loaded node using type id
+nodeType.getTypeName = function(id)
+{
+	for(var key in nodeType)
+	{
+		if(typeof nodeType[key] == "object" && nodeType[key].id == id)
+		{
+			return key;
+		}
+	}
+}
+
+// ids are used to save data locally or to file
+nodeType.stone = {
+	id: 1,
+	color: '#828282',
+	texture: function(face)
+	{
+		return [1, 0];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.grass = {
+	id: 2,
+	color: '#749317',
+	texture: function(face)
+	{
+		if(face == FACE.TOP)
+		{
+			return [0, 0];
+		}
+		else if(face != FACE.BOTTOM)
+		{
+			return [3, 0];
+		}
+		else
+		{
+			return [2, 0];
+		}
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.dirt = {
+	id: 3,
+	color: '#703A00',
+	texture: function(face)
+	{
+		return [2, 0];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.cobblestone = {
+	id: 4,
+	color: '#787878',
+	texture: function(face)
+	{
+		return [0, 1];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.planks = {
+	id: 5,
+	color: '#E08907',
+	texture: function(face)
+	{
+		return [4, 0];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.wood = {
+	id: 6,
+	color: '#642E00',
+	texture: function(face)
+	{
+		if(face < FACE.TOP)
+		{
+			return [4, 1];
+		}
+		else
+		{
+			return [5, 1];
+		}
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.bricks = {
+	id: 7,
+	color: '#D14B1B',
+	texture: function(face)
+	{
+		return [7, 0];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.gravel = {
+	id: 8,
+	color: '#5E6469',
+	texture: function(face)
+	{
+		return [3, 1];
+	},
+	transparent: false,
+	solid: true
+}
+
+
+nodeType.sand = {
+	id: 9,
+	color: '#FCE781',
+	texture: function(face)
+	{
+		return [2, 1];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.sandstone = {
+	id: 10,
+	color: '#FFEE88',
+	texture: function(face)
+	{
+		if(face == FACE.TOP)
+		{
+			return [0, 11];
+		}
+		else if(face != FACE.BOTTOM)
+		{
+			return [0, 12];
+		}
+		else
+		{
+			return [0, 13];
+		}
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.obsidian = {
+	id: 11,
+	color: '#2C202F',
+	texture: function(face)
+	{
+		return [5, 2];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.glass = {
+	id: 12,
+	color: '#A3D8FF',
+	texture: function(face)
+	{
+		return [1, 3];
+	},
+	transparent: true,
+	solid: true
+}
+
+nodeType.leaves = {
+	id: 13,
+	color: '#029700',
+	texture: function(face)
+	{
+		return [4, 3];
+	},
+	transparent: true,
+	solid: true
+}
+
+nodeType.black = {
+	id: 14,
+	color: '#262626',
+	texture: function(face)
+	{
+		return [1, 7];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.red = {
+	id: 15,
+	color: '#BE3600',
+	texture: function(face)
+	{
+		return [1, 8];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.rose = {
+	id: 16,
+	color: '#FC79AE',
+	texture: function(face)
+	{
+		return [2, 8];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.orange = {
+	id: 17,
+	color: '#C67B00',
+	texture: function(face)
+	{
+		return [2, 13];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.yellow = {
+	id: 18,
+	color: '#C1C600',
+	texture: function(face)
+	{
+		return [2, 10];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.white = {
+	id: 19,
+	color: '#E2E2E2',
+	texture: function(face)
+	{
+		return [0, 4];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.green = {
+	id: 20,
+	color: '#0E7000',
+	texture: function(face)
+	{
+		return [1, 9];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.cyan = {
+	id: 21,
+	color: '#00D0CC',
+	texture: function(face)
+	{
+		return [1, 13];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.blue = {
+	id: 22,
+	color: '#085CD0',
+	texture: function(face)
+	{
+		return [1, 11];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.purple = {
+	id: 23,
+	color: '#6E0FD3',
+	texture: function(face)
+	{
+		return [1, 12];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.water = {
+	id: 24,
+	color: '#5E65E1',
+	texture: function(face)
+	{
+		return [14, 12];
+	},
+	transparent: true,
+	solid: false
+}
+
+nodeType.lava = {
+	id: 25,
+	color: '#FF1408',
+	texture: function(face)
+	{
+		return [14, 15];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.darkgray = {
+	id: 26,
+	color: '#4B4B4B',
+	texture: function(face)
+	{
+		return [2, 7];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.gray = {
+	id: 27,
+	color: '#949494',
+	texture: function(face)
+	{
+		return [1, 14];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.lime = {
+	id: 28,
+	color: '#68D000',
+	texture: function(face)
+	{
+		return [2, 9];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.brown = {
+	id: 29,
+	color: '#6C360A',
+	texture: function(face)
+	{
+		return [1, 10];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.lightblue = {
+	id: 30,
+	color: '#4E9EFF',
+	texture: function(face)
+	{
+		return [2, 11];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.magneta = {
+	id: 31,
+	color: '#B956FF',
+	texture: function(face)
+	{
+		return [2, 12];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.ice = {
+	id: 32,
+	color: '#7CC8FF',
+	texture: function(face)
+	{
+		return [3, 4];
+	},
+	transparent: true,
+	solid: true
+}
+
+nodeType.snow = {
+	id: 33,
+	color: '#F5F9FB',
+	texture: function(face)
+	{
+		return [2, 4];
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.stoneblock = {
+	id: 34,
+	color: '#9E9E9E',
+	texture: function(face)
+	{
+		if(face < FACE.TOP)
+		{
+			return [5, 0];
+		}
+		else
+		{
+			return [6, 0];
+		}
+	},
+	transparent: false,
+	solid: true
+}
+
+nodeType.cobweb = {
+	id: 35,
+	color: '#FFFFFF',
+	texture: function(face)
+	{
+		return [11, 0];
+	},
+	transparent: true,
+	solid: true
+}
+
+nodeType.bedrock = {
+	id: 36,
+	color: '#222222',
+	texture: function(face)
+	{
+		return [1, 1];
+	},
+	transparent: false,
+	solid: true
+}
+/*
+ * File:    world.js
+ *
+ * Holds world and chunk classes, does map generation (but gets height from map.js).
+ * Also loading and saving from/to files or in browser.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+function World(seed)
+{
+	this.chunks = {};
+	this.newMap(seed);
+}
+
+World.prototype.newMap = function(seed)
+{
+	this.chunks = {};
+	this.map = new Map(seed);
+	this.spawn = {x: 0, y: this.map.getAbsoluteHeight(0, 0)+3, z: 0};
+}
+
+// ############################################################ MAP METHODS
+
+// generate 9 chunks, the center chunk being at x, z
+World.prototype.mapGrid9 = function(x, z)
+{
+	for(var cx = x-1; cx <= x+1; cx++)
+	{
+		for(var cz = z-1; cz <= z+1; cz++)
+		{
+			// chunk already exists
+			if(this.chunks[cx+'_'+cz])
+			{
+				continue;
+			}
+			
+			this.addChunk(cx, cz);
+		}
+	}
+}
+
+// ############################################################ CHUNK METHODS
+
+function Chunk(x, z)
+{
+	this.x = x;
+	this.z = z;
+	this.nodes = {};
+	this.renderNodes = {};
+	
+	var map = new Map();
+	
+	this.corners = [
+		map.getAbsoluteHeight(this.x, this.z),
+		map.getAbsoluteHeight(this.x+16, this.z),
+		map.getAbsoluteHeight(this.x+16, this.z+16),
+		map.getAbsoluteHeight(this.x, this.z+16)
+	];
+}
+
+// generates a chunk with all its nodes
+World.prototype.addChunk = function(x, z)
+{
+	// generate the map using world heightmap
+	for(var nx = 0; nx < 16; nx++)
+	{
+		for(var nz = 0; nz < 16; nz++)
+		{
+			var y = this.map.getAbsoluteHeight(16*x+nx, 16*z+nz);
+		
+			for(var ny = 0; ny < y; ny++)
+			{
+				var type;
+				if(ny == 0)
+				{
+					type = 'bedrock';
+				}
+				else if(ny*2 < y)
+				{
+					type = 'stone';
+				}
+				else if((ny == 4 && ny == y-1) || (ny == 5 && ny == y-1) || (ny == 6 && ny == y-1))
+				{
+					// water level
+					if(ny == 4 && ny == y-1)
+					{
+						this.addNode(16*x+nx, 5, 16*z+nz, 'water');
+						this.addNode(16*x+nx, 6, 16*z+nz, 'water');
+					}
+					if(ny == 5 && ny == y-1)
+					{
+						this.addNode(16*x+nx, 6, 16*z+nz, 'water');
+					}
+					type = 'sand';
+				}
+				else if(ny < y-1)
+				{
+					type = 'dirt';
+				}
+				else
+				{
+					type = 'grass';
+				}
+				
+				this.addNode(16*x+nx, ny, 16*z+nz, type);
+			}
+		}
+	}
+}
+
+// ############################################################ NODE METHODS
+
+// returns the node at x, y , z, false if there is no chunk or undefined if there is no node
+World.prototype.getNode = function(x, y, z)
+{
+	var cx = Math.floor(x/16);
+	var cz = Math.floor(z/16);
+	
+	if(this.chunks[cx+'_'+cz])
+	{
+		return this.chunks[cx+'_'+cz].nodes[x+'_'+y+'_'+z];
+	}
+	
+	return false;
+}
+
+World.prototype.addNode = function(x, y, z, type)
+{
+	var cx = Math.floor(x/16);
+	var cz = Math.floor(z/16);
+	var node;
+	
+	// space already occupied
+	if(this.getNode(x, y, z))
+	{
+		return false;
+	}
+	
+	if(!this.chunks[cx+'_'+cz])
+	{
+		this.chunks[cx+'_'+cz] = new Chunk(cx, cz);
+	}
+	
+	node = new Node(x, y, z, type);
+	this.chunks[cx+'_'+cz].nodes[x+'_'+y+'_'+z] = node;
+	this.occludedFaceCulling(node);
+}
+
+World.prototype.removeNode = function(node)
+{
+	node.removed = true;
+	
+	this.occludedFaceCulling(node);
+	
+	var cx = Math.floor(node.x/16);
+	var cz = Math.floor(node.z/16);
+	
+	delete this.chunks[cx+'_'+cz].renderNodes[node.x+'_'+node.y+'_'+node.z];
+	delete this.chunks[cx+'_'+cz].nodes[node.x+'_'+node.y+'_'+node.z];
+}
+
+World.prototype.occludedFaceCulling = function(node)
+{	
+	var faces = [FACE.FRONT, FACE.BACK, FACE.RIGHT, FACE.LEFT, FACE.TOP, FACE.BOTTOM];
+	var pos = [[0,0,1], [0,0,-1], [1,0,0], [-1,0,0], [0,1,0], [0,-1,0]];
+	var adjn;
+	
+	for(var i=0; i<3; i++)
+	{
+		// opposite faces
+		var face1 = i*2;
+		var face2 = i*2+1;
+		
+		// face1: front, right, top faces
+		adjn = this.getNode(node.x+pos[face1][0], node.y+pos[face1][1], node.z+pos[face1][2]);
+		
+		// adjacent node doesn't exist or is a half node
+		if(!adjn)
+		{
+			// add face
+			node.sides |= faces[face1];
+		}
+		else
+		{
+			// one of the nodes is removed
+			if(node.removed || adjn.removed)
+			{
+				node.sides |= faces[face1];
+				adjn.sides |= faces[face2];
+			}
+			// add top face
+			else if(FACE.TOP & (1<<face1) && node.type.half)
+			{
+				node.sides |= faces[face1];
+				adjn.sides |= faces[face2];
+			}
+			// one is transparent, remove transparent face but not the opaque
+			else if(node.type.transparent && !adjn.type.transparent)
+			{
+				node.sides &= ~faces[face1];
+				adjn.sides |= faces[face2];
+			}
+			else if(!node.type.transparent && adjn.type.transparent)
+			{
+				node.sides |= faces[face1];
+				adjn.sides &= ~faces[face2];
+			}
+			// both transparent, remove faces only if of the same type
+			else if(node.type.transparent && adjn.type.transparent && node.type == adjn.type)
+			{
+				node.sides &= ~faces[face1];
+				adjn.sides &= ~faces[face2];
+			}
+			// both transparent, different types
+			else if(node.type.transparent && adjn.type.transparent && node.type != adjn.type)
+			{
+				node.sides |= faces[face1];
+				adjn.sides |= faces[face2];
+			}
+			// one is half node, remove half face but not the full face
+			else if(0xf&(1<<face1) && node.type.half && !adjn.type.half)
+			{
+				node.sides &= ~faces[face1];
+				adjn.sides |= faces[face2];
+			}
+			else if(0xf&(1<<face1) && !node.type.half && adjn.type.half)
+			{
+				node.sides |= faces[face1];
+				adjn.sides &= ~faces[face2];
+			}
+			// remove faces since between 2 opaque nodes
+			else
+			{
+				node.sides &= ~faces[face1];
+				adjn.sides &= ~faces[face2];
+			}
+			
+			this.renderNode(adjn);
+		}
+		
+		// face2: back, left, bottom
+		adjn = this.getNode(node.x+pos[face2][0], node.y+pos[face2][1], node.z+pos[face2][2]);
+		
+		// adjacent node doesn't exist or is a half node
+		if(!adjn)
+		{
+			// add face
+			node.sides |= faces[face2];
+		}
+		else
+		{
+			// one of the nodes is removed
+			if(node.removed || adjn.removed)
+			{
+				node.sides |= faces[face2];
+				adjn.sides |= faces[face1];
+			}
+			// add bottom face
+			else if(FACE.BOTTOM & (1<<face2) && adjn.type.half)
+			{
+				node.sides |= faces[face2];
+				adjn.sides |= faces[face1];
+			}
+			// one is transparent, remove transparent face but not the opaque
+			else if(node.type.transparent && !adjn.type.transparent)
+			{
+				node.sides &= ~faces[face2];
+				adjn.sides |= faces[face1];
+			}
+			else if(!node.type.transparent && adjn.type.transparent)
+			{
+				node.sides |= faces[face2];
+				adjn.sides &= ~faces[face1];
+			}
+			// both transparent, remove faces only if of the same type
+			else if(node.type.transparent && adjn.type.transparent && node.type == adjn.type)
+			{
+				node.sides &= ~faces[face2];
+				adjn.sides &= ~faces[face1];
+			}
+			// both transparent, different types
+			else if(node.type.transparent && adjn.type.transparent && node.type != adjn.type)
+			{
+				node.sides |= faces[face2];
+				adjn.sides |= faces[face1];
+			}
+			// one is half node, remove half face but not the full face
+			else if(0xf&(1<<face2) && node.type.half && !adjn.type.half)
+			{
+				node.sides &= ~faces[face2];
+				adjn.sides |= faces[face1];
+			}
+			else if(0xf&(1<<face2) && !node.type.half && adjn.type.half)
+			{
+				node.sides |= faces[face2];
+				adjn.sides &= ~faces[face1];
+			}
+			// remove faces since between 2 opaque nodes
+			else
+			{
+				node.sides &= ~faces[face2];
+				adjn.sides &= ~faces[face1];
+			}
+		
+			this.renderNode(adjn);
+		}
+	}
+	
+	this.renderNode(node);
+}
+
+World.prototype.renderNode = function(node)
+{
+	var rendered = false;
+	
+	var cx = Math.floor(node.x/16);
+	var cz = Math.floor(node.z/16);
+	
+	if(node.sides & 0x3f)
+	{
+		this.chunks[cx+'_'+cz].renderNodes[node.x+'_'+node.y+'_'+node.z] = node;
+	}
+	else
+	{
+		delete this.chunks[cx+'_'+cz].renderNodes[node.x+'_'+node.y+'_'+node.z];
+	}
+}
+/*
+ * File:    render.js
+ *
+ * Rendering class renders world to canvas according to player's viewport.
+ *
+ * Author:  Karl Kangur <karl.kangur@gmail.com>
+ * Licence: WTFPL 2.0 (http://en.wikipedia.org/wiki/WTFPL)
+*/
+
+// render chunks inside the world
+function Renderer(canvas, world, player)
+{
+	// local references
+	this.canvas = canvas;
+	this.world = world;
+	this.player = player;
+	this.camera = false;
+	
+	this.context = this.canvas.getContext("2d");
+	this.vertex = {};
+	
+	// define canvas size according to window size
+	this.canvas.width  = Math.max(1,this.canvas.clientWidth);
+	this.canvas.height = Math.max(1,this.canvas.clientHeight);
+	
+	// half canvas size for math later on
+	this.w2 = (this.canvas.width/2)|0;
+	this.h2 = (this.canvas.height/2)|0;
+	
+	this.focalLength = 500;
+	
+	// render distance, the higher the slower
+	this.nodeRenderDist = 42;
+	this.chunkRenderDist = 180;
+	this.workingFace = false;
+	this.workingNode = false;
+	this.renderNodes = [];
+	this.chunkCount = 0;
+	this.nodeCount = 0;
+	this.faceCount = 0;
+	this.vertexCount = 0;
+	// default starting render mode (0: plain color, 1: textured)
+	this.renderMode = 0;
+	this.graph = false;
+	this.map = false;
+	this.hud = true;
+	this.mouselock = false;
+	this.fps = 0;
+	this.frames = 0;
+	this.time = new Date().getTime();
+	this.frustrum = [];
+	this.lowResChunks = [];
+	
+	// normal look at vector in 3 and 2 dimention
+	this.n3d = {}
+	this.n2d = {}
+	
+	// define texture (takes a couple of milliseconds to load)
+	this.texture = new Image();
+	this.texture.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%271%27 height=%271%27/%3E";
+	this.textureSize;
+    	this.texture.onload = function(){
+        	renderer.textureSize = this.width/16;
+    	}
+	
+	this.crosshair = new Image();
+	this.crosshair.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%271%27 height=%271%27/%3E";
+	
+	// mouse click interface
+	this.mouseClick = false;
+	this.clickedNode = false;
+	this.clickedFace = false;
+	
+	// make parent reference
+	var renderer = this;
+	this.canvas.onmousedown = function(event)
+	{
+		if(renderer.mouselock)
+		{
+			// when mouse is locked the click is always at the origin
+			renderer.mouseClick = {
+				x: 0,
+				y: 0,
+				button: event.button
+			};
+		}
+		else
+		{
+			renderer.mouseClick = {
+				x: event.pageX-renderer.w2,
+				y: event.pageY-renderer.h2,
+				button: event.button
+			};
+		}
+	}
+	
+	// update canvas size
+	window.onresize = function()
+	{
+		renderer.canvas.width  = Math.max(1,renderer.canvas.clientWidth);
+		renderer.canvas.height = Math.max(1,renderer.canvas.clientHeight);
+		renderer.w2 = (renderer.canvas.width/2)|0;
+		renderer.h2 = (renderer.canvas.height/2)|0;
+	}
+	
+	// disable right click menu
+	this.canvas.oncontextmenu = function(event)
+	{
+		return false;
+	}
+	
+	// canvas always in focus
+	this.canvas.onblur = function()
+	{
+		this.focus();
+	}
+	this.canvas.focus();
+	
+	// needed for mouse lock
+	document.renderer = this;
+	
+	this.render();
+}
+
+window.requestFrame = (function()
+{
+	return window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		window.oRequestAnimationFrame ||
+		window.msRequestAnimationFrame ||
+		function(callback, element)
+		{
+			window.setTimeout(callback, 10);
+		}
+})();
+
+Renderer.prototype.lockPointer = function()
+{
+	// detect feature
+	if(
+		!('pointerLockElement' in document) &&
+		!('mozPointerLockElement' in document) &&
+		!('webkitPointerLockElement' in document)
+	)
+	{
+		alert("Pointer lock unavailable in this browser.");
+		return;
+	}
+	
+	// firefox can only lock pointer when in full screen mode, this "program" should never run in full screen
+	if('mozPointerLockElement' in document)
+	{
+		alert("Firefox needs full screen to lock mouse. Use Chrome for the time being.");
+		return;
+	}
+	
+	// when mouse us locked/unlocked callback
+	document.addEventListener('pointerlockchange', this.mouseLockChangeCallback, false);
+	document.addEventListener('mozpointerlockchange', this.mouseLockChangeCallback, false);
+	document.addEventListener('mozpointerchange', this.mouseLockChangeCallback, false);
+	document.addEventListener('webkitpointerlockchange', this.mouseLockChangeCallback, false);
+	
+	this.canvas.requestPointerLock = this.canvas.requestPointerLock || this.canvas.mozRequestPointerLock || this.canvas.webkitRequestPointerLock;
+	// actually lock the mouse
+	this.canvas.requestPointerLock();
+}
+
+// called when mouse lock state changes
+Renderer.prototype.mouseLockChangeCallback = function()
+{
+	// called from document
+	if(
+		document.pointerLockElement === this.renderer.canvas ||
+		document.mozPointerLockElement === this.renderer.canvas ||
+		document.webkitPointerLockElement === this.renderer.canvas
+	)
+	{
+		document.addEventListener('mousemove', this.renderer.mouseMoveCallback, false);
+		this.renderer.mouselock = true;
+	}
+	else
+	{
+		document.removeEventListener('mousemove', this.renderer.mouseMoveCallback, false);
+		this.renderer.mouselock = false;
+	}
+}
+
+// mouse move event callback
+Renderer.prototype.mouseMoveCallback = function(event)
+{
+	var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+	var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+	// this is document here
+	this.renderer.player.rotation.x -= movementY/100;
+	this.renderer.player.rotation.y -= movementX/100;
+}
+
+Renderer.prototype.changeRenderDist = function(value)
+{
+	this.nodeRenderDist = parseInt(value);
+	this.chunkRenderDist = parseInt(value)+320;
+}
+
+// prerender canvas element (http://kaioa.com/node/103)
+Renderer.prototype.prerender = function(width, height, renderFunction)
+{
+	var buffer = document.createElement("canvas");
+	buffer.width = width;
+	buffer.height = height;
+	renderFunction(buffer.getContext('2d'));
+	return buffer;
+}
+
+// ############################################################ FRUSTRUM
+
+Renderer.prototype.getFrustrumPlanes = function()
+{
+	// http://en.wikipedia.org/wiki/Rotation_matrix
+	
+	// vectors   corners   system    planes
+	// vy|/n3d   0-----1     y       +--0--+
+	// --+-> vx  |     |   --+->x    3     1
+	//   |       3-----2     |       +--2--+
+	
+	// get the player x axis rotation unit vector
+	var vx = {
+		x: this.n2d.z,
+		//y: 0,
+		z: -this.n2d.x
+	};
+	
+	// get the player y axis rotation unit vector (cross product with vx.y == 0)
+	var vy = {
+		x: this.n3d.y*vx.z,
+		y: this.n3d.z*vx.x-this.n3d.x*vx.z,
+		z: -this.n3d.y*vx.x
+	};
+	
+	var vectors = [
+		{
+			x: this.n3d.x*this.focalLength-vx.x*this.w2+vy.x*this.h2,
+			y: this.n3d.y*this.focalLength+vy.y*this.h2,
+			z: this.n3d.z*this.focalLength-vx.z*this.w2+vy.z*this.h2
+		},
+		{
+			x: this.n3d.x*this.focalLength+vx.x*this.w2+vy.x*this.h2,
+			y: this.n3d.y*this.focalLength+vy.y*this.h2,
+			z: this.n3d.z*this.focalLength+vx.z*this.w2+vy.z*this.h2
+		},
+		{
+			x: this.n3d.x*this.focalLength+vx.x*this.w2-vy.x*this.h2,
+			y: this.n3d.y*this.focalLength-vy.y*this.h2,
+			z: this.n3d.z*this.focalLength+vx.z*this.w2-vy.z*this.h2
+		},
+		{
+			x: this.n3d.x*this.focalLength-vx.x*this.w2-vy.x*this.h2,
+			y: this.n3d.y*this.focalLength-vy.y*this.h2,
+			z: this.n3d.z*this.focalLength-vx.z*this.w2-vy.z*this.h2
+		}
+	];
+	
+	var v1, v2, length;
+	for(var i=0; i<4; i++)
+	{
+		// get planes with a cross product
+		v1 = vectors[i];
+		v2 = vectors[(i+1)%4];
+		
+		this.frustrum[i] = {
+			x: v1.y*v2.z-v1.z*v2.y,
+			y: v1.z*v2.x-v1.x*v2.z,
+			z: v1.x*v2.y-v1.y*v2.x
+		}
+		
+		// normalize vector (same length for all)
+		if(!length)
+		{
+			length = 1/Math.sqrt(this.frustrum[i].x*this.frustrum[i].x+this.frustrum[i].y*this.frustrum[i].y+this.frustrum[i].z*this.frustrum[i].z);
+		}
+		
+		this.frustrum[i].x *= length;
+		this.frustrum[i].y *= length;
+		this.frustrum[i].z *= length;
+	}
+}
+
+// ############################################################ WORLD RENDERING
+
+Renderer.prototype.render = function()
+{
+	this.player.update();
+	
+	// 3d look-at vector
+	this.n3d = {
+		x: -this.player.rotTrig.cosx*this.player.rotTrig.siny,
+		y: this.player.rotTrig.sinx,
+		z: this.player.rotTrig.cosy*this.player.rotTrig.cosx
+	};
+	
+	// 2d look-at vector (XZ plane)
+	this.n2d = {
+		x: -this.player.rotTrig.siny,
+		z: this.player.rotTrig.cosy
+	};
+	
+	this.camera = {
+		x: this.player.position.x,
+		y: this.player.position.y+this.player.height,
+		z: this.player.position.z
+	}
+	
+	this.chunkCount = 0;
+	this.nodeCount = 0;
+	this.faceCount = 0;
+	this.vertexCount = 0;
+	
+	// reset vertices
+	this.vertex = {};
+	
+	this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+	
+	this.getFrustrumPlanes();
+	
+	// empty renderable node array from last render and low resolution chunks
+	this.renderNodes = [];
+	//this.lowResChunks = [];
+	
+	// relative chunk position
+	var rcp, distance;
+	for(var i in this.world.chunks)
+	{
+		rcp = {
+			x: this.world.chunks[i].x*16+8-this.camera.x,
+			z: this.world.chunks[i].z*16+8-this.camera.z
+		};
+		
+		// chunk is behind player (bounding cylinder radius: sqrt(8^2) = 11.31+margin = 13)
+		if(this.n2d.x*rcp.x+this.n2d.z*rcp.z < -13)
+		{
+			continue;
+		}
+		
+		// chunk too far
+		/*distance = rcp.x*rcp.x+rcp.z*rcp.z;
+		if(distance > this.chunkRenderDist)
+		{
+			this.lowResChunks.push({
+				chunk: this.world.chunks[i],
+				distance: distance
+			});
+			continue;
+		}*/
+		
+		// get renderable nodes from each chunk inside this.renderNodes
+		this.getChunkNodes(this.world.chunks[i]);
+	}
+	
+	// first fog layer from furthest nodes
+	var fogDistance = 50;
+	
+	// render low resolution chunks according to their distance to player
+	/*this.lowResChunks.sort(function(a, b)
+	{
+		return b.distance-a.distance;
+	});
+	
+	for(var i in this.lowResChunks)
+	{
+		this.renderLowResChunk(this.lowResChunks[i].chunk);
+		fogDistance = this.fogLayer(fogDistance, this.lowResChunks[i].distance);
+	}*/
+	
+	// render nodes according to their distance to player
+	this.renderNodes.sort(function(a, b)
+	{
+		return b.distance-a.distance;
+	});
+	
+	for(var i in this.renderNodes)
+	{
+		this.renderNode(this.renderNodes[i].node);
+		fogDistance = this.fogLayer(fogDistance, this.renderNodes[i].distance);
+	}
+	
+	// mouse interface
+	if(this.mouseClick)
+	{
+		// left click = add new node
+		if(this.clickedNode && this.mouseClick.button == 0)
+		{
+			var selectedType = document.getElementById("type").value;
+			
+			var newNode = {x: this.clickedNode.x, y: this.clickedNode.y, z: this.clickedNode.z};
+				
+			switch(this.clickedFace)
+			{
+				case FACE.FRONT:  newNode.z++; break;
+				case FACE.BACK:   newNode.z--; break;
+				case FACE.RIGHT:  newNode.x++; break;
+				case FACE.LEFT:   newNode.x--; break;
+				case FACE.TOP:    newNode.y++; break;
+				case FACE.BOTTOM: newNode.y--; break;
+			}
+			
+			if(!this.player.nodeCollision(newNode))
+			{
+				// get node type from DOM
+				this.world.addNode(newNode.x, newNode.y, newNode.z, selectedType);
+			}
+		}
+		// right click = remove node
+		else if(this.clickedNode && this.mouseClick.button == 2)
+		{
+			this.world.removeNode(this.clickedNode);
+		}
+		this.clickedNode = false;
+		this.clickedFace = false;
+		this.mouseClick = false;
+	}
+	
+	if(this.mouselock)
+	{
+		// render crosshair
+		this.context.drawImage(this.crosshair, this.w2-8, this.h2-8);
+	}
+	
+	if(this.hud)
+	{		
+		this.displayHud();
+	}
+	
+	if(this.graph)
+	{
+		this.displayPerformanceGraph();
+	}
+	
+	if(this.map)
+	{
+		this.displayHeightMap();
+	}
+	
+	// frames per second counter
+	if(new Date().getTime()-this.time >= 1000)
+	{
+		this.fps = this.frames;
+		this.frames = 0;
+		this.time = new Date().getTime();
+	}
+	this.frames++;
+	
+	window.requestFrame(this.render.bind(this));
+}
+
+// pseudo fog filter renders a semi-transparent gray square over everything
+Renderer.prototype.fogLayer = function(fogDistance, currentDistance)
+{
+	if(fogDistance < 80 && currentDistance < this.nodeRenderDist-fogDistance)
+	{
+		this.context.globalAlpha = 0.5;
+		this.context.fillStyle = "#eeeeee";
+		this.context.beginPath();
+		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.closePath();
+		this.context.fill();
+		this.context.globalAlpha = 1;
+		
+		// next fog layer at
+		return fogDistance+20;
+	}
+	
+	return fogDistance;
+}
+
+Renderer.prototype.renderLowResChunk = function(chunk)
+{
+	// you read it, now complete it!
+	return;
+}
+
+Renderer.prototype.getChunkNodes = function(chunk)
+{
+	// relative node position
+	var rnp, distance;
+	
+	addSortNode:
+	for(var i in chunk.renderNodes)
+	{
+		rnp = {
+			x: chunk.renderNodes[i].x+0.5-this.camera.x,
+			y: chunk.renderNodes[i].y+0.5-this.camera.y,
+			z: chunk.renderNodes[i].z+0.5-this.camera.z
+		};
+		
+		distance = rnp.x*rnp.x+rnp.y*rnp.y+rnp.z*rnp.z;
+		
+		// node is too far or behind player (bounding sphere radius: sqrt(3*(0.5)^2) = 0.866)
+		if(distance > this.nodeRenderDist || this.n3d.x*rnp.x+this.n3d.y*rnp.y+this.n3d.z*rnp.z < -0.866)
+		{
+			continue;
+		}
+		
+		// check node bounding sphere against all 4 frustrum planes
+		for(var j = 0; j < 4; j++)
+		{
+			if(this.frustrum[j].x*rnp.x+this.frustrum[j].y*rnp.y+this.frustrum[j].z*rnp.z > 0.866)
+			{
+				continue addSortNode;
+			}
+		}
+		
+		this.nodeCount++;
+		
+		this.renderNodes.push({
+			node: chunk.renderNodes[i],
+			distance: distance
+		});
+	}
+}
+
+Renderer.prototype.renderNode = function(node)
+{
+	this.workingNode = node;
+	
+	// translate
+	this.rx = node.x-this.camera.x;
+	this.ry = node.y-this.camera.y;
+	this.rz = node.z-this.camera.z;
+	
+	// projected points array
+	this.rp = [];
+	
+	// node
+	//    3-----7
+	//   /|    /|
+	//  2-+---6 |
+	//  | 1---|-5
+	//  |/    |/
+	//  0-----4
+	
+	// draw visible faces
+	if(node.sides & FACE.FRONT && node.z+1 < this.camera.z)
+	{
+		this.workingFace = FACE.FRONT;
+		this.drawRect(VERTEX.FRONT);
+	}
+	
+	if(node.sides & FACE.BACK && node.z > this.camera.z)
+	{
+		this.workingFace = FACE.BACK;
+		this.drawRect(VERTEX.BACK);
+	}
+	
+	if(node.sides & FACE.RIGHT && node.x+1 < this.camera.x)
+	{
+		this.workingFace = FACE.RIGHT;
+		this.drawRect(VERTEX.RIGHT);
+	}
+	
+	if(node.sides & FACE.LEFT && node.x > this.camera.x)
+	{
+		this.workingFace = FACE.LEFT;
+		this.drawRect(VERTEX.LEFT);
+	}
+	
+	if(node.sides & FACE.TOP && node.y+1 < this.camera.y)
+	{
+		this.workingFace = FACE.TOP;
+		this.drawRect(VERTEX.TOP);
+	}
+	
+	if(node.sides & FACE.BOTTOM && node.y > this.camera.y)
+	{
+		this.workingFace = FACE.BOTTOM;
+		this.drawRect(VERTEX.BOTTOM);
+	}
+}
+
+Renderer.prototype.drawRect = function(p)
+{
+	// process each vertex
+	var index, x, y, z, xx, yy, zz;
+	
+	var offset = OFFSET;
+	
+	for(var i = 0; i < 4; i++)
+	{
+		index = (this.workingNode.x+offset[p[i]].x)+'_'+(this.workingNode.y+offset[p[i]].y)+'_'+(this.workingNode.z+offset[p[i]].z);
+		
+		// vertex already processed for this frame
+		if((this.rp[p[i]] = this.vertex[index]) !== undefined)
+		{
+			continue;
+		}
+		
+		// translate vertices
+		x = this.rx+offset[p[i]].x;
+		y = this.ry+offset[p[i]].y;
+		z = this.rz+offset[p[i]].z;
+		
+		// clip point if behind player
+		if(x*this.n3d.x+y*this.n3d.y+z*this.n3d.z < 0)
+		{
+			this.rp[p[i]] = false;
+			this.vertex[index] = false;
+			continue;
+		}
+		
+		// rotatate vertices (http://en.wikipedia.org/wiki/Rotation_matrix)
+		xx = this.player.rotTrig.cosy*x+this.player.rotTrig.siny*z;
+		yy = this.player.rotTrig.sinx*this.player.rotTrig.siny*x+this.player.rotTrig.cosx*y-this.player.rotTrig.sinx*this.player.rotTrig.cosy*z;
+		zz = -this.player.rotTrig.siny*this.player.rotTrig.cosx*x+this.player.rotTrig.sinx*y+this.player.rotTrig.cosx*this.player.rotTrig.cosy*z;
+		
+		// project 3d point to 2d screen (http://en.wikipedia.org/wiki/3D_projection)
+		zz = this.focalLength/zz;
+		
+		// save relative point
+		this.rp[p[i]] = {x: xx*zz, y: -yy*zz};
+		
+		// save processed vertex
+		this.vertex[index] = this.rp[p[i]];
+		this.vertexCount++;
+	}
+	
+	// corner clipping to viewport
+	/*if(
+		(!this.rp[p[0]] || (this.rp[p[0]].x < -this.w2 || this.rp[p[0]].x > this.w2) || (this.rp[p[0]].y < -this.h2 || this.rp[p[0]].y > this.h2)) &&
+		(!this.rp[p[1]] || (this.rp[p[1]].x < -this.w2 || this.rp[p[1]].x > this.w2) || (this.rp[p[1]].y < -this.h2 || this.rp[p[1]].y > this.h2)) &&
+		(!this.rp[p[2]] || (this.rp[p[2]].x < -this.w2 || this.rp[p[2]].x > this.w2) || (this.rp[p[2]].y < -this.h2 || this.rp[p[2]].y > this.h2)) &&
+		(!this.rp[p[3]] || (this.rp[p[3]].x < -this.w2 || this.rp[p[3]].x > this.w2) || (this.rp[p[3]].y < -this.h2 || this.rp[p[3]].y > this.h2))
+	)
+	{
+		return;
+	}*/
+	
+	// check for click (http://paulbourke.net/geometry/insidepoly/)
+	if(this.mouseClick)
+	{
+		if(
+			(this.mouseClick.y-this.rp[p[0]].y)*(this.rp[p[1]].x-this.rp[p[0]].x)-(this.mouseClick.x-this.rp[p[0]].x)*(this.rp[p[1]].y-this.rp[p[0]].y) < 0 &&
+			(this.mouseClick.y-this.rp[p[2]].y)*(this.rp[p[3]].x-this.rp[p[2]].x)-(this.mouseClick.x-this.rp[p[2]].x)*(this.rp[p[3]].y-this.rp[p[2]].y) < 0 &&
+			(this.mouseClick.y-this.rp[p[1]].y)*(this.rp[p[2]].x-this.rp[p[1]].x)-(this.mouseClick.x-this.rp[p[1]].x)*(this.rp[p[2]].y-this.rp[p[1]].y) < 0 &&
+			(this.mouseClick.y-this.rp[p[3]].y)*(this.rp[p[0]].x-this.rp[p[3]].x)-(this.mouseClick.x-this.rp[p[3]].x)*(this.rp[p[0]].y-this.rp[p[3]].y) < 0
+		)
+		{
+			this.clickedNode = this.workingNode;
+			this.clickedFace = this.workingFace;
+		}
+	}
+	
+	if(this.renderMode == 0)
+	{
+		this.drawMonochrome(p);
+	}
+	else if(this.renderMode == 1)
+	{
+		this.drawTextured(p);
+	}
+	
+	this.faceCount++;
+}
+
+Renderer.prototype.drawMonochrome = function(p)
+{	
+	var points = [];
+	
+	if(this.rp[p[0]])
+	{
+		points.push(this.rp[p[0]]);
+	}
+	if(this.rp[p[1]])
+	{
+		points.push(this.rp[p[1]]);
+	}
+	if(this.rp[p[2]])
+	{
+		points.push(this.rp[p[2]]);
+	}
+	if(this.rp[p[3]])
+	{
+		points.push(this.rp[p[3]]);
+	}
+	
+	if(points.length > 1)
+	{
+		// reset drawing settings
+		this.context.strokeStyle = "#000000";
+		this.context.lineWidth = 1;
+		this.context.fillStyle = this.workingNode.type.color;
+		
+		// set transparency
+		if(this.workingNode.type.transparent)
+		{
+			this.context.globalAlpha = 0.5;
+		}
+		
+		// start drawing polygon
+		this.context.beginPath();
+		
+		// move to first point
+		this.context.moveTo(points[0].x+this.w2, points[0].y+this.h2);
+		for(var i = 1; i < points.length; i++)
+		{
+			this.context.lineTo(points[i].x+this.w2, points[i].y+this.h2);
+		}
+		// line back to first point (not needed)
+		//this.context.lineTo(points[0].x+this.w2, points[0].y+this.h2);
+		
+		this.context.closePath();
+		
+		// fill doesn't work properly in Chrome 20.0.1132.57
+		this.context.fill();
+		this.context.stroke();
+		this.context.globalAlpha = 1;
+	}
+}
+
+Renderer.prototype.drawTextured = function(p)
+{
+	// affine texture mapping code by Andrea Griffini (http://stackoverflow.com/a/4774298/176269)
+	var texture = this.workingNode.type.texture(this.workingFace);
+	
+	// 0---3 texture map corner order
+	// |   |
+	// 1---2
+	
+	var size = this.textureSize;
+	var pts = [
+		{x: this.rp[p[0]].x, y: this.rp[p[0]].y, u: size*texture[0], v: size*texture[1]},
+		{x: this.rp[p[1]].x, y: this.rp[p[1]].y, u: size*texture[0], v: size*texture[1]+size},
+		{x: this.rp[p[2]].x, y: this.rp[p[2]].y, u: size*texture[0]+size, v: size*texture[1]+size},
+		{x: this.rp[p[3]].x, y: this.rp[p[3]].y, u: size*texture[0]+size, v: size*texture[1]}
+	];
+	
+	// triangle subdivision
+	var tris = [];
+	
+	if(this.rp[p[0]] && this.rp[p[1]] && this.rp[p[2]])
+	{
+		tris.push([0, 1, 2]);
+	}
+	else if(this.rp[p[1]] && this.rp[p[2]] && this.rp[p[3]])
+	{
+		tris.push([1, 2, 3]);
+	}
+	
+	if(this.rp[p[2]] && this.rp[p[3]] && this.rp[p[0]])
+	{
+		tris.push([2, 3, 0]);
+	}
+	else if(this.rp[p[0]] && this.rp[p[1]] && this.rp[p[3]])
+	{
+		tris.push([0, 1, 3]);
+	}
+	
+	for(var t=0; t<tris.length; t++)
+	{
+		var pp = tris[t];
+		var x0 = pts[pp[0]].x+this.w2, x1 = pts[pp[1]].x+this.w2, x2 = pts[pp[2]].x+this.w2;
+		var y0 = pts[pp[0]].y+this.h2, y1 = pts[pp[1]].y+this.h2, y2 = pts[pp[2]].y+this.h2;
+		var u0 = pts[pp[0]].u, u1 = pts[pp[1]].u, u2 = pts[pp[2]].u;
+		var v0 = pts[pp[0]].v, v1 = pts[pp[1]].v, v2 = pts[pp[2]].v;
+
+		// set clipping area so that only pixels inside the triangle will be affected by the image drawing operation
+		this.context.save();
+		this.context.beginPath();
+		this.context.moveTo(x0, y0);
+		this.context.lineTo(x1, y1);
+		this.context.lineTo(x2, y2);
+		this.context.closePath();
+		this.context.clip();
+
+		// compute matrix transform
+		var delta = u0*v1+v0*u2+u1*v2-v1*u2-v0*u1-u0*v2;
+		var delta_a = x0*v1+v0*x2+x1*v2-v1*x2-v0*x1-x0*v2;
+		var delta_b = u0*x1+x0*u2+u1*x2-x1*u2-x0*u1-u0*x2;
+		var delta_c = u0*v1*x2+v0*x1*u2+x0*u1*v2-x0*v1*u2-v0*u1*x2-u0*x1*v2;
+		var delta_d = y0*v1+v0*y2+y1*v2-v1*y2-v0*y1-y0*v2;
+		var delta_e = u0*y1+y0*u2+u1*y2-y1*u2-y0*u1-u0*y2;
+		var delta_f = u0*v1*y2+v0*y1*u2+y0*u1*v2-y0*v1*u2-v0*u1*y2-u0*y1*v2;
+
+		// draw the transformed image
+		this.context.transform(delta_a/delta, delta_d/delta, delta_b/delta, delta_e/delta, delta_c/delta, delta_f/delta);
+		this.context.drawImage(this.texture, 0, 0);
+		this.context.restore();
+	}
+}
+
+// ############################################################ ADDITIONAL INFORMATION
+
+Renderer.prototype.displayHud = function()
+{
+	this.context.save();
+	this.context.textBaseline = "top";
+	this.context.textAlign = "left";
+	this.context.fillStyle = "#000000";
+	this.context.font = "12px sans-serif";
+	this.context.fillText("FPS: "+this.fps, 0, 0);
+	this.context.fillText("Chunks: "+this.chunkCount, 0, 12);
+	this.context.fillText("Nodes: "+this.nodeCount, 0, 24);
+	this.context.fillText("Faces: "+this.faceCount, 0, 36);
+	this.context.fillText("Vertices: "+this.vertexCount, 0, 48);
+	this.context.fillText("X: "+this.player.position.x.toFixed(2), 0, 60);
+	this.context.fillText("Y: "+this.player.position.y.toFixed(2), 0, 72);
+	this.context.fillText("Z: "+this.player.position.z.toFixed(2), 0, 84);
+	this.context.restore();
+}
+
+Renderer.prototype.displayPerformanceGraph = function()
+{
+	if(typeof this.graph != 'object')
+	{
+		this.graph = {
+			fps: [],
+			width: 300,
+			height: 100,
+			dataPoints: 20
+		};
+		
+		this.graph.interval = this.graph.width/this.graph.dataPoints;
+		
+		// prerender graph base
+		var graph = this.graph;
+		this.graph.base = this.prerender(this.graph.width, this.graph.height, function(ctx)
+		{
+			ctx.fillStyle = "#EEEEEE";
+			ctx.beginPath();
+			ctx.rect(0, 0, graph.width, graph.height);
+			ctx.fill();
+			ctx.closePath();
+			
+			ctx.strokeStyle = '#CCCCCC';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			for(var i=0; i<graph.dataPoints; i++)
+			{
+				ctx.moveTo(i*graph.interval, 0);
+				ctx.lineTo(i*graph.interval, graph.height);
+			}
+			ctx.stroke();
+			ctx.closePath();
+		});
+	}
+	
+	// update graph every second
+	if(!this.graph.time || new Date().getTime()-this.graph.time >= 1000)
+	{
+		this.graph.time = new Date().getTime();
+		
+		// data stack
+		if(this.graph.fps.length > this.graph.dataPoints)
+		{
+			this.graph.fps.shift();
+		}
+		this.graph.fps.push(this.fps);
+		
+		// prerender graph
+		var graph = this.graph;
+		this.graph.image = this.prerender(this.graph.width, this.graph.height+20, function(ctx)
+		{
+			ctx.drawImage(graph.base, 0, 0);
+			
+			// draw fps line and text
+			ctx.strokeStyle = "#000000";
+			ctx.lineWidth = 2;
+			ctx.fillStyle = "#000000";
+			ctx.textBaseline = "bottom";
+			ctx.textAlign = "right";
+			ctx.font = "10px sans-serif";
+			
+			ctx.beginPath();
+			ctx.moveTo(0, graph.height-graph.fps[0]*graph.height/60);
+			for(var i=1; i<graph.fps.length; i++)
+			{
+				var y = graph.height-graph.fps[i]*graph.height/60;
+				ctx.fillText(graph.fps[i], i*graph.interval, y);
+				ctx.lineTo(i*graph.interval, y);
+			}
+			ctx.stroke();
+			ctx.closePath();
+			
+			// average frames per second
+			var avgFps = 0;
+			for(var i in graph.fps)
+			{
+				avgFps += graph.fps[i];
+			}
+			avgFps /= graph.fps.length;
+			
+			ctx.textBaseline = "top";
+			ctx.textAlign = "left";
+			ctx.font = "12px sans-serif";
+			ctx.fillText("Avg. FPS: "+(avgFps|0), 0, graph.height);
+		});
+	}
+	
+	this.context.drawImage(this.graph.image, this.canvas.width-this.graph.width, 0);
+}
+
+Renderer.prototype.displayHeightMap = function()
+{
+	var mapsize = 64;
+	
+	// current chunk coordinates
+	var x = Math.floor(this.camera.x/16);
+	var z = Math.floor(this.camera.z/16);
+	
+	// no map, player changed chunks or map seed changed
+	if(typeof this.map != 'object' || this.map.x != x || this.map.z != z || this.world.map.seed != this.map.seed)
+	{
+		this.map = {
+			x: x,
+			z: z,
+			offset: mapsize*2,
+			step: mapsize/16,
+			size: mapsize*4,
+			seed: this.world.map.seed
+		}
+		
+		this.map.position = new Image();
+		this.map.position.src = "media/pos.png";
+		
+		// prerender 16 chunks worth of heightmap
+		var renderer = this;
+		var map = this.map;
+		this.map.heightmap = this.prerender(64, 64, function(ctx)
+		{
+			var hmap = renderer.context.createImageData(64, 64);
+			var index, color, cx, cz;
+			
+			for(var mz=0; mz<4; mz++)
+			{
+				for(var mx=0; mx<4; mx++)
+				{
+					cx = map.x+mx-2;
+					cz = map.z+mz-2;
+					
+					// draw one chunck of 16 by 16 nodes (reverse z coordinate)
+					for(var z=0; z<16; z++)
+					{
+						for(var x=0; x<16; x++)
+						{
+							index = 4*(16*mx+x)+256*(16*(3-mz)+16-z);
+							color = 16*(renderer.world.map.getHeight(16*cx+x, 16*cz+z)*16|0);
+							
+							// red, green, blue, alpha
+							hmap.data[index] = color;
+							hmap.data[index+1] = color;
+							hmap.data[index+2] = color;
+							hmap.data[index+3] = 255;
+						}
+					}
+				}
+			}
+			ctx.putImageData(hmap, 0, 0);
+		});
+	}
+	
+	this.context.save();
+	this.context.translate(this.canvas.width-mapsize, this.canvas.height-mapsize);
+	this.context.rotate(this.player.rotation.y);
+	
+	// clipping mask
+	this.context.beginPath();
+	// 6.28 = 2*pi
+	this.context.arc(0, 0, mapsize, 0, 6.28, false);
+	this.context.closePath();
+	this.context.clip();
+	
+	// context.drawImage(canvas element, sx, sy, sw, sh, dx, dy, dw, dh)
+	this.context.drawImage(this.map.heightmap, 0, 0, 64, 64, -this.map.step*(((this.camera.x%16)+16)%16)-this.map.offset, this.map.step*(((this.camera.z%16)+16)%16)-this.map.offset, this.map.size, this.map.size);
+	
+	this.context.restore();
+	
+	this.context.drawImage(this.map.position, this.canvas.width-mapsize-8, this.canvas.height-mapsize-8);
+}
+
+SQUARIFIC = {framework: {}};
+SQUARIFIC.framework.TouchControl = function (elem, settings) {
+	/* Settings: 
+		{
+			pretendArrowKeys: boolean, //Should it simulate keypresses of the arrows
+		}
+	*/
+	"use strict";
+	var callbackList = [],
+		self = this,
+		originalStyle,
+		originalX = 0,
+		originalY = 0,
+		fakeKeyspressed = [],
+		multiple = 45,
+		angleKeys = [
+			{angle: 0, keyCodes: [39]},
+			{angle: 45, keyCodes: [39, 40]},
+			{angle: 90, keyCodes: [40]},
+			{angle: 135, keyCodes: [40, 37]},
+			{angle: 180, keyCodes: [37]},
+			{angle: -180, keyCodes: [37]},
+			{angle: -135, keyCodes: [37, 38]},
+			{angle: -90, keyCodes: [38]},
+			{angle: -45, keyCodes: [38, 39]}
+		]; //Angle is in degrees and should be a multiple of the var "multiple",x-axis to the right = 0 left = 180, y-axis down = 90 up = -90, one angle can occur multiple times, e.g. {angle: 30, keyCodes: [1]}, {angle: 30, keyCodes: [2]} will fire 1 and 2, {angle: 30, keyCodes: [1, 1]} will fire 1 twice, -180 and 180 should both be added;
+	if (!settings) {
+		settings = {};
+	}
+	if (isNaN(settings.mindistance)) {
+		settings.mindistance = 20;
+	}
+	if (isNaN(settings.middleLeft)) {
+		settings.middleLeft = 0;
+	}
+	if (isNaN(settings.middleTop)) {
+		settings.middleTop = 0;
+	}
+	if (!elem) {
+		throw "Joystick Control: No element provided! Provided:" + elem;
+	}
+	settings.pretendArrowKeys = true; //Remove once non-pretend is implemented
+	this.on = function (name, callback) {
+		callbackList.sort(function (a, b) {return a.id - b.id;}); //To get a unique id we need the highest id last
+		if (callbackList.length < 1) {
+			var next = 0;
+		} else {
+			var next = callbackList[callbackList.length - 1].id + 1;
+		}
+		callbackList.push({id: next, name: name, cb: callback});
+		return next;
+	};
+	this.removeOn = function (id) {
+		var i;
+		for (i = 0; i < callbackList.length; i++) {
+			if (callbackList[i].id === id) {
+				callbackList.splice(id);
+				return true;
+			}
+		}
+		return false;
+	};
+	this.cb = function (name, arg) {
+		var i;
+		for (i = 0; i < callbackList.length; i++) {
+			if (callbackList[i].name === name && typeof callbackList[i].cb == "function") {
+				callbackList[i].cb(arg);
+			}
+		}
+	};
+	this.removeNonFakedKeys = function (keys) {
+		for (var i = 0; i < fakeKeyspressed.length; i++) {
+			if (!self.inArray(fakeKeyspressed[i], keys)) {
+				self.cb("pretendKeyup", {keyCode: fakeKeyspressed[i]});
+			}
+		}
+	};
+	this.inArray = function (el, arr) {
+		if (!arr) {
+			return false;
+		}
+		for (var i = 0; i < arr.length; i++) {
+			if (arr[i] === el) {
+				return true;
+			}
+		}
+		return false;
+	};
+	this.handleTouchStart = function (event) {
+		if (event.changedTouches[0].target == elem) {
+			originalStyle = {position: elem.style.position, top: elem.style.top, left: elem.style.left};
+			originalX = event.changedTouches[0].clientX;
+			originalY = event.changedTouches[0].clientY;
+			elem.style.position = "fixed";
+			elem.style.left = event.changedTouches[0].clientX - settings.middleLeft + "px";
+			elem.style.top = event.changedTouches[0].clientY - settings.middleTop + "px";
+			event.preventDefault();
+		}
+	};
+	this.handleTouchStop = function (event) {
+		if (event.changedTouches[0].target == elem) {
+			elem.style.position = originalStyle.position;
+			elem.style.top = originalStyle.top;
+			elem.style.left = originalStyle.left;
+			self.removeNonFakedKeys();
+			event.preventDefault();
+		}
+	};
+	this.handleTouchMove = function (event) {
+		if (event.changedTouches[0].target == elem) {
+			var i, k, keys = [], angle, distance,
+			deltaX = event.changedTouches[0].clientX - originalX,
+			deltaY = event.changedTouches[0].clientY - originalY;
+			elem.style.left = event.changedTouches[0].clientX - settings.middleLeft + "px";
+			elem.style.top = event.changedTouches[0].clientY - settings.middleTop + "px";
+			event.preventDefault();
+			distance = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+			if (settings.pretendArrowKeys) {
+				if (distance < settings.mindistance) {
+					self.removeNonFakedKeys();
+				} else {
+					angle = multiple * Math.round((Math.atan2(deltaY, deltaX) * 180 / Math.PI) / multiple);
+					for (i = 0; i < angleKeys.length; i++) {
+						if (angleKeys[i].angle === angle) {
+							for (k = 0; k < angleKeys[i].keyCodes.length; k++) {
+								keys.push(angleKeys[i].keyCodes[k]);
+							}
+						}
+					}
+					for (i = 0; i < keys.length; i++) {
+						if (!self.inArray(keys[i], fakeKeyspressed)) {
+							fakeKeyspressed.push(keys[i]);
+						}
+						self.cb("pretendKeydown", {keyCode: keys[i]});
+					}
+					self.removeNonFakedKeys(keys);
+				}
+			} else {
+				//Planned for later
+			}
+		}
+	};
+	elem.addEventListener("touchstart", self.handleTouchStart);
+	elem.addEventListener("touchend", self.handleTouchStop);
+	elem.addEventListener("touchmove", self.handleTouchMove);
+};
+
+var canvas=document.getElementById('canvas');var world=new World(3);var player=new Player(world);var renderer=new Renderer(canvas,world,player);var save=new Save(world,player);window.world=world;window.player=player;window.renderer=renderer;window.save=save;
+document.getElementById('cubeGenerate').addEventListener('click',function(){world.newMap(document.getElementById('seed').value);player.spawn();});
+document.getElementById('cubeSaveWorld').addEventListener('click',function(){save.saveLocally();});
+document.getElementById('cubeLoadWorld').addEventListener('click',function(){save.loadLocalSave();});
+document.getElementById('cubeJoystickToggle').addEventListener('click',function(){var el=document.getElementById('joystick');el.style.display=el.style.display==='none'?'block':'none';});
+document.getElementById('canvas').addEventListener('contextmenu',function(e){e.preventDefault();});
+})();
+}
+
+
+function initDust(){const c=$("dustCanvas"),g=c.getContext("2d"),CX=640,CY=410,RX=440,RY=300,ROAD=168,keys=new Set();let p,ai=[],lap=0,time=0,finished=false,last=0;const clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),mod=(n,m)=>((n%m)+m)%m;
+function reset(){p={x:CX+RX,y:CY,a:Math.PI/2,v:0,prev:0};lap=0;time=0;finished=false;ai=Array.from({length:7},(_,i)=>({t:.42+i*.73,l:(i%3-1)*27,v:178+(i%3)*13,col:["#d75c48","#5a95d7","#e2c35d","#a77ad8","#e5e6d7","#5ab17b","#d58c43"][i]}));hud();}
+function kd(e,on){if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();on?keys.add(e.key):keys.delete(e.key);}window.addEventListener("keydown",e=>{if(document.querySelector('[data-game="dust"]').classList.contains("active"))kd(e,true);});window.addEventListener("keyup",e=>kd(e,false));window.addEventListener("blur",()=>keys.clear());document.querySelectorAll("[data-dust]").forEach(b=>{let k={left:"ArrowLeft",right:"ArrowRight",up:"ArrowUp",down:"ArrowDown"}[b.dataset.dust];b.onpointerdown=e=>{e.preventDefault();keys.add(k);};for(let t of ["pointerup","pointercancel","pointerleave"])b.addEventListener(t,()=>keys.delete(k));});$("dustReset").onclick=reset;
+function pos(t,l=0){return {x:CX+(RX+l)*Math.cos(t),y:CY+(RY+l)*Math.sin(t)};}
+function car(x,y,a,col){g.save();g.translate(x,y);g.rotate(a);g.fillStyle="#0008";g.beginPath();g.ellipse(2,5,21,12,0,0,2*Math.PI);g.fill();g.fillStyle="#111";for(let x of [-13,13])for(let y of [-10,10])g.fillRect(x-4,y-5,8,10);g.fillStyle=col;g.beginPath();g.roundRect(-19,-11,38,22,6);g.fill();g.fillStyle="#20323b";g.beginPath();g.roundRect(-7,-8,15,16,4);g.fill();g.restore();}
+function draw(){g.clearRect(0,0,1280,820);g.fillStyle="#66834d";g.fillRect(0,0,1280,820);g.strokeStyle="#b59a65";g.lineWidth=ROAD+32;g.beginPath();g.ellipse(CX,CY,RX,RY,0,0,2*Math.PI);g.stroke();g.strokeStyle="#343b32";g.lineWidth=ROAD;g.beginPath();g.ellipse(CX,CY,RX,RY,0,0,2*Math.PI);g.stroke();g.strokeStyle="#979b86";g.lineWidth=2;g.setLineDash([20,18]);g.beginPath();g.ellipse(CX,CY,RX,RY,0,0,2*Math.PI);g.stroke();g.setLineDash([]);g.fillStyle="#627c4b";g.beginPath();g.ellipse(CX,CY,RX-ROAD/2,RY-ROAD/2,0,0,2*Math.PI);g.fill();g.strokeStyle="#e4d9ad";g.lineWidth=7;g.beginPath();g.moveTo(CX+RX,CY-ROAD/2);g.lineTo(CX+RX,CY+ROAD/2);g.stroke();for(let a of ai){let q=pos(a.t,a.l);car(q.x,q.y,Math.atan2((RY+a.l)*Math.cos(a.t),-(RX+a.l)*Math.sin(a.t)),a.col);}car(p.x,p.y,p.a,"#e9c75d");if(finished){g.fillStyle="#08150dcc";g.fillRect(345,330,590,150);g.fillStyle="#fff";g.textAlign="center";g.font="900 46px system-ui";g.fillText("RACE COMPLETE",640,392);}}
+function hud(){let a=p?mod(Math.atan2((p.y-CY)/RY,(p.x-CX)/RX),2*Math.PI):0;$("dustLap").textContent=Math.min(3,lap+1)+" / 3";let rank=1+ai.filter(x=>x.t>a).length;$("dustPos").textContent=rank===1?"1st":rank+"th";$("dustSpeed").textContent=Math.round(Math.abs(p.v)*.42)+" km/h";$("dustTime").textContent=Math.floor(time/60)+":"+String(Math.floor(time%60)).padStart(2,"0")+"."+Math.floor(time%1*10);}
+function update(dt){if(!finished){time+=dt;let f=keys.has("ArrowUp")||keys.has("w")||keys.has("W"),b=keys.has("ArrowDown")||keys.has("s")||keys.has("S"),l=keys.has("ArrowLeft")||keys.has("a")||keys.has("A"),r=keys.has("ArrowRight")||keys.has("d")||keys.has("D");if(f)p.v+=250*dt;else p.v*=Math.pow(.992,dt*60);if(b)p.v-=300*dt;p.v=clamp(p.v,-105,340);p.a+=((r?1:0)-(l?1:0))*2.35*dt*(.28+Math.min(1,Math.abs(p.v)/210))*(p.v>=0?1:-1);p.x+=Math.cos(p.a)*p.v*dt;p.y+=Math.sin(p.a)*p.v*dt;let radial=Math.sqrt(((p.x-CX)/RX)**2+((p.y-CY)/RY)**2);if(Math.abs(radial-1)*RY>ROAD/2-7)p.v*=Math.pow(.955,dt*60);p.x=clamp(p.x,60,1220);p.y=clamp(p.y,60,760);let a=mod(Math.atan2((p.y-CY)/RY,(p.x-CX)/RX),2*Math.PI);if(p.prev>5.65&&a<.55&&p.v>70){lap++;if(lap>=3){finished=true;p.v=0;}}p.prev=a;for(let a of ai)a.t=mod(a.t+a.v/((RX+RY)*.5)*dt,2*Math.PI);hud();}draw();}
+function frame(now){let dt=Math.min(.04,(now-last)/1000||.016);last=now;update(dt);requestAnimationFrame(frame);}reset();last=performance.now();requestAnimationFrame(frame);}
+
+
+function initRace(){const c=$("raceCanvas"),g=c.getContext("2d"),W=900,H=540,keys=new Set();let lane=1,speed=230,distance=0,score=0,lives=3,traffic=[],spawn=.8,over=false,last=0,best=0,lock=false;try{best=Number(localStorage.getItem("playspace-racing-best")||0);}catch(e){}$("raceBest").textContent=best;
+function reset(){lane=1;speed=230;distance=score=0;lives=3;traffic=[];spawn=.8;over=lock=false;}
+function kd(e,on){let k=e.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown"].includes(k))e.preventDefault();on?keys.add(k):keys.delete(k);if(!on&&["arrowleft","arrowright","a","d"].includes(k))lock=false;}window.addEventListener("keydown",e=>{if(document.querySelector('[data-game="racing"]').classList.contains("active"))kd(e,true);});window.addEventListener("keyup",e=>kd(e,false));window.addEventListener("blur",()=>{keys.clear();lock=false;});document.querySelectorAll("[data-race]").forEach(b=>{let k={left:"ArrowLeft",right:"ArrowRight",up:"ArrowUp",down:"ArrowDown"}[b.dataset.race];b.onpointerdown=e=>{e.preventDefault();keys.add(k);};for(let t of ["pointerup","pointercancel","pointerleave"])b.addEventListener(t,()=>{keys.delete(k);if(k==="ArrowLeft"||k==="ArrowRight")lock=false;});});$("raceReset").onclick=reset;
+function xLane(l,z=1){return W/2+(l-1)*(215+z*470)/3;}
+function car(x,y,w,h,col){g.save();g.translate(x,y);g.fillStyle="#0008";g.beginPath();g.ellipse(4,h*.12,w*.55,h*.34,0,0,2*Math.PI);g.fill();g.fillStyle="#111c25";g.fillRect(-w*.55,-h*.2,w*.18,h*.5);g.fillRect(w*.37,-h*.2,w*.18,h*.5);g.fillStyle=col;g.beginPath();g.moveTo(-w*.42,h*.5);g.lineTo(-w*.5,-h*.28);g.lineTo(-w*.25,-h*.5);g.lineTo(w*.25,-h*.5);g.lineTo(w*.5,-h*.28);g.lineTo(w*.42,h*.5);g.closePath();g.fill();g.fillStyle="#243645";g.beginPath();g.roundRect(-w*.28,-h*.29,w*.56,h*.36,5);g.fill();g.restore();}
+function road(){let sky=g.createLinearGradient(0,0,0,170);sky.addColorStop(0,"#5d9fc1");sky.addColorStop(1,"#d5e8dd");g.fillStyle=sky;g.fillRect(0,0,W,H);g.fillStyle="#486d46";g.fillRect(0,145,W,H-145);let h=145,tw=210,bw=760,m=450;g.fillStyle="#374149";g.beginPath();g.moveTo(m-tw/2,h);g.lineTo(m+tw/2,h);g.lineTo(m+bw/2,H);g.lineTo(m-bw/2,H);g.closePath();g.fill();g.strokeStyle="#d4d0b8";g.lineWidth=6;g.beginPath();g.moveTo(m-tw/2,h);g.lineTo(m-bw/2,H);g.moveTo(m+tw/2,h);g.lineTo(m+bw/2,H);g.stroke();for(let n=1;n<=2;n++)for(let i=0;i<12;i++){let z=(i/12+distance/190)%1,y=h+z*z*(H-h),x=m+(n-1)*(tw/2+z*(bw-tw)/2);g.fillStyle="#e6e8d9";g.fillRect(x-2,y-1,4,3+z*24);}}
+function finish(){over=true;best=Math.max(best,score);try{localStorage.setItem("playspace-racing-best",String(best));}catch(e){}}
+function hud(){$("raceDistance").textContent=Math.floor(distance)+" m";$("raceScore").textContent=score;$("raceSpeed").textContent=Math.round(speed*.48)+" km/h";$("raceBest").textContent=best;}
+function update(dt){if(!over){let l=keys.has("arrowleft")||keys.has("a"),r=keys.has("arrowright")||keys.has("d");if(!lock){if(l){lane=Math.max(0,lane-1);lock=true;}else if(r){lane=Math.min(2,lane+1);lock=true;}}if(keys.has("arrowup")||keys.has("w"))speed=Math.min(500,speed+240*dt);else speed=Math.max(210,speed-20*dt);if(keys.has("arrowdown")||keys.has("s"))speed=Math.max(130,speed-300*dt);distance+=speed*dt*.045;score=Math.floor(distance*10);spawn-=dt;if(spawn<=0){traffic.push({lane:Math.floor(Math.random()*3),z:0,col:["#d9574f","#55a3d6","#d9ad4d","#8a72c7"][Math.floor(Math.random()*4)],v:Math.random()*.12});spawn=Math.max(.52,1.12-speed/900)+Math.random()*.38;}for(let i=traffic.length-1;i>=0;i--){let t=traffic[i];t.z+=(.28+speed/850+t.v)*dt;if(t.z>1.02){traffic.splice(i,1);score+=100;continue;}if(t.z>.88&&t.z<.99&&t.lane===lane){traffic.splice(i,1);lives--;speed=Math.max(180,speed*.55);if(lives<=0)finish();}}}draw();hud();}
+function draw(){road();for(let t of traffic){let y=145+t.z*t.z*355;car(xLane(t.lane,t.z),y,23+t.z*37,40+t.z*48,t.col);}car(xLane(lane),435,64,100,"#4bc6e9");if(over){g.fillStyle="#071522d9";g.fillRect(170,170,560,210);g.strokeStyle="#56d9ef";g.lineWidth=3;g.strokeRect(170,170,560,210);g.textAlign="center";g.fillStyle="#fff";g.font="900 42px system-ui";g.fillText("RACE OVER",450,245);g.font="700 19px system-ui";g.fillStyle="#aeeefa";g.fillText("Score: "+score+" · Best: "+best,450,287);}}
+function frame(now){let dt=Math.min(.04,(now-last)/1000||.016);last=now;update(dt);requestAnimationFrame(frame);}reset();last=performance.now();requestAnimationFrame(frame);}
+
+activate();
+</script></body></html>
