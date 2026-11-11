@@ -276,7 +276,7 @@
   apiRequest("/portal/presence",{method:"POST",body:{sessionId:presenceSessionId,username,game:currentPlayingGame||"Browsing library"}}).catch(()=>{});
  }
  function setCurrentGame(title){
-  currentPlayingGame=String(title||"").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").trim().slice(0,60);
+  currentPlayingGame=String(title||"").replace(/[<>\u0000-\u001f\u007f]/g,"").trim().slice(0,60);
   syncPresence();
  }
  function beginPresence(){
