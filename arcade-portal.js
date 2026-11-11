@@ -91,17 +91,32 @@
   const saved=JSON.parse(sessionStorage.getItem("arcadeLivePlayer")||"null");
   if(saved&&typeof saved.name==="string"&&typeof saved.email==="string")playerIdentity=saved;
  }catch(error){}
- app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalCheckinModal" role="dialog" aria-modal="true" aria-label="Player check-in"><section class="portal-auth-card"><button class="portal-modal-close" type="button" id="portalCheckinClose" aria-label="Close">✕</button><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Player check-in</h2><p>Enter your player name and email before launching a game.</p></div></div><form class="portal-auth-form" id="portalCheckinForm"><div class="portal-field"><label for="portalCheckinName">Username</label><input id="portalCheckinName" type="text" maxlength="24" autocomplete="nickname" required placeholder="Your player name"></div><div class="portal-field"><label for="portalCheckinEmail">Email address</label><input id="portalCheckinEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com"></div><button class="portal-primary" id="portalCheckinSubmit" type="submit">Continue to game</button><div class="portal-status" id="portalCheckinStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Live tracking only. Your username, email and current game are visible to the site owner in password-protected Dev Mode while online. They are held temporarily in server memory and removed when you leave or your session times out. They are not verified or permanently saved.</div></section></div>');
- $p("portalCheckinClose").addEventListener("click",()=>{
-  $p("portalCheckinModal").classList.remove("open");pendingLaunch=null;
-  if(externalWindow&&!externalWindow.closed){externalWindow.close();externalWindow=null;}
+ try{username=(localStorage.getItem(USERNAME_KEY)||"").trim().slice(0,24);}catch(error){}
+ app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalUsernameModal" role="dialog" aria-modal="true" aria-label="Choose a username"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2></div></div><form class="portal-auth-form" id="portalUsernameForm"><div class="portal-field"><label for="portalUsernameInput">Username</label><input id="portalUsernameInput" type="text" maxlength="24" autocomplete="nickname" required placeholder="Choose a username"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalUsernameStatus" aria-live="polite"></div></form></section></div>');
+ function updateUsernameDisplay(){
+  const name=username||"Player",initial=(name.trim()[0]||"?").toUpperCase();
+  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent="Player";
+  $p("sidebarAvatar").textContent=initial;$p("topAvatar").textContent=initial;
+  $p("topAccountName").textContent=name;
+ }
+ function showUsernamePrompt(){
+  $p("portalUsernameInput").value=username;
+  $p("portalUsernameStatus").textContent="";
+  $p("portalUsernameStatus").className="portal-status";
+  $p("portalUsernameModal").classList.add("open");
+  setTimeout(()=>$p("portalUsernameInput").focus(),30);
+ }
+ $p("portalUsernameForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const entered=$p("portalUsernameInput").value.trim().replace(/\\s+/g," ").replace(/[<>\\u0000-\\u001f]/g,"").slice(0,24);
+  const status=$p("portalUsernameStatus");
+  if(!entered){status.textContent="Please enter a username to continue.";status.className="portal-status error";return;}
+  username=entered;
+  try{localStorage.setItem(USERNAME_KEY,username);}catch(error){}
+  updateUsernameDisplay();
+  $p("portalUsernameModal").classList.remove("open");
  });
- $p("portalCheckinModal").addEventListener("click",event=>{
-  if(event.target===$p("portalCheckinModal")){
-   $p("portalCheckinModal").classList.remove("open");pendingLaunch=null;
-   if(externalWindow&&!externalWindow.closed){externalWindow.close();externalWindow=null;}
-  }
- });
+ if(!username)showUsernamePrompt();else updateUsernameDisplay();
  const games=[];
  const sourceCards=[...document.querySelectorAll("main .grid > .card")];
  const coverPhotoById=photos;
@@ -129,23 +144,55 @@
  const categoryOrder=["Racing","Sports","Simulation","Arcade","Puzzle","External Games"];
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
-  const stats=catalogStats[game.id]||{};
-  const players=Number.isFinite(stats.players)?stats.players:"—";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
-   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><span class="portal-cover-players">● '+players+' live</span><div class="portal-cover-art">'+game.art+'</div></div>'+
+   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><div class="portal-cover-art">'+game.art+'</div></div>'+
    '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div></div></article>';
  }
- function renderGameList(){
+ function renderCategories(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
-  const filtered=games.filter(g=>(selectedGenre==="All Games"||g.genre===selectedGenre)&&(!query||(g.title+" "+g.genre+" "+g.description).toLowerCase().includes(query)));
-  const host=$p("portalGameGroups");
-  host.innerHTML="";
+  const categories=["All Games",...categoryOrder];
+  const counts=Object.fromEntries(categoryOrder.map(category=>[category,games.filter(game=>game.genre===category).length]));
+  const visible=categories.filter(category=>{
+   if(category==="All Games")return games.some(game=>!query||(game.title+" "+game.genre).toLowerCase().includes(query));
+   return counts[category]>0&&(!query||category.toLowerCase().includes(query)||games.some(game=>game.genre===category&&game.title.toLowerCase().includes(query)));
+  });
+  $p("portalFilterRow").innerHTML=visible.map(category=>{
+   const count=category==="All Games"?games.filter(game=>!query||(game.title+" "+game.genre).toLowerCase().includes(query)).length:games.filter(game=>game.genre===category&&(!query||game.title.toLowerCase().includes(query))).length;
+   return '<button class="portal-category-tab" type="button" role="tab" data-category-tab="'+esc(category)+'"><span>'+esc(category)+'</span><small>'+count+' games</small><span class="portal-card-arrow">↗</span></button>';
+  }).join("");
+  $p("portalFilterRow").querySelectorAll("[data-category-tab]").forEach(button=>button.addEventListener("click",()=>openCategory(button.dataset.categoryTab)));
+  $p("portalFilterRow").hidden=false;
+  $p("portalCategoryView").hidden=true;
+ }
+ function showCategoryChooser(){
+  selectedGenre="";
+  $p("portalFilterRow").hidden=false;
+  $p("portalCategoryView").hidden=true;
+  renderCategories();
+ }
+ function openCategory(category){
+  selectedGenre=category;
+  $p("portalFilterRow").hidden=true;
+  $p("portalCategoryView").hidden=false;
+  $p("portalCategoryTitle").textContent=category;
+  renderGameList();
+ }
+ function renderGameList(){
+  if(!selectedGenre){renderCategories();return;}
+  const query=($p("portalSearch").value||"").trim().toLowerCase();
+  const filtered=games.filter(game=>(selectedGenre==="All Games"||game.genre===selectedGenre)&&(!query||(game.title+" "+game.genre+" "+game.description).toLowerCase().includes(query)));
+  const host=$p("portalGameGroups");host.innerHTML="";
   if(!filtered.length){host.innerHTML='<div class="portal-empty">No games match that search.</div>';return;}
-  const groups=selectedGenre==="All Games"?categoryOrder.filter(cat=>filtered.some(g=>g.genre===cat)).map(cat=>({name:cat,items:filtered.filter(g=>g.genre===cat)})):[{name:selectedGenre,items:filtered}];
-  for(const group of groups){
-   const section=document.createElement("section");section.className="portal-genre-group";
-   section.innerHTML='<div class="portal-genre-head"><h2>'+esc(group.name)+'</h2><span>'+group.items.length+' games</span></div><div class="portal-game-grid">'+group.items.map(cardMarkup).join("")+'</div>';
-   host.appendChild(section);
+  if(selectedGenre==="All Games"){
+   for(const category of categoryOrder){
+    const items=filtered.filter(game=>game.genre===category);
+    if(!items.length)continue;
+    const section=document.createElement("section");section.className="portal-genre-group";
+    section.innerHTML='<div class="portal-genre-head"><h2>'+esc(category)+'</h2><span>'+items.length+' games</span></div><div class="portal-game-grid">'+items.map(cardMarkup).join("")+'</div>';
+    host.appendChild(section);
+   }
+  }else{
+   host.innerHTML='<div class="portal-game-grid">'+filtered.map(cardMarkup).join("")+'</div>';
   }
  }
  function showView(view){
@@ -157,22 +204,20 @@
   if(view==="settings")renderSettings();
   if(view==="music")mountMusicPanel();
   if(view==="dev")renderDevView();
-  if(view==="games")renderGameList();
+  if(view==="games")showCategoryChooser();
  }
  document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.addEventListener("click",()=>showView(el.dataset.view)));
- document.querySelectorAll("[data-genre]").forEach(el=>el.addEventListener("click",()=>{
-  selectedGenre=el.dataset.genre;
-  document.querySelectorAll("[data-genre]").forEach(button=>button.classList.toggle("active",button===el));
-  showView("games");
- }));
- $p("portalSearch").addEventListener("input",renderGameList);
+ $p("portalBackToCategories").addEventListener("click",showCategoryChooser);
+ $p("portalSearch").addEventListener("input",()=>{
+  if(selectedGenre)renderGameList();else renderCategories();
+ });
  $p("portalCollapse").addEventListener("click",()=>{
   const collapsed=portalShell.classList.toggle("collapsed");
   portalSettings.sidebarExpanded=!collapsed;savePortalSettings();
  });
  $p("sidebarProfile").addEventListener("click",()=>showView("profile"));
  $p("portalAccountButton").addEventListener("click",()=>showView("profile"));
- $p("portalQuickSignIn").addEventListener("click",showPlayerCheckin);
+ $p("portalQuickSignIn").addEventListener("click",showUsernamePrompt);
  $p("portalGameGroups").addEventListener("click",event=>{
   const card=event.target.closest("[data-game-card]");if(!card)return;
   const game=games.find(g=>g.id===card.dataset.gameCard);if(game)openGameDetail(game);
@@ -204,18 +249,13 @@
   if(!game.buttons.length){
    const placeholder=document.createElement("span");placeholder.className="portal-muted";placeholder.textContent="Play option unavailable";actions.appendChild(placeholder);
   }
-  renderSelectedGameStats();
   $p("portalGameDetail").classList.add("open");
  }
- function renderSelectedGameStats(){
-  if(!selectedGame)return;
-  const stats=catalogStats[selectedGame.id]||{};
-  $p("portalDetailPlayers").textContent=Number.isFinite(stats.players)?String(stats.players):"—";
- }
+
  function closeGameDetail(){$p("portalGameDetail").classList.remove("open");}
  $p("portalDetailClose").addEventListener("click",closeGameDetail);
  $p("portalGameDetail").addEventListener("click",e=>{if(e.target===$p("portalGameDetail"))closeGameDetail();});
- document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeGameDetail();$p("portalAuthModal").classList.remove("open");}});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeGameDetail();});
  async function loadCatalogStats(){
   try{
    const response=await fetch(API_BASE+"/portal/catalog-stats",{cache:"no-store"});
