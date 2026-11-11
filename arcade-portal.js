@@ -15,19 +15,21 @@
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Neon Runner":"neon-runner","Memory Match":"memory-match","Moto X3M":"moto-x3m",
   "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes",
-  "Cube Engine":"cube-engine","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
+  "Cube Engine":"cube-engine","Mini Golf 3D":"mini-golf-3d","Street Circuit":"street-circuit","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
  };
  const photos={
   "drift-arena":"assets/drift-track-1.webp",
   "open-world-drive":"assets/drift-track-2.webp",
   "apex-formula-racing":"assets/drift-car-reference.webp",
   "gravel-rally-stage":"assets/drift-track-2.webp",
-  "fpv-drone-simulator":"assets/drift-track-1.webp"
+  "fpv-drone-simulator":"assets/drift-track-1.webp",
+  "mini-golf-3d":"https://images.unsplash.com/photo-1657085716783-c0afbdabf96e?auto=format&fit=crop&w=1400&q=85",
+  "street-circuit":"https://images.unsplash.com/photo-1699542108481-d433928cdc6e?auto=format&fit=crop&w=1400&q=85"
  };
  const genreFor=(title,isExternal)=>{
   if(isExternal)return "External Games";
-  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage"].includes(title))return "Racing";
-  if(["Tennis Rally","Hockey","8 Ball Pool"].includes(title))return "Sports";
+  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage","Street Circuit"].includes(title))return "Racing";
+  if(["Tennis Rally","Hockey","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Industrial Site Ops","Cube Engine"].includes(title))return "Simulation";
   if(title==="Memory Match")return "Puzzle";
   return "Arcade";
@@ -373,6 +375,7 @@
    siteSettings.music=!!portalSettings.musicEnabled;
    siteSettings.musicVolume=Math.max(0,Math.min(1,Number(portalSettings.musicVolume)/100));
    if(typeof applySiteSettings==="function")applySiteSettings();
+   if(typeof syncThemeMusic==="function")syncThemeMusic();
   }
   if($p("portalSearch"))$p("portalSearch").placeholder=portalSettings.rememberSearch?"Search games...":"Search this visit...";
  }
@@ -387,7 +390,7 @@
     '<section class="portal-setting-group"><h3>Game launch and privacy</h3>'+settingCheck("openGameFullscreen","Open supported games in fullscreen",portalSettings.openGameFullscreen)+settingCheck("confirmExternal","Confirm external game links",portalSettings.confirmExternal)+'</section>'+
    '</div><div class="portal-settings-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="portal-secondary" id="portalResetSettings">Reset settings</button><button class="portal-primary" id="portalSaveSettings">Save settings</button></div><div class="portal-status" id="portalSettingsStatus"></div>';
   host.querySelectorAll("[data-theme-choice]").forEach(button=>button.addEventListener("click",()=>{
-   portalSettings.theme=button.dataset.themeChoice;applyPortalSettings();renderSettings();
+   portalSettings.theme=button.dataset.themeChoice;applyPortalSettings();savePortalSettings();playThemeIntro();renderSettings();
   }));
   host.querySelectorAll("[data-setting-key]").forEach(control=>control.addEventListener("change",()=>{
    const key=control.dataset.settingKey;
@@ -449,6 +452,28 @@
    $p("portalDevPassword").value="";$p("portalDevStatus").textContent="Dev Mode locked.";
   });
  }
+
+ let arcadeAudioContext=null,themeMusicTimer=null,themeMusicStep=0;
+ const themeSoundProfiles={
+ playstation:{notes:[440,660,880],wave:"triangle",scale:[220,330,440,660,523,392,494,587]},
+ xbox:{notes:[523,784,1047],wave:"sine",scale:[196,247,294,392,330,294,247,220]},
+ steam:{notes:[330,494,660],wave:"square",scale:[147,196,247,294,330,247,196,165]},
+ neon:{notes:[659,880,1175],wave:"sawtooth",scale:[220,277,330,440,392,330,277,247]},
+ aurora:{notes:[392,523,784],wave:"sine",scale:[174,220,261,349,311,261,220,196]},
+ sunset:{notes:[349,440,587],wave:"triangle",scale:[175,220,262,330,294,262,220,196]},
+ retro:{notes:[262,392,523],wave:"square",scale:[131,165,196,262,220,196,165,147]},
+ light:{notes:[523,659,784],wave:"sine",scale:[262,330,392,523,440,392,330,294]},
+ forest:{notes:[294,392,587],wave:"sine",scale:[147,185,220,294,262,220,185,165]},
+ crimson:{notes:[392,494,740],wave:"triangle",scale:[196,247,294,370,330,294,247,220]},
+ ocean:{notes:[330,440,660],wave:"sine",scale:[165,220,262,330,294,262,220,196]},
+ graphite:{notes:[220,330,440],wave:"triangle",scale:[110,147,165,220,196,165,147,131]}
+ };
+ function getArcadeAudio(){if(!arcadeAudioContext)arcadeAudioContext=new(window.AudioContext||window.webkitAudioContext)();if(arcadeAudioContext.state==="suspended")arcadeAudioContext.resume();return arcadeAudioContext;}
+ function arcadeTone(freq,duration,wave,gain,volume){try{const ac=getArcadeAudio(),o=ac.createOscillator(),g=ac.createGain();o.type=wave||"sine";o.frequency.setValueAtTime(freq,ac.currentTime);g.gain.setValueAtTime(Math.max(.0001,gain*volume),ac.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+duration);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+duration);}catch(e){}}
+ function playThemeIntro(){if(!portalSettings.sound)return;const p=themeSoundProfiles[portalSettings.theme]||themeSoundProfiles.playstation,v=Math.max(0,Math.min(1,Number(portalSettings.soundVolume)/100));p.notes.forEach((note,i)=>setTimeout(()=>arcadeTone(note,.14,p.wave,.035,v),i*95));}
+ function syncThemeMusic(){if(themeMusicTimer){clearInterval(themeMusicTimer);themeMusicTimer=null;}if(!portalSettings.musicEnabled||!portalSettings.autoMusic)return;const p=themeSoundProfiles[portalSettings.theme]||themeSoundProfiles.playstation;themeMusicStep=0;themeMusicTimer=setInterval(()=>{if(document.hidden)return;const v=Math.max(0,Math.min(1,Number(portalSettings.musicVolume)/100)),f=p.scale[themeMusicStep%p.scale.length];arcadeTone(f,.36,"sine",.013,v);if(themeMusicStep%4===0)arcadeTone(f*2,.20,"triangle",.008,v);themeMusicStep++;},430);}
+ document.addEventListener("click",event=>{if(!event.target.closest("#arcadeRoot"))return;const target=event.target.closest("button,.portal-game-card,.portal-category-tab");if(!target||!portalSettings.sound)return;const p=themeSoundProfiles[portalSettings.theme]||themeSoundProfiles.playstation;arcadeTone(p.notes[0],.055,p.wave,.018,Math.max(0,Math.min(1,Number(portalSettings.soundVolume)/100)));},true);
+
  applyPortalSettings();
  renderProfile();
  updateUsernameDisplay();

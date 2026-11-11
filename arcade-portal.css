@@ -329,3 +329,38 @@ body[data-portal-theme="light"] .portal-category-tab{background:linear-gradient(
   .portal-account-button{padding:3px}
   .portal-account-button>span:not(.portal-avatar){display:none}
 }
+
+
+/* Photo-led backdrops and theme motion across the whole game library. */
+#arcadeRoot{position:relative;isolation:isolate;overflow:hidden}
+#arcadeRoot:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-position:center;background-size:cover;opacity:.22;mix-blend-mode:screen;transition:opacity .35s,filter .35s;animation:themeAtmosphere 34s ease-in-out infinite alternate}
+#arcadeRoot>.portal-shell{position:relative;z-index:1}
+@keyframes themeAtmosphere{from{transform:scale(1);filter:saturate(.88)}to{transform:scale(1.07);filter:saturate(1.18)}}
+body[data-portal-theme="playstation"] #arcadeRoot:before{background-image:linear-gradient(135deg,#07174cbb,#142c65aa),url("https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="xbox"] #arcadeRoot:before{background-image:linear-gradient(135deg,#062713c9,#0c6639aa),url("https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="steam"] #arcadeRoot:before{background-image:linear-gradient(135deg,#102a47c9,#23618baa),url("https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="neon"] #arcadeRoot:before{background-image:linear-gradient(135deg,#330d45c9,#101b51aa),url("https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="aurora"] #arcadeRoot:before{background-image:linear-gradient(135deg,#092b35c9,#164f4eaa),url("https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="sunset"] #arcadeRoot:before{background-image:linear-gradient(135deg,#542b3bc9,#a65b43aa),url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="retro"] #arcadeRoot:before{background-image:linear-gradient(135deg,#392b13cc,#665023aa),url("https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="light"] #arcadeRoot:before{opacity:.07;mix-blend-mode:multiply;background-image:linear-gradient(135deg,#d7e5ff,#f4f7ff),url("https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="forest"] #arcadeRoot:before{background-image:linear-gradient(135deg,#0a2b1bc9,#194c33aa),url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="crimson"] #arcadeRoot:before{background-image:linear-gradient(135deg,#451528cc,#7c2838aa),url("https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="ocean"] #arcadeRoot:before{background-image:linear-gradient(135deg,#073044cc,#126c81aa),url("https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="graphite"] #arcadeRoot:before{background-image:linear-gradient(135deg,#171c25cc,#414b58aa),url("https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1800&q=75")}
+body[data-portal-theme="playstation"] .portal-game-card:hover{box-shadow:0 0 0 1px #5a91ff88,0 20px 48px #1d4daf33}
+body[data-portal-theme="xbox"] .portal-game-card:hover{box-shadow:0 0 0 1px #31d87988,0 20px 48px #159b4933}
+body[data-portal-theme="steam"] .portal-game-card:hover{box-shadow:0 0 0 1px #61b3ff88,0 20px 48px #2472b633}
+body[data-portal-theme="neon"] .portal-game-card:hover{box-shadow:0 0 0 1px #f34dcc88,0 20px 48px #d13cb933}
+body[data-portal-theme="aurora"] .portal-game-card:hover{box-shadow:0 0 0 1px #5ce0be88,0 20px 48px #24bfa033}
+body[data-portal-theme="sunset"] .portal-game-card:hover{box-shadow:0 0 0 1px #ff9a6a88,0 20px 48px #c75b3933}
+body[data-portal-theme="retro"] .portal-game-card:hover{box-shadow:0 0 0 1px #e8b84b88,0 20px 48px #b6812733}
+body[data-portal-theme="forest"] .portal-game-card:hover{box-shadow:0 0 0 1px #65b77a88,0 20px 48px #287f4933}
+body[data-portal-theme="crimson"] .portal-game-card:hover{box-shadow:0 0 0 1px #e24d6988,0 20px 48px #9a294333}
+body[data-portal-theme="ocean"] .portal-game-card:hover{box-shadow:0 0 0 1px #25a5b788,0 20px 48px #15788b33}
+body[data-portal-theme="graphite"] .portal-game-card:hover{box-shadow:0 0 0 1px #a0a9ba88,0 20px 48px #59627333}
+.portal-theme-swatch{transition:transform .2s,border-color .2s,box-shadow .2s}
+.portal-theme-swatch:hover{transform:translateY(-3px) scale(1.015)}
+.portal-theme-swatch.active .portal-theme-preview{animation:themePulse 2.8s ease-in-out infinite alternate}
+@keyframes themePulse{from{filter:saturate(.9) brightness(.92)}to{filter:saturate(1.2) brightness(1.14)}}
+@media(prefers-reduced-motion:reduce){#arcadeRoot:before,.portal-theme-swatch.active .portal-theme-preview{animation:none!important}}
