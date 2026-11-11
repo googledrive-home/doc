@@ -267,6 +267,15 @@ input[type=range]{accent-color:#d4aa70}
  .drive-key{min-width:46px;height:46px;padding:0 9px}
  #conditionsHud{top:110px;right:10px}
 }
+
+/* Rally HUD cleanup and camera visibility */
+#hud .hud-top{justify-content:flex-end}
+#hud .hud-top>.hud-brand,#driveControls,.hud-bottom,.hud-speed-hint,#perf{display:none!important}
+#speedPanel{bottom:14px!important}
+#stagePanel{top:116px!important}
+.note{opacity:.24;color:#dce3df;text-shadow:none;transition:opacity .2s}
+.note:hover{opacity:.72}
+
 </style>
 
 </head>
@@ -546,10 +555,10 @@ function makeGrassTexture(){
 }
 function makeRoute(track){
  const profiles={
-  highland:{rows:8,gap:315,radius:158,straight:2040,bend:1.28,wave:78,detail:24,frequency:1.0},
-  alpine:{rows:5,gap:405,radius:205,straight:2920,bend:.62,wave:34,detail:12,frequency:.72},
-  coast:{rows:9,gap:248,radius:124,straight:1620,bend:1.58,wave:116,detail:36,frequency:1.42},
-  serpent:{rows:13,gap:108,radius:54,straight:1030,bend:1.12,wave:52,detail:18,frequency:2.15}
+  highland:{rows:10,gap:250,radius:112,straight:1450,bend:1.42,wave:92,detail:38,frequency:1.9},
+  alpine:{rows:8,gap:285,radius:128,straight:1760,bend:1.08,wave:74,detail:36,frequency:1.7},
+  coast:{rows:12,gap:190,radius:88,straight:1180,bend:1.62,wave:118,detail:48,frequency:2.15},
+  serpent:{rows:16,gap:86,radius:42,straight:610,bend:1.26,wave:52,detail:25,frequency:2.75}
  };
  const cfg=profiles[track.id]||profiles.highland,rows=cfg.rows,spacing=cfg.gap,radius=cfg.radius;
  const half=cfg.straight*.5,xStart=-half,xEnd=half,zStart=-(rows-1)*spacing*.5,control=[];
@@ -578,7 +587,7 @@ function makeRoute(track){
  const scale=track.full/length;
  control.forEach(p=>{p.x*=scale;p.z*=scale;p.y=terrainY(p.x,p.z,track)+.24;});
  curve=new THREE.CatmullRomCurve3(control,true,"catmullrom",.5);
- const count=4200,points=curve.getSpacedPoints(count);points.pop();
+ const count=6400,points=curve.getSpacedPoints(count);points.pop();
  const samples=points.map((p,i)=>{p.y=terrainY(p.x,p.z,track)+.24;const tan=curve.getTangentAt(i/count).normalize();return{p,tan,progress:i/count};});
  const cellSize=52,spatialIndex=new Map();
  for(const sample of samples){const cx=Math.floor(sample.p.x/cellSize),cz=Math.floor(sample.p.z/cellSize),key=cx+":"+cz;if(!spatialIndex.has(key))spatialIndex.set(key,[]);spatialIndex.get(key).push(sample.p);}
@@ -588,9 +597,10 @@ function makeRoute(track){
 function makeTerrain(track){
  const samples=trackData.samples;let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
  for(const sample of samples){minX=Math.min(minX,sample.p.x);maxX=Math.max(maxX,sample.p.x);minZ=Math.min(minZ,sample.p.z);maxZ=Math.max(maxZ,sample.p.z);}
- const margin=235,width=maxX-minX+margin*2,depth=maxZ-minZ+margin*2,centerX=(minX+maxX)*.5,centerZ=(minZ+maxZ)*.5;
- /* Fine terrain cells and a blended roadbed stop hillsides from intersecting the gravel surface. */
- const segX=clamp(Math.ceil(width/11),180,520),segZ=clamp(Math.ceil(depth/11),140,420);
+ const margin=420,width=maxX-minX+margin*2,depth=maxZ-minZ+margin*2,centerX=(minX+maxX)*.5,centerZ=(minZ+maxZ)*.5;
+ // Keep enough mesh resolution around the road so the terrain cannot form a high ridge across the stage.
+ const cellTarget=settings.quality==="high"?6.5:settings.quality==="low"?13:8.5;
+ const segX=clamp(Math.ceil(width/cellTarget),200,720),segZ=clamp(Math.ceil(depth/cellTarget),160,640);
  const geo=new THREE.PlaneGeometry(width,depth,segX,segZ);geo.rotateX(-Math.PI/2);
  const p=geo.attributes.position,colors=[],index=trackData.spatialIndex,cell=trackData.spatialCell||52;
  const smooth=(a,b,v)=>{const t=clamp01((v-a)/(b-a));return t*t*(3-2*t);};
@@ -602,9 +612,12 @@ function makeTerrain(track){
   }
   if(!nearest)return natural;
   const distance=Math.sqrt(best),roadHalf=trackData.halfWidth||2.8;
-  const blend=1-smooth(roadHalf+1.8,roadHalf+16,distance);if(blend<=0)return natural;
-  const roadBed=nearest.y-.78,cutHeight=Math.min(natural,roadBed);
-  return natural+(cutHeight-natural)*blend;
+  const blend=1-smooth(roadHalf+1.5,roadHalf+44,distance);
+  if(blend<=0)return natural;
+  // The terrain sits just below the road deck and blends smoothly into the surrounding hills.
+  // Use the route height as the target in both directions, so the landscape cannot rise over the track.
+  const roadBed=nearest.y-.18;
+  return natural+(roadBed-natural)*blend;
  }
  for(let i=0;i<p.count;i++){
   const x=p.getX(i)+centerX,z=p.getZ(i)+centerZ,h=gradedHeight(x,z);p.setY(i,h);
@@ -619,8 +632,6 @@ function makeTerrain(track){
  grassTexture=grassTexture||makeGrassTexture();
  const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:.96,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=settings.shadows&&settings.quality!=="low";mesh.frustumCulled=true;worldGroup.add(mesh);
- /* The former 15–31 metre cliff-wall boxes were responsible for the giant black blocks.
-    Removed; shoulder rocks and the finite collision boundary still keep the stage enclosed. */
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
@@ -1382,13 +1393,13 @@ function updateCamera(dt,immediate=false){
   desired.copy(carPos).add(back).add(new THREE.Vector3(0,settings.cameraHeight+Math.sin(pitch)*settings.cameraDistance,0));
   target.copy(carPos).add(forward.clone().multiplyScalar(settings.cameraLookAhead)).add(new THREE.Vector3(0,.18,0));
  }else if(cameraMode===1){
-  // Hood: low and forward over the bonnet.
-  desired.copy(carPos).add(forward.clone().multiplyScalar(.82)).add(new THREE.Vector3(0,.43,0));
-  target.copy(carPos).add(forward.clone().multiplyScalar(24)).add(new THREE.Vector3(0,.28,0));
+  // Hood camera: mounted just above the bonnet/windscreen seam, clear of the body mesh.
+  desired.copy(carPos).add(forward.clone().multiplyScalar(1.18)).add(new THREE.Vector3(0,.70,0));
+  target.copy(carPos).add(forward.clone().multiplyScalar(24)).add(new THREE.Vector3(0,.45,0));
  }else if(cameraMode===2){
-  // Cockpit: just behind the dash, aligned with the windscreen.
-  desired.copy(carPos).add(forward.clone().multiplyScalar(-.10)).add(right.clone().multiplyScalar(-.10)).add(new THREE.Vector3(0,.49,0));
-  target.copy(carPos).add(forward.clone().multiplyScalar(25)).add(new THREE.Vector3(0,.48,0));
+  // Cockpit camera: driver eye point, offset to the left seat and above the dashboard.
+  desired.copy(carPos).add(right.clone().multiplyScalar(-.34)).add(forward.clone().multiplyScalar(.12)).add(new THREE.Vector3(0,1.02,0));
+  target.copy(carPos).add(forward.clone().multiplyScalar(25)).add(new THREE.Vector3(0,.58,0));
  }else{
   // Bumper: very low, close to the front valance.
   desired.copy(carPos).add(forward.clone().multiplyScalar(2.05)).add(new THREE.Vector3(0,-.26,0));
@@ -1431,8 +1442,8 @@ function physicsStep(dt){
  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),roadHalf=trackData.halfWidth||2.9,onRoad=roadOffset<roadHalf+1.0,inDitch=roadOffset>roadHalf+.7&&roadOffset<roadHalf+4.2;
  if(!onRoad)grip*=roadOffset<roadHalf+5?.63:clamp(1-(roadOffset-roadHalf-5)*.026,.27,.63);
  if(s.verticalOffset>.12)grip*=.55;
- const steeringLimit=(.78*settings.steer/.70)/(1+speed*.018),targetSteer=input.steer*steeringLimit;
- s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*14));
+ const steeringLimit=(.98*settings.steer/.70)/(1+speed*.011),targetSteer=input.steer*steeringLimit;
+ s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*18));
  const handTarget=input.handbrake&&speed>3?1:0;
  if(input.handbrake&&!s.handbrakeWasOn&&speed>6&&Math.abs(input.steer)>.04){
   s.vLat+=input.steer*speed*.10;
@@ -1448,7 +1459,7 @@ function physicsStep(dt){
  const frontSlip=Math.atan2(s.vLat+a*s.yawRate,denom)-s.steer*direction,rearSlip=Math.atan2(s.vLat-b*s.yawRate,denom);
  const fyFront=-frontGrip*frontLoad*Math.sin(1.30*Math.atan(7.3*frontSlip));
  const fyRear=-rearGrip*rearLoad*Math.sin(1.27*Math.atan(7.0*rearSlip));
- const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.27;
+ const lateralForce=fyFront*Math.cos(s.steer)+fyRear,yawMoment=a*fyFront*Math.cos(s.steer)-b*fyRear,inertia=spec.mass*spec.wheelbase*spec.wheelbase*.23;
  let yawAccel=yawMoment/inertia-s.yawRate*(settings.damper*2.05+.30);
  let latAccel=lateralForce/spec.mass-s.vLong*s.yawRate-s.vLat*(s.handbrakeBlend>.08?.14:.40);
  if(s.handbrakeBlend>.04&&speed>5){
@@ -1652,7 +1663,7 @@ function drawTrackPreview(){
  $("trackPreviewName").textContent=track.name;$("trackPreviewDistance").textContent=(stage.full?track.full/1000:stage.km).toFixed(1)+" KM · "+stage.name;
  const info={
   highland:["WALES · FOREST GRAVEL","Conifer lanes · linked medium bends · wet cambers","5 STAGES · 23.4 KM · FOREST"],
-  alpine:["FINLAND · CREST RUN","Long straights · broad sweepers · jump crests","5 STAGES · 24.8 KM · FAST"],
+  alpine:["FINLAND · CREST RUN","Linked bends · blind crests · close-set hairpins","5 STAGES · 24.8 KM · FAST"],
   coast:["GREECE · ACROPOLIS ROCK","Rocky ravines · olive groves · narrow farm roads","5 STAGES · 21.6 KM · TECHNICAL"],
   serpent:["FRANCE · COL DE TURINI","Tight mountain hairpins · steep climbs · narrow pass","5 STAGES · 28.6 KM · HAIRPINS"]
  }[track.id];
