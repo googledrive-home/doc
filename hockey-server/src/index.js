@@ -31,10 +31,10 @@ const ACCOUNT_SESSION_MS=30*24*60*60*1000;
 const ACCOUNT_DATA_DIR=process.env.DATA_DIR||path.join(process.cwd(),"data");
 const ACCOUNT_FILE=path.join(ACCOUNT_DATA_DIR,"accounts.json");
 let accountPool=null;
-let accountStore={version:1,accounts:[],sessions:[]};
+let accountStore={version:1,accounts:[],sessions:[],gameRatings:{}};
 let accountWriteQueue=Promise.resolve();
 const accountRateLimits=new Map();
-const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{}});
+const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{}});
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
  data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
@@ -44,7 +44,12 @@ function cleanAccountStore(value){
   for(const [key,defaultValue] of Object.entries(defaults))if(account.stats[key]===undefined)account.stats[key]=key==="modes"||key==="maps"?{}:defaultValue;
   if(!account.stats.modes||typeof account.stats.modes!=="object"||Array.isArray(account.stats.modes))account.stats.modes={};
   if(!account.stats.maps||typeof account.stats.maps!=="object"||Array.isArray(account.stats.maps))account.stats.maps={};
+  if(!account.stats.games||typeof account.stats.games!=="object"||Array.isArray(account.stats.games))account.stats.games={};
   if(!Array.isArray(account.recentMatches))account.recentMatches=[];
+ }
+ data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
+ return data;
+}
  }
  return data;
 }
@@ -165,6 +170,106 @@ const TOTAL_SLOTS={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":4 };
 const playerCapacity=state=>state?.gameType==="goalie"?1:(CAPACITY[state?.mode]||2);
 const codes=new Map();
 const activeRooms=new Map();
+
+const portalGameIds=new Set([
+ "drift-arena","open-world-drive","tank-arena-3d","apex-formula-racing","gravel-rally-stage",
+ "fpv-drone-simulator","industrial-site-ops","pool-8-ball","tennis-rally","hockey",
+ "reaction-game","click-test","neon-breaker","flappy-bird","neon-snake","space-defender",
+ "neon-runner","memory-match","moto-x3m","learn-to-fly","garden-gnomes"
+]);
+const portalPresence=new Map();
+function portalGameId(value){
+ const id=String(value||"").toLowerCase().trim().replace(/[^a-z0-9-]/g,"").slice(0,48);
+ return portalGameIds.has(id)?id:"";
+}
+function prunePortalPresence(){
+ const cutoff=Date.now()-75000;
+ for(const [key,entry] of portalPresence)if(!entry||entry.lastSeenAt<cutoff)portalPresence.delete(key);
+}
+function portalCatalogStats(){
+ prunePortalPresence();
+ const games={};
+ for(const gameId of portalGameIds){
+  const rating=accountStore.gameRatings?.[gameId]||{likes:[],dislikes:[]};
+  games[gameId]={
+   likes:Array.isArray(rating.likes)?rating.likes.length:0,
+   dislikes:Array.isArray(rating.dislikes)?rating.dislikes.length:0,
+   players:[...portalPresence.values()].filter(p=>p.gameId===gameId).length
+  };
+ }
+ return {games,onlinePlayers:portalPresence.size,updatedAt:Date.now()};
+}
+app.get("/portal/catalog-stats",(_req,res)=>{
+ res.setHeader("Cache-Control","no-store");res.json(portalCatalogStats());
+});
+app.post("/portal/vote",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=resolveAccountToken(getRequestToken(req));
+ if(!account)return res.status(401).json({error:"Sign in to rate games."});
+ const gameId=portalGameId(req.body?.gameId),vote=String(req.body?.vote||"");
+ if(!gameId||!["like","dislike"].includes(vote))return res.status(400).json({error:"Choose a valid game and rating."});
+ if(!accountStore.gameRatings||typeof accountStore.gameRatings!=="object")accountStore.gameRatings={};
+ const current=accountStore.gameRatings[gameId]||{likes:[],dislikes:[]};
+ current.likes=Array.isArray(current.likes)?current.likes:[];
+ current.dislikes=Array.isArray(current.dislikes)?current.dislikes:[];
+ const ownList=vote==="like"?current.likes:current.dislikes,otherList=vote==="like"?current.dislikes:current.likes;
+ const already=ownList.includes(account.id);
+ current.likes=current.likes.filter(id=>id!==account.id);
+ current.dislikes=current.dislikes.filter(id=>id!==account.id);
+ if(!already)ownList.push(account.id);
+ accountStore.gameRatings[gameId]=current;
+ try{await persistAccountStore();res.json({ok:true,vote:already?null:vote,stats:portalCatalogStats().games[gameId]});}
+ catch(error){console.error("Portal vote save failed:",error.message);res.status(503).json({error:"Your rating could not be saved. Try again shortly."});}
+});
+app.post("/portal/presence",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=resolveAccountToken(getRequestToken(req));
+ if(!account)return res.status(401).json({error:"Sign in to play."});
+ const gameId=portalGameId(req.body?.gameId),sessionId=String(req.body?.sessionId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,96),action=String(req.body?.action||"heartbeat");
+ if(!gameId||sessionId.length<12||!["start","heartbeat","end"].includes(action))return res.status(400).json({error:"Invalid game session."});
+ const key=account.id+":"+sessionId,now=Date.now(),existing=portalPresence.get(key);
+ if(action==="end"){
+  if(existing){
+   const seconds=Math.max(0,Math.min(21600,Math.round((now-existing.startedAt)/1000)));
+   account.stats=account.stats||emptyAccountStats();account.stats.games=account.stats.games||{};
+   const record=account.stats.games[gameId]||{sessions:0,playTimeSeconds:0,lastPlayedAt:null};
+   record.playTimeSeconds=(Number(record.playTimeSeconds)||0)+seconds;record.lastPlayedAt=existing.startedAt;
+   account.stats.games[gameId]=record;account.stats.timePlayedSeconds=(Number(account.stats.timePlayedSeconds)||0)+seconds;
+   portalPresence.delete(key);
+   try{await persistAccountStore();}catch(error){console.error("Portal playtime save failed:",error.message);return res.status(503).json({error:"Your play time could not be saved."});}
+  }
+  return res.json({ok:true});
+ }
+ if(!existing){
+  portalPresence.set(key,{accountId:account.id,gameId,startedAt:now,lastSeenAt:now});
+  if(action==="start"){
+   account.stats=account.stats||emptyAccountStats();account.stats.games=account.stats.games||{};
+   const record=account.stats.games[gameId]||{sessions:0,playTimeSeconds:0,lastPlayedAt:null};
+   record.sessions=(Number(record.sessions)||0)+1;record.lastPlayedAt=now;account.stats.games[gameId]=record;
+   try{await persistAccountStore();}catch(error){portalPresence.delete(key);console.error("Portal session save failed:",error.message);return res.status(503).json({error:"Your session could not be saved."});}
+  }
+ }else{
+  existing.lastSeenAt=now;existing.gameId=gameId;
+ }
+ res.setHeader("Cache-Control","no-store");res.json({ok:true});
+});
+app.post("/portal/admin/metrics",(req,res)=>{
+ const configured=String(process.env.DEV_MODE_PASSWORD||"");
+ if(!configured)return res.status(503).json({error:"Developer access has not been configured on the server."});
+ if(!loginRateLimit(req,"portal-dev"))return res.status(429).json({error:"Too many developer sign-in attempts. Try again later."});
+ const supplied=String(req.body?.password||"").slice(0,128),a=Buffer.from(supplied),b=Buffer.from(configured);
+ const valid=a.length===b.length&&timingSafeEqual(a,b);
+ if(!valid)return res.status(401).json({error:"Developer password is incorrect."});
+ prunePortalPresence();
+ const now=Date.now(),validSessions=accountStore.sessions.filter(s=>s.expiresAt>now).length,byGame={};
+ for(const gameId of portalGameIds){
+  byGame[gameId]={players:[...portalPresence.values()].filter(p=>p.gameId===gameId).length,likes:(accountStore.gameRatings?.[gameId]?.likes||[]).length,dislikes:(accountStore.gameRatings?.[gameId]?.dislikes||[]).length};
+ }
+ const rooms=[...activeRooms.values()].map(room=>({game:room.state?.game||"hockey",status:room.state?.status||"unknown",players:[...(room.state?.players?.values?.()||[])].filter(p=>!p.spectator&&!p.sessionId?.startsWith("ai-")).length}));
+ res.setHeader("Cache-Control","no-store");
+ res.json({server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576),node:process.version},players:{accounts:accountStore.accounts.length,validSessions,onlineNow:portalPresence.size,byGame},rooms,updatedAt:now});
+});
+
 const competitions=new Map();
 function competitionStandings(comp){
  const table=new Map(comp.teams.map(t=>[t.id,{id:t.id,name:t.name,captain:t.captain,played:0,wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0,goalDifference:0,points:0}]));
