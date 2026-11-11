@@ -179,13 +179,12 @@ app.post("/portal/admin/metrics",(req,res)=>{
  }
  const rooms=[...activeRooms.values()].map(room=>({
   game:room.state?.game||"hockey",
-  status:room.state?.status||"unknown",
-  players:[...(room.state?.players?.values?.()||[])].filter(player=>!player.spectator&&!player.sessionId?.startsWith("ai-")).length
+  status:room.state?.status||"unknown"
  }));
  res.setHeader("Cache-Control","no-store");
  res.json({
   server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576),node:process.version},
-  rooms:{active:rooms.length,players:rooms.reduce((total,room)=>total+room.players,0),list:rooms},
+  rooms:{active:rooms.length,list:rooms},
   updatedAt:Date.now()
  });
 });
