@@ -391,11 +391,11 @@
    ["Server uptime",formatDuration(server.uptimeSeconds||0)],
    ["Memory used",(server.memoryMb||0)+" MB"],
    ["Active rooms",rooms.active||0],
-   ["Players in rooms",rooms.players||0]
+   ["Node version",server.node||"—"]
   ];
   const html=cards.map(item=>'<div class="portal-dev-card"><small>'+esc(item[0])+'</small><b>'+esc(item[1])+'</b></div>').join("");
-  const rows=list.length?list.map(room=>'<tr><td>'+esc(room.game)+'</td><td>'+esc(room.status)+'</td><td>'+Number(room.players||0)+'</td></tr>').join(""):'<tr><td colspan="3" class="portal-muted">No active multiplayer rooms.</td></tr>';
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">SERVER OVERVIEW</div><h2 style="margin-top:5px">Basic server stats</h2><div class="portal-dev-grid">'+html+'</div><h2 style="margin-top:18px">Multiplayer rooms</h2><table class="portal-table"><thead><tr><th>Game</th><th>Status</th><th>Players</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
+  const rows=list.length?list.map(room=>'<tr><td>'+esc(room.game)+'</td><td>'+esc(room.status)+'</td></tr>').join(""):'<tr><td colspan="2" class="portal-muted">No active multiplayer rooms.</td></tr>';
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">SERVER OVERVIEW</div><h2 style="margin-top:5px">Basic server stats</h2><div class="portal-dev-grid">'+html+'</div><h2 style="margin-top:18px">Multiplayer rooms</h2><table class="portal-table"><thead><tr><th>Game</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
   $p("portalDevRefresh").addEventListener("click",refreshDevMetrics);
   $p("portalDevLock").addEventListener("click",()=>{
    if(devRefreshTimer)clearInterval(devRefreshTimer);devRefreshTimer=null;devPasswordInMemory="";
