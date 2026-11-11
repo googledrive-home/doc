@@ -75,7 +75,7 @@
     '</section>',
     '<section class="portal-view" id="portalDevView" data-page="dev">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">SYSTEM OVERVIEW</div><h1>Developer mode</h1><p>Basic server and multiplayer-room information.</p></div></div>',
-     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to view live player and service metrics.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
+     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to view basic server status and multiplayer rooms.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
      '<div class="portal-dev-metrics" id="portalDevMetrics"></div>',
     '</section>',
    '</div>',
@@ -194,7 +194,7 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER ACCOUNT","Profile"],dev:["SYSTEM OVERVIEW","Dev mode"]}[view]||["PLAYSPACE","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],dev:["SYSTEM OVERVIEW","Dev mode"]}[view]||["PLAYSPACE","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="profile")renderProfile();
   if(view==="settings")renderSettings();
@@ -298,7 +298,7 @@
   ["ocean","Ocean","#25a5b7","#7be1d0","#153e54"],
   ["graphite","Graphite","#a0a9ba","#d2d9e1","#3a414d"]
  ];
- const settingDefaults={theme:"playstation",columns:4,cardSize:"normal",motion:true,backgroundGlow:true,hoverEffects:true,sound:true,soundVolume:70,musicEnabled:true,musicVolume:48,autoMusic:false,sidebarExpanded:true,showLiveCounts:true,showRatings:true,compactDetails:false,reduceTransparency:false,rememberSearch:true,openGameFullscreen:true,confirmExternal:true};
+ const settingDefaults={theme:"playstation",columns:4,cardSize:"normal",motion:true,backgroundGlow:true,hoverEffects:true,sound:true,soundVolume:70,musicEnabled:true,musicVolume:48,autoMusic:false,sidebarExpanded:true,compactDetails:false,reduceTransparency:false,rememberSearch:true,openGameFullscreen:true,confirmExternal:true};
  let portalSettings={...settingDefaults};
  try{portalSettings={...portalSettings,...JSON.parse(localStorage.getItem("arcadePortalSettings")||"{}")};}catch(error){}
  function savePortalSettings(){try{localStorage.setItem("arcadePortalSettings",JSON.stringify(portalSettings));}catch(error){}}
@@ -310,8 +310,6 @@
   document.body.classList.toggle("portal-motion-off",!portalSettings.motion);
   document.body.classList.toggle("portal-glow-off",!portalSettings.backgroundGlow);
   document.body.classList.toggle("portal-compact",portalSettings.cardSize==="compact");
-  document.body.classList.toggle("portal-no-live",!portalSettings.showLiveCounts);
-  document.body.classList.toggle("portal-no-ratings",!portalSettings.showRatings);
   document.body.classList.toggle("portal-hover-off",!portalSettings.hoverEffects);
   document.body.classList.toggle("portal-solid-panels",!!portalSettings.reduceTransparency);
   if(typeof siteSettings!=="undefined"){
@@ -331,7 +329,7 @@
     '<section class="portal-setting-group"><h3>Layout and navigation</h3>'+settingSelect("columns","Games per row",[[2,"2 columns"],[3,"3 columns"],[4,"4 columns"],[5,"5 columns"],[6,"6 columns"]],portalSettings.columns)+settingSelect("cardSize","Card shape", [["compact","Compact"],["normal","Rounded"],["round","Extra rounded"],["square","Square"]],portalSettings.cardSize)+settingCheck("sidebarExpanded","Keep sidebar expanded",portalSettings.sidebarExpanded)+settingCheck("rememberSearch","Remember search text",portalSettings.rememberSearch)+'</section>'+
     '<section class="portal-setting-group"><h3>Motion and appearance</h3>'+settingCheck("motion","Smooth animations",portalSettings.motion)+settingCheck("backgroundGlow","Animated ambient glow",portalSettings.backgroundGlow)+settingCheck("hoverEffects","Animated game-card hover",portalSettings.hoverEffects)+settingCheck("reduceTransparency","Use stronger solid panels",portalSettings.reduceTransparency)+settingCheck("compactDetails","Compact game detail screen",portalSettings.compactDetails)+'</section>'+
     '<section class="portal-setting-group"><h3>Sound and music</h3>'+settingCheck("sound","Interface sound effects",portalSettings.sound)+settingRange("soundVolume","Sound volume",portalSettings.soundVolume,0,100)+settingCheck("musicEnabled","Music player enabled",portalSettings.musicEnabled)+settingRange("musicVolume","Music volume",portalSettings.musicVolume,0,100)+settingCheck("autoMusic","Start music when opening library",portalSettings.autoMusic)+'</section>'+
-    '<section class="portal-setting-group"><h3>Game launch and privacy</h3>'+settingCheck("openGameFullscreen","Open supported games in fullscreen",portalSettings.openGameFullscreen)+settingCheck("confirmExternal","Confirm external game links",portalSettings.confirmExternal)+'<div class="portal-setting-row"><label>Account session<small>Your sign-in token is kept in browser storage for the shared Hockey account.</small></label><span class="portal-muted" style="font-size:9px;text-align:right">Shared account</span></div></section>'+
+    '<section class="portal-setting-group"><h3>Game launch and privacy</h3>'+settingCheck("openGameFullscreen","Open supported games in fullscreen",portalSettings.openGameFullscreen)+settingCheck("confirmExternal","Confirm external game links",portalSettings.confirmExternal)+'</section>'+
    '</div><div class="portal-settings-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="portal-secondary" id="portalResetSettings">Reset settings</button><button class="portal-primary" id="portalSaveSettings">Save settings</button></div><div class="portal-status" id="portalSettingsStatus"></div>';
   host.querySelectorAll("[data-theme-choice]").forEach(button=>button.addEventListener("click",()=>{
    portalSettings.theme=button.dataset.themeChoice;applyPortalSettings();renderSettings();
