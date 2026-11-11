@@ -124,7 +124,7 @@ ul
 <section class="game" data-game="pool"><div class="panel"><canvas id="poolCanvas" width="1100" height="600" aria-label="Eight ball pool table"></canvas>
 <div class="tools"><label class="range">Shot power <input id="poolPower" type="range" min="12" max="100" value="58"><b id="poolPowerVal">58%</b></label><button class="primary" id="poolShoot">Take shot</button><button id="poolReset">New rack</button></div>
 <div class="hud"><span><small>Turn</small><b id="poolTurn">Player 1</b></span><span><small>Groups</small><b id="poolGroups">Open table</b></span></div><div class="status" id="poolStatus">Player 1 breaks. Move the pointer to aim, then take your shot.</div></div><p class="help">Local two-player rules: the first pocketed group sets solids or stripes; clear your group before pocketing the 8 ball. Move the pointer to aim and shoot. Space or Enter also shoots.</p></section>
-<section class="game" data-game="cube"><div class="panel">
+<section id="cube" class="game" data-game="cube"><div class="panel">
 <div class="cube-layout">
 <aside id="controls">
 <h1>Cube Engine · World Builder</h1>
@@ -154,7 +154,6 @@ ul
 <footer class="help">Cube Engine source: Nurgak/Cube-engine by Karl Kangur. Upstream README states WTFPL 2.0. Original browser scripts are included with responsive layout and render-distance adjustments.</footer>
 </main>
 <script>
-"use strict";
 const $=id=>document.getElementById(id),started=new Set(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),mod=(n,m)=>((n%m)+m)%m;
 function activate(){let mode=(location.hash.slice(1)||"pool").toLowerCase();if(!["pool","cube","dust","racing"].includes(mode))mode="pool";document.querySelectorAll(".game").forEach(s=>s.classList.toggle("active",s.dataset.game===mode));let t={pool:["8 Ball Pool","New locally hosted browser billiards"],cube:["Cube Engine · Web","Original HTML5 canvas sandbox · locally hosted"],dust:["Dust Racing 2D · Web","Playable dirt-track racer · browser adaptation"],racing:["Racing Car Game · Web","Playable traffic racer · browser adaptation"]}[mode];$("pageTitle").textContent=t[0];$("pageSubtitle").textContent=t[1];if(!started.has(mode)){started.add(mode);({pool:initPool,cube:initCube,dust:initDust,racing:initRace})[mode]();}}
 window.addEventListener("hashchange",activate);
