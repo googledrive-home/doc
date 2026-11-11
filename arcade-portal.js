@@ -5,7 +5,7 @@
  const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null;
+ let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
@@ -74,8 +74,8 @@
      '<div id="portalProfileContent"></div>',
     '</section>',
     '<section class="portal-view" id="portalDevView" data-page="dev">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">SYSTEM OVERVIEW</div><h1>Developer mode</h1><p>Basic server and multiplayer-room information.</p></div></div>',
-     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to view basic server status and multiplayer rooms.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">LIVE ACTIVITY</div><h1>Developer mode</h1><p>See the usernames currently online and the games they are playing.</p></div></div>',
+     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to see who is online and what they are playing.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
      '<div class="portal-dev-metrics" id="portalDevMetrics"></div>',
     '</section>',
    '</div>',
@@ -88,6 +88,14 @@
  const portalShell=document.getElementById("portalShell");
  const $p=id=>document.getElementById(id);
  try{username=(localStorage.getItem(USERNAME_KEY)||"").trim().slice(0,24);}catch(error){}
+ const presenceSessionKey="playspacePresenceSession";
+ try{
+  presenceSessionId=sessionStorage.getItem(presenceSessionKey)||"";
+  if(!/^[a-zA-Z0-9_-]{16,80}$/.test(presenceSessionId)){
+   presenceSessionId=(window.crypto&&typeof window.crypto.randomUUID==="function")?window.crypto.randomUUID():("ps-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2));
+   sessionStorage.setItem(presenceSessionKey,presenceSessionId);
+  }
+ }catch(error){presenceSessionId="ps-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
  app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalUsernameModal" role="dialog" aria-modal="true" aria-label="Choose a username"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2></div></div><form class="portal-auth-form" id="portalUsernameForm"><div class="portal-field"><label for="portalUsernameInput">Username</label><input id="portalUsernameInput" type="text" maxlength="24" autocomplete="nickname" required placeholder="Choose a username"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalUsernameStatus" aria-live="polite"></div></form></section></div>');
  function updateUsernameDisplay(){
   const name=username||"Player",initial=(name.trim()[0]||"?").toUpperCase();
@@ -110,6 +118,7 @@
   username=entered;
   try{localStorage.setItem(USERNAME_KEY,username);}catch(error){}
   updateUsernameDisplay();
+  syncPresence();
   $p("portalUsernameModal").classList.remove("open");
  });
  if(!username)showUsernamePrompt();else updateUsernameDisplay();
@@ -240,6 +249,7 @@
    clone.removeAttribute("style");
    const handler=clone.getAttribute("onclick");
    if(handler)clone.setAttribute("onclick",handler+';document.getElementById("portalGameDetail").classList.remove("open")');
+   clone.addEventListener("click",()=>setCurrentGame(game.title),true);
    actions.appendChild(clone);
   });
   if(!game.buttons.length){
@@ -261,6 +271,20 @@
    return data;
   });
  }
+ function syncPresence(){
+  if(!username||!presenceSessionId)return;
+  apiRequest("/portal/presence",{method:"POST",body:{sessionId:presenceSessionId,username,game:currentPlayingGame||"Browsing library"}}).catch(()=>{});
+ }
+ function setCurrentGame(title){
+  currentPlayingGame=String(title||"").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").trim().slice(0,60);
+  syncPresence();
+ }
+ function beginPresence(){
+  syncPresence();
+  if(presenceHeartbeat)clearInterval(presenceHeartbeat);
+  presenceHeartbeat=setInterval(syncPresence,15000);
+ }
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPresence();});
  function renderProfile(){
   const host=$p("portalProfileContent");
   const display=username||"Not set";
@@ -276,6 +300,36 @@
   clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),3600);
  }
 
+ const gameTitleByType={tennis:"Tennis Rally",hockey:"Hockey",reaction:"Reaction Game",click:"Click Test",breaker:"Neon Breaker",skydash:"Flappy Bird",snake:"Neon Snake",defender:"Space Defender",runner:"Neon Runner",memory:"Memory Match",vehicle:"Tank Arena"};
+ const originalPortalOpenGame=window.openGame;
+ if(typeof originalPortalOpenGame==="function"){
+  window.openGame=async function(type){
+   setCurrentGame(gameTitleByType[String(type)]||String(type||"Game"));
+   return originalPortalOpenGame.apply(this,arguments);
+  };
+ }
+ const originalPortalOpenStandaloneGame=window.openStandaloneGame;
+ if(typeof originalPortalOpenStandaloneGame==="function"){
+  window.openStandaloneGame=function(file,title){
+   setCurrentGame(title||"Game");
+   return originalPortalOpenStandaloneGame.apply(this,arguments);
+  };
+ }
+ const originalPortalCloseGame=window.closeGame;
+ if(typeof originalPortalCloseGame==="function"){
+  window.closeGame=async function(){
+   try{return await originalPortalCloseGame.apply(this,arguments);}
+   finally{setCurrentGame("");}
+  };
+ }
+ const originalPortalCloseStandaloneGame=window.closeStandaloneGame;
+ if(typeof originalPortalCloseStandaloneGame==="function"){
+  window.closeStandaloneGame=function(){
+   const result=originalPortalCloseStandaloneGame.apply(this,arguments);
+   setCurrentGame("");
+   return result;
+  };
+ }
  const originalEnterGameFS=window.enterGameFS;
  if(typeof originalEnterGameFS==="function"){
   window.enterGameFS=async function(){
@@ -384,16 +438,9 @@
  }
  function renderDevMetrics(data){
   const host=$p("portalDevMetrics");host.classList.add("open");
-  const server=data.server||{},rooms=data.rooms||{},list=Array.isArray(rooms.list)?rooms.list:[];
-  const cards=[
-   ["Server uptime",formatDuration(server.uptimeSeconds||0)],
-   ["Memory used",(server.memoryMb||0)+" MB"],
-   ["Active rooms",rooms.active||0],
-   ["Node version",server.node||"—"]
-  ];
-  const html=cards.map(item=>'<div class="portal-dev-card"><small>'+esc(item[0])+'</small><b>'+esc(item[1])+'</b></div>').join("");
-  const rows=list.length?list.map(room=>'<tr><td>'+esc(room.game)+'</td><td>'+esc(room.status)+'</td></tr>').join(""):'<tr><td colspan="2" class="portal-muted">No active multiplayer rooms.</td></tr>';
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">SERVER OVERVIEW</div><h2 style="margin-top:5px">Basic server stats</h2><div class="portal-dev-grid">'+html+'</div><h2 style="margin-top:18px">Multiplayer rooms</h2><table class="portal-table"><thead><tr><th>Game</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
+  const players=Array.isArray(data.players)?data.players:[];
+  const rows=players.length?players.map(player=>'<tr><td>'+esc(player.name)+'</td><td>'+esc(player.game)+'</td></tr>').join(""):'<tr><td colspan="2" class="portal-muted">No one is online right now.</td></tr>';
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">LIVE ACTIVITY</div><h2 style="margin-top:5px">Who&#39;s online</h2><table class="portal-table"><thead><tr><th>Username</th><th>Playing</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
   $p("portalDevRefresh").addEventListener("click",refreshDevMetrics);
   $p("portalDevLock").addEventListener("click",()=>{
    if(devRefreshTimer)clearInterval(devRefreshTimer);devRefreshTimer=null;devPasswordInMemory="";
@@ -404,5 +451,6 @@
  applyPortalSettings();
  renderProfile();
  updateUsernameDisplay();
+ beginPresence();
  showView("games");
 })();
