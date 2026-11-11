@@ -1424,6 +1424,8 @@ function openPasswordProtectedGame(){
 const STANDALONE_GAMES = new Map([
   ['games/index.html#pool','8 Ball Pool'],
   ['games/index.html#cube','Cube Engine'],
+  ['games/mini-golf/index.html','Mini Golf 3D'],
+  ['games/street-circuit/index.html','Street Circuit'],
   ['drone-simulator.html','FPV Drone Simulator'],
   ['drift-arena.html','Drift Arena'],
   ['open-world-drive.html','Open World Drive'],
@@ -1433,7 +1435,11 @@ const STANDALONE_GAMES = new Map([
   ['industrial-site-ops.html','Industrial Site Ops']
 ]);
 function openStandaloneGame(file,title,launchMode=''){
-  if(!STANDALONE_GAMES.has(file)) return;
+  const safeLocalGame=/^(?:games\/(?!.*(?:^|\/)\.\.)(?:[a-z0-9_.#/-])+|[a-z0-9][a-z0-9._/-]*\.html(?:#[a-z0-9_-]+)?)$/i.test(String(file||""));
+  if(!STANDALONE_GAMES.has(file) && !safeLocalGame){
+    console.error("Blocked unsupported game path:",file);
+    return false;
+  }
   const shell=$('standaloneGameShell'),frame=$('standaloneGameFrame');
   const rallyMode=file==='rally-stage.html';
   shell.classList.toggle('rally-standalone',rallyMode);
@@ -1454,6 +1460,7 @@ function openStandaloneGame(file,title,launchMode=''){
   if(file==='rally-stage.html')target.searchParams.set('build','rally-worldspace-steering-'+Date.now());
   if(launchMode)target.searchParams.set('launch',launchMode);
   frame.src=target.href;
+  return true;
 }
 function closeStandaloneGame(){
   const shell=$('standaloneGameShell'),frame=$('standaloneGameFrame');
