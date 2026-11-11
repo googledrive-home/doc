@@ -92,7 +92,7 @@
    '</div>',
   '</section>',
  '</div>',
- '<div class="portal-detail-backdrop" id="portalGameDetail" role="dialog" aria-modal="true" aria-label="Game details"><article class="portal-detail-card"><div class="portal-detail-cover" id="portalDetailCover"><button class="portal-modal-close" type="button" id="portalDetailClose" aria-label="Close">✕</button><div class="portal-cover-art" id="portalDetailArt"></div></div><div class="portal-detail-body"><div class="portal-detail-heading"><div><div class="portal-eyebrow" id="portalDetailGenre"></div><h2 id="portalDetailTitle">Game title</h2><p id="portalDetailDescription"></p></div></div><div class="portal-detail-actions" id="portalDetailPlay"></div><div class="portal-detail-stats"><div class="portal-detail-stat"><small>Players right now</small><b id="portalDetailPlayers">—</b></div><div class="portal-detail-stat"><small>Likes</small><b id="portalDetailLikes">—</b></div><div class="portal-detail-stat"><small>Dislikes</small><b id="portalDetailDislikes">—</b></div></div><div class="portal-vote-row"><span class="portal-muted" style="font-size:9px;margin-right:3px">Rate this game</span><button type="button" id="portalLikeBtn">👍 Like</button><button type="button" id="portalDislikeBtn">👎 Dislike</button><span class="portal-status" id="portalVoteStatus"></span></div></div></article></div>',
+ '<div class="portal-detail-backdrop" id="portalGameDetail" role="dialog" aria-modal="true" aria-label="Game details"><article class="portal-detail-card"><div class="portal-detail-cover" id="portalDetailCover"><button class="portal-modal-close" type="button" id="portalDetailClose" aria-label="Close">✕</button><div class="portal-cover-art" id="portalDetailArt"></div></div><div class="portal-detail-body"><div class="portal-detail-heading"><div><div class="portal-eyebrow" id="portalDetailGenre"></div><h2 id="portalDetailTitle">Game title</h2><p id="portalDetailDescription"></p></div></div><div class="portal-detail-actions" id="portalDetailPlay"></div><div class="portal-detail-stats"><div class="portal-detail-stat"><small>Players right now</small><b id="portalDetailPlayers">—</b></div></div></div></article></div>',
  '<div class="portal-auth-backdrop" id="portalAuthModal" role="dialog" aria-modal="true" aria-label="Player sign in"><section class="portal-auth-card"><button class="portal-modal-close" type="button" id="portalAuthClose" aria-label="Close">✕</button><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2 id="portalAuthTitle">Welcome back</h2><p id="portalAuthSubtitle">Sign in once. Your player profile is shared across the games.</p></div></div><div class="portal-auth-tabs"><button type="button" class="active" id="portalLoginTab">SIGN IN</button><button type="button" id="portalRegisterTab">CREATE ACCOUNT</button></div><form class="portal-auth-form" id="portalAuthForm"><div class="portal-field" id="portalAuthNameField" hidden><label for="portalAuthName">Player name</label><input id="portalAuthName" type="text" maxlength="18" autocomplete="nickname" placeholder="Your name"></div><div class="portal-field"><label for="portalAuthEmail">Email address</label><input id="portalAuthEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com"></div><div class="portal-field"><label for="portalAuthPassword">Password</label><input id="portalAuthPassword" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters"></div><button class="portal-primary" id="portalAuthSubmit" type="submit">Sign in</button><div class="portal-status" id="portalAuthStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Passwords are hashed on the server using scrypt. Only a random sign-in session token is kept in this browser. You can use the same account in Hockey Online.</div></section></div>',
  '<div class="portal-toast" id="portalToast" role="status" aria-live="polite"></div>'
  ].join("");
@@ -104,6 +104,16 @@
   if(saved&&typeof saved.name==="string"&&typeof saved.email==="string")playerIdentity=saved;
  }catch(error){}
  app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalCheckinModal" role="dialog" aria-modal="true" aria-label="Player check-in"><section class="portal-auth-card"><button class="portal-modal-close" type="button" id="portalCheckinClose" aria-label="Close">✕</button><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Player check-in</h2><p>Enter your player name and email before launching a game.</p></div></div><form class="portal-auth-form" id="portalCheckinForm"><div class="portal-field"><label for="portalCheckinName">Username</label><input id="portalCheckinName" type="text" maxlength="24" autocomplete="nickname" required placeholder="Your player name"></div><div class="portal-field"><label for="portalCheckinEmail">Email address</label><input id="portalCheckinEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com"></div><button class="portal-primary" id="portalCheckinSubmit" type="submit">Continue to game</button><div class="portal-status" id="portalCheckinStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Live tracking only. Your username, email and current game are visible to the site owner in password-protected Dev Mode while online. They are held temporarily in server memory and removed when you leave or your session times out. They are not verified or permanently saved.</div></section></div>');
+ $p("portalCheckinClose").addEventListener("click",()=>{
+  $p("portalCheckinModal").classList.remove("open");pendingLaunch=null;
+  if(externalWindow&&!externalWindow.closed){externalWindow.close();externalWindow=null;}
+ });
+ $p("portalCheckinModal").addEventListener("click",event=>{
+  if(event.target===$p("portalCheckinModal")){
+   $p("portalCheckinModal").classList.remove("open");pendingLaunch=null;
+   if(externalWindow&&!externalWindow.closed){externalWindow.close();externalWindow=null;}
+  }
+ });
  const games=[];
  const sourceCards=[...document.querySelectorAll("main .grid > .card")];
  const coverPhotoById=photos;
@@ -133,11 +143,9 @@
   const photo=coverPhotoById[game.id]||"";
   const stats=catalogStats[game.id]||{};
   const players=Number.isFinite(stats.players)?stats.players:"—";
-  const likes=Number.isFinite(stats.likes)?stats.likes:"—";
-  const dislikes=Number.isFinite(stats.dislikes)?stats.dislikes:"—";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
    '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><span class="portal-cover-players">● '+players+' live</span><div class="portal-cover-art">'+game.art+'</div></div>'+
-   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span></div><div class="portal-game-rating"><span>👍 '+likes+'</span><span>👎 '+dislikes+'</span><span class="portal-card-arrow">↗</span></div></div></article>';
+   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div></div></article>';
  }
  function renderGameList(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
@@ -208,15 +216,13 @@
   if(!game.buttons.length){
    const placeholder=document.createElement("span");placeholder.className="portal-muted";placeholder.textContent="Play option unavailable";actions.appendChild(placeholder);
   }
-  renderSelectedGameStats();$p("portalVoteStatus").textContent="";
+  renderSelectedGameStats();
   $p("portalGameDetail").classList.add("open");
  }
  function renderSelectedGameStats(){
   if(!selectedGame)return;
   const stats=catalogStats[selectedGame.id]||{};
   $p("portalDetailPlayers").textContent=Number.isFinite(stats.players)?String(stats.players):"—";
-  $p("portalDetailLikes").textContent=Number.isFinite(stats.likes)?String(stats.likes):"—";
-  $p("portalDetailDislikes").textContent=Number.isFinite(stats.dislikes)?String(stats.dislikes):"—";
  }
  function closeGameDetail(){$p("portalGameDetail").classList.remove("open");}
  $p("portalDetailClose").addEventListener("click",closeGameDetail);
@@ -360,17 +366,7 @@
   const el=$p("portalToast");el.textContent=message;el.classList.add("show");
   clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),3600);
  }
- async function voteSelectedGame(vote){
-  if(!selectedGame)return;
-  if(!account){setAuthStatus("Sign in to rate games.");showAuth();return;}
-  try{
-   const data=await apiRequest("/portal/vote",{method:"POST",body:{gameId:selectedGame.id,vote}});
-   catalogStats[selectedGame.id]=data.stats||catalogStats[selectedGame.id];renderSelectedGameStats();renderGameList();
-   $p("portalVoteStatus").textContent=data.vote?"Your rating was saved.":"Your rating was removed.";
-  }catch(error){$p("portalVoteStatus").textContent=error.message.includes("Persistent accounts")?"Ratings will be saved when database storage is enabled.":error.message;}
- }
- $p("portalLikeBtn").addEventListener("click",()=>voteSelectedGame("like"));
- $p("portalDislikeBtn").addEventListener("click",()=>voteSelectedGame("dislike"));
+
  function ensureAccountForLaunch(gameId,launch,external=false){
   if(!playerIdentity){
    pendingLaunch=()=>ensureAccountForLaunch(gameId,launch,external);
@@ -449,6 +445,7 @@
   const win=window.open("about:blank","_blank");
   if(!win){toast("Allow pop-ups to open external games.");return null;}
   try{win.opener=null;}catch(error){}
+  externalWindow=win;
   const game=games.find(g=>g.external&&g.buttons.some(b=>(b.getAttribute("onclick")||"").includes(url)));
   const gameId=game?.id||"moto-x3m";
   ensureAccountForLaunch(gameId,()=>{win.location.href=url;return win;},true);
