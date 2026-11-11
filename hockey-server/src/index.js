@@ -242,10 +242,12 @@ app.post("/portal/presence",(req,res)=>{
 app.post("/portal/admin/metrics",(req,res)=>{
  const configured=String(process.env.DEV_MODE_PASSWORD||"");
  if(!configured)return res.status(503).json({error:"Developer access has not been configured on the server."});
- if(!loginRateLimit(req,"portal-dev"))return res.status(429).json({error:"Too many developer sign-in attempts. Try again later."});
  const supplied=String(req.body?.password||"").slice(0,128),a=Buffer.from(supplied),b=Buffer.from(configured);
  const valid=a.length===b.length&&timingSafeEqual(a,b);
- if(!valid)return res.status(401).json({error:"Developer password is incorrect."});
+ if(!valid){
+  if(!loginRateLimit(req,"portal-dev"))return res.status(429).json({error:"Too many developer sign-in attempts. Try again later."});
+  return res.status(401).json({error:"Developer password is incorrect."});
+ }
  prunePortalPresence();
  const now=Date.now(),byGame={};
  const names={
