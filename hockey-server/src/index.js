@@ -171,7 +171,7 @@ const portalPresence=new Map();
 const PORTAL_PRESENCE_TTL_MS=75_000;
 const PORTAL_PRESENCE_LIMIT=2000;
 function cleanPortalPresenceText(value,maxLength){
- return String(value??"").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").replace(/\\s+/g," ").trim().slice(0,maxLength);
+ return String(value??"").replace(/[<>\u0000-\u001f\u007f]/g,"").replace(/\s+/g," ").trim().slice(0,maxLength);
 }
 function prunePortalPresence(now=Date.now()){
  for(const [sessionId,entry] of portalPresence){
