@@ -497,7 +497,7 @@ const CARS={
  stratos:{name:"SUBARU IMPREZA WRC · BLUE",description:"Subaru WRC blue livery · planted braking · stable fast-stage balance",hp:395,torque:545,mass:1340,drive:"AWD",wheelbase:2.72,width:1.91,length:4.55,color:0x315e9a,accent:0xe7e4d5,front:0.52,engine:"front",baseGrip:.96,force:6700,maxSpeed:49.2,body:"sedan",rpm:7500},
  coupe:{name:"SUBARU IMPREZA WRC · GOLD",description:"Subaru WRC gold livery · rear-biased setup · lively stage exits",hp:420,torque:570,mass:1390,drive:"AWD",wheelbase:2.68,width:1.96,length:4.38,color:0xd6a34f,accent:0x27343a,front:0.46,engine:"front-mid",baseGrip:.94,force:7000,maxSpeed:48.5,body:"coupe",rpm:7700}
 };
-const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:76,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:7.2,cameraHeight:2.8,cameraLookAhead:3.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
+const DEFAULTS={power:1,finalDrive:4.8,shift:.65,spring:.62,damper:.62,ride:.22,steer:.70,frontDiff:.32,rearDiff:.48,tcs:.18,abs:.45,brakeBias:.66,quality:"medium",fov:70,shadows:true,dust:true,hud:true,surface:.82,volume:.45,shiftVolume:.55,autoGear:true,driftAssist:false,cameraDistance:5.2,cameraHeight:2.0,cameraLookAhead:5.6,cameraSmooth:12,cameraShake:0,invertSteer:false,swapPedals:false,invertShifts:false,alternateHandbrake:false,invertCameraX:false,invertCameraY:false,wipers:true,paceNotes:true,adaptiveQuality:true,targetFps:60};
 let settings={...DEFAULTS},selectedTrack="highland",selectedCar="falcon",selectedStage=0,weather="wet",tyre="wet",timeOfDay="sunset";
 let renderer,scene,camera,clock,worldGroup,vehicleRoot,carRig,trackData,roadTexture,terrainMaterial,grassTexture=null;
 let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmbient=null,precipitation=null,precipitationData=null,skyDome=null,skyTexture=null,skyCanvas=null,paceNoteTimer=0;
@@ -590,7 +590,7 @@ function makeTerrain(track){
  for(const sample of samples){minX=Math.min(minX,sample.p.x);maxX=Math.max(maxX,sample.p.x);minZ=Math.min(minZ,sample.p.z);maxZ=Math.max(maxZ,sample.p.z);}
  const margin=235,width=maxX-minX+margin*2,depth=maxZ-minZ+margin*2,centerX=(minX+maxX)*.5,centerZ=(minZ+maxZ)*.5;
  /* Fine terrain cells and a blended roadbed stop hillsides from intersecting the gravel surface. */
- const segX=clamp(Math.ceil(width/19),120,230),segZ=clamp(Math.ceil(depth/19),120,230);
+ const segX=clamp(Math.ceil(width/11),180,520),segZ=clamp(Math.ceil(depth/11),140,420);
  const geo=new THREE.PlaneGeometry(width,depth,segX,segZ);geo.rotateX(-Math.PI/2);
  const p=geo.attributes.position,colors=[],index=trackData.spatialIndex,cell=trackData.spatialCell||52;
  const smooth=(a,b,v)=>{const t=clamp01((v-a)/(b-a));return t*t*(3-2*t);};
@@ -601,8 +601,10 @@ function makeTerrain(track){
    for(const q of bucket){const dx=x-q.x,dz=z-q.z,d=dx*dx+dz*dz;if(d<best){best=d;nearest=q;}}
   }
   if(!nearest)return natural;
-  const blend=1-smooth(8,34,Math.sqrt(best));if(blend<=0)return natural;
-  return natural+(nearest.y-.28-natural)*blend;
+  const distance=Math.sqrt(best),roadHalf=trackData.halfWidth||2.8;
+  const blend=1-smooth(roadHalf+1.8,roadHalf+16,distance);if(blend<=0)return natural;
+  const roadBed=nearest.y-.78,cutHeight=Math.min(natural,roadBed);
+  return natural+(cutHeight-natural)*blend;
  }
  for(let i=0;i<p.count;i++){
   const x=p.getX(i)+centerX,z=p.getZ(i)+centerZ,h=gradedHeight(x,z);p.setY(i,h);
@@ -610,7 +612,10 @@ function makeTerrain(track){
   const base=weather==="snow"?[.72,.78,.82]:track.id==="serpent"?[.39,.40,.33]:track.id==="coast"?[.43,.47,.35]:track.id==="alpine"?[.38,.47,.37]:[.34,.43,.30];
   const tint=clamp01(.82+(h+24)/185+variation);colors.push(base[0]*tint,base[1]*tint,base[2]*tint);
  }
- geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
+ p.needsUpdate=true;
+ geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
+ geo.computeVertexNormals();
+ geo.computeBoundingBox();geo.computeBoundingSphere();
  grassTexture=grassTexture||makeGrassTexture();
  const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:.96,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=settings.shadows&&settings.quality!=="low";mesh.frustumCulled=true;worldGroup.add(mesh);
@@ -983,7 +988,7 @@ function makeCar(spec){
   const bodyStations=[[-.50,.58,.57,.86],[-.47,.76,.53,.94],[-.40,.88,.50,1.00],[-.31,.96,.49,1.06],[-.20,.99,.49,1.09],[-.06,1.00,.49,1.10],[.10,1.00,.50,1.10],[.25,.98,.51,1.08],[.37,.92,.54,1.04],[.45,.82,.57,.99],[.50,.66,.62,.90]];
   const shell=new THREE.Mesh(smoothShellGeometry(spec,bodyStations,64),bodyMat);shell.material.side=THREE.DoubleSide;shell.castShadow=true;shell.receiveShadow=true;chassis.add(shell);
   const canopyStations=[[-.36,.46,1.02,1.15],[-.31,.62,1.02,1.37],[-.25,.75,1.03,1.53],[-.14,.80,1.04,1.68],[-.02,.79,1.04,1.70],[.08,.74,1.03,1.63],[.15,.64,1.02,1.48],[.20,.51,1.02,1.20]];
-  const canopyMat=new THREE.MeshStandardMaterial({color:0x19303a,roughness:.18,metalness:.32,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false});
+  const canopyMat=new THREE.MeshStandardMaterial({color:0x19303a,roughness:.24,metalness:.24,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});
   const canopy=new THREE.Mesh(smoothShellGeometry(spec,canopyStations,56),canopyMat);canopy.castShadow=false;chassis.add(canopy);
   const roof=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),bodyMat);roof.scale.set(w*.39,.095,L*.19);roof.position.set(0,1.68,-.10);chassis.add(roof);
   // Separate doors, arches, mirrors and side protection.
@@ -1244,18 +1249,17 @@ function fitSTLGeometry(source,kind,spec){
  geometry.setAttribute("uv",new THREE.BufferAttribute(uv,2));geometry.computeBoundingSphere();return geometry;
 }
 function applySubaruAssets(){
- if(!vehicleRoot)return;const spec=CARS[selectedCar],chassis=vehicleRoot.userData.chassis;
+ if(!vehicleRoot)return;
+ const chassis=vehicleRoot.userData.chassis;
+ if(vehicleRoot.userData.shell)vehicleRoot.userData.shell.visible=true;
+ if(vehicleRoot.userData.canopy)vehicleRoot.userData.canopy.visible=true;
  if(subaruBodyGeometry&&!vehicleRoot.userData.subaruBody){
-  const body=new THREE.Mesh(subaruBodyGeometry.clone(),new THREE.MeshStandardMaterial({color:0xffffff,map:makeLiveryTexture(spec),roughness:.34,metalness:.24,side:THREE.DoubleSide}));
-  body.position.y=.93;body.castShadow=true;body.receiveShadow=true;chassis.add(body);vehicleRoot.userData.shell.visible=false;vehicleRoot.userData.canopy.visible=true;vehicleRoot.userData.subaruBody=body;
- }
- if(subaruWheelGeometry&&!vehicleRoot.userData.subaruWheels){
-  const wheelMat=material(0x9aa5a5,.32,.78);
-  wheelAssemblies.forEach(w=>{
-   w.wheel.children.forEach(child=>{child.visible=false;});
-   const modelWheel=new THREE.Mesh(subaruWheelGeometry.clone(),wheelMat);modelWheel.rotation.set(0,0,0);modelWheel.castShadow=true;modelWheel.position.set(0,0,0);w.wheel.add(modelWheel);
-  });
-  vehicleRoot.userData.subaruWheels=true;
+  const spec=CARS[selectedCar];
+  const body=new THREE.Mesh(subaruBodyGeometry.clone(),new THREE.MeshStandardMaterial({
+   color:0xffffff,map:makeLiveryTexture(spec),roughness:.42,metalness:.14,side:THREE.DoubleSide
+  }));
+  body.position.y=.93;body.scale.set(1.012,1.012,1.012);body.castShadow=true;body.receiveShadow=true;
+  chassis.add(body);vehicleRoot.userData.subaruBody=body;
  }
 }
 function loadSubaruAssets(){
@@ -1272,7 +1276,7 @@ function loadSubaruAssets(){
     loader.loadAsync(new URL("subaru_-_subaru_wheel-1.STL",base).href)
    ]);
    subaruBodyGeometry=fitSTLGeometry(body,"body",CARS[selectedCar]);subaruWheelGeometry=fitSTLGeometry(wheel,"wheel",CARS[selectedCar]);
-   applySubaruAssets();if(modelStatus)modelStatus.textContent="ORIGINAL SUBARU WRC STL LOADED";return true;
+   applySubaruAssets();if(modelStatus)modelStatus.textContent="SUBARU WRC BODY + SOLID CHASSIS READY";return true;
   }catch(error){
    console.warn("Subaru STL import unavailable; keeping the procedural rally car.",error);
    const modelStatus=document.getElementById("modelStatus");if(modelStatus)modelStatus.textContent="SUBARU WRC BUILT-IN MODEL · "+(error&&error.message?error.message:"MODEL FILE UNAVAILABLE");
@@ -1390,6 +1394,10 @@ function updateCamera(dt,immediate=false){
   desired.copy(carPos).add(forward.clone().multiplyScalar(2.05)).add(new THREE.Vector3(0,-.26,0));
   target.copy(carPos).add(forward.clone().multiplyScalar(28)).add(new THREE.Vector3(0,-.16,0));
  }
+ if(cameraMode===0){
+  desired.y=Math.max(desired.y,terrainY(desired.x,desired.z)+1.8);
+  target.y=Math.max(target.y,terrainY(target.x,target.z)+.5);
+ }
  if(!camera.userData.ready||immediate){camera.position.copy(desired);camera.userData.ready=true;}else camera.position.lerp(desired,smooth);
  camera.up.set(0,1,0);camera.lookAt(target);
  if(settings.cameraShake>0&&cameraMode===0&&!immediate&&gameActive&&!paused){const shake=(Math.abs(carState.latAccel)*.0007+Math.abs(carState.longAccel)*.00015)*settings.cameraShake*2.2;camera.position.y+=Math.sin(performance.now()*.024)*Math.min(.08,shake);}
@@ -1409,7 +1417,7 @@ function resetCar(){
 }
 function inputState(){
  const down=code=>!!(keys[code]||driveKeys[code]);
- let steer=(down("KeyD")?1:0)-(down("KeyA")?1:0);if(settings.invertSteer)steer=-steer;
+ let steer=(down("KeyA")?1:0)-(down("KeyD")?1:0);if(settings.invertSteer)steer=-steer;
  let throttle=down("KeyW")?1:0,brake=down("KeyS")?1:0;if(settings.swapPedals)[throttle,brake]=[brake,throttle];
  const handbrake=settings.alternateHandbrake?down("KeyH"):down("Space");
  return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake};
@@ -1423,7 +1431,7 @@ function physicsStep(dt){
  const roadInfo=nearestRoad(s.x,s.z),roadOffset=Math.abs(roadInfo.offset),roadHalf=trackData.halfWidth||2.9,onRoad=roadOffset<roadHalf+1.0,inDitch=roadOffset>roadHalf+.7&&roadOffset<roadHalf+4.2;
  if(!onRoad)grip*=roadOffset<roadHalf+5?.63:clamp(1-(roadOffset-roadHalf-5)*.026,.27,.63);
  if(s.verticalOffset>.12)grip*=.55;
- const steeringLimit=(.66*settings.steer/.70)/(1+speed*.021),targetSteer=input.steer*steeringLimit;
+ const steeringLimit=(.78*settings.steer/.70)/(1+speed*.018),targetSteer=input.steer*steeringLimit;
  s.steer+=(targetSteer-s.steer)*(1-Math.exp(-dt*14));
  const handTarget=input.handbrake&&speed>3?1:0;
  if(input.handbrake&&!s.handbrakeWasOn&&speed>6&&Math.abs(input.steer)>.04){
@@ -1589,7 +1597,7 @@ function updateCarCard(){
  $("carPower").textContent=spec.hp;$("carMass").textContent=spec.mass.toLocaleString();$("carDrive").textContent=spec.drive;
  drawCarPreview();
  const status=$("modelStatus");
- if(status)status.textContent=subaruBodyGeometry?"ORIGINAL SUBARU WRC STL LOADED":subaruAssetsPromise?"LOADING ORIGINAL SUBARU WRC MODEL…":"SUBARU WRC MODEL READYING";
+ if(status)status.textContent=subaruBodyGeometry?"SUBARU WRC BODY + SOLID CHASSIS READY":"BUILT-IN SUBARU IMPREZA WRC BODY READY";
 }
 function buildPreviewWorld(){
  const t=TRACKS[selectedTrack];buildWorld();buildVehicle();placeCar();updateCamera(.016,true);drawTrackPreview();
@@ -1704,6 +1712,10 @@ function syncSettingsUi(){
 }
 function loadSettings(){
  try{const saved=JSON.parse(localStorage.getItem("gravel-rally-settings")||"null");if(saved&&typeof saved==="object")settings={...DEFAULTS,...saved};}catch(e){}
+ settings.cameraDistance=Math.min(Number(settings.cameraDistance)||DEFAULTS.cameraDistance,5.2);
+ settings.cameraHeight=Math.min(Number(settings.cameraHeight)||DEFAULTS.cameraHeight,2.0);
+ settings.cameraLookAhead=Math.max(Number(settings.cameraLookAhead)||DEFAULTS.cameraLookAhead,5.6);
+ settings.fov=Math.min(Number(settings.fov)||DEFAULTS.fov,70);
  syncSettingsUi();
 }
 function setMenuStep(step){
