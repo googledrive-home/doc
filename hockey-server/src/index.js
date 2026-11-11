@@ -50,9 +50,6 @@ function cleanAccountStore(value){
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
  return data;
 }
- }
- return data;
-}
 async function initialiseAccountStore(){
  let fileStore=null;
  try{fileStore=cleanAccountStore(JSON.parse(await readFile(ACCOUNT_FILE,"utf8")));}catch(error){if(error.code!=="ENOENT")throw error;}
@@ -212,11 +209,10 @@ app.post("/portal/vote",async(req,res)=>{
  const current=accountStore.gameRatings[gameId]||{likes:[],dislikes:[]};
  current.likes=Array.isArray(current.likes)?current.likes:[];
  current.dislikes=Array.isArray(current.dislikes)?current.dislikes:[];
- const ownList=vote==="like"?current.likes:current.dislikes,otherList=vote==="like"?current.dislikes:current.likes;
- const already=ownList.includes(account.id);
+ const already=(vote==="like"?current.likes:current.dislikes).includes(account.id);
  current.likes=current.likes.filter(id=>id!==account.id);
  current.dislikes=current.dislikes.filter(id=>id!==account.id);
- if(!already)ownList.push(account.id);
+ if(!already){if(vote==="like")current.likes.push(account.id);else current.dislikes.push(account.id);}
  accountStore.gameRatings[gameId]=current;
  try{await persistAccountStore();res.json({ok:true,vote:already?null:vote,stats:portalCatalogStats().games[gameId]});}
  catch(error){console.error("Portal vote save failed:",error.message);res.status(503).json({error:"Your rating could not be saved. Try again shortly."});}
