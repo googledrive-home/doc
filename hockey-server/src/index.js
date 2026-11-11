@@ -217,37 +217,27 @@ app.post("/portal/vote",async(req,res)=>{
  try{await persistAccountStore();res.json({ok:true,vote:already?null:vote,stats:portalCatalogStats().games[gameId]});}
  catch(error){console.error("Portal vote save failed:",error.message);res.status(503).json({error:"Your rating could not be saved. Try again shortly."});}
 });
-app.post("/portal/presence",async(req,res)=>{
- if(!requirePersistentAccountStorage(res))return;
- const account=resolveAccountToken(getRequestToken(req));
- if(!account)return res.status(401).json({error:"Sign in to play."});
- const gameId=portalGameId(req.body?.gameId),sessionId=String(req.body?.sessionId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,96),action=String(req.body?.action||"heartbeat");
- if(!gameId||sessionId.length<12||!["start","heartbeat","end"].includes(action))return res.status(400).json({error:"Invalid game session."});
- const key=account.id+":"+sessionId,now=Date.now(),existing=portalPresence.get(key);
- if(action==="end"){
-  if(existing){
-   const seconds=Math.max(0,Math.min(21600,Math.round((now-existing.startedAt)/1000)));
-   account.stats=account.stats||emptyAccountStats();account.stats.games=account.stats.games||{};
-   const record=account.stats.games[gameId]||{sessions:0,playTimeSeconds:0,lastPlayedAt:null};
-   record.playTimeSeconds=(Number(record.playTimeSeconds)||0)+seconds;record.lastPlayedAt=existing.startedAt;
-   account.stats.games[gameId]=record;account.stats.timePlayedSeconds=(Number(account.stats.timePlayedSeconds)||0)+seconds;
-   portalPresence.delete(key);
-   try{await persistAccountStore();}catch(error){console.error("Portal playtime save failed:",error.message);return res.status(503).json({error:"Your play time could not be saved."});}
-  }
-  return res.json({ok:true});
- }
- if(!existing){
-  portalPresence.set(key,{accountId:account.id,gameId,startedAt:now,lastSeenAt:now});
-  if(action==="start"){
-   account.stats=account.stats||emptyAccountStats();account.stats.games=account.stats.games||{};
-   const record=account.stats.games[gameId]||{sessions:0,playTimeSeconds:0,lastPlayedAt:null};
-   record.sessions=(Number(record.sessions)||0)+1;record.lastPlayedAt=now;account.stats.games[gameId]=record;
-   try{await persistAccountStore();}catch(error){portalPresence.delete(key);console.error("Portal session save failed:",error.message);return res.status(503).json({error:"Your session could not be saved."});}
-  }
- }else{
+app.post("/portal/presence",(req,res)=>{
+ const gameId=portalGameId(req.body?.gameId);
+ const sessionId=String(req.body?.sessionId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,96);
+ const action=String(req.body?.action||"heartbeat");
+ if(!gameId||sessionId.length<24||!["start","heartbeat","end"].includes(action))return res.status(400).json({error:"Invalid game session."});
+ const now=Date.now(),existing=portalPresence.get(sessionId);
+ if(action==="start"){
+  if(!loginRateLimit(req,"portal-presence-start"))return res.status(429).json({error:"Too many game launches from this network. Try again shortly."});
+  const name=String(req.body?.name||"").trim().replace(/\s+/g," ").replace(/[<>\u0000-\u001f]/g,"").slice(0,24);
+  const email=String(req.body?.email||"").trim().toLowerCase();
+  if(name.length<1)return res.status(400).json({error:"Enter a player username."});
+  if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
+  portalPresence.set(sessionId,{sessionId,name,email,gameId,startedAt:now,lastSeenAt:now});
+ }else if(action==="heartbeat"){
+  if(!existing)return res.status(404).json({error:"This player session has expired. Reopen the game to check in again."});
   existing.lastSeenAt=now;existing.gameId=gameId;
+ }else{
+  portalPresence.delete(sessionId);
  }
- res.setHeader("Cache-Control","no-store");res.json({ok:true});
+ prunePortalPresence();
+ res.setHeader("Cache-Control","no-store");res.json({ok:true,onlinePlayers:portalPresence.size});
 });
 app.post("/portal/admin/metrics",(req,res)=>{
  const configured=String(process.env.DEV_MODE_PASSWORD||"");
@@ -257,15 +247,29 @@ app.post("/portal/admin/metrics",(req,res)=>{
  const valid=a.length===b.length&&timingSafeEqual(a,b);
  if(!valid)return res.status(401).json({error:"Developer password is incorrect."});
  prunePortalPresence();
- const now=Date.now(),validSessions=accountStore.sessions.filter(s=>s.expiresAt>now).length,byGame={};
+ const now=Date.now(),byGame={};
+ const names={
+  "drift-arena":"Drift Arena","open-world-drive":"Open World Drive","tank-arena-3d":"Tank Arena",
+  "apex-formula-racing":"APEX Formula Racing","gravel-rally-stage":"Gravel Rally Stage",
+  "fpv-drone-simulator":"FPV Drone Simulator","industrial-site-ops":"Industrial Site Ops",
+  "pool-8-ball":"Pool · 8 Ball","tennis-rally":"Tennis Rally","hockey":"Hockey",
+  "reaction-game":"Reaction Game","click-test":"Click Test","neon-breaker":"Neon Breaker",
+  "flappy-bird":"Flappy Bird","neon-snake":"Neon Snake","space-defender":"Space Defender",
+  "neon-runner":"Neon Runner","memory-match":"Memory Match","moto-x3m":"Moto X3M",
+  "learn-to-fly":"Learn to Fly","garden-gnomes":"Garden Gnomes"
+ };
+ const onlinePlayers=[...portalPresence.values()].map(player=>({
+  name:player.name,email:player.email,gameId:player.gameId,
+  gameName:names[player.gameId]||player.gameId,startedAt:player.startedAt,
+  onlineSeconds:Math.max(0,Math.floor((now-player.startedAt)/1000))
+ })).sort((a,b)=>a.startedAt-b.startedAt);
  for(const gameId of portalGameIds){
-  byGame[gameId]={players:[...portalPresence.values()].filter(p=>p.gameId===gameId).length,likes:(accountStore.gameRatings?.[gameId]?.likes||[]).length,dislikes:(accountStore.gameRatings?.[gameId]?.dislikes||[]).length};
+  byGame[gameId]={players:onlinePlayers.filter(p=>p.gameId===gameId).length,likes:(accountStore.gameRatings?.[gameId]?.likes||[]).length,dislikes:(accountStore.gameRatings?.[gameId]?.dislikes||[]).length};
  }
  const rooms=[...activeRooms.values()].map(room=>({game:room.state?.game||"hockey",status:room.state?.status||"unknown",players:[...(room.state?.players?.values?.()||[])].filter(p=>!p.spectator&&!p.sessionId?.startsWith("ai-")).length}));
  res.setHeader("Cache-Control","no-store");
- res.json({server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576),node:process.version},players:{accounts:accountStore.accounts.length,validSessions,onlineNow:portalPresence.size,byGame},rooms,updatedAt:now});
+ res.json({server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576)},players:{onlineNow:onlinePlayers.length,online:onlinePlayers,byGame},rooms,updatedAt:now});
 });
-
 const competitions=new Map();
 function competitionStandings(comp){
  const table=new Map(comp.teams.map(t=>[t.id,{id:t.id,name:t.name,captain:t.captain,played:0,wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0,goalDifference:0,points:0}]));
