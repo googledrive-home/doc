@@ -175,6 +175,11 @@ const portalGameIds=new Set([
  "neon-runner","memory-match","moto-x3m","learn-to-fly","garden-gnomes"
 ]);
 const portalPresence=new Map();
+function portalPresenceStartAllowed(req){
+ const ip=String(req.ip||req.socket?.remoteAddress||"unknown"),key=ip+"|portal-presence-start",now=Date.now(),entry=accountRateLimits.get(key);
+ if(!entry||now-entry.startAt>60000){accountRateLimits.set(key,{startAt:now,count:1});return true;}
+ entry.count++;return entry.count<=60;
+}
 function portalGameId(value){
  const id=String(value||"").toLowerCase().trim().replace(/[^a-z0-9-]/g,"").slice(0,48);
  return portalGameIds.has(id)?id:"";
@@ -224,7 +229,7 @@ app.post("/portal/presence",(req,res)=>{
  if(!gameId||sessionId.length<24||!["start","heartbeat","end"].includes(action))return res.status(400).json({error:"Invalid game session."});
  const now=Date.now(),existing=portalPresence.get(sessionId);
  if(action==="start"){
-  if(!loginRateLimit(req,"portal-presence-start"))return res.status(429).json({error:"Too many game launches from this network. Try again shortly."});
+  if(!portalPresenceStartAllowed(req))return res.status(429).json({error:"Too many game launches from this network. Try again shortly."});
   const name=String(req.body?.name||"").trim().replace(/\s+/g," ").replace(/[<>\u0000-\u001f]/g,"").slice(0,24);
   const email=String(req.body?.email||"").trim().toLowerCase();
   if(name.length<1)return res.status(400).json({error:"Enter a player username."});
