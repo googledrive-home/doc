@@ -168,82 +168,6 @@ const playerCapacity=state=>state?.gameType==="goalie"?1:(CAPACITY[state?.mode]|
 const codes=new Map();
 const activeRooms=new Map();
 
-const portalGameIds=new Set([
- "drift-arena","open-world-drive","tank-arena-3d","apex-formula-racing","gravel-rally-stage",
- "fpv-drone-simulator","industrial-site-ops","pool-8-ball","tennis-rally","hockey",
- "reaction-game","click-test","neon-breaker","flappy-bird","neon-snake","space-defender",
- "neon-runner","memory-match","moto-x3m","learn-to-fly","garden-gnomes"
-]);
-const portalPresence=new Map();
-function portalPresenceStartAllowed(req){
- const ip=String(req.ip||req.socket?.remoteAddress||"unknown"),key=ip+"|portal-presence-start",now=Date.now(),entry=accountRateLimits.get(key);
- if(!entry||now-entry.startAt>60000){accountRateLimits.set(key,{startAt:now,count:1});return true;}
- entry.count++;return entry.count<=60;
-}
-function portalGameId(value){
- const id=String(value||"").toLowerCase().trim().replace(/[^a-z0-9-]/g,"").slice(0,48);
- return portalGameIds.has(id)?id:"";
-}
-function prunePortalPresence(){
- const cutoff=Date.now()-75000;
- for(const [key,entry] of portalPresence)if(!entry||entry.lastSeenAt<cutoff)portalPresence.delete(key);
-}
-function portalCatalogStats(){
- prunePortalPresence();
- const games={};
- for(const gameId of portalGameIds){
-  const rating=accountStore.gameRatings?.[gameId]||{likes:[],dislikes:[]};
-  games[gameId]={
-   likes:Array.isArray(rating.likes)?rating.likes.length:0,
-   dislikes:Array.isArray(rating.dislikes)?rating.dislikes.length:0,
-   players:[...portalPresence.values()].filter(p=>p.gameId===gameId).length
-  };
- }
- return {games,onlinePlayers:portalPresence.size,updatedAt:Date.now()};
-}
-app.get("/portal/catalog-stats",(_req,res)=>{
- res.setHeader("Cache-Control","no-store");res.json(portalCatalogStats());
-});
-app.post("/portal/vote",async(req,res)=>{
- if(!requirePersistentAccountStorage(res))return;
- const account=resolveAccountToken(getRequestToken(req));
- if(!account)return res.status(401).json({error:"Sign in to rate games."});
- const gameId=portalGameId(req.body?.gameId),vote=String(req.body?.vote||"");
- if(!gameId||!["like","dislike"].includes(vote))return res.status(400).json({error:"Choose a valid game and rating."});
- if(!accountStore.gameRatings||typeof accountStore.gameRatings!=="object")accountStore.gameRatings={};
- const current=accountStore.gameRatings[gameId]||{likes:[],dislikes:[]};
- current.likes=Array.isArray(current.likes)?current.likes:[];
- current.dislikes=Array.isArray(current.dislikes)?current.dislikes:[];
- const already=(vote==="like"?current.likes:current.dislikes).includes(account.id);
- current.likes=current.likes.filter(id=>id!==account.id);
- current.dislikes=current.dislikes.filter(id=>id!==account.id);
- if(!already){if(vote==="like")current.likes.push(account.id);else current.dislikes.push(account.id);}
- accountStore.gameRatings[gameId]=current;
- try{await persistAccountStore();res.json({ok:true,vote:already?null:vote,stats:portalCatalogStats().games[gameId]});}
- catch(error){console.error("Portal vote save failed:",error.message);res.status(503).json({error:"Your rating could not be saved. Try again shortly."});}
-});
-app.post("/portal/presence",(req,res)=>{
- const gameId=portalGameId(req.body?.gameId);
- const sessionId=String(req.body?.sessionId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,96);
- const action=String(req.body?.action||"heartbeat");
- if(!gameId||sessionId.length<24||!["start","heartbeat","end"].includes(action))return res.status(400).json({error:"Invalid game session."});
- const now=Date.now(),existing=portalPresence.get(sessionId);
- if(action==="start"){
-  if(!portalPresenceStartAllowed(req))return res.status(429).json({error:"Too many game launches from this network. Try again shortly."});
-  const name=String(req.body?.name||"").trim().replace(/\s+/g," ").replace(/[<>\u0000-\u001f]/g,"").slice(0,24);
-  const email=String(req.body?.email||"").trim().toLowerCase();
-  if(name.length<1)return res.status(400).json({error:"Enter a player username."});
-  if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
-  portalPresence.set(sessionId,{sessionId,name,email,gameId,startedAt:now,lastSeenAt:now});
- }else if(action==="heartbeat"){
-  if(!existing)return res.status(404).json({error:"This player session has expired. Reopen the game to check in again."});
-  existing.lastSeenAt=now;existing.gameId=gameId;
- }else{
-  portalPresence.delete(sessionId);
- }
- prunePortalPresence();
- res.setHeader("Cache-Control","no-store");res.json({ok:true,onlinePlayers:portalPresence.size});
-});
 app.post("/portal/admin/metrics",(req,res)=>{
  const configured=String(process.env.DEV_MODE_PASSWORD||"");
  if(!configured)return res.status(503).json({error:"Developer access has not been configured on the server."});
@@ -253,29 +177,17 @@ app.post("/portal/admin/metrics",(req,res)=>{
   if(!loginRateLimit(req,"portal-dev"))return res.status(429).json({error:"Too many developer sign-in attempts. Try again later."});
   return res.status(401).json({error:"Developer password is incorrect."});
  }
- prunePortalPresence();
- const now=Date.now(),byGame={};
- const names={
-  "drift-arena":"Drift Arena","open-world-drive":"Open World Drive","tank-arena-3d":"Tank Arena",
-  "apex-formula-racing":"APEX Formula Racing","gravel-rally-stage":"Gravel Rally Stage",
-  "fpv-drone-simulator":"FPV Drone Simulator","industrial-site-ops":"Industrial Site Ops",
-  "pool-8-ball":"Pool · 8 Ball","tennis-rally":"Tennis Rally","hockey":"Hockey",
-  "reaction-game":"Reaction Game","click-test":"Click Test","neon-breaker":"Neon Breaker",
-  "flappy-bird":"Flappy Bird","neon-snake":"Neon Snake","space-defender":"Space Defender",
-  "neon-runner":"Neon Runner","memory-match":"Memory Match","moto-x3m":"Moto X3M",
-  "learn-to-fly":"Learn to Fly","garden-gnomes":"Garden Gnomes"
- };
- const onlinePlayers=[...portalPresence.values()].map(player=>({
-  name:player.name,email:player.email,gameId:player.gameId,
-  gameName:names[player.gameId]||player.gameId,startedAt:player.startedAt,
-  onlineSeconds:Math.max(0,Math.floor((now-player.startedAt)/1000))
- })).sort((a,b)=>a.startedAt-b.startedAt);
- for(const gameId of portalGameIds){
-  byGame[gameId]={players:onlinePlayers.filter(p=>p.gameId===gameId).length,likes:(accountStore.gameRatings?.[gameId]?.likes||[]).length,dislikes:(accountStore.gameRatings?.[gameId]?.dislikes||[]).length};
- }
- const rooms=[...activeRooms.values()].map(room=>({game:room.state?.game||"hockey",status:room.state?.status||"unknown",players:[...(room.state?.players?.values?.()||[])].filter(p=>!p.spectator&&!p.sessionId?.startsWith("ai-")).length}));
+ const rooms=[...activeRooms.values()].map(room=>({
+  game:room.state?.game||"hockey",
+  status:room.state?.status||"unknown",
+  players:[...(room.state?.players?.values?.()||[])].filter(player=>!player.spectator&&!player.sessionId?.startsWith("ai-")).length
+ }));
  res.setHeader("Cache-Control","no-store");
- res.json({server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576)},players:{onlineNow:onlinePlayers.length,online:onlinePlayers,byGame},rooms,updatedAt:now});
+ res.json({
+  server:{uptimeSeconds:Math.round(process.uptime()),memoryMb:Math.round(process.memoryUsage().rss/1048576),node:process.version},
+  rooms:{active:rooms.length,players:rooms.reduce((total,room)=>total+room.players,0),list:rooms},
+  updatedAt:Date.now()
+ });
 });
 const competitions=new Map();
 function competitionStandings(comp){
