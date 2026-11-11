@@ -217,3 +217,8 @@ body.portal-compact .portal-game-cover{height:96px}
 body.portal-solid-panels .portal-sidebar,body.portal-solid-panels .portal-topbar{backdrop-filter:none;background:var(--portal-panel)}
 @media(max-width:1180px){.portal-game-grid{grid-template-columns:repeat(min(var(--portal-columns,3),3),minmax(0,1fr))}}
 @media(max-width:820px){.portal-game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.portal-online-table-wrap{width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.portal-online-table-wrap .portal-table{min-width:620px}
+.portal-detail-stats:has(.portal-detail-stat:only-child){grid-template-columns:minmax(180px,240px)}
+.portal-dev-grid{grid-template-columns:repeat(2,minmax(150px,220px))}
