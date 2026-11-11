@@ -198,6 +198,75 @@ input[type=range]{accent-color:#d4aa70}
  .settings-tabs{position:static!important}
 }
 
+
+/* Rally presentation refresh */
+.car-summary{grid-template-columns:160px minmax(0,1fr);gap:15px;padding:14px;background:linear-gradient(135deg,#ffffff0a,#00000018)}
+.car-silhouette{height:104px;min-width:0;background:linear-gradient(145deg,#344d58,#10191f);overflow:hidden}
+#carPreview{display:block;width:100%;height:100%;object-fit:contain}
+.model-status{display:block!important;margin-top:8px;color:#c9b27f!important;font-size:7px!important;letter-spacing:.09em}
+#trackScenePreview{display:block;width:100%;height:154px;object-fit:cover;border:1px solid #ffffff18;border-radius:7px}
+.track-visual-meta{display:grid;gap:4px;padding:8px 10px;border:1px solid #ffffff12;border-radius:7px;background:#ffffff05}
+.track-visual-meta b{font-size:9px;letter-spacing:.12em;color:var(--accent2)}
+.track-visual-meta span{font-size:9px;line-height:1.5;color:#c3cccd}
+.track-visual-meta small{font-size:7px;letter-spacing:.14em;color:#8d9da2}
+#trackPreview{height:172px;background:#10191e}
+#previewField{padding:12px;gap:9px}
+.menu-shell{width:min(1180px,98vw);grid-template-columns:.82fr 1.18fr}
+.menu-story{background:linear-gradient(155deg,#20333d,#101a20)}
+.menu-config{gap:12px}
+.flow-nav{padding:12px;border:1px solid #ffffff18;border-radius:9px;background:#ffffff07}
+.flow-tabs button{padding:10px 7px}
+.segment-list{grid-template-columns:1fr 1fr}
+.segment{min-height:58px;padding:11px}
+.segment.active{box-shadow:inset 3px 0 #e6c48e;background:linear-gradient(100deg,#c99f6430,#ffffff05)}
+.briefing-card{display:grid;gap:7px;padding:16px;border:1px solid #d6b77a55;border-radius:10px;background:linear-gradient(135deg,#c59e6520,#101c24)}
+.briefing-eyebrow{font-size:8px;letter-spacing:.18em;font-weight:950;color:var(--accent2)}
+.briefing-card b{font-size:15px;letter-spacing:.04em;color:#f5e5c6}
+.briefing-card span:not(.briefing-eyebrow){font-size:9px;color:#c4d0d2;line-height:1.45}
+#hud{font-family:Inter,system-ui,sans-serif}
+.hud-panel{border-color:#ffffff30;background:linear-gradient(145deg,#101b25ed,#071119e8);box-shadow:0 12px 36px #0007}
+#pacePanel{top:76px;width:min(500px,58vw);padding:14px 20px;border-radius:12px;box-shadow:0 12px 50px #0006}
+.pace-kicker{font-size:7px;letter-spacing:.24em;color:#a6b5b8;font-weight:900;margin-bottom:5px}
+#paceMain{font-size:clamp(16px,2.6vw,26px);letter-spacing:.19em}
+#conditionsHud{top:70px;right:18px;padding:7px 10px;border-radius:6px;background:#07131bcc}
+#speedPanel{left:16px;bottom:88px;min-width:162px;padding:14px 16px;border-radius:12px}
+#speed{font-size:54px}
+#stagePanel{right:16px;top:116px;bottom:auto;width:min(285px,32vw);padding:14px;border-radius:12px}
+#stageName{font-size:11px}
+#stageMeta{font-size:9px;line-height:1.5}
+.hud-bottom{bottom:15px;max-width:42vw}
+.hud-chip{font-size:8px;padding:8px 10px}
+.hud-speed-hint{margin-top:6px;color:#a7b4b7;font-size:7px;letter-spacing:.10em}
+#driveControls{position:absolute;left:14px;right:14px;bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
+.drive-cluster{display:flex;gap:8px;align-items:center;pointer-events:auto}
+.drive-key{min-width:52px;height:48px;padding:0 13px;border:1px solid #ffffff3b;border-radius:11px;background:linear-gradient(145deg,#172630ee,#061018ee);color:#eef2ed;font-size:14px;font-weight:1000;box-shadow:0 8px 22px #0007;touch-action:none;user-select:none;-webkit-user-select:none}
+.drive-key.brake{border-color:#b66d5b;color:#f2c6b7;font-size:8px;letter-spacing:.1em}
+.drive-key.handbrake{border-color:#c0a06b;color:#f0d4a3;font-size:7px;letter-spacing:.08em}
+.drive-key.throttle{border-color:#83aa8d;color:#d5edda;font-size:8px;letter-spacing:.1em}
+.drive-key.pressed{transform:translateY(2px);filter:brightness(1.45);background:#334b50}
+.drive-key-hint{font-size:7px;letter-spacing:.16em;color:#e3e4d7aa;text-shadow:0 2px 6px #000;pointer-events:none}
+@media(max-width:900px){
+ .menu-shell{grid-template-columns:1fr;width:min(700px,98vw)}
+ .menu-story{padding:18px 22px;border-right:0;border-bottom:1px solid #ffffff18}
+ .menu-story h1{font-size:48px;margin:10px 0}
+ .menu-story p{display:none}
+ .story-meta{margin-top:12px}
+ .menu-config{padding:16px}
+ #trackScenePreview{height:120px}
+ #stagePanel{top:112px;width:220px}
+}
+@media(max-width:650px){
+ .car-summary{grid-template-columns:120px 1fr}
+ .car-silhouette{height:90px}
+ .segment-list{grid-template-columns:1fr}
+ #pacePanel{top:70px;width:70vw}
+ #stagePanel{display:none}
+ #speedPanel{bottom:90px}
+ .hud-bottom{display:none}
+ .drive-key-hint{display:none}
+ .drive-key{min-width:46px;height:46px;padding:0 9px}
+ #conditionsHud{top:110px;right:10px}
+}
 </style>
 
 </head>
@@ -275,10 +344,10 @@ window.addEventListener("unhandledrejection",event=>{
   <section class="menu-config">
    <div class="menu-head"><h2 id="flowTitle">Car & route selection</h2><button class="secondary" id="openSettings">SETUP & SETTINGS</button></div><div class="flow-nav"><div><strong id="flowLabel">STEP 01 · CAR & TRACK</strong><small id="flowMeta">Choose your competition car and rally location</small></div><div class="flow-actions"><button class="secondary" id="flowBack">BACK</button><button class="secondary" id="flowNext">CONTINUE</button></div></div><nav class="flow-tabs" id="flowTabs" aria-label="Event setup steps"><button class="active" data-flow-step="0">01 · CAR</button><button data-flow-step="1">02 · STAGE</button><button data-flow-step="2">03 · CONDITIONS</button><button data-flow-step="3">04 · START</button></nav>
    <div class="field" id="carField"><label for="carSelect">Competition car</label><select id="carSelect"><option value="falcon">Subaru Impreza WRC · AWD</option><option value="stratos">Subaru Impreza WRC · Blue</option><option value="coupe">Subaru Impreza WRC · Gold</option></select></div>
-   <div class="car-summary" id="carSummary"><div class="car-silhouette" id="carArt"><svg viewBox="0 0 180 80"><path d="M12 52 L27 42 L42 38 L57 20 L117 20 L137 38 L158 43 L169 53 L165 62 L15 62Z" fill="#d74f3f" stroke="#f3d5a5" stroke-width="2"/><path d="M59 24 L112 24 L130 39 L48 39Z" fill="#1a2c34" stroke="#7e9aa0"/><circle cx="45" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/><circle cx="135" cy="61" r="14" fill="#12191d" stroke="#bdc6c2" stroke-width="4"/></svg></div><div><strong id="carName">FALCON R5</strong><small id="carDesc">Short wheelbase · agile rotation · forgiving gravel balance</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div></div></div>
+   <div class="car-summary" id="carSummary"><div class="car-silhouette" id="carArt"><canvas id="carPreview" width="320" height="150" aria-label="Illustrated preview of the selected Subaru rally car"></canvas></div><div><strong id="carName">SUBARU IMPREZA WRC</strong><small id="carDesc">Subaru WRC AWD · gravel competition specification</small><div class="spec-row"><div class="spec"><b id="carPower">340</b><span>HP</span></div><div class="spec"><b id="carMass">1,280</b><span>KG</span></div><div class="spec"><b id="carDrive">AWD</b><span>DRIVE</span></div></div><small id="modelStatus" class="model-status">ORIGINAL SUBARU WRC MODEL · LOADING</small></div></div>
    <div class="field" id="trackField"><label for="trackSelect">Rally route · full route distance</label><select id="trackSelect"><option value="highland">Wales · Forest stages · 23.4 km</option><option value="alpine">Finland · Crest & jump stages · 24.8 km</option><option value="coast">Acropolis · Rocky gravel stages · 21.6 km</option><option value="serpent">Col de Turini · Hairpin pass · 28.6 km</option></select></div>
    <div class="field" id="stageField"><label>Choose a timed stage section</label><div class="segment-list" id="stageList"></div></div>
-    <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Track preview</span><b id="trackPreviewName">HIGHLAND FOREST</b></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
+    <div class="track-preview" id="previewField"><div class="track-preview-head"><span>Stage reconnaissance</span><b id="trackPreviewName">WELSH FOREST RALLY</b></div><canvas id="trackScenePreview" width="900" height="230" aria-label="Scenic illustration of the selected rally environment"></canvas><div class="track-visual-meta" id="trackVisualMeta"><b>WALES · FOREST GRAVEL</b><span>Fast forest roads · linked bends · changing elevation</span></div><canvas id="trackPreview" width="640" height="220" aria-label="Top-down preview of the selected rally route"></canvas><div class="track-preview-foot"><span>ROUTE MAP · SELECTED STAGE</span><span id="trackPreviewDistance">23.4 KM</span></div></div>
    <div class="two" id="conditionField"><div class="field"><label for="weatherSelect">Weather</label><select id="weatherSelect"><option value="dry">Clear · dry gravel</option><option value="damp">Overcast · damp</option><option value="wet" selected>Rain · wet gravel</option><option value="storm">Heavy rain · storm</option><option value="snow">Snowfall · icy gravel</option></select></div><div class="field"><label for="timeSelect">Time of day</label><select id="timeSelect"><option value="dawn">05:30 · Dawn</option><option value="morning">09:00 · Morning</option><option value="afternoon">13:00 · Afternoon</option><option value="sunset" selected>18:30 · Sunset</option><option value="night">22:00 · Night</option></select></div></div><div class="field" id="tyreField"><label for="tyreSelect">Tyre compound</label><select id="tyreSelect"><option value="gravel">Gravel soft</option><option value="hard">Gravel hard</option><option value="wet" selected>Wet rally</option></select></div>
    <div id="confirmSummary" class="flow-hidden"></div>
    <button class="action flow-hidden" id="startBtn">START RALLY STAGE</button>
@@ -291,9 +360,14 @@ window.addEventListener("unhandledrejection",event=>{
   <div class="hud-panel hud-brand">GRAVEL // RALLY STAGE<small id="hudCarName">FALCON R5 · AWD</small></div>
   <div class="hud-actions"><button class="hudbtn" id="cameraBtn">CAMERA · CHASE</button><button class="hudbtn" id="setupBtn">CAR SETUP</button><button class="hudbtn" id="pauseBtn">PAUSE</button><button class="hudbtn" id="garageBtn">GARAGE</button></div>
  </div>
- <div class="hud-panel" id="pacePanel"><div id="paceMain">STRAIGHT AHEAD</div><div id="paceSub">PACE NOTES · READY</div></div><div id="conditionsHud">MORNING · DRY GRAVEL</div><div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div></div>
+ <div class="hud-panel" id="pacePanel"><div class="pace-kicker">CO-DRIVER</div><div id="paceMain">STRAIGHT AHEAD</div><div id="paceSub">PACE NOTES · READY</div></div><div id="conditionsHud">MORNING · DRY GRAVEL</div><div class="hud-panel" id="speedPanel"><div class="speedline"><div><div id="speed">000</div><div class="unit">KM/H</div></div><div class="gearbox" id="gear">N</div></div><small id="rpmText">ENGINE · 1,000 RPM</small><div class="revbar"><div id="revFill"></div></div><div class="hud-speed-hint">W / ↑ THROTTLE · S / ↓ BRAKE</div></div>
  <div class="hud-panel" id="stagePanel"><div class="hud-brand" id="stageName">PINE RIDGE SPRINT</div><div id="stageMeta">HIGHLAND FOREST · 5.2 KM</div><div class="progress-track"><div id="stageProgress"></div></div><div id="stageTime" style="margin-top:7px;font-size:11px;font-variant-numeric:tabular-nums">00:00.000</div></div>
  <div class="hud-bottom"><div class="hud-chip">SURFACE <b id="surfaceText">GRAVEL</b></div><div class="hud-chip">SLIP <b id="slipText">0°</b></div><div class="hud-chip" id="driftReadout">DRIFT · READY</div><div class="hud-chip">HANDBRAKE <b id="handbrakeText">OFF</b></div></div>
+ <div id="driveControls" aria-label="On-screen rally driving controls">
+  <div class="drive-cluster steering"><button type="button" class="drive-key" data-drive-key="KeyA" aria-label="Steer left">◀</button><button type="button" class="drive-key" data-drive-key="KeyD" aria-label="Steer right">▶</button></div>
+  <div class="drive-key-hint">WASD OR USE TOUCH CONTROLS</div>
+  <div class="drive-cluster pedals"><button type="button" class="drive-key brake" data-drive-key="KeyS" aria-label="Brake">BRAKE</button><button type="button" class="drive-key handbrake" data-drive-key="Space" aria-label="Handbrake">HANDBRAKE</button><button type="button" class="drive-key throttle" data-drive-key="KeyW" aria-label="Accelerate">THROTTLE</button></div>
+ </div>
 </div>
 <div id="perf">-- FPS · ADAPTIVE QUALITY</div>
 <div id="modal">
@@ -1491,14 +1565,57 @@ function setMenuStageOptions(){
  document.querySelectorAll("#stageList .segment").forEach(b=>b.addEventListener("click",()=>{selectedStage=Number(b.dataset.stage);setMenuStageOptions();}));
  drawTrackPreview();
 }
+function drawCarPreview(){
+ const canvas=$("carPreview");if(!canvas)return;const ctx=canvas.getContext("2d");if(!ctx)return;
+ const spec=CARS[selectedCar],paint="#"+spec.color.toString(16).padStart(6,"0"),trim="#"+spec.accent.toString(16).padStart(6,"0");
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ const bg=ctx.createLinearGradient(0,0,320,150);bg.addColorStop(0,"#344955");bg.addColorStop(1,"#101a22");ctx.fillStyle=bg;ctx.fillRect(0,0,320,150);
+ ctx.fillStyle="#0007";ctx.beginPath();ctx.ellipse(164,119,126,13,0,0,Math.PI*2);ctx.fill();
+ const body=ctx.createLinearGradient(35,58,260,124);body.addColorStop(0,"#f1b3a0");body.addColorStop(.22,paint);body.addColorStop(.72,paint);body.addColorStop(1,"#5a2421");
+ ctx.beginPath();ctx.moveTo(25,107);ctx.lineTo(40,88);ctx.lineTo(83,78);ctx.lineTo(107,48);ctx.lineTo(187,48);ctx.lineTo(221,79);ctx.lineTo(268,87);ctx.lineTo(289,104);ctx.lineTo(281,119);ctx.lineTo(37,119);ctx.closePath();ctx.fillStyle=body;ctx.fill();ctx.strokeStyle=trim;ctx.lineWidth=3;ctx.stroke();
+ ctx.beginPath();ctx.moveTo(101,53);ctx.lineTo(181,53);ctx.lineTo(211,79);ctx.lineTo(82,79);ctx.closePath();ctx.fillStyle="#142a35";ctx.fill();ctx.strokeStyle="#8aa4aa";ctx.lineWidth=1.5;ctx.stroke();
+ ctx.beginPath();ctx.moveTo(112,56);ctx.lineTo(145,56);ctx.lineTo(145,77);ctx.lineTo(92,77);ctx.closePath();ctx.fillStyle="#60777a";ctx.fill();
+ ctx.beginPath();ctx.moveTo(151,56);ctx.lineTo(179,56);ctx.lineTo(202,77);ctx.lineTo(151,77);ctx.closePath();ctx.fillStyle="#334a54";ctx.fill();
+ ctx.fillStyle="#11181d";ctx.fillRect(35,101,251,8);ctx.fillStyle=trim;ctx.fillRect(42,87,36,5);ctx.fillRect(221,85,37,5);
+ ctx.fillStyle="#e9e2cd";ctx.fillRect(45,91,15,5);ctx.fillRect(260,91,15,5);ctx.fillStyle="#10161b";ctx.fillRect(55,114,198,9);
+ for(const x of [77,236]){ctx.beginPath();ctx.arc(x,119,17,0,Math.PI*2);ctx.fillStyle="#0b1014";ctx.fill();ctx.beginPath();ctx.arc(x,119,9,0,Math.PI*2);ctx.fillStyle="#a9b4b4";ctx.fill();ctx.beginPath();ctx.arc(x,119,4,0,Math.PI*2);ctx.fillStyle="#4b5960";ctx.fill();}
+ ctx.fillStyle=trim;ctx.beginPath();ctx.moveTo(91,42);ctx.lineTo(207,42);ctx.lineTo(222,48);ctx.lineTo(79,48);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#10171b";ctx.fillRect(120,33,63,7);ctx.fillRect(129,31,46,3);
+ ctx.fillStyle="#f0eee5";ctx.font="900 15px Arial";ctx.fillText("SUBARU",104,97);ctx.font="900 12px Arial";ctx.fillText("555",184,97);
+ ctx.fillStyle="#ffffffbb";ctx.font="800 8px Arial";ctx.fillText("IMPREZA WRC · AWD",14,17);
+}
 function updateCarCard(){
  const spec=CARS[selectedCar];$("carName").textContent=spec.name;$("carDesc").textContent=spec.description;
  $("carPower").textContent=spec.hp;$("carMass").textContent=spec.mass.toLocaleString();$("carDrive").textContent=spec.drive;
- const c=$("carArt");c.querySelector("svg").style.filter="drop-shadow(0 4px 3px #0008)";
- c.querySelector("svg path").setAttribute("fill","#"+spec.color.toString(16).padStart(6,"0"));
+ drawCarPreview();
+ const status=$("modelStatus");
+ if(status)status.textContent=subaruBodyGeometry?"ORIGINAL SUBARU WRC STL LOADED":subaruAssetsPromise?"LOADING ORIGINAL SUBARU WRC MODEL…":"SUBARU WRC MODEL READYING";
 }
 function buildPreviewWorld(){
  const t=TRACKS[selectedTrack];buildWorld();buildVehicle();placeCar();updateCamera(.016,true);drawTrackPreview();
+}
+function drawTrackScenePreview(){
+ const canvas=$("trackScenePreview");if(!canvas)return;const ctx=canvas.getContext("2d");if(!ctx)return;
+ const track=TRACKS[selectedTrack],w=canvas.width,h=canvas.height;
+ const themes={
+  highland:{sky:["#8caeb8","#d3c9b0"],far:"#68766a",mid:"#455b45",ground:"#596746",road:"#8a765a",trees:"#1f3b2d",accent:"#c8b184",sun:"#f1d2a1"},
+  alpine:{sky:["#9fc3d1","#e0d8c7"],far:"#81969b",mid:"#5b756a",ground:"#647760",road:"#9e9684",trees:"#263f35",accent:"#c5d2d2",sun:"#f2e1c2"},
+  coast:{sky:["#86aeb5","#e4b68e"],far:"#88908a",mid:"#77775d",ground:"#7a7654",road:"#b4a083",trees:"#586341",accent:"#dbc19a",sun:"#f5d6a0"},
+  serpent:{sky:["#8298a8","#d7c5b1"],far:"#596875",mid:"#46564d",ground:"#58604b",road:"#9a876c",trees:"#263a31",accent:"#d2b486",sun:"#f0d2a1"}
+ };
+ const t=themes[track.id]||themes.highland,sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,t.sky[0]);sky.addColorStop(.62,t.sky[1]);sky.addColorStop(1,t.ground);ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+ ctx.fillStyle=t.far;ctx.beginPath();ctx.moveTo(0,112);for(let x=0;x<=w;x+=48){const y=75+Math.sin(x*.011+track.seed)*23+Math.sin(x*.023+track.seed*.3)*12;ctx.lineTo(x,y);}ctx.lineTo(w,178);ctx.lineTo(0,178);ctx.closePath();ctx.fill();
+ ctx.fillStyle=t.mid;ctx.beginPath();ctx.moveTo(0,146);for(let x=0;x<=w;x+=36){const y=126+Math.sin(x*.017+track.seed*.4)*18+Math.sin(x*.031)*8;ctx.lineTo(x,y);}ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fill();ctx.fillStyle=t.ground;ctx.fillRect(0,168,w,h-168);
+ ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();ctx.moveTo(w*.51,h+10);ctx.bezierCurveTo(w*.42,194,w*.76,168,w*.53,137);ctx.bezierCurveTo(w*.35,111,w*.55,98,w*.57,82);ctx.strokeStyle="#4b4035";ctx.lineWidth=52;ctx.stroke();ctx.strokeStyle=t.road;ctx.lineWidth=43;ctx.stroke();
+ ctx.strokeStyle=t.accent;ctx.lineWidth=1.5;ctx.setLineDash([10,12]);ctx.beginPath();ctx.moveTo(w*.51,h+10);ctx.bezierCurveTo(w*.42,194,w*.76,168,w*.53,137);ctx.bezierCurveTo(w*.35,111,w*.55,98,w*.57,82);ctx.stroke();ctx.setLineDash([]);
+ const pine=(x,y,scale,colour)=>{ctx.fillStyle="#352b24";ctx.fillRect(x-2*scale,y,4*scale,13*scale);for(let layer=0;layer<3;layer++){const yy=y-layer*10*scale;ctx.fillStyle=colour;ctx.beginPath();ctx.moveTo(x,yy-27*scale+layer*4*scale);ctx.lineTo(x-17*scale+layer*3*scale,yy+2*scale);ctx.lineTo(x+17*scale-layer*3*scale,yy+2*scale);ctx.closePath();ctx.fill();}};
+ const olive=(x,y,scale)=>{ctx.fillStyle="#463a2b";ctx.fillRect(x-2*scale,y-4*scale,4*scale,16*scale);ctx.fillStyle="#617148";for(let k=0;k<5;k++){ctx.beginPath();ctx.ellipse(x+(k-2)*7*scale,y-16*scale+Math.abs(k-2)*2*scale,10*scale,7*scale,(k-2)*.12,0,Math.PI*2);ctx.fill();}};
+ for(let i=0;i<18;i++){const x=(i*71+track.seed*19)%w,y=148+(i%4)*9,scale=.48+(i%5)*.16;if(track.id==="coast")olive(x,y,scale);else pine(x,y,scale,t.trees);}
+ if(track.id==="alpine"||track.id==="serpent"){ctx.fillStyle="#f2eee2aa";for(let i=0;i<4;i++){const x=90+i*205;ctx.beginPath();ctx.moveTo(x,110);ctx.lineTo(x+52,38+(i%2)*15);ctx.lineTo(x+104,110);ctx.closePath();ctx.fill();}}
+ ctx.fillStyle=t.sun;ctx.globalAlpha=.82;ctx.beginPath();ctx.arc(w*.82,42,15,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+ ctx.save();ctx.translate(w*.51,184);ctx.fillStyle="#11181d";ctx.beginPath();ctx.ellipse(0,10,21,7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#d94f3f";ctx.beginPath();ctx.moveTo(-21,7);ctx.lineTo(-15,-3);ctx.lineTo(-7,-10);ctx.lineTo(10,-10);ctx.lineTo(20,0);ctx.lineTo(22,7);ctx.closePath();ctx.fill();ctx.fillStyle="#152d39";ctx.fillRect(-8,-8,17,8);ctx.restore();
+ const label={highland:"WELSH FOREST · GRAVEL STAGES",alpine:"FINNISH LAKELAND · CREST ROADS",coast:"ACROPOLIS · ROCKY OLIVE GROVES",serpent:"COL DE TURINI · ALPINE HAIRPINS"}[track.id];
+ ctx.fillStyle="#08131dcc";ctx.fillRect(14,14,Math.min(w-28,380),28);ctx.fillStyle="#f3dfbd";ctx.font="900 12px Arial";ctx.fillText(label,25,33);
 }
 function drawTrackPreview(){
  const canvas=$("trackPreview");if(!canvas||!trackData)return;
@@ -1525,6 +1642,14 @@ function drawTrackPreview(){
  const marker=(start+Math.min(count,Math.max(8,Math.floor(count*.13))))%samples.length,arrow=map(samples[marker].p),ahead=map(samples[(marker+1)%samples.length].p);
  const angle=Math.atan2(ahead.y-arrow.y,ahead.x-arrow.x);ctx.save();ctx.translate(arrow.x,arrow.y);ctx.rotate(angle);ctx.fillStyle="#f0d6a8";ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,-4);ctx.lineTo(-5,4);ctx.closePath();ctx.fill();ctx.restore();
  $("trackPreviewName").textContent=track.name;$("trackPreviewDistance").textContent=(stage.full?track.full/1000:stage.km).toFixed(1)+" KM · "+stage.name;
+ const info={
+  highland:["WALES · FOREST GRAVEL","Conifer lanes · linked medium bends · wet cambers","5 STAGES · 23.4 KM · FOREST"],
+  alpine:["FINLAND · CREST RUN","Long straights · broad sweepers · jump crests","5 STAGES · 24.8 KM · FAST"],
+  coast:["GREECE · ACROPOLIS ROCK","Rocky ravines · olive groves · narrow farm roads","5 STAGES · 21.6 KM · TECHNICAL"],
+  serpent:["FRANCE · COL DE TURINI","Tight mountain hairpins · steep climbs · narrow pass","5 STAGES · 28.6 KM · HAIRPINS"]
+ }[track.id];
+ const meta=$("trackVisualMeta");if(meta)meta.innerHTML="<b>"+info[0]+"</b><span>"+info[1]+"</span><small>"+info[2]+"</small>";
+ drawTrackScenePreview();
 }
 function startStage(){
  activateAudio();
@@ -1584,8 +1709,8 @@ function loadSettings(){
 function setMenuStep(step){
  flowStep=clamp(step,0,3);
  const groups={
-  0:["carField","carSummary","trackField"],
-  1:["stageField","previewField"],
+  0:["carField","carSummary"],
+  1:["trackField","stageField","previewField"],
   2:["conditionField","tyreField"],
   3:["confirmSummary"]
  };
@@ -1594,13 +1719,13 @@ function setMenuStep(step){
  $("flowBack").style.visibility=flowStep===0?"hidden":"visible";
  $("flowNext").classList.toggle("flow-hidden",flowStep===3);
  const labels=[
-  ["STEP 01 · CAR & ROUTE","Choose the Subaru package and your rally location","Choose your car"],
-  ["STEP 02 · STAGE SELECT","Pick a timed section and study the stage map","Select your stage"],
-  ["STEP 03 · CONDITIONS","Set the weather, tyre compound and time of day","Set stage conditions"],
-  ["STEP 04 · START RALLY","Review the event card and head to the start line","Ready for the stage"]
+  ["STEP 01 · CAR SELECTION","Choose your Subaru WRC specification and livery","Choose your competition car"],
+  ["STEP 02 · ROUTE & STAGE","Choose a rally location, compare the route preview and select a timed section","Choose your rally route"],
+  ["STEP 03 · STAGE CONDITIONS","Set the weather, tyre compound and time of day","Prepare the conditions"],
+  ["STEP 04 · EVENT BRIEFING","Review your car, route and conditions before the start","Ready for the rally"]
  ];
  $("flowLabel").textContent=labels[flowStep][0];$("flowMeta").textContent=labels[flowStep][1];$("flowTitle").textContent=labels[flowStep][2];
- $("confirmSummary").innerHTML="<b>EVENT</b> "+TRACKS[selectedTrack].name+" · "+TRACKS[selectedTrack].stages[selectedStage].name+"<br><b>CAR</b> "+CARS[selectedCar].name+"<br><b>CONDITIONS</b> "+weather.toUpperCase()+" · "+timeOfDay.toUpperCase()+" · "+tyre.toUpperCase();
+ $("confirmSummary").innerHTML='<div class="briefing-card"><span class="briefing-eyebrow">RALLY START BRIEFING</span><b>'+CARS[selectedCar].name+'</b><span>'+TRACKS[selectedTrack].name+' · '+TRACKS[selectedTrack].stages[selectedStage].name+'</span><span>'+TRACKS[selectedTrack].stages[selectedStage].desc+'</span><span>'+weather.toUpperCase()+' · '+timeOfDay.toUpperCase()+' · '+tyre.toUpperCase()+'</span></div>';
  document.querySelectorAll("[data-flow-step]").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.flowStep)===flowStep));
 }
 function showEventMenu(mode){
@@ -1762,6 +1887,14 @@ async function boot(){
  try{
   loadSettings();setLoad(7,"Starting the 3D renderer");await nextPaint();await initScene();setLoad(88,"Preparing stage controls");
   bindUI();bindSettings();syncSettingsUi();setMenuStageOptions();updateCarCard();updateRenderQuality();initAudio();
+  document.querySelectorAll("[data-drive-key]").forEach(button=>{
+   const code=button.dataset.driveKey;
+   const down=event=>{event.preventDefault();driveKeys[code]=true;activateAudio();button.classList.add("pressed");try{button.setPointerCapture(event.pointerId);}catch(e){}};
+   const up=event=>{event.preventDefault();driveKeys[code]=false;button.classList.remove("pressed");};
+   button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);
+   button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
+   button.addEventListener("contextmenu",event=>event.preventDefault());
+  });
   window.addEventListener("resize",resize);previousFrame=performance.now();fpsStart=previousFrame;requestAnimationFrame(animate);
   setLoad(90,"Loading Subaru WRC model");if(subaruAssetsPromise)await Promise.race([subaruAssetsPromise,new Promise(resolve=>setTimeout(resolve,9000))]);setLoad(100,"Ready to drive");window.__rallyBootComplete=true;$("loading").style.opacity="0";setTimeout(()=>{$("loading").style.display="none";$("introScreen").classList.add("open");$("homeScreen").classList.remove("open");$("menu").style.display="none";},400);
  }catch(error){console.error("Gravel Rally startup failed:",error);$("loadStep").textContent="Startup failed: "+(error?.message||"unknown error");$("loadPct").textContent="ERROR";$("loadFill").style.background="#d56b56";}
