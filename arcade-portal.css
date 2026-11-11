@@ -332,7 +332,7 @@ body[data-portal-theme="light"] .portal-category-tab{background:linear-gradient(
 
 
 /* Photo-led backdrops and theme motion across the whole game library. */
-#arcadeRoot{position:relative;isolation:isolate;overflow:hidden}
+#arcadeRoot{position:fixed;inset:0;z-index:50;min-height:100dvh;isolation:isolate;overflow:hidden}
 #arcadeRoot:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-position:center;background-size:cover;opacity:.22;mix-blend-mode:screen;transition:opacity .35s,filter .35s;animation:themeAtmosphere 34s ease-in-out infinite alternate}
 #arcadeRoot>.portal-shell{position:relative;z-index:1}
 @keyframes themeAtmosphere{from{transform:scale(1);filter:saturate(.88)}to{transform:scale(1.07);filter:saturate(1.18)}}
