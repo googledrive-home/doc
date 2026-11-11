@@ -96,6 +96,7 @@
  '<div class="portal-auth-backdrop" id="portalAuthModal" role="dialog" aria-modal="true" aria-label="Player sign in"><section class="portal-auth-card"><button class="portal-modal-close" type="button" id="portalAuthClose" aria-label="Close">✕</button><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2 id="portalAuthTitle">Welcome back</h2><p id="portalAuthSubtitle">Sign in once. Your player profile is shared across the games.</p></div></div><div class="portal-auth-tabs"><button type="button" class="active" id="portalLoginTab">SIGN IN</button><button type="button" id="portalRegisterTab">CREATE ACCOUNT</button></div><form class="portal-auth-form" id="portalAuthForm"><div class="portal-field" id="portalAuthNameField" hidden><label for="portalAuthName">Player name</label><input id="portalAuthName" type="text" maxlength="18" autocomplete="nickname" placeholder="Your name"></div><div class="portal-field"><label for="portalAuthEmail">Email address</label><input id="portalAuthEmail" type="email" maxlength="254" autocomplete="email" required placeholder="you@example.com"></div><div class="portal-field"><label for="portalAuthPassword">Password</label><input id="portalAuthPassword" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters"></div><button class="portal-primary" id="portalAuthSubmit" type="submit">Sign in</button><div class="portal-status" id="portalAuthStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Passwords are hashed on the server using scrypt. Only a random sign-in session token is kept in this browser. You can use the same account in Hockey Online.</div></section></div>',
  '<div class="portal-toast" id="portalToast" role="status" aria-live="polite"></div>'
  ].join("");
+ app.innerHTML=portalMarkup;
  const portalShell=document.getElementById("portalShell");
  const $p=id=>document.getElementById(id);
  const games=[];
@@ -411,13 +412,9 @@
   };
  }
  window.openExternal=function(url){
-  const ext=window.open(url,"_blank");if(ext)try{ext.opener=null;}catch(error){}
-  return ext;
- };
- const originalExternal=window.openExternal;
- window.openExternal=function(url){
   if(!account||!accountToken){showAuth();setAuthStatus("Sign in before opening external games.");return null;}
-  const win=window.open(url,"_blank");if(win)try{win.opener=null;}catch(error){}
+  const win=window.open(url,"_blank");
+  if(win)try{win.opener=null;}catch(error){}
   const game=games.find(g=>g.external&&g.buttons.some(b=>(b.getAttribute("onclick")||"").includes(url)));
   const gameId=game?.id||"moto-x3m";
   ensureAccountForLaunch(gameId,()=>win,true);
@@ -458,6 +455,17 @@
   document.body.classList.toggle("portal-motion-off",!portalSettings.motion);
   document.body.classList.toggle("portal-glow-off",!portalSettings.backgroundGlow);
   document.body.classList.toggle("portal-compact",portalSettings.cardSize==="compact");
+  document.body.classList.toggle("portal-no-live",!portalSettings.showLiveCounts);
+  document.body.classList.toggle("portal-no-ratings",!portalSettings.showRatings);
+  document.body.classList.toggle("portal-hover-off",!portalSettings.hoverEffects);
+  document.body.classList.toggle("portal-solid-panels",!!portalSettings.reduceTransparency);
+  if(typeof siteSettings!=="undefined"){
+   siteSettings.sfx=!!portalSettings.sound;
+   siteSettings.sfxVolume=Math.max(0,Math.min(1,Number(portalSettings.soundVolume)/100));
+   siteSettings.music=!!portalSettings.musicEnabled;
+   siteSettings.musicVolume=Math.max(0,Math.min(1,Number(portalSettings.musicVolume)/100));
+   if(typeof applySiteSettings==="function")applySiteSettings();
+  }
   if($p("portalSearch"))$p("portalSearch").placeholder=portalSettings.rememberSearch?"Search games...":"Search this visit...";
  }
  function renderSettings(){
