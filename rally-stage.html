@@ -430,7 +430,8 @@ let environmentSun=null,environmentHemi=null,environmentFill=null,environmentAmb
 let gameActive=false,paused=false,stageFinished=false,elapsed=0,previousFrame=0,frameSamples=0,fpsStart=0,fps=60,adaptiveScale=1;
 let keys={},carState=null,nearestIndex=0,stageStartIndex=0,stageMeters=0,stageTargetMeters=0,cameraMode=0,qualityTimer=0;
 let wheelAssemblies=[],suspensionParts=[],dustPoints,dustPositions,dustLives=[],dustVelocity=[],dustAccumulator=0,smokePoints,smokePositions,smokeLives=[],smokeVelocity=[];
-let engineAudio=null,engineOsc=null,engineGain=null,lastGear=1,shiftCooldown=0,shiftHandTimer=0,wiperTimer=0,wiperOn=false,gameMode="quickplay",flowStep=0,cameraYaw=0,cameraPitch=.10,collisionTimer=0,campaignRound=0,campaignTimes=[];
+let engineAudio=null,engineOsc=null,engineOsc2=null,engineGain=null,engineFilter=null,roadNoiseSource=null,roadNoiseGain=null,roadNoiseFilter=null,lastGear=1,shiftCooldown=0,shiftHandTimer=0,wiperTimer=0,wiperOn=false,gameMode="quickplay",flowStep=0,cameraYaw=0,cameraPitch=.10,collisionTimer=0,campaignRound=0,campaignTimes=[];
+let driveKeys={};
 let worldColliders=[],collisionGrid=new Map(),collisionCellSize=22,subaruBodyGeometry=null,subaruWheelGeometry=null,subaruAssetsPromise=null,windshieldBuildUp=0;
 const CAMERAS=["CHASE","HOOD","COCKPIT","BUMPER"];
 const tyreSpecs={gravel:{mu:.83,wear:1,name:"GRAVEL SOFT"},hard:{mu:.76,wear:.64,name:"GRAVEL HARD"},wet:{mu:.88,wear:.92,name:"WET RALLY"}};
@@ -438,8 +439,8 @@ function setLoad(p,label){$("loadFill").style.width=p+"%";$("loadPct").textConte
 function seeded(seed){let x=seed>>>0;return()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 function terrainY(x,z,track=TRACKS[selectedTrack]){
  const broad=Math.sin(x*.0011+track.seed)*11+Math.cos(z*.00135-track.seed*.3)*13+Math.sin((x+z)*.0021)*6.2+Math.cos((x-z)*.00068)*12;
- const folds=Math.sin(x*.0031+track.seed*1.7)*Math.cos(z*.0026-track.seed)*4.2+Math.sin((x-z)*.0042)*2.8;
- const microAmp=track.id==="alpine"?9.2:track.id==="serpent"?6.8:track.id==="coast"?5.1:4.2;
+ const folds=Math.sin(x*.0024+track.seed*1.7)*Math.cos(z*.0021-track.seed)*2.8+Math.sin((x-z)*.0031)*1.6;
+ const microAmp=track.id==="alpine"?3.0:track.id==="serpent"?2.7:track.id==="coast"?1.9:2.1;
  const microCrests=microAmp*Math.sin((x*.043+z*.021)+track.seed)+microAmp*.62*Math.cos((x-z)*.034-track.seed*.2);
  const ridge=Math.sin((x*.0008+z*.00064)+track.seed*.1)*Math.cos(z*.00095-x*.00052)*22;
  const profile=track.id==="alpine"?Math.sin(x*.0019+z*.0014+track.seed)*15+Math.cos((x+z)*.0024)*11:
@@ -451,14 +452,14 @@ function terrainY(x,z,track=TRACKS[selectedTrack]){
 function makeRoadTexture(){
  const c=document.createElement("canvas");c.width=c.height=1024;const ctx=c.getContext("2d"),rnd=seeded(881);
  ctx.fillStyle="#696052";ctx.fillRect(0,0,1024,1024);
- for(let i=0;i<62000;i++){
-  const shade=Math.floor(48+rnd()*105),alpha=.08+rnd()*.31,r=.35+rnd()*3.2;
+ for(let i=0;i<82000;i++){
+  const shade=Math.floor(58+rnd()*112),alpha=.055+rnd()*.24,r=.25+rnd()*2.4;
   ctx.fillStyle="rgba("+shade+","+Math.floor(shade*.91)+","+Math.floor(shade*.79)+","+alpha+")";
   const x=rnd()*1024,y=rnd()*1024;ctx.beginPath();ctx.ellipse(x,y,r,r*(.45+rnd()*.9),rnd()*3.14,0,Math.PI*2);ctx.fill();
  }
- for(const x of [185,350,670,835]){
-  ctx.strokeStyle="rgba(36,31,26,.16)";ctx.lineWidth=34;ctx.beginPath();ctx.moveTo(x,0);ctx.bezierCurveTo(x+18,340,x-22,650,x+12,1024);ctx.stroke();
-  ctx.strokeStyle="rgba(181,159,129,.10)";ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(x-24,0);ctx.bezierCurveTo(x-6,340,x-46,650,x-12,1024);ctx.stroke();
+ for(const x of [290,420,604,734]){
+  ctx.strokeStyle="rgba(36,31,26,.075)";ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(x,0);ctx.bezierCurveTo(x+10,340,x-12,650,x+8,1024);ctx.stroke();
+  ctx.strokeStyle="rgba(191,174,147,.075)";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-13,0);ctx.bezierCurveTo(x-3,340,x-18,650,x-5,1024);ctx.stroke();
  }
  for(let i=0;i<60;i++){const x=rnd()*1024,y=rnd()*1024,r=8+rnd()*28;ctx.fillStyle="rgba(40,36,31,"+(.04+rnd()*.08)+")";ctx.beginPath();ctx.ellipse(x,y,r,r*.25,rnd(),0,Math.PI*2);ctx.fill();}
  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,68);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
@@ -471,13 +472,10 @@ function makeGrassTexture(){
 }
 function makeRoute(track){
  const profiles={
-  // Finland-inspired: fewer, faster turns with big crests and long lanes.
-  highland:{rows:8,gap:300,radius:150,straight:2260,bend:1.12},
-  alpine:{rows:6,gap:320,radius:160,straight:3000,bend:.72},
-  // Welsh forest / rocky Acropolis profiles keep the road narrow and rough.
-  coast:{rows:8,gap:285,radius:142.5,straight:2000,bend:1.10},
-  // Turini-inspired: twelve successive mountain hairpins.
-  serpent:{rows:12,gap:110,radius:55,straight:1200,bend:.94}
+  highland:{rows:8,gap:315,radius:158,straight:2040,bend:1.28,wave:78,detail:24,frequency:1.0},
+  alpine:{rows:5,gap:405,radius:205,straight:2920,bend:.62,wave:34,detail:12,frequency:.72},
+  coast:{rows:9,gap:248,radius:124,straight:1620,bend:1.58,wave:116,detail:36,frequency:1.42},
+  serpent:{rows:13,gap:108,radius:54,straight:1030,bend:1.12,wave:52,detail:18,frequency:2.15}
  };
  const cfg=profiles[track.id]||profiles.highland,rows=cfg.rows,spacing=cfg.gap,radius=cfg.radius;
  const half=cfg.straight*.5,xStart=-half,xEnd=half,zStart=-(rows-1)*spacing*.5,control=[];
@@ -487,7 +485,8 @@ function makeRoute(track){
   const z=zStart+row*spacing,forward=row%2===0;
   for(let i=control.length?1:0;i<=linePoints;i++){
    const u=i/linePoints,x=forward?xStart+(xEnd-xStart)*u:xEnd-(xEnd-xStart)*u;
-   const waviness=Math.sin(u*Math.PI*2)*Math.sin(row*.7+1)*cfg.bend*38+Math.sin(u*Math.PI*4)*cfg.bend*16;
+   const phase=u*Math.PI*2*cfg.frequency+row*.47;
+   const waviness=Math.sin(phase)*cfg.wave*cfg.bend+Math.sin(phase*2.65+row*.8)*cfg.detail*cfg.bend+Math.sin(u*Math.PI*2)*Math.sin(row*.7+1)*cfg.bend*18;
    add(x,z+waviness);
   }
   if(row===rows-1)break;
@@ -513,35 +512,36 @@ function makeRoute(track){
  return{curve,samples,length:track.full,control,spatialIndex,spatialCell:cellSize,trackId:track.id,halfWidth:widths[track.id]||2.9};
 }
 function makeTerrain(track){
- const samples=trackData.samples;
- let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+ const samples=trackData.samples;let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
  for(const sample of samples){minX=Math.min(minX,sample.p.x);maxX=Math.max(maxX,sample.p.x);minZ=Math.min(minZ,sample.p.z);maxZ=Math.max(maxZ,sample.p.z);}
- const margin=190,width=maxX-minX+margin*2,depth=maxZ-minZ+margin*2,centerX=(minX+maxX)*.5,centerZ=(minZ+maxZ)*.5;
- const segX=clamp(Math.ceil(width/36),90,190),segZ=clamp(Math.ceil(depth/36),90,190);
+ const margin=235,width=maxX-minX+margin*2,depth=maxZ-minZ+margin*2,centerX=(minX+maxX)*.5,centerZ=(minZ+maxZ)*.5;
+ /* Fine terrain cells and a blended roadbed stop hillsides from intersecting the gravel surface. */
+ const segX=clamp(Math.ceil(width/19),120,230),segZ=clamp(Math.ceil(depth/19),120,230);
  const geo=new THREE.PlaneGeometry(width,depth,segX,segZ);geo.rotateX(-Math.PI/2);
- const p=geo.attributes.position,colors=[];
+ const p=geo.attributes.position,colors=[],index=trackData.spatialIndex,cell=trackData.spatialCell||52;
+ const smooth=(a,b,v)=>{const t=clamp01((v-a)/(b-a));return t*t*(3-2*t);};
+ function gradedHeight(x,z){
+  const natural=terrainY(x,z,track),cx=Math.floor(x/cell),cz=Math.floor(z/cell);let nearest=null,best=Infinity;
+  for(let ox=-1;ox<=1;ox++)for(let oz=-1;oz<=1;oz++){
+   const bucket=index.get((cx+ox)+":"+(cz+oz));if(!bucket)continue;
+   for(const q of bucket){const dx=x-q.x,dz=z-q.z,d=dx*dx+dz*dz;if(d<best){best=d;nearest=q;}}
+  }
+  if(!nearest)return natural;
+  const blend=1-smooth(8,34,Math.sqrt(best));if(blend<=0)return natural;
+  return natural+(nearest.y-.28-natural)*blend;
+ }
  for(let i=0;i<p.count;i++){
-  const x=p.getX(i)+centerX,z=p.getZ(i)+centerZ,h=terrainY(x,z,track);p.setY(i,h);
-  const variation=Math.sin(x*.018+track.seed)*Math.cos(z*.015)*.055;
-  const base=weather==="snow"?[.72,.78,.82]:track.id==="serpent"?[.36,.38,.30]:track.id==="coast"?[.42,.47,.34]:track.id==="alpine"?[.34,.42,.31]:[.28,.38,.27];
-  const tint=clamp01(.76+(h+24)/145+variation);colors.push(base[0]*tint,base[1]*tint,base[2]*tint);
+  const x=p.getX(i)+centerX,z=p.getZ(i)+centerZ,h=gradedHeight(x,z);p.setY(i,h);
+  const variation=Math.sin(x*.012+track.seed)*Math.cos(z*.011)*.035;
+  const base=weather==="snow"?[.72,.78,.82]:track.id==="serpent"?[.39,.40,.33]:track.id==="coast"?[.43,.47,.35]:track.id==="alpine"?[.38,.47,.37]:[.34,.43,.30];
+  const tint=clamp01(.82+(h+24)/185+variation);colors.push(base[0]*tint,base[1]*tint,base[2]*tint);
  }
  geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
  grassTexture=grassTexture||makeGrassTexture();
- const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide});
+ const mat=new THREE.MeshStandardMaterial({map:weather==="snow"?null:grassTexture,vertexColors:true,roughness:.96,metalness:0,side:THREE.DoubleSide});
  const mesh=new THREE.Mesh(geo,mat);mesh.receiveShadow=settings.shadows&&settings.quality!=="low";mesh.frustumCulled=true;worldGroup.add(mesh);
- // Continuous, segmented rock escarpments stand 139 m off each verge.
- const count=Math.ceil(samples.length/6)*2,wallGeo=new THREE.BoxGeometry(1,1,1),wallMat=new THREE.MeshStandardMaterial({color:0x555a55,roughness:.98}),ridge=new THREE.InstancedMesh(wallGeo,wallMat,count),dummy=new THREE.Object3D(),rnd=seeded(track.seed*1901);let k=0;
- for(let i=0;i<samples.length;i+=6){
-  const s=samples[i],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),rot=Math.atan2(s.tan.x,s.tan.z);
-  for(const side of [-1,1]){
-   const off=side*139,x=s.p.x+right.x*off,z=s.p.z+right.z*off,h=terrainY(x,z,track),height=15+rnd()*16;
-   dummy.position.set(x,h+height*.5,z);dummy.scale.set(7.5,height,39+rnd()*3);
-   dummy.rotation.set((rnd()-.5)*.045,rot+(rnd()-.5)*.035,(rnd()-.5)*.05);dummy.updateMatrix();ridge.setMatrixAt(k++,dummy.matrix);
-   addWorldCollider(x,z,8,"cliff-wall");
-  }
- }
- ridge.count=k;ridge.instanceMatrix.needsUpdate=true;ridge.castShadow=settings.shadows&&settings.quality!=="low";ridge.receiveShadow=true;worldGroup.add(ridge);
+ /* The former 15–31 metre cliff-wall boxes were responsible for the giant black blocks.
+    Removed; shoulder rocks and the finite collision boundary still keep the stage enclosed. */
 }
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function makeRoad(trackData){
@@ -615,36 +615,37 @@ function nearRoad(x,z,margin=28){
  return false;
 }
 function makeForest(track){
- const rnd=seeded(track.seed*319+17),count=settings.quality==="low"?4500:settings.quality==="high"?12500:9000;
+ const rnd=seeded(track.seed*319+17),count=settings.quality==="low"?2300:settings.quality==="high"?6500:4200;
  const trunkGeo=new THREE.CylinderGeometry(.12,.22,1,7),pineGeo=new THREE.ConeGeometry(1,1,8);
  const trunkMat=new THREE.MeshStandardMaterial({color:0x493d31,roughness:1});
- const pineA=new THREE.MeshStandardMaterial({color:weather==="snow"?0x83928f:0x203a2d,roughness:1});
- const pineB=new THREE.MeshStandardMaterial({color:weather==="snow"?0xaeb9b2:0x2d4d37,roughness:1});
+ const foliageColour=track.id==="coast"?0x586344:track.id==="alpine"?0x294334:track.id==="serpent"?0x2e4635:0x254331;
+ const pineA=new THREE.MeshStandardMaterial({color:weather==="snow"?0x83928f:foliageColour,roughness:1});
+ const pineB=new THREE.MeshStandardMaterial({color:weather==="snow"?0xaeb9b2:0x344f38,roughness:1});
  const trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,count),foliageA=new THREE.InstancedMesh(pineGeo,pineA,count),foliageB=new THREE.InstancedMesh(pineGeo,pineB,count);
- const broad=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({color:0x3c5539,roughness:1}),Math.floor(count*.12));
+ const broad=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,2),new THREE.MeshStandardMaterial({color:track.id==="coast"?0x667047:0x425c3f,roughness:1}),Math.floor(count*(track.id==="coast"?.38:.12)));
  // Place hundreds of grove centres first, then build tree clusters around them.
  const groveCount=Math.max(150,Math.round(count/75)),groves=[];
  for(let i=0;i<groveCount;i++){
-  const sample=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),side=rnd()<.5?-1:1,offset=15+rnd()*53;
+  const sample=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(sample.tan.z,0,-sample.tan.x).normalize(),side=rnd()<.5?-1:1,offset=23+rnd()*58;
   groves.push({x:sample.p.x+right.x*side*offset,z:sample.p.z+right.z*side*offset,tx:sample.tan.x,tz:sample.tan.z,rx:right.x,rz:right.z,side});
  }
  const dummy=new THREE.Object3D();let placed=0,broadCount=0,tries=0;
  while(placed<count&&tries<count*3.5){
   tries++;const grove=groves[Math.floor(rnd()*groves.length)],along=(rnd()+rnd()-1)*48,across=(rnd()+rnd()-1)*30;
   const x=grove.x+grove.tx*along+grove.rx*across,z=grove.z+grove.tz*along+grove.rz*across;
-  if(nearRoad(x,z,8))continue;
+  if(nearRoad(x,z,13))continue;
   const h=terrainY(x,z,track),scale=.85+rnd()*2.1,lean=(rnd()-.5)*.16;
   dummy.position.set(x,h+1.3*scale,z);dummy.scale.set(.7*scale,2.6*scale,.7*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
   dummy.position.set(x,h+2.75*scale,z);dummy.scale.set(2.0*scale,3.3*scale,2.0*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();foliageA.setMatrixAt(placed,dummy.matrix);
   dummy.position.set(x,h+4.0*scale,z);dummy.scale.set(1.38*scale,2.35*scale,1.38*scale);dummy.rotation.set(0,rnd()*6.28,lean);dummy.updateMatrix();foliageB.setMatrixAt(placed,dummy.matrix);
-  if(rnd()<.12&&broadCount<broad.count){dummy.position.set(x+grove.side*2,h+1.55*scale,z-1.5);dummy.scale.set(1.45*scale,1.1*scale,1.35*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();broad.setMatrixAt(broadCount++,dummy.matrix);}
+  if(rnd()<(track.id==="coast"?.38:.12)&&broadCount<broad.count){dummy.position.set(x+grove.side*2,h+1.55*scale,z-1.5);dummy.scale.set(1.45*scale,1.1*scale,1.35*scale);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();broad.setMatrixAt(broadCount++,dummy.matrix);}
   if(placed%3===0)addWorldCollider(x,z,Math.max(.55,scale*.17),"tree");
   placed++;
  }
  trunks.count=placed;foliageA.count=placed;foliageB.count=placed;broad.count=broadCount;
  [trunks,foliageA,foliageB,broad].forEach(m=>{m.instanceMatrix.needsUpdate=true;m.castShadow=settings.shadows&&settings.quality!=="low";m.receiveShadow=false;worldGroup.add(m);});
  // Collidable boulders and exposed rocks on the shoulders break up the tree line.
- const rockCount=settings.quality==="low"?450:settings.quality==="high"?1400:900,rockGeo=new THREE.DodecahedronGeometry(1,1),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount),rockRand=seeded(track.seed*1301);let rockPlaced=0,rockTries=0;
+ const rockCount=settings.quality==="low"?180:settings.quality==="high"?500:320,rockGeo=new THREE.DodecahedronGeometry(1,1),rocks=new THREE.InstancedMesh(rockGeo,new THREE.MeshStandardMaterial({color:0x777166,roughness:1}),rockCount),rockRand=seeded(track.seed*1301);let rockPlaced=0,rockTries=0;
  while(rockPlaced<rockCount&&rockTries<rockCount*2.5){
   rockTries++;const s=trackData.samples[Math.floor(rockRand()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rockRand()<.5?-1:1,off=8+rockRand()*31,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off;
   if(nearRoad(x,z,7))continue;
@@ -652,7 +653,7 @@ function makeForest(track){
   addWorldCollider(x,z,Math.max(.45,scale*.48),"rock");
  }
  rocks.count=rockPlaced;rocks.instanceMatrix.needsUpdate=true;rocks.castShadow=settings.shadows&&settings.quality!=="low";worldGroup.add(rocks);
- const bushCount=settings.quality==="low"?750:settings.quality==="high"?2400:1500,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x8c9892:0x40533b,roughness:1}),bushCount);
+ const bushCount=settings.quality==="low"?420:settings.quality==="high"?1100:720,bushGeo=new THREE.IcosahedronGeometry(1,1),bushes=new THREE.InstancedMesh(bushGeo,new THREE.MeshStandardMaterial({color:weather==="snow"?0x8c9892:0x40533b,roughness:1}),bushCount);
  for(let i=0;i<bushCount;i++){const s=trackData.samples[Math.floor(rnd()*trackData.samples.length)],right=new THREE.Vector3(s.tan.z,0,-s.tan.x).normalize(),side=rnd()<.5?-1:1,off=5.8+rnd()*24,x=s.p.x+right.x*side*off,z=s.p.z+right.z*side*off,sc=.45+rnd()*1.7;dummy.position.set(x,terrainY(x,z,track)+sc*.45,z);dummy.scale.set(sc*1.3,sc*.72,sc);dummy.rotation.y=rnd()*6.28;dummy.updateMatrix();bushes.setMatrixAt(i,dummy.matrix);}
  bushes.instanceMatrix.needsUpdate=true;worldGroup.add(bushes);
 }
@@ -714,7 +715,7 @@ function makeTown(track){
 }
 function setupEnvironmentSun(){
  if(!environmentSun){
-  environmentSun=new THREE.DirectionalLight(0xffdfbd,2.65);environmentSun.position.set(-300,420,250);
+  environmentSun=new THREE.DirectionalLight(0xffdfbd,2.25);environmentSun.position.set(-300,420,250);
   environmentSun.shadow.mapSize.set(settings.quality==="high"?2048:1536,settings.quality==="high"?2048:1536);
   environmentSun.shadow.camera.left=-260;environmentSun.shadow.camera.right=260;environmentSun.shadow.camera.top=260;environmentSun.shadow.camera.bottom=-260;
   environmentSun.shadow.camera.near=2;environmentSun.shadow.camera.far=1800;environmentSun.shadow.camera.updateProjectionMatrix();
@@ -830,9 +831,9 @@ function applyAtmosphere(){
   environmentSun.target.position.set(focusX,focusY,focusZ);
   environmentSun.position.set(focusX+sunPosition[0],focusY+sunPosition[1],focusZ+sunPosition[2]);
  }
- if(environmentHemi)environmentHemi.intensity=.72*wf*(.72+.28*tf);
- if(environmentFill)environmentFill.intensity=.43*wf*tf;
- if(environmentAmbient)environmentAmbient.intensity=.17*wf*(.78+.22*tf);
+ if(environmentHemi)environmentHemi.intensity=1.02*wf*(.82+.18*tf);
+ if(environmentFill)environmentFill.intensity=.60*wf*tf;
+ if(environmentAmbient)environmentAmbient.intensity=.28*wf*(.82+.18*tf);
  if(renderer)renderer.toneMappingExposure=timeOfDay==="night"?.76:weather==="storm"?.90:timeOfDay==="sunset"?1.03:.98;
  const wl={dry:"DRY GRAVEL",damp:"DAMP GRAVEL",wet:"WET GRAVEL",storm:"HEAVY RAIN",snow:"SNOW / ICE"}[weather]||"GRAVEL",tl={dawn:"DAWN",morning:"MORNING",afternoon:"AFTERNOON",sunset:"SUNSET",night:"NIGHT"}[timeOfDay]||"SUNSET";
  if($("conditionsHud"))$("conditionsHud").textContent=tl+" · "+wl;
@@ -1190,15 +1191,17 @@ function loadSubaruAssets(){
  subaruAssetsPromise=(async()=>{
   try{
    const {STLLoader}=await import("./assets/vendor/STLLoader.js");
-   const loader=new STLLoader(),base="https://raw.githubusercontent.com/googledrive-home/doc/main/assets/";
+   const modelStatus=document.getElementById("modelStatus");if(modelStatus)modelStatus.textContent="LOADING ORIGINAL SUBARU WRC MODEL…";
+   const loader=new STLLoader(),base=new URL("./assets/",document.baseURI).href;
    const [body,wheel]=await Promise.all([
-    loader.loadAsync(base+"subaru_-_subaru_wrc-1.STL"),
-    loader.loadAsync(base+"subaru_-_subaru_wheel-1.STL")
+    loader.loadAsync(new URL("subaru_-_subaru_wrc-1.STL",base).href),
+    loader.loadAsync(new URL("subaru_-_subaru_wheel-1.STL",base).href)
    ]);
    subaruBodyGeometry=fitSTLGeometry(body,"body",CARS[selectedCar]);subaruWheelGeometry=fitSTLGeometry(wheel,"wheel",CARS[selectedCar]);
-   applySubaruAssets();$("loadStep").textContent="Subaru model loaded";return true;
+   applySubaruAssets();if(modelStatus)modelStatus.textContent="ORIGINAL SUBARU WRC STL LOADED";return true;
   }catch(error){
    console.warn("Subaru STL import unavailable; keeping the procedural rally car.",error);
+   const modelStatus=document.getElementById("modelStatus");if(modelStatus)modelStatus.textContent="SUBARU WRC BUILT-IN MODEL · "+(error&&error.message?error.message:"MODEL FILE UNAVAILABLE");
    return false;
   }
  })();
@@ -1274,9 +1277,9 @@ async function initScene(){
  scene=new THREE.Scene();scene.background=new THREE.Color(0x68777e);scene.fog=new THREE.FogExp2(0x68777e,.000105);
  camera=new THREE.PerspectiveCamera(settings.fov,innerWidth/innerHeight,.1,18000);camera.position.set(0,8,-14);
  createSkyDome();
- environmentHemi=new THREE.HemisphereLight(0xd5e0e6,0x343a34,.82);scene.add(environmentHemi);
- environmentFill=new THREE.DirectionalLight(0xffd7b1,.48);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
- environmentAmbient=new THREE.AmbientLight(0xc8d0d3,.16);scene.add(environmentAmbient);
+ environmentHemi=new THREE.HemisphereLight(0xd5e0e6,0x3e443e,1.08);scene.add(environmentHemi);
+ environmentFill=new THREE.DirectionalLight(0xffdfc0,.68);environmentFill.position.set(-200,500,180);scene.add(environmentFill);
+ environmentAmbient=new THREE.AmbientLight(0xc8d0d3,.30);scene.add(environmentAmbient);
  await nextPaint();
  await buildWorldProgressive();
  setLoad(86,"Preparing the Subaru rally car");
@@ -1331,9 +1334,10 @@ function resetCar(){
  vehicleRoot.userData.chassis.position.y=(settings.ride-.22)*.65;vehicleRoot.position.set(carState.x,terrainY(carState.x,carState.z)+.305,carState.z);vehicleRoot.rotation.set(0,carState.yaw,0);
 }
 function inputState(){
- let steer=(keys.KeyD?1:0)-(keys.KeyA?1:0);if(settings.invertSteer)steer=-steer;
- let throttle=keys.KeyW?1:0,brake=keys.KeyS?1:0;if(settings.swapPedals)[throttle,brake]=[brake,throttle];
- const handbrake=settings.alternateHandbrake?!!keys.KeyH:!!keys.Space;
+ const down=code=>!!(keys[code]||driveKeys[code]);
+ let steer=(down("KeyD")?1:0)-(down("KeyA")?1:0);if(settings.invertSteer)steer=-steer;
+ let throttle=down("KeyW")?1:0,brake=down("KeyS")?1:0;if(settings.swapPedals)[throttle,brake]=[brake,throttle];
+ const handbrake=settings.alternateHandbrake?down("KeyH"):down("Space");
  return{steer:Math.max(-1,Math.min(1,steer)),throttle,brake,handbrake};
 }
 function physicsStep(dt){
@@ -1523,7 +1527,7 @@ function drawTrackPreview(){
  $("trackPreviewName").textContent=track.name;$("trackPreviewDistance").textContent=(stage.full?track.full/1000:stage.km).toFixed(1)+" KM · "+stage.name;
 }
 function startStage(){
- if(engineAudio?.state==="suspended")engineAudio.resume();
+ activateAudio();
  $("introScreen").classList.remove("open");$("homeScreen").classList.remove("open");
  if(!trackData||!vehicleRoot)buildPreviewWorld();
  const spec=CARS[selectedCar];placeCar();gameActive=true;paused=false;stageFinished=false;elapsed=0;
@@ -1656,7 +1660,43 @@ function bindUI(){
 }
 function specSafeRpm(){return CARS[selectedCar].rpm;}
 function initAudio(){
- try{engineAudio=new (window.AudioContext||window.webkitAudioContext)();engineOsc=engineAudio.createOscillator();engineGain=engineAudio.createGain();engineOsc.type="sawtooth";engineOsc.frequency.value=55;engineGain.gain.value=0;engineOsc.connect(engineGain);engineGain.connect(engineAudio.destination);engineOsc.start();}catch(e){}
+ if(engineAudio)return engineAudio;
+ try{
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return null;
+  engineAudio=new AudioContextClass({latencyHint:"interactive"});
+  engineFilter=engineAudio.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=620;engineFilter.Q.value=.55;
+  engineGain=engineAudio.createGain();engineGain.gain.value=.0001;
+  engineOsc=engineAudio.createOscillator();engineOsc.type="sawtooth";engineOsc.frequency.value=38;
+  engineOsc2=engineAudio.createOscillator();engineOsc2.type="triangle";engineOsc2.frequency.value=76;
+  engineOsc.connect(engineFilter);engineOsc2.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(engineAudio.destination);
+  engineOsc.start();engineOsc2.start();
+  const length=Math.max(1,Math.floor(engineAudio.sampleRate*1.4)),buffer=engineAudio.createBuffer(1,length,engineAudio.sampleRate),data=buffer.getChannelData(0);
+  let last=0;for(let i=0;i<length;i++){last=last*.82+(Math.random()*.36-.18);data[i]=last;}
+  roadNoiseSource=engineAudio.createBufferSource();roadNoiseSource.buffer=buffer;roadNoiseSource.loop=true;
+  roadNoiseFilter=engineAudio.createBiquadFilter();roadNoiseFilter.type="lowpass";roadNoiseFilter.frequency.value=900;
+  roadNoiseGain=engineAudio.createGain();roadNoiseGain.gain.value=.0001;
+  roadNoiseSource.connect(roadNoiseFilter);roadNoiseFilter.connect(roadNoiseGain);roadNoiseGain.connect(engineAudio.destination);roadNoiseSource.start();
+  return engineAudio;
+ }catch(error){console.warn("Rally audio could not initialise:",error);return null;}
+}
+function activateAudio(){
+ const context=initAudio();if(context&&context.state==="suspended")context.resume().catch(error=>console.warn("Rally audio resume failed:",error));
+}
+function updateAudio(){
+ if(!engineAudio||!engineOsc||!engineGain)return;
+ const now=engineAudio.currentTime,active=gameActive&&!paused&&!stageFinished&&!!carState;
+ const rpm=active?clamp(carState.rpm,900,CARS[selectedCar].rpm):950,speed=active?Math.abs(carState.vLong):0;
+ const throttle=active?inputState().throttle:0,frequency=Math.max(32,rpm/60*1.85);
+ try{
+  engineOsc.frequency.setTargetAtTime(frequency,now,.045);
+  engineOsc2.frequency.setTargetAtTime(frequency*2.015,now,.055);
+  engineFilter.frequency.setTargetAtTime(330+rpm*.22+throttle*520,now,.08);
+  engineGain.gain.setTargetAtTime(active?(.042+throttle*.065+Math.min(.025,speed*.00055))*settings.volume:.0001,now,.06);
+  if(roadNoiseGain&&roadNoiseFilter){
+   roadNoiseFilter.frequency.setTargetAtTime(480+speed*34,now,.10);
+   roadNoiseGain.gain.setTargetAtTime(active?Math.min(.055,speed*.00155)*settings.volume:.0001,now,.10);
+  }
+ }catch(error){console.warn("Rally audio update failed:",error);}
 }
 function playShiftSound(){
  if(!engineAudio||settings.shiftVolume<=0)return;
@@ -1679,8 +1719,9 @@ function animateGearControls(){
 function animate(now){
  requestAnimationFrame(animate);
  const dt=Math.min(.045,Math.max(.001,(now-previousFrame)/1000||.016));previousFrame=now;
- if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateSmoke(dt);updateAudio();}
+ if(gameActive&&!paused&&!stageFinished){physicsStep(dt);elapsed+=dt;updateDust(dt);updateSmoke(dt);}
  else{if(dustPoints)updateDust(dt*.25);if(smokePoints)updateSmoke(dt*.25);}
+ updateAudio();
  updatePrecipitation(dt);updateCamera(dt);
  if(environmentSun&&carState&&environmentSun.userData.sunOffset){const o=environmentSun.userData.sunOffset,fx=carState.x,fy=terrainY(fx,carState.z),fz=carState.z;environmentSun.target.position.set(fx,fy,fz);environmentSun.position.set(fx+o[0],fy+o[1],fz+o[2]);}
  if(skyDome&&camera)skyDome.position.copy(camera.position);
