@@ -414,9 +414,7 @@
   const current=portalSession;
   fetch(API_BASE+"/portal/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gameId:current.gameId,sessionId:current.sessionId,action:"end"}),keepalive:true}).catch(()=>{});
  });
- window.addEventListener("storage",event=>{
-  if(event.key===TOKEN_KEY){loadAccount();}
- });
+ // Check-ins are tab-scoped and are not synced to local storage.
  const originalEnterGameFS=window.enterGameFS;
  if(typeof originalEnterGameFS==="function"){
   window.enterGameFS=async function(){
