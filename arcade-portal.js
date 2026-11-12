@@ -8,7 +8,7 @@
  let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
-  "AgentiLoop Racing":"agenti-loop-racing",
+  "Google Drive Files":"google-drive-files",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
   "FPV Drone Simulator":"fpv-drone-simulator","Industrial Site Ops":"industrial-site-ops",
   "8 Ball Pool":"pool-8-ball","Tennis Rally":"tennis-rally","Hockey":"hockey",
@@ -28,7 +28,7 @@
  };
  const genreFor=(title,isExternal)=>{
   if(isExternal)return "External Games";
-  if(title==="AgentiLoop Racing")return "Work";
+  if(title==="Google Drive Files")return "Work";
   if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage"].includes(title))return "Racing";
   if(["Tennis Rally","Hockey","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Industrial Site Ops","Cube Engine"].includes(title))return "Simulation";
