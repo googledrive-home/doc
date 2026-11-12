@@ -5,7 +5,7 @@
  const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
+ let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
@@ -48,7 +48,7 @@
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
     '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
-    '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">⌘</span><span class="portal-nav-label-text">Dev mode</span><span class="portal-nav-count">LOCK</span></button>',
+    '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
    '</nav>',
    '<div class="portal-sidebar-foot"><button class="portal-profile-chip" id="sidebarProfile"><span class="portal-avatar" id="sidebarAvatar">?</span><span class="portal-profile-copy"><b id="sidebarName">Player</b><small id="sidebarStatus">Your username</small></span><span aria-hidden="true">›</span></button></div>',
   '</aside>',
@@ -77,8 +77,7 @@
      '<div id="portalProfileContent"></div>',
     '</section>',
     '<section class="portal-view" id="portalDevView" data-page="dev">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">LIVE ACTIVITY</div><h1>Developer mode</h1><p>See the usernames currently online and the games they are playing.</p></div></div>',
-     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted area</h2><p>Enter the developer passcode to see who is online and what they are playing.</p><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Developer password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock dashboard</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
+     '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted</h2><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
      '<div class="portal-dev-metrics" id="portalDevMetrics"></div>',
     '</section>',
    '</div>',
@@ -206,7 +205,7 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],dev:["LIVE ACTIVITY","Dev mode"]}[view]||["PLAYSPACE","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],dev:["ACCESS CONTROL","Restricted"]}[view]||["PLAYSPACE","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="profile")renderProfile();
   if(view==="settings")renderSettings();
@@ -275,7 +274,11 @@
   if(options?.body!==undefined)config.body=JSON.stringify(options.body);
   return fetch(API_BASE+path,config).then(async response=>{
    const data=await response.json().catch(()=>({}));
-   if(!response.ok)throw new Error(data.error||("Request failed ("+response.status+")."));
+   if(!response.ok){
+    const error=new Error(data.error||("Request failed ("+response.status+")."));
+    error.status=response.status;
+    throw error;
+   }
    return data;
   });
  }
@@ -418,20 +421,54 @@
   const panel=document.getElementById("musicPanel"),host=$p("portalMusicHost");
   if(panel&&host&&panel.parentElement!==host){host.appendChild(panel);panel.classList.add("open");}
  }
+ async function warmDevServer(){
+  if(devServerWarm)return true;
+  if(devServerWarmup)return devServerWarmup;
+  devServerWarmup=(async()=>{
+   const deadline=Date.now()+75000;
+   while(Date.now()<deadline){
+    try{
+     const response=await fetch(API_BASE+"/health",{method:"GET",cache:"no-store"});
+     if(response.ok){
+      const result=await response.json().catch(()=>null);
+      if(result&&result.ok){devServerWarm=true;return true;}
+     }
+    }catch(error){}
+    await new Promise(resolve=>setTimeout(resolve,2200));
+   }
+   return false;
+  })().finally(()=>{devServerWarmup=null;});
+  return devServerWarmup;
+ }
  function renderDevView(){
   if(devPasswordInMemory)refreshDevMetrics();
-  else $p("portalDevMetrics").classList.remove("open");
+  else{
+   $p("portalDevMetrics").classList.remove("open");
+   warmDevServer();
+  }
  }
  $p("portalDevForm").addEventListener("submit",async event=>{
-  event.preventDefault();const input=$p("portalDevPassword"),status=$p("portalDevStatus"),entered=input.value;
-  status.textContent="Checking password…";status.className="portal-status";
+  event.preventDefault();
+  const input=$p("portalDevPassword"),status=$p("portalDevStatus"),entered=input.value;
+  if(!entered)return;
+  status.textContent="Connecting…";status.className="portal-status";
+  const ready=devServerWarm?true:await warmDevServer();
+  if(!ready){
+   status.textContent="Connection unavailable. Please try again.";
+   status.className="portal-status error";
+   return;
+  }
+  status.textContent="Checking…";
   try{
    const metrics=await apiRequest("/portal/admin/metrics",{method:"POST",body:{password:entered}});
    devPasswordInMemory=entered;input.value="";status.textContent="";
    $p("portalDevGate").style.display="none";renderDevMetrics(metrics);
    if(devRefreshTimer)clearInterval(devRefreshTimer);
    devRefreshTimer=setInterval(refreshDevMetrics,15000);
-  }catch(error){status.textContent=error.message;status.className="portal-status error";}
+  }catch(error){
+   status.textContent=error.status===401?"Access denied.":error.status===429?"Too many attempts. Try again later.":"Connection unavailable. Please try again.";
+   status.className="portal-status error";
+  }
  });
  async function refreshDevMetrics(){
   if(!devPasswordInMemory)return;
@@ -441,7 +478,7 @@
   }catch(error){
    if(devRefreshTimer)clearInterval(devRefreshTimer);devRefreshTimer=null;devPasswordInMemory="";
    $p("portalDevGate").style.display="block";$p("portalDevMetrics").classList.remove("open");
-   $p("portalDevStatus").textContent="Dev Mode locked: "+error.message;
+   $p("portalDevStatus").textContent=error.status===401?"Access denied.":"Connection lost. Please unlock again.";
    $p("portalDevStatus").className="portal-status error";
   }
  }
