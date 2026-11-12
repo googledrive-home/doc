@@ -191,54 +191,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     ],'Grand Prix configuration · Eau Rouge–Raidillon, Kemmel Straight and Pouhon')
   ];
   const keys=new Set();
-    Subaru:['WRX STI','BRZ','Impreza WRX','BRZ tS','Impreza 22B'],
-    Toyota:['GR Supra','GR86','Celica GT-Four','MR2','AE86'],
-    Honda:['Civic Type R','S2000','Integra Type R','NSX','Prelude'],
-    Nissan:['GT-R','370Z','Silvia S15','350Z','Skyline GT-R'],
-    Mazda:['RX-7','MX-5','RX-8','Mazda3 MPS','Cosmo'],
-    Mitsubishi:['Lancer Evolution IX','Lancer Evolution X','3000GT','Eclipse','FTO'],
-    BMW:['M3','M4','M2','Z4 M40i','1 Series M'],
-    Ford:['Mustang GT','Focus RS','Fiesta ST','GT','Escort RS'],
-    Volkswagen:['Golf R','Scirocco R','Polo GTI','GTI Clubsport','Corrado VR6'],
-    Audi:['RS3','TT RS','S3','RS5','R8'],
-    Porsche:['911 Carrera','718 Cayman','911 GT3','Taycan GTS','944 Turbo'],
-    Lamborghini:['Huracan','Revuelto','Aventador','Gallardo','Urus']
-  };
-  const palette=['#4be3ff','#ff5b65','#ffd35b','#58e49a','#9c6cff','#ff7a45','#f1f5f8','#5dd3ff','#74da75','#ff4f8b','#ad83ff','#d8e2ea'];
-  const TYRES={soft:{name:'Soft',grip:1.13,wear:1.36,color:'#ff5b65'},medium:{name:'Medium',grip:1.04,wear:1.00,color:'#ffd35b'},hard:{name:'Hard',grip:.97,wear:.72,color:'#e9eef2'}};
-  const shapeFor=model=>{const m=model.toLowerCase();if(/urus|suv/.test(m))return'suv';if(/r8|huracan|revuelto|aventador|gallardo|gt-r|nsx|911|718|cayman|supra|m4|m3|m2|tt rs/.test(m))return'supercar';if(/mx-5|s2000|brz|gr86|mr2|370z|350z|silvia|z4/.test(m))return'roadster';if(/civic|golf|focus|fiesta|polo|impreza|mazda3|scirocco|corrado/.test(m))return'hatch';return'sedan';};
-  const all=[];let id=0;
-  Object.entries(brands).forEach(([brand,models],bi)=>models.forEach((model,mi)=>all.push({
-    id:id++,brand,model,power:330+bi*24+mi*31,weight:1160+bi*26+mi*34,top:292+bi*5+mi*8,grip:1.07-(mi*.012),
-    accel:24+bi*.18+mi*.42,brake:27+mi*.55,steer:1.01+(mi%2)*.035,color:palette[(bi+mi)%palette.length],shape:shapeFor(model),fuelCap:56+(bi%3)*2+(mi%3)*2
-  })));
 
-  const GP=[[1280,620],[1390,620],[1510,625],[1580,650],[1560,710],[1460,735],[1310,730],[1160,715],[1010,700],[860,690],[700,690],[540,685],[390,670],[260,645],[170,600],[135,535],[145,475],[205,415],[300,385],[395,390],[470,425],[500,485],[550,530],[640,550],[730,545],[820,525],[910,500],[1010,490],[1110,495],[1190,515],[1260,545],[1330,560],[1405,535],[1475,500],[1515,445],[1510,380],[1470,325],[1390,295],[1290,290],[1180,290],[1060,285],[950,275],[830,260],[710,245],[590,250],[500,280],[420,315],[340,350],[260,360],[185,340],[130,300],[95,245],[105,185],[165,150],[260,145],[365,150],[470,160],[570,165],[670,170],[770,172],[875,170],[990,172],[1110,178],[1230,185],[1335,195],[1435,220],[1500,260],[1530,310],[1550,370],[1580,430],[1590,500],[1550,560],[1480,600],[1380,615],[1280,620]];
-  const RV=[[945,805],[1080,805],[1220,815],[1370,825],[1500,820],[1570,790],[1550,720],[1510,650],[1470,575],[1450,490],[1480,420],[1520,350],[1515,275],[1470,215],[1390,190],[1280,205],[1170,220],[1080,230],[1000,220],[930,205],[850,205],[790,225],[740,270],[720,335],[735,395],[770,440],[830,465],[890,470],[940,445],[980,400],[1000,350],[970,305],[910,285],[830,290],[750,310],[665,330],[575,340],[500,330],[430,300],[365,260],[300,235],[235,250],[195,300],[190,360],[220,415],[285,445],[365,455],[450,450],[520,435],[555,465],[540,520],[485,565],[410,580],[330,565],[250,540],[170,535],[100,565],[45,620],[40,700],[90,755],[190,765],[320,750],[450,735],[580,730],[710,735],[820,750],[900,770],[945,805]];
-  const HARBOR=[];for(let i=0;i<96;i++){const a=i/96*Math.PI*2;const rX=535+55*Math.cos(a*3);const rY=300+42*Math.sin(a*2);HARBOR.push([800+(560+rX*.12)*Math.cos(a),540+(rY)*Math.sin(a)]);}
-  const expandTrack=(pts,W,H,sx,sy)=>({W:Math.round(W*sx),H:Math.round(H*sy),pts:pts.map(([x,y])=>[Math.round(W*sx/2+(x-W/2)*sx),Math.round(H*sy/2+(y-H/2)*sy)])});
-  const G=expandTrack(GP,1600,800,1.11,1.10),R=expandTrack(RV,1600,1169,1.09,1.07),H=expandTrack(HARBOR,1600,1050,1.08,1.08);
-  const trackDefs=[
-    {name:'Grand Prix',W:G.W,H:G.H,width:62,pts:G.pts,scale:1.38},
-    {name:'Grand Prix Reverse',W:G.W,H:G.H,width:62,pts:[...G.pts].reverse(),scale:1.38},
-    {name:'Riverside',W:R.W,H:R.H,width:60,pts:R.pts,scale:1.52},
-    {name:'Riverside Reverse',W:R.W,H:R.H,width:60,pts:[...R.pts].reverse(),scale:1.52},
-    {name:'Harbor Ring',W:H.W,H:H.H,width:60,pts:H.pts,scale:1.46}
-  ];
-  const COAST=[[250,210],[620,130],[1110,150],[1450,260],[1550,500],[1420,760],[1050,900],[620,880],[260,760],[120,520],[155,320]];
-  const ALPINE=[[220,280],[520,120],[1010,100],[1430,220],[1570,470],[1480,730],[1180,900],[720,930],[380,820],[170,600],[150,420]];
-  const DESERT=[[260,160],[720,110],[1250,150],[1510,320],[1420,510],[1530,760],[1120,900],[610,860],[240,740],[110,500],[180,300]];
-  const FOREST=[[180,300],[430,150],[850,110],[1260,170],[1510,360],[1460,650],[1210,850],[800,920],[430,820],[210,650],[120,460]];
-  const CITY=[[220,180],[690,120],[1190,170],[1510,330],[1550,600],[1380,830],[980,910],[540,860],[200,700],[120,460]];
-  const C1=expandTrack(COAST,1600,1050,1.06,1.02),C2=expandTrack(ALPINE,1600,1050,1.04,1.05),C3=expandTrack(DESERT,1600,1000,1.07,1.04),C4=expandTrack(FOREST,1600,1040,1.06,1.04),C5=expandTrack(CITY,1600,1000,1.08,1.05);
-  trackDefs.push(
-    {name:'Coastal Sprint',W:C1.W,H:C1.H,width:64,pts:C1.pts,scale:1.34},
-    {name:'Alpine Switchback',W:C2.W,H:C2.H,width:64,pts:C2.pts,scale:1.30},
-    {name:'Desert Dunes',W:C3.W,H:C3.H,width:64,pts:C3.pts,scale:1.37},
-    {name:'Forest Run',W:C4.W,H:C4.H,width:64,pts:C4.pts,scale:1.33},
-    {name:'Neon City',W:C5.W,H:C5.H,width:64,pts:C5.pts,scale:1.40}
-  );
-  const keys=new Set();
   let selectedBrand='Formula',selectedCar=0,selectedP2=0,selectedTrack=0,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
 
   function svg(car){
@@ -284,7 +237,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     q('tracks').innerHTML=trackDefs.map((t,i)=>'<button class="track-choice '+(i===selectedTrack?'active':'')+'" data-t="'+i+'"><div class="track-mini"><canvas width="230" height="120"></canvas></div><div><strong>'+t.name+'</strong><small>'+t.country+' · '+t.lengthKm+' km · '+t.turns+' turns</small><small>'+t.description+'</small></div></button>').join('');
     q('tracks').querySelectorAll('.track-choice').forEach((b,i)=>{const ts=pathSamples(trackDefs[i]),pit=buildPit(ts,trackDefs[i]);mini(trackDefs[i],b.querySelector('canvas').getContext('2d'),pit);b.onclick=()=>{selectedTrack=i;renderTracks();updateSummary()}});
   }
-  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+aiDifficulty.toUpperCase()+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs+' · '+trackDefs[selectedTrack].lengthKm+' km circuit}
+  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+aiDifficulty.toUpperCase()+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs+' · '+trackDefs[selectedTrack].lengthKm+' km circuit'}
   function pathSamples(track){
     const pts=track.pts,s=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(3,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/10));for(let j=0;j<n;j++){const u=j/n;s.push({x:lerp(a[0],b[0],u),y:lerp(a[1],b[1],u)})}}for(let i=0;i<s.length;i++){const a=s[(i+s.length-5)%s.length],b=s[(i+5)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;s[i].tx=dx/l;s[i].ty=dy/l;s[i].nx=-s[i].ty;s[i].ny=s[i].tx}return s
   }
