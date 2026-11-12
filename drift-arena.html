@@ -394,7 +394,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       ctx.fillStyle='#53645f';ctx.fillRect(x-2*ppm,y-7*ppm,4*ppm,height*ppm);
       ctx.fillStyle=v?'#d8dfd5':'#87958d';ctx.fillRect(x-7*ppm,y-height*ppm,14*ppm,5*ppm);
     };
-    // Rolling infield mounds and contour highlights: no walls, fences or guardrails.
+    // Rolling infield mounds, textured grass and open runoff.
     for(let i=0;i<14;i++){const p=s[(i*Math.floor(s.length/14))%s.length],side=i%2?1:-1,spread=edge+(theme==='spa'?105:theme==='monza'?88:75)*ppm;drawHill(p.x+p.nx*spread*side,p.y+p.ny*spread*side,(24+(i%4)*10)*ppm,(14+(i%3)*7)*ppm,theme==='spa'?'#567b54':theme==='monza'?'#77975e':'#8fa76a')}
     for(let i=0;i<s.length;i+=9){const p=s[i],a=Math.atan2(p.ty,p.tx);for(const side of [-1,1]){
       const spread=edge+(theme==='spa'?64:theme==='monza'?57:49)*ppm+(i%5)*5*ppm,x=p.x+p.nx*spread*side,y=p.y+p.ny*spread*side;
