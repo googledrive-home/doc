@@ -5,7 +5,7 @@
  const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
+ let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
@@ -422,7 +422,8 @@
   if(panel&&host&&panel.parentElement!==host){host.appendChild(panel);panel.classList.add("open");}
  }
  async function warmDevServer(){
-  if(devServerWarm)return true;
+  if(devServerWarm&&Date.now()-devServerWarmAt<10*60*1000)return true;
+  devServerWarm=false;
   if(devServerWarmup)return devServerWarmup;
   devServerWarmup=(async()=>{
    const deadline=Date.now()+75000;
@@ -431,7 +432,7 @@
      const response=await fetch(API_BASE+"/health",{method:"GET",cache:"no-store"});
      if(response.ok){
       const result=await response.json().catch(()=>null);
-      if(result&&result.ok){devServerWarm=true;return true;}
+      if(result&&result.ok){devServerWarm=true;devServerWarmAt=Date.now();return true;}
      }
     }catch(error){}
     await new Promise(resolve=>setTimeout(resolve,2200));
@@ -476,6 +477,7 @@
    const metrics=await apiRequest("/portal/admin/metrics",{method:"POST",body:{password:devPasswordInMemory}});
    renderDevMetrics(metrics);
   }catch(error){
+   if(error.status!==401&&error.status!==429)devServerWarm=false;
    if(devRefreshTimer)clearInterval(devRefreshTimer);devRefreshTimer=null;devPasswordInMemory="";
    $p("portalDevGate").style.display="block";$p("portalDevMetrics").classList.remove("open");
    $p("portalDevStatus").textContent=error.status===401?"Access denied.":"Connection lost. Please unlock again.";
