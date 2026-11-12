@@ -147,6 +147,11 @@
    buttons,source
   });
  }
+ // Also list AgentiLoop Racing in Racing while retaining its Docs listing.
+ const docsRacingGame=games.find(game=>game.title==="AgentiLoop Racing"&&game.genre==="Docs");
+ if(docsRacingGame){
+  games.push({...docsRacingGame,id:"agenti-loop-racing-racing",genre:"Racing"});
+ }
  $p("gameCountBadge").textContent=String(games.length);
  if(games.length)$p("portalGameGroups").dataset.ready="1";
  const categoryOrder=["Racing","Sports","Simulation","Arcade","Puzzle","Docs","External Games"];
