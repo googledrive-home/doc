@@ -75,3 +75,16 @@ Source GeoJSON files:
 Attribution: © OpenStreetMap contributors. Data licence: Open Database Licence (ODbL) 1.0 — https://opendatacommons.org/licenses/odbl/1-0/
 
 The WGS84 outline coordinates are projected into a local metre-based rendering frame and normalised to each circuit's published lap length. The Suzuka bridge deck and vertical separation are an in-game elevation interpretation of the published figure-eight crossover, not a survey-grade 3D scan.
+
+
+## F1 circuit GPS centreline data
+
+The Monza, Silverstone and Spa-Francorchamps centreline traces embedded in `drift-arena.html` are derived from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), a community-maintained Formula 1 circuit GeoJSON project, distributed under the MIT License. The centreline traces are mapped GPS data, not laser-scanned track boundaries.
+
+Copyright (c) 2019-2025 Tomislav Bacinger
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
