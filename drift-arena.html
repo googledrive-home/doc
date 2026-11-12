@@ -25,6 +25,7 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
 .overlay{position:absolute;inset:0;pointer-events:none}.countdown{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(70px,12vw,160px);font-weight:1000;text-shadow:0 15px 55px #000b}.countdown.hide{display:none}
 .minimap{position:absolute;right:14px;top:14px;width:185px;height:120px;border-radius:15px;overflow:hidden;background:#06101bde;border:1px solid #ffffff18}.minimap canvas{width:100%;height:100%;background:#071017}
 .p1tag{position:absolute;left:14px;top:14px;padding:7px 9px;border-radius:10px;background:#06101bde;border:1px solid #ffffff18;font-size:10px}.p1tag b{color:var(--cyan)}
+.line-legend{position:absolute;right:14px;top:142px;display:flex;gap:7px;padding:7px 9px;border-radius:9px;background:#06101bdc;border:1px solid #ffffff18;color:#d8e5ed;font-size:8px;font-weight:900}.line-legend span{display:flex;align-items:center;gap:4px}.line-legend i{display:inline-block;width:12px;height:4px;border-radius:4px}.line-legend .green{background:#55ed9a}.line-legend .yellow{background:#ffc94e}.line-legend .red{background:#ff4b55}@media(max-width:760px){.line-legend{top:116px;right:8px;gap:4px;padding:6px;font-size:7px}}
 .speed{position:absolute;left:14px;bottom:14px;width:190px;padding:12px;border-radius:18px;background:#06101ddd;border:1px solid #ffffff18;backdrop-filter:blur(9px)}.speed.p2{left:auto;right:14px}.speed h3{text-align:center;font-size:10px;letter-spacing:.08em;margin:0 0 5px}.ring{width:142px;height:142px;margin:auto;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from -125deg,var(--cyan) 0 var(--fill),#22364a var(--fill) 68%,transparent 68%);position:relative}.ring:after{content:"";position:absolute;inset:10px;border-radius:50%;background:#08131f;border:1px solid #ffffff10}.speedv{position:relative;z-index:2;text-align:center}.speedv b{display:block;font-size:31px}.speedv span{font-size:8px;color:#8aa3b8}.speedmeta{display:flex;justify-content:space-between;font-size:9px;color:#96aec1;margin-top:8px}
 .pause{position:absolute;right:216px;top:15px;pointer-events:auto}.race-actions{display:flex;gap:8px;margin-left:auto}
 .result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,92%);padding:22px;border-radius:22px;background:#06101ef2;border:1px solid #ffffff22;box-shadow:0 32px 120px #000c;text-align:center;pointer-events:auto}.result h2{margin:0 0 5px;font-size:34px}.result p{color:#a8bfce}.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0}.result-card{padding:10px;border-radius:12px;background:#0b2235;border:1px solid #ffffff12}.result-card b{display:block;font-size:19px}.result-card span{font-size:8px;color:#8aa2b6}.standings{text-align:left;max-height:220px;overflow:auto}.standing{display:grid;grid-template-columns:30px 1fr 65px 68px;gap:7px;padding:8px;border-bottom:1px solid #ffffff0a;font-size:10px}.standing.me{background:#103148;border-radius:8px}.standing small{display:block;color:#839bb0;margin-top:2px}
@@ -93,7 +94,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <div class="race-head">
 <div class="metric"><b id="raceTrack">Track</b><span>TRACK</span></div><div class="metric"><b id="raceLap">1 / 3</b><span>LAP</span></div><div class="metric"><b id="racePos">1 / 4</b><span>POSITION</span></div><div class="metric"><b id="raceTime">0:00.00</b><span>TIME</span></div><div class="metric"><b id="raceBest">--</b><span>BEST LAP</span></div><div class="metric"><b id="racePoints">0</b><span>DRIVE PTS</span></div><div class="metric"><b id="raceFuel">--</b><span>FUEL</span></div><div class="metric"><b id="raceTyre">--</b><span>TYRE</span></div><div class="metric"><b id="raceTcs">TCS 2</b><span>ASSIST</span></div><div class="race-actions"><button class="btn" id="pauseBtn">Ⅱ Pause</button><button class="btn" id="restartBtn">↻ Restart</button><button class="btn" id="exitBtn">✕ Exit Race</button></div>
 </div>
-<div class="race-shell" id="raceShell"><canvas id="canvas"></canvas><div class="overlay"><div class="p1tag"><b id="p1Name">P1</b></div><div class="minimap"><canvas id="map"></canvas></div><div class="brake-hint hidden" id="brakeHint">BRAKE<span id="brakeHintSub">Preparing for the corner</span></div><div class="pit-status hidden" id="pitStatus">PIT <b id="pitStatusText">READY</b></div><div class="speed" id="speed1"><h3>PLAYER 1</h3><div class="ring" id="ring1"><div class="speedv"><b id="speedText1">0</b><span>KM/H</span></div></div><div class="speedmeta"><span id="gear1">N</span><span id="state1">GRIP</span></div></div><div class="speed p2 hidden" id="speed2"><h3>PLAYER 2</h3><div class="ring" id="ring2"><div class="speedv"><b id="speedText2">0</b><span>KM/H</span></div></div><div class="speedmeta"><span id="gear2">N</span><span id="state2">GRIP</span></div></div><div class="countdown hide" id="countdown">3</div><div class="result hidden" id="result"></div></div></div>
+<div class="race-shell" id="raceShell"><canvas id="canvas"></canvas><div class="overlay"><div class="p1tag"><b id="p1Name">P1</b></div><div class="minimap"><canvas id="map"></canvas></div><div class="line-legend"><span><i class="green"></i>ON PACE</span><span><i class="yellow"></i>PREPARE</span><span><i class="red"></i>BRAKE</span></div><div class="brake-hint hidden" id="brakeHint">BRAKE<span id="brakeHintSub">Preparing for the corner</span></div><div class="pit-status hidden" id="pitStatus">PIT <b id="pitStatusText">READY</b></div><div class="speed" id="speed1"><h3>PLAYER 1</h3><div class="ring" id="ring1"><div class="speedv"><b id="speedText1">0</b><span>KM/H</span></div></div><div class="speedmeta"><span id="gear1">N</span><span id="state1">GRIP</span></div></div><div class="speed p2 hidden" id="speed2"><h3>PLAYER 2</h3><div class="ring" id="ring2"><div class="speedv"><b id="speedText2">0</b><span>KM/H</span></div></div><div class="speedmeta"><span id="gear2">N</span><span id="state2">GRIP</span></div></div><div class="countdown hide" id="countdown">3</div><div class="result hidden" id="result"></div></div></div>
 </section>
 </div>
 
@@ -251,39 +252,6 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   }
   function nearestOpen(s,x,y){
     let best={d:1e9,i:0,t:0};for(let i=0;i<s.length-1;i++){const a=s[i],b=s[i+1],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,u=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*u,py=a.y+aby*u,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t:u}}const a=s[best.i],b=s[Math.min(s.length-1,best.i+1)],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,i:best.i,t:best.t,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}
-  }
-  function buildBrakeZones(s,t){
-    const zones=[];if(!s||s.length<32)return zones;const n=s.length;
-    for(let i=0;i<n;i+=8){
-      let curve=0;
-      for(let j=10;j<=34;j+=6){
-        const a=s[(i+j)%n],b=s[(i+j+8)%n];
-        curve=Math.max(curve,Math.abs(wrap(Math.atan2(b.ty,b.tx)-Math.atan2(a.ty,a.tx))));
-      }
-      if(curve<.20)continue;
-      if(zones.length){
-        const prev=zones[zones.length-1].index;
-        if(Math.min((i-prev+n)%n,(prev-i+n)%n)<34)continue;
-      }
-      zones.push({index:i,intensity:clamp((curve-.20)/.34,0,1),curve});
-      if(zones.length>=12)break;
-    }
-    return zones;
-  }
-  function drawFixedBrakeZones(ctx,t,s){
-    for(const z of (t.brakeZones||[])){
-      const a=s[z.index];if(!a)continue;
-      const ang=Math.atan2(a.ty,a.tx),w=t.width*.82,hot=z.intensity>.55;
-      ctx.save();ctx.translate(a.x,a.y);ctx.rotate(ang);
-      ctx.fillStyle=hot?'#ff4e5a33':'#ffd65a2b';ctx.fillRect(-22,-w*.5,44,w);
-      ctx.setLineDash([8,6]);ctx.strokeStyle=hot?'#ff6b733f':'#ffd96c44';ctx.lineWidth=2;ctx.strokeRect(-22,-w*.5,44,w);
-      ctx.setLineDash([]);ctx.restore();
-      for(let k=1;k<=3;k++){
-        const p=s[(z.index-k*5+s.length)%s.length];
-        ctx.fillStyle=hot?'#ff5e68':'#ffd65a';
-        ctx.fillRect(p.x-2,p.y-30,4,10);ctx.fillRect(p.x-2,p.y+20,4,10);
-      }
-    }
   }
   function sampleCountForMeters(m,track=race&&race.track){return Math.max(1,Math.round(m/((track&&track.sampleStepPx||8)/WORLD_PX_PER_M)))}
   function curvatureAt(s,index,span=10){
@@ -493,11 +461,6 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     ctx.strokeRect(-11*WORLD_PX_PER_M,-half-7*WORLD_PX_PER_M,22*WORLD_PX_PER_M,4*WORLD_PX_PER_M);
     ctx.fillStyle='#fff';ctx.font='900 '+(1.3*WORLD_PX_PER_M)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('START / FINISH',0,-half-9*WORLD_PX_PER_M);
     ctx.restore();
-  }
-  function drawBrakeZone(ctx,b,t,s){
-    if(!b.show)return;
-    const a=s[b.index],w=t.width*.78;ctx.save();ctx.translate(a.x,a.y);ctx.rotate(Math.atan2(a.ty,a.tx));ctx.fillStyle=b.intensity>.58?'#ff4f5c55':'#ffd35b55';ctx.fillRect(-18,-w*.5,36,w);ctx.strokeStyle=b.intensity>.58?'#ff6870':'#ffd76b';ctx.lineWidth=3;ctx.strokeRect(-18,-w*.5,36,w);ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillText('BRAKE',0,4);ctx.restore();
-    for(let n=1;n<=3;n++){const p=s[(b.index-n*7+s.length)%s.length];ctx.fillStyle=b.intensity>.58?'#ff525b':'#ffd35b';ctx.fillRect(p.x-2,p.y-28,4,12);ctx.fillRect(p.x-2,p.y+16,4,12)}
   }
   function drawTrackSurfaceTexture(ctx,t,s){
     const half=t.width*.5;ctx.save();
