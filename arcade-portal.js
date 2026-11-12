@@ -28,7 +28,7 @@
  };
  const genreFor=(title,isExternal)=>{
   if(isExternal)return "External Games";
-  if(title==="AgentiLoop Racing")return "Docs";
+  if(title==="AgentiLoop Racing")return "Work";
   if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage"].includes(title))return "Racing";
   if(["Tennis Rally","Hockey","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Industrial Site Ops","Cube Engine"].includes(title))return "Simulation";
@@ -147,14 +147,9 @@
    buttons,source
   });
  }
- // Also list AgentiLoop Racing in Racing while retaining its Docs listing.
- const docsRacingGame=games.find(game=>game.title==="AgentiLoop Racing"&&game.genre==="Docs");
- if(docsRacingGame){
-  games.push({...docsRacingGame,id:"agenti-loop-racing-racing",genre:"Racing"});
- }
  $p("gameCountBadge").textContent=String(games.length);
  if(games.length)$p("portalGameGroups").dataset.ready="1";
- const categoryOrder=["Racing","Sports","Simulation","Arcade","Puzzle","Docs","External Games"];
+ const categoryOrder=["Racing","Sports","Simulation","Arcade","Puzzle","Work","External Games"];
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
