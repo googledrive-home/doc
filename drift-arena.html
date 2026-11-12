@@ -34,6 +34,30 @@ body{overflow-x:hidden}button,select{font:inherit}button{cursor:pointer}.wrap{ma
 /* Consistent pointer and touch input for game interface controls. */
 button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointer-events:auto!important;touch-action:manipulation}
 .btn:before,.btn::before{pointer-events:none!important}
+
+/* Drift Arena rebuild: garage, circuit cards and close, scale-aware chase view. */
+#setupView .hero{padding:30px 2px 19px}
+#setupView .hero h1{font-size:clamp(48px,7vw,88px);letter-spacing:-5px}
+#setupView .hero p{max-width:820px;font-size:13px}
+#setupView .layout{grid-template-columns:minmax(0,1.28fr) minmax(340px,.72fr);gap:18px}
+#setupView .panel{background:linear-gradient(145deg,#10243a,#081523);border-color:#ffffff1c}
+#setupView .brand-tab{padding:9px 16px;letter-spacing:.06em}
+#setupView .brand-tab.active{background:linear-gradient(135deg,#137b91,#174b63);border-color:#66e6ff88}
+#setupView .car-option{grid-template-columns:84px 1fr;min-height:78px;background:#081522;border-color:#ffffff14}
+#setupView .car-option.active{background:linear-gradient(120deg,#133b4b,#102538);border-color:#60e7ff88;box-shadow:inset 3px 0 #4be3ff}
+#setupView .car-art{width:84px;height:58px}
+#setupView .car-art svg{width:76px;height:52px}
+#setupView .car-option strong{font-size:11px}
+#setupView .track-choice{grid-template-columns:128px minmax(0,1fr);padding:10px;background:#081522}
+#setupView .track-choice.active{background:#182f3c;border-color:#ffd35b99;box-shadow:inset 3px 0 #ffd35b}
+#setupView .track-mini{height:82px}
+#setupView .track-choice strong{font-size:12px}
+#setupView .track-choice small{font-size:9px;line-height:1.4}
+#setupView .track-choice small+small{color:#718fa5;margin-top:3px}
+#setupView .spec{background:#06111d;border-color:#ffffff12;padding:10px}
+#setupView .startbox{background:linear-gradient(145deg,#17394b,#0c1d2d);border-color:#4be3ff35}
+@media(max-width:1000px){#setupView .layout{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -43,10 +67,10 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <header class="top"><div class="brand">DRIFT <span>ARENA</span></div><div class="grow"></div><button class="btn" id="soundBtn">🔊 Sound</button><button class="btn" id="fsBtn">⛶ Fullscreen</button><button class="btn" id="arcadeBtn">← Arcade</button></header>
 
 <section id="setupView">
-<div class="hero"><h1>Drift <span>Arena</span></h1><p>A premium top-down racing with a much tighter chase camera, faster race pace, detailed trackside scenes, clean circuits and AI that stays on-line through the corners.</p></div>
+<div class="hero"><h1>Drift <span>Arena</span></h1><p>A close-follow top-down racer with scale-correct real-world Grand Prix circuits, Formula, GT, sports and road cars, and the original Drift Arena handling model.</p></div>
 <div class="layout">
 <div class="panel">
-<div class="section"><h2>Choose a brand</h2><small>12 brands · 60 cars</small></div><div class="brand-tabs" id="brands"></div>
+<div class="section"><h2>Choose a vehicle class</h2><small>4 classes · 12 cars</small></div><div class="brand-tabs" id="brands"></div>
 <div class="section"><h2 id="modelTitle">Models</h2><small id="modelHint"></small></div><div class="models" id="models"></div><div class="specs" id="specs"></div>
 <div class="control"><div class="section"><h2>Race setup</h2><small>Local multiplayer</small></div><div class="grid2">
 <div><small>Mode</small><select class="select" id="mode"><option value="solo">Single Player</option><option value="two">2 Players</option></select></div>
@@ -59,9 +83,9 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
 <div><small>TCS</small><select class="select" id="tcs"><option value="0">0 — Off</option><option value="1">1 — Low</option><option value="2" selected>2 — Road</option><option value="3">3 — Sport</option><option value="4">4 — High</option><option value="5">5 — Max</option></select></div>
 </div><div class="help">P1: W/S + A/D · P2: Arrow keys · P pauses · Space services the car in the pit box. Brake zones appear only when a corner needs braking.</div></div>
 </div>
-<div class="side"><div class="panel"><div class="section"><h2>Track selection</h2><small>10 circuits · 5 new maps</small></div><div class="track-list" id="tracks"></div></div>
-<div class="summary"><small>Current build</small><div class="big" id="build">Subaru · WRX STI</div><div class="muted" id="summary">1 player · 3 AI · 3 laps</div></div>
-<div class="startbox"><p>Race visuals are drawn directly in the browser for a consistent, polished race-day presentation.</p><button class="btn primary" id="startBtn" style="width:100%">▶ START RACE</button></div></div>
+<div class="side"><div class="panel"><div class="section"><h2>Track selection</h2><small>3 full-size circuits</small></div><div class="track-list" id="tracks"></div></div>
+<div class="summary"><small>Current build</small><div class="big" id="build">APEX Motorsport · Formula GP 26</div><div class="muted" id="summary">1 player · 3 AI · 3 laps</div></div>
+<div class="startbox"><p>Three real-world circuit layouts, length-scaled to their published lap distances. No trackside barriers: grass runoff is the penalty for leaving the asphalt.</p><button class="btn primary" id="startBtn" style="width:100%">▶ START RACE</button></div></div>
 </div>
 </section>
 
@@ -92,92 +116,133 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   const lerp=(a,b,t)=>a+(b-a)*t;
   const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
   const fmt=t=>{const m=Math.floor(t/60),s=(t%60).toFixed(2).padStart(5,'0');return m+':'+s};
-  const brands={
-    Subaru:['WRX STI','BRZ','Impreza WRX','BRZ tS','Impreza 22B'],
-    Toyota:['GR Supra','GR86','Celica GT-Four','MR2','AE86'],
-    Honda:['Civic Type R','S2000','Integra Type R','NSX','Prelude'],
-    Nissan:['GT-R','370Z','Silvia S15','350Z','Skyline GT-R'],
-    Mazda:['RX-7','MX-5','RX-8','Mazda3 MPS','Cosmo'],
-    Mitsubishi:['Lancer Evolution IX','Lancer Evolution X','3000GT','Eclipse','FTO'],
-    BMW:['M3','M4','M2','Z4 M40i','1 Series M'],
-    Ford:['Mustang GT','Focus RS','Fiesta ST','GT','Escort RS'],
-    Volkswagen:['Golf R','Scirocco R','Polo GTI','GTI Clubsport','Corrado VR6'],
-    Audi:['RS3','TT RS','S3','RS5','R8'],
-    Porsche:['911 Carrera','718 Cayman','911 GT3','Taycan GTS','944 Turbo'],
-    Lamborghini:['Huracan','Revuelto','Aventador','Gallardo','Urus']
+  const classes={
+    Formula:['Formula GP 26','Formula Junior'],
+    GT:['Porsche 911 GT3 R','BMW M4 GT3 EVO','Mercedes-AMG GT3','Ford Mustang GT3'],
+    Sports:['McLaren 720S','Lamborghini Huracan STO','Nissan GT-R NISMO'],
+    Road:['Subaru WRX STI','Toyota GR Supra','Mazda MX-5']
   };
-  const palette=['#4be3ff','#ff5b65','#ffd35b','#58e49a','#9c6cff','#ff7a45','#f1f5f8','#5dd3ff','#74da75','#ff4f8b','#ad83ff','#d8e2ea'];
+  const palette=['#e63846','#42a7e8','#f0c74b','#5ad18d','#9b75e8','#ed8c42','#e8edf0','#4cc5d7','#8cce67','#f06c9a','#a18be9','#d5dce4'];
   const TYRES={soft:{name:'Soft',grip:1.13,wear:1.36,color:'#ff5b65'},medium:{name:'Medium',grip:1.04,wear:1.00,color:'#ffd35b'},hard:{name:'Hard',grip:.97,wear:.72,color:'#e9eef2'}};
-  const shapeFor=model=>{const m=model.toLowerCase();if(/urus|suv/.test(m))return'suv';if(/r8|huracan|revuelto|aventador|gallardo|gt-r|nsx|911|718|cayman|supra|m4|m3|m2|tt rs/.test(m))return'supercar';if(/mx-5|s2000|brz|gr86|mr2|370z|350z|silvia|z4/.test(m))return'roadster';if(/civic|golf|focus|fiesta|polo|impreza|mazda3|scirocco|corrado/.test(m))return'hatch';return'sedan';};
-  const all=[];let id=0;
-  Object.entries(brands).forEach(([brand,models],bi)=>models.forEach((model,mi)=>all.push({
-    id:id++,brand,model,power:330+bi*24+mi*31,weight:1160+bi*26+mi*34,top:292+bi*5+mi*8,grip:1.07-(mi*.012),
-    accel:24+bi*.18+mi*.42,brake:27+mi*.55,steer:1.01+(mi%2)*.035,color:palette[(bi+mi)%palette.length],shape:shapeFor(model),fuelCap:56+(bi%3)*2+(mi%3)*2
-  })));
-
-  const GP=[[1280,620],[1390,620],[1510,625],[1580,650],[1560,710],[1460,735],[1310,730],[1160,715],[1010,700],[860,690],[700,690],[540,685],[390,670],[260,645],[170,600],[135,535],[145,475],[205,415],[300,385],[395,390],[470,425],[500,485],[550,530],[640,550],[730,545],[820,525],[910,500],[1010,490],[1110,495],[1190,515],[1260,545],[1330,560],[1405,535],[1475,500],[1515,445],[1510,380],[1470,325],[1390,295],[1290,290],[1180,290],[1060,285],[950,275],[830,260],[710,245],[590,250],[500,280],[420,315],[340,350],[260,360],[185,340],[130,300],[95,245],[105,185],[165,150],[260,145],[365,150],[470,160],[570,165],[670,170],[770,172],[875,170],[990,172],[1110,178],[1230,185],[1335,195],[1435,220],[1500,260],[1530,310],[1550,370],[1580,430],[1590,500],[1550,560],[1480,600],[1380,615],[1280,620]];
-  const RV=[[945,805],[1080,805],[1220,815],[1370,825],[1500,820],[1570,790],[1550,720],[1510,650],[1470,575],[1450,490],[1480,420],[1520,350],[1515,275],[1470,215],[1390,190],[1280,205],[1170,220],[1080,230],[1000,220],[930,205],[850,205],[790,225],[740,270],[720,335],[735,395],[770,440],[830,465],[890,470],[940,445],[980,400],[1000,350],[970,305],[910,285],[830,290],[750,310],[665,330],[575,340],[500,330],[430,300],[365,260],[300,235],[235,250],[195,300],[190,360],[220,415],[285,445],[365,455],[450,450],[520,435],[555,465],[540,520],[485,565],[410,580],[330,565],[250,540],[170,535],[100,565],[45,620],[40,700],[90,755],[190,765],[320,750],[450,735],[580,730],[710,735],[820,750],[900,770],[945,805]];
-  const HARBOR=[];for(let i=0;i<96;i++){const a=i/96*Math.PI*2;const rX=535+55*Math.cos(a*3);const rY=300+42*Math.sin(a*2);HARBOR.push([800+(560+rX*.12)*Math.cos(a),540+(rY)*Math.sin(a)]);}
-  const expandTrack=(pts,W,H,sx,sy)=>({W:Math.round(W*sx),H:Math.round(H*sy),pts:pts.map(([x,y])=>[Math.round(W*sx/2+(x-W/2)*sx),Math.round(H*sy/2+(y-H/2)*sy)])});
-  const G=expandTrack(GP,1600,800,1.11,1.10),R=expandTrack(RV,1600,1169,1.09,1.07),H=expandTrack(HARBOR,1600,1050,1.08,1.08);
+  const all=[
+    {className:'Formula',brand:'APEX Motorsport',model:'Formula GP 26',power:1000,weight:798,top:355,grip:1.19,accel:30.5,brake:36,steer:1.16,color:'#e63846',shape:'formula',fuelCap:110,length:5.6,bodyWidth:2.0,wheelbase:3.55},
+    {className:'Formula',brand:'APEX Motorsport',model:'Formula Junior',power:620,weight:735,top:295,grip:1.12,accel:24.2,brake:31,steer:1.12,color:'#42a7e8',shape:'formula',fuelCap:85,length:5.1,bodyWidth:1.9,wheelbase:3.2},
+    {className:'GT',brand:'Porsche',model:'911 GT3 R',power:565,weight:1250,top:295,grip:1.12,accel:23.5,brake:31,steer:1.07,color:'#f0c74b',shape:'gt',fuelCap:110,length:4.8,bodyWidth:2.0,wheelbase:2.72},
+    {className:'GT',brand:'BMW',model:'M4 GT3 EVO',power:590,weight:1300,top:290,grip:1.10,accel:23.0,brake:30.5,steer:1.05,color:'#5ad18d',shape:'gt',fuelCap:110,length:4.9,bodyWidth:2.0,wheelbase:2.85},
+    {className:'GT',brand:'Mercedes-AMG',model:'AMG GT3',power:550,weight:1290,top:285,grip:1.09,accel:22.4,brake:30,steer:1.04,color:'#9b75e8',shape:'gt',fuelCap:110,length:4.7,bodyWidth:2.0,wheelbase:2.63},
+    {className:'GT',brand:'Ford',model:'Mustang GT3',power:550,weight:1300,top:285,grip:1.07,accel:22.0,brake:29.5,steer:1.02,color:'#ed8c42',shape:'gt',fuelCap:110,length:4.9,bodyWidth:2.0,wheelbase:2.72},
+    {className:'Sports',brand:'McLaren',model:'720S',power:710,weight:1419,top:341,grip:1.08,accel:25.8,brake:29.5,steer:1.11,color:'#ed8c42',shape:'sports',fuelCap:72,length:4.54,bodyWidth:1.93,wheelbase:2.67},
+    {className:'Sports',brand:'Lamborghini',model:'Huracan STO',power:640,weight:1339,top:310,grip:1.09,accel:24.4,brake:30,steer:1.12,color:'#8cce67',shape:'sports',fuelCap:80,length:4.55,bodyWidth:1.95,wheelbase:2.62},
+    {className:'Sports',brand:'Nissan',model:'GT-R NISMO',power:600,weight:1720,top:315,grip:1.04,accel:22.0,brake:28,steer:1.02,color:'#4cc5d7',shape:'sports',fuelCap:74,length:4.69,bodyWidth:1.90,wheelbase:2.78},
+    {className:'Road',brand:'Subaru',model:'WRX STI',power:310,weight:1520,top:255,grip:.98,accel:17.5,brake:23,steer:1.00,color:'#42a7e8',shape:'road',fuelCap:60,length:4.595,bodyWidth:1.795,wheelbase:2.65},
+    {className:'Road',brand:'Toyota',model:'GR Supra',power:382,weight:1565,top:275,grip:1.00,accel:19.8,brake:24.5,steer:1.04,color:'#f0c74b',shape:'road',fuelCap:52,length:4.38,bodyWidth:1.865,wheelbase:2.47},
+    {className:'Road',brand:'Mazda',model:'MX-5',power:181,weight:1070,top:220,grip:1.02,accel:15.5,brake:21,steer:1.12,color:'#e8edf0',shape:'road',fuelCap:45,length:3.915,bodyWidth:1.735,wheelbase:2.31}
+  ].map((car,id)=>({...car,id}));
+  const WORLD_PX_PER_M=2.2;
+  function makeCircuit(name,country,lengthMeters,turns,widthMeters,anchors,description){
+    const raw=[],n=anchors.length,steps=10;
+    for(let i=0;i<n;i++){
+      const p0=anchors[(i+n-1)%n],p1=anchors[i],p2=anchors[(i+1)%n],p3=anchors[(i+2)%n];
+      for(let j=0;j<steps;j++){
+        const t=j/steps,t2=t*t,t3=t2*t;
+        const x=.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
+        const y=.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
+        raw.push([x,y]);
+      }
+    }
+    let rawLength=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(let i=0;i<raw.length;i++){
+      const a=raw[i],b=raw[(i+1)%raw.length];
+      rawLength+=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      minX=Math.min(minX,a[0]);minY=Math.min(minY,a[1]);maxX=Math.max(maxX,a[0]);maxY=Math.max(maxY,a[1]);
+    }
+    const metresPerUnit=lengthMeters/rawLength,pad=90;
+    const pts=raw.map(([x,y])=>[
+      Math.round((x-minX)*metresPerUnit*WORLD_PX_PER_M+pad),
+      Math.round((y-minY)*metresPerUnit*WORLD_PX_PER_M+pad)
+    ]);
+    const W=Math.ceil((maxX-minX)*metresPerUnit*WORLD_PX_PER_M+pad*2);
+    const H=Math.ceil((maxY-minY)*metresPerUnit*WORLD_PX_PER_M+pad*2);
+    return {name,country,lengthMeters,lengthKm:(lengthMeters/1000).toFixed(3),turns,widthMeters,width:widthMeters*WORLD_PX_PER_M,description,W,H,pts,scale:WORLD_PX_PER_M/1.58,pitSide:-1};
+  }
   const trackDefs=[
-    {name:'Grand Prix',W:G.W,H:G.H,width:62,pts:G.pts,scale:1.38},
-    {name:'Grand Prix Reverse',W:G.W,H:G.H,width:62,pts:[...G.pts].reverse(),scale:1.38},
-    {name:'Riverside',W:R.W,H:R.H,width:60,pts:R.pts,scale:1.52},
-    {name:'Riverside Reverse',W:R.W,H:R.H,width:60,pts:[...R.pts].reverse(),scale:1.52},
-    {name:'Harbor Ring',W:H.W,H:H.H,width:60,pts:H.pts,scale:1.46}
+    makeCircuit('Autodromo Nazionale Monza','Italy',5793,11,11,[
+      [110,720],[790,720],[890,720],[940,690],[925,660],[880,660],[860,690],[900,705],[1010,700],
+      [1120,660],[1210,585],[1250,500],[1240,430],[1200,400],[1140,410],[1120,450],[1160,475],[1205,470],
+      [1160,390],[1080,310],[990,250],[890,210],[810,190],[770,215],[770,255],[815,275],[850,270],
+      [825,300],[770,325],[700,310],[665,275],[620,260],[565,280],[530,330],[520,390],[550,435],
+      [590,450],[555,480],[500,495],[455,470],[420,435],[375,450],[365,500],[395,560],[440,600],
+      [400,645],[300,680],[200,705]
+    ],'Full Grand Prix configuration · Rettifilo, Curva Grande, Lesmo, Ascari and Parabolica'),
+    makeCircuit('Silverstone Circuit','United Kingdom',5891,18,12,[
+      [1040,800],[1160,850],[1240,810],[1210,760],[1140,720],[1030,700],[990,650],[970,580],[930,510],
+      [900,430],[850,340],[780,270],[700,250],[620,270],[560,300],[500,300],[430,280],[350,270],
+      [270,300],[230,360],[250,430],[310,470],[390,460],[460,420],[520,380],[560,400],[570,470],
+      [540,530],[470,560],[390,550],[330,520],[270,540],[240,610],[270,680],[340,730],[430,760],
+      [540,760],[650,750],[760,740],[870,750],[960,780]
+    ],'Wing Grand Prix configuration · Copse, Maggotts–Becketts, Stowe and Club'),
+    makeCircuit('Circuit de Spa-Francorchamps','Belgium',7004,19,12.5,[
+      [250,770],[310,760],[360,725],[350,680],[310,655],[285,680],[300,730],[340,700],[390,600],
+      [430,480],[470,365],[520,280],[630,220],[780,170],[940,145],[1080,170],[1190,230],[1280,320],
+      [1250,380],[1180,390],[1130,350],[1140,300],[1200,330],[1270,420],[1300,510],[1260,580],
+      [1160,590],[1080,570],[1000,550],[930,580],[900,650],[930,720],[1010,760],[1120,780],
+      [1190,750],[1210,700],[1160,660],[1080,660],[1020,710],[950,780],[840,820],[710,830],
+      [580,810],[470,780],[380,780],[300,790]
+    ],'Grand Prix configuration · Eau Rouge–Raidillon, Kemmel Straight and Pouhon')
   ];
-  const COAST=[[250,210],[620,130],[1110,150],[1450,260],[1550,500],[1420,760],[1050,900],[620,880],[260,760],[120,520],[155,320]];
-  const ALPINE=[[220,280],[520,120],[1010,100],[1430,220],[1570,470],[1480,730],[1180,900],[720,930],[380,820],[170,600],[150,420]];
-  const DESERT=[[260,160],[720,110],[1250,150],[1510,320],[1420,510],[1530,760],[1120,900],[610,860],[240,740],[110,500],[180,300]];
-  const FOREST=[[180,300],[430,150],[850,110],[1260,170],[1510,360],[1460,650],[1210,850],[800,920],[430,820],[210,650],[120,460]];
-  const CITY=[[220,180],[690,120],[1190,170],[1510,330],[1550,600],[1380,830],[980,910],[540,860],[200,700],[120,460]];
-  const C1=expandTrack(COAST,1600,1050,1.06,1.02),C2=expandTrack(ALPINE,1600,1050,1.04,1.05),C3=expandTrack(DESERT,1600,1000,1.07,1.04),C4=expandTrack(FOREST,1600,1040,1.06,1.04),C5=expandTrack(CITY,1600,1000,1.08,1.05);
-  trackDefs.push(
-    {name:'Coastal Sprint',W:C1.W,H:C1.H,width:64,pts:C1.pts,scale:1.34},
-    {name:'Alpine Switchback',W:C2.W,H:C2.H,width:64,pts:C2.pts,scale:1.30},
-    {name:'Desert Dunes',W:C3.W,H:C3.H,width:64,pts:C3.pts,scale:1.37},
-    {name:'Forest Run',W:C4.W,H:C4.H,width:64,pts:C4.pts,scale:1.33},
-    {name:'Neon City',W:C5.W,H:C5.H,width:64,pts:C5.pts,scale:1.40}
-  );
   const keys=new Set();
-  let selectedBrand='Subaru',selectedCar=1,selectedP2=0,selectedTrack=2,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
+
+  let selectedBrand='Formula',selectedCar=0,selectedP2=0,selectedTrack=0,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
 
   function svg(car){
-    const body=car.shape==='supercar'?'<path d="M14 36L20 20L34 11L66 11L80 20L86 36L79 45L21 45Z"':car.shape==='hatch'?'<path d="M13 37L18 19L31 10L69 10L82 19L87 37L77 46L23 46Z"':car.shape==='suv'?'<path d="M12 38L17 17L28 9L72 9L83 17L88 38L78 47L22 47Z"':car.shape==='roadster'?'<path d="M17 38L22 20L37 12L63 12L78 20L83 38L73 45L27 45Z"':'<path d="M14 38L18 19L30 10L70 10L82 19L86 38L77 46L23 46Z"';
-    const glass=car.shape==='supercar'?'M31 14L69 14L76 28L24 28Z':car.shape==='suv'?'M29 12L71 12L76 29L24 29Z':car.shape==='roadster'?'M35 15L65 15L71 28L29 28Z':'M31 14L69 14L73 29L27 29Z';
-    return '<svg viewBox="0 0 100 60"><ellipse cx="50" cy="50" rx="33" ry="5" fill="#0007"/>'+body+' fill="'+car.color+'" stroke="#f4fbff" stroke-width="1.4"/><path d="'+glass+'" fill="#14232e" stroke="#89a1af"/><path d="M29 30L71 30L76 36L24 36Z" fill="#1b2d38"/><rect x="27" y="40" width="16" height="4" rx="2" fill="#ff5662"/><rect x="57" y="40" width="16" height="4" rx="2" fill="#ff5662"/><circle cx="15" cy="35" r="5" fill="#11161c"/><circle cx="85" cy="35" r="5" fill="#11161c"/>'+(car.shape==='supercar'?'<path d="M20 29L28 23L36 29L28 34Z" fill="#263743"/><path d="M80 29L72 23L64 29L72 34Z" fill="#263743"/>':'')+'</svg>';
+    const formula=car.shape==='formula',gt=car.shape==='gt';
+    const body=formula
+      ? '<path d="M56 4L62 18L78 25L78 44L65 51L61 63L59 65L56 55L53 65L51 63L47 51L34 44L34 25L50 18Z" fill="'+car.color+'" stroke="#f7fbff" stroke-width="1.3"/>'
+      : gt
+      ? '<path d="M39 5Q60 1 81 5L91 17L89 45L78 62L42 62L31 45L29 17Z" fill="'+car.color+'" stroke="#f7fbff" stroke-width="1.3"/>'
+      : car.shape==='sports'
+      ? '<path d="M45 5Q60 0 75 5L88 21L84 45L74 61L46 61L36 45L32 21Z" fill="'+car.color+'" stroke="#f7fbff" stroke-width="1.3"/>'
+      : '<path d="M40 5Q60 1 80 5L89 18L87 48L76 62L44 62L33 48L31 18Z" fill="'+car.color+'" stroke="#f7fbff" stroke-width="1.3"/>';
+    const wheels=formula
+      ? '<rect x="20" y="18" width="18" height="17" rx="5" fill="#101820"/><rect x="82" y="18" width="18" height="17" rx="5" fill="#101820"/><rect x="19" y="45" width="19" height="16" rx="5" fill="#101820"/><rect x="82" y="45" width="19" height="16" rx="5" fill="#101820"/>'
+      : '<rect x="25" y="17" width="15" height="17" rx="5" fill="#101820"/><rect x="80" y="17" width="15" height="17" rx="5" fill="#101820"/><rect x="25" y="44" width="15" height="17" rx="5" fill="#101820"/><rect x="80" y="44" width="15" height="17" rx="5" fill="#101820"/>';
+    const glass=formula
+      ? '<path d="M52 20L68 20L73 35L47 35Z" fill="#182c3a" stroke="#9db5c5"/><ellipse cx="60" cy="28" rx="5" ry="7" fill="#111d28"/>'
+      : '<path d="M43 17Q60 12 77 17L78 30L42 30Z" fill="#162a38" stroke="#9db5c5"/><path d="M42 39L78 39L73 51L47 51Z" fill="#1b303d" stroke="#668293"/>';
+    return '<svg viewBox="0 0 120 70" aria-hidden="true"><ellipse cx="60" cy="58" rx="42" ry="7" fill="#0007"/>'+wheels+body+glass+(formula?'<path d="M22 12L98 12L96 18L24 18Z" fill="#1e2933" stroke="#a8b8c6"/><path d="M24 57L96 57L100 63L20 63Z" fill="#252d35" stroke="#a8b8c6"/>':'<path d="M39 8L81 8L78 13L42 13Z" fill="#242c34"/><path d="M38 54L82 54L79 59L41 59Z" fill="#262d34"/>')+'<path d="M46 8L52 13M74 8L68 13" stroke="#ffffff88" stroke-width="1.5"/><path d="M43 8L48 12M77 8L72 12" stroke="#fff4" stroke-width="1"/><rect x="44" y="4" width="7" height="3" rx="1" fill="#f5fbff"/><rect x="69" y="4" width="7" height="3" rx="1" fill="#f5fbff"/><rect x="45" y="61" width="8" height="3" rx="1" fill="#ff5862"/><rect x="67" y="61" width="8" height="3" rx="1" fill="#ff5862"/></svg>';
   }
   function renderBrands(){
-    q('brands').innerHTML=Object.keys(brands).map(b=>'<button class="brand-tab '+(b===selectedBrand?'active':'')+'" data-b="'+b+'">'+b+'</button>').join('');
+    q('brands').innerHTML=Object.keys(classes).map(b=>'<button class="brand-tab '+(b===selectedBrand?'active':'')+'" data-b="'+b+'">'+b+'</button>').join('');
     q('brands').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedBrand=b.dataset.b;renderBrands();renderModels()});
   }
-  function specs(c){return [['POWER',c.power+' hp'],['WEIGHT',c.weight+' kg'],['TOP',c.top+' km/h'],['GRIP',Math.round(c.grip*100)+'%'],['BRAKE',c.brake.toFixed(1)],['STEER',Math.round(c.steer*100)+'%'],['ACCEL',c.accel.toFixed(1)],['FUEL CAP',c.fuelCap+' L'],['BODY',c.shape.toUpperCase()],['MODEL',c.model]].map(x=>'<div class="spec"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('')}
+  function specs(c){
+    return [['POWER',c.power+' hp'],['WEIGHT',c.weight+' kg'],['TOP SPEED',c.top+' km/h'],['GRIP',Math.round(c.grip*100)+'%'],['CLASS',c.className.toUpperCase()],['BODY',c.shape.toUpperCase()],['LENGTH',c.length.toFixed(2)+' m'],['WHEELBASE',c.wheelbase.toFixed(2)+' m'],['BRAKES',c.brake.toFixed(1)],['ACCEL',c.accel.toFixed(1)]].map(x=>'<div class="spec"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('');
+  }
   function renderModels(){
-    const list=all.filter(c=>c.brand===selectedBrand);q('modelTitle').textContent=selectedBrand+' models';q('modelHint').textContent=list.length+' available';
-    q('models').innerHTML=list.map(c=>'<button class="car-option '+(c.id===selectedCar?'active':'')+'" data-id="'+c.id+'"><div class="car-art">'+svg(c)+'</div><div><strong>'+c.model+'</strong><small>'+c.power+' hp · '+c.top+' km/h</small></div></button>').join('');
-    q('models').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedCar=+b.dataset.id;renderModels();updateSpecs()});
-    updateSpecs()
+    const list=all.filter(c=>c.className===selectedBrand);q('modelTitle').textContent=selectedBrand+' cars';q('modelHint').textContent=list.length+' models';
+    q('models').innerHTML=list.map(c=>'<button class="car-option '+(c.id===selectedCar?'active':'')+'" data-id="'+c.id+'"><div class="car-art">'+svg(c)+'</div><div><strong>'+c.brand+' · '+c.model+'</strong><small>'+c.power+' hp · '+c.top+' km/h</small></div></button>').join('');
+    q('models').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedCar=+b.dataset.id;renderModels();updateSpecs();updateSummary()});
+    updateSpecs();
   }
   function updateSpecs(){q('specs').innerHTML=specs(all[selectedCar])}
-  function renderP2(){q('p2car').innerHTML=all.map(c=>'<option value="'+c.id+'">'+c.brand+' · '+c.model+'</option>').join('');q('p2car').value=selectedP2;q('tyre').value=selectedTyre;q('pitTyre').value=selectedPitTyre;q('tcs').value=selectedTcs}
+  function renderP2(){q('p2car').innerHTML=all.map(c=>'<option value="'+c.id+'">'+c.className+' · '+c.brand+' · '+c.model+'</option>').join('');q('p2car').value=selectedP2;q('tyre').value=selectedTyre;q('pitTyre').value=selectedPitTyre;q('tcs').value=selectedTcs}
   function mini(track,ctx,pit){
     ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.fillStyle='#284b31';ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
     const sx=ctx.canvas.width/track.W,sy=ctx.canvas.height/track.H;ctx.save();ctx.scale(sx,sy);
-    ctx.beginPath();ctx.moveTo(track.pts[0][0],track.pts[0][1]);for(let i=1;i<track.pts.length;i++)ctx.lineTo(track.pts[i][0],track.pts[i][1]);ctx.closePath();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#101619';ctx.lineWidth=track.width+24;ctx.stroke();ctx.strokeStyle='#a0a6a8';ctx.lineWidth=track.width+12;ctx.stroke();ctx.strokeStyle='#50585d';ctx.lineWidth=track.width;ctx.stroke();
-    if(pit&&pit.length){ctx.beginPath();ctx.moveTo(pit[0].x,pit[0].y);for(let i=1;i<pit.length;i++)ctx.lineTo(pit[i].x,pit[i].y);ctx.strokeStyle='#111820';ctx.lineWidth=56;ctx.stroke();ctx.strokeStyle='#7d858a';ctx.lineWidth=Math.max(43,track.width-4);ctx.stroke();ctx.setLineDash([10,8]);ctx.strokeStyle='#f4f4f466';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([])}
+    ctx.beginPath();ctx.moveTo(track.pts[0][0],track.pts[0][1]);for(let i=1;i<track.pts.length;i++)ctx.lineTo(track.pts[i][0],track.pts[i][1]);ctx.closePath();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#101619';ctx.lineWidth=track.width+12;ctx.stroke();ctx.strokeStyle='#d8d9d3';ctx.lineWidth=track.width+5;ctx.stroke();ctx.strokeStyle='#434d55';ctx.lineWidth=track.width;ctx.stroke();
+    if(pit&&pit.length){ctx.beginPath();ctx.moveTo(pit[0].x,pit[0].y);for(let i=1;i<pit.length;i++)ctx.lineTo(pit[i].x,pit[i].y);ctx.strokeStyle='#111820';ctx.lineWidth=22;ctx.stroke();ctx.strokeStyle='#808b91';ctx.lineWidth=16;ctx.stroke();ctx.setLineDash([10,8]);ctx.strokeStyle='#f4f4f466';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([])}
     ctx.restore();
   }
   function renderTracks(){
-    q('tracks').innerHTML=trackDefs.map((t,i)=>'<button class="track-choice '+(i===selectedTrack?'active':'')+'" data-t="'+i+'"><div class="track-mini"><canvas width="230" height="120"></canvas></div><div><strong>'+t.name+'</strong><small>Wide circuit · '+(i%2?'reverse':'clockwise')+' line · pit lane · smart braking zones</small></div></button>').join('');
+    q('tracks').innerHTML=trackDefs.map((t,i)=>'<button class="track-choice '+(i===selectedTrack?'active':'')+'" data-t="'+i+'"><div class="track-mini"><canvas width="230" height="120"></canvas></div><div><strong>'+t.name+'</strong><small>'+t.country+' · '+t.lengthKm+' km · '+t.turns+' turns</small><small>'+t.description+'</small></div></button>').join('');
     q('tracks').querySelectorAll('.track-choice').forEach((b,i)=>{const ts=pathSamples(trackDefs[i]),pit=buildPit(ts,trackDefs[i]);mini(trackDefs[i],b.querySelector('canvas').getContext('2d'),pit);b.onclick=()=>{selectedTrack=i;renderTracks();updateSummary()}});
   }
-  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+aiDifficulty.toUpperCase()+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs}
+  function updateSummary(){q('build').textContent=all[selectedCar].brand+' · '+all[selectedCar].model;q('summary').textContent=(mode==='two'?'2 players':'1 player')+' · '+aiCount+' AI · '+aiDifficulty.toUpperCase()+' AI · '+laps+' laps · '+TYRES[selectedTyre].name+' · TCS '+selectedTcs+' · '+trackDefs[selectedTrack].lengthKm+' km circuit'}
   function pathSamples(track){
-    const pts=track.pts,s=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(3,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/18));for(let j=0;j<n;j++){const u=j/n;s.push({x:lerp(a[0],b[0],u),y:lerp(a[1],b[1],u)})}}for(let i=0;i<s.length;i++){const a=s[(i+s.length-5)%s.length],b=s[(i+5)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;s[i].tx=dx/l;s[i].ty=dy/l;s[i].nx=-s[i].ty;s[i].ny=s[i].tx}return s
+    const pts=track.pts,s=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(3,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/10));for(let j=0;j<n;j++){const u=j/n;s.push({x:lerp(a[0],b[0],u),y:lerp(a[1],b[1],u)})}}for(let i=0;i<s.length;i++){const a=s[(i+s.length-5)%s.length],b=s[(i+5)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;s[i].tx=dx/l;s[i].ty=dy/l;s[i].nx=-s[i].ty;s[i].ny=s[i].tx}return s
   }
   function buildPit(s,t){
-    const out=[],n=s.length,off=t.width*.5+74,side=t.pitSide||-1;
+    const out=[],n=s.length,off=t.width*.5+36,side=t.pitSide||-1;
     for(let k=-34;k<=30;k++){const p=s[(k+n)%n];out.push({x:p.x+p.nx*off*side,y:p.y+p.ny*off*side})}
     for(let i=0;i<out.length;i++){const a=out[Math.max(0,i-4)],b=out[Math.min(out.length-1,i+4)],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;out[i].tx=dx/l;out[i].ty=dy/l;out[i].nx=-out[i].ty;out[i].ny=out[i].tx}return out
   }
@@ -294,14 +359,15 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       if(car.pitTimer<=0){car.fuel=car.fuelCap;car.tyre=selectedPitTyre;car.tyreWear=100;car.pitting=false;car.serviceFlash=1.6}
     }else{
       car.serviceFlash=Math.max(0,car.serviceFlash-dt);car.steerState=lerp(car.steerState,inp.steer,clamp(dt*1.75,0,1));
-      const speedFrac=clamp(kmh/340,0,1),maxSteer=(17-10*speedFrac)*Math.PI/180*sp.steer,wheelbase=car.spec.shape==='suv'?2.9:car.spec.shape==='roadster'?2.55:2.72;
+      const speedFrac=clamp(kmh/340,0,1),maxSteer=(17-10*speedFrac)*Math.PI/180*sp.steer,wheelbase=car.spec.wheelbase||2.72;
       car.angle+=clamp(Math.tan(car.steerState*maxSteer)*Math.abs(f)/wheelbase,-.72,.72)*dt;
       const fuelFrac=clamp(car.fuel/car.fuelCap,0,1),fuelPower=.68+.32*fuelFrac,tcsCut=inp.throttle&&car.tcs>0?clamp((car.tcs/5)*Math.max(0,Math.abs(l)-2.5)/11,0,.58):0;
       if(inp.throttle&&car.fuel>0){const sf=clamp(Math.abs(f)/Math.max(1,top),0,1),accelScale=clamp(1-.88*Math.pow(sf,1.65),.12,1);f+=sp.accel*.46*accelScale*dt*(1-tcsCut)*fuelPower;}
       car.brakeState=lerp(car.brakeState||0,inp.brake?1:0,clamp(dt*(inp.brake?2.0:3.0),0,1)); const brakeForce=sp.brake*.64*car.brakeState; if(brakeForce>0)f-=Math.min(Math.abs(f),brakeForce*dt)*Math.sign(f||1);
       if(!inp.throttle&&!inp.brake)f-=Math.sign(f||1)*Math.min(Math.abs(f),(.55+.0045*f*f)*dt);
       if(onPit)f=clamp(f,-4,19.4);f=clamp(f,-6,top);
-      const offRoad=!onPit&&mainN.d>t.width*.43,gripFactor=.64+.36*(car.tyreWear/100),effectiveGrip=sp.grip*ty.grip*gripFactor*(offRoad?.54:1),sliding=Math.abs(car.steerState)>.20&&Math.abs(f)>14;
+      const offRoad=!onPit&&mainN.d>t.width*.43,gripFactor=.64+.36*(car.tyreWear/100),effectiveGrip=sp.grip*ty.grip*gripFactor*(offRoad?.34:1),sliding=Math.abs(car.steerState)>.20&&Math.abs(f)>14;
+       if(offRoad){const grassDecel=7.5+Math.abs(f)*.42;f-=Math.sign(f||1)*Math.min(Math.abs(f),grassDecel*dt);l*=Math.exp(-2.5*dt)}
       l*=Math.exp(-(sliding?effectiveGrip*.46:effectiveGrip*.78)*(inp.brake?1.12:1)*dt);if(sliding)l+=car.steerState*(2.5+Math.abs(f)*.020)*dt;l=clamp(l,-25,25);
       const nh=Math.cos(car.angle),nv=Math.sin(car.angle),nrX=-nv,nrY=nh;car.vx=nh*f+nrX*l;car.vy=nv*f+nrY*l;car.x+=car.vx*ppm*dt;car.y+=car.vy*ppm*dt;
       const activeN=onPit?pitN:mainN,edge=onPit?23:t.width*.43,off=Math.max(0,activeN.d-edge);if(off>0&&!onPit){const pull=clamp(off/48,0,1)*dt*4.6;car.x+=(mainN.x-car.x)*pull;car.y+=(mainN.y-car.y)*pull;car.vx*=Math.pow(.48,dt*2);car.vy*=Math.pow(.48,dt*2)}
@@ -317,7 +383,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     // Trackside environment is generated from the same centerline, so it never
     // intersects the racing surface and remains consistent with the camera.
     for(let i=0;i<s.length;i+=10){
-      const p=s[i],spread=t.width*.62+(i%3)*16;
+      const p=s[i],spread=t.width*.5+26+(i%3)*18;
       for(const side of [-1,1]){
         const x=p.x+p.nx*spread*side,y=p.y+p.ny*spread*side;
         if(i%30===0){
@@ -345,11 +411,9 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
             ctx.fillStyle='#3f8050';ctx.beginPath();ctx.arc(x+ox-4,y+oy-4,5,0,Math.PI*2);ctx.fill();
           }
         }else{
-          // Tyre stacks and low safety fencing.
-          ctx.fillStyle='#171b20';
-          for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x+(k-1)*7,y-4,5.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x+(k-1)*7,y+6,5.5,0,Math.PI*2);ctx.fill();}
-          ctx.strokeStyle='#7f8b92';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-20,y-20);ctx.lineTo(x+20,y-20);ctx.stroke();
-          for(let k=-20;k<=20;k+=10){ctx.beginPath();ctx.moveTo(x+k,y-20);ctx.lineTo(x+k,y-6);ctx.stroke();}
+          // Small shrubs sit beyond the runoff; there are no physical barriers.
+          ctx.fillStyle='#39764a';ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#68a65d';ctx.beginPath();ctx.arc(x-3,y-3,3,0,Math.PI*2);ctx.fill();
         }
       }
     }
@@ -366,7 +430,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   function drawPitLane(ctx,pit,t){
     if(!pit||!pit.length)return;
     const path=()=>{ctx.beginPath();ctx.moveTo(pit[0].x,pit[0].y);for(let i=1;i<pit.length;i++)ctx.lineTo(pit[i].x,pit[i].y)};
-    path();ctx.strokeStyle='#0d1419';ctx.lineWidth=t.width+18;ctx.lineCap='round';ctx.stroke();path();ctx.strokeStyle='#7d858a';ctx.lineWidth=43;ctx.stroke();ctx.setLineDash([12,9]);path();ctx.strokeStyle='#f5f5f577';ctx.lineWidth=1.4;ctx.stroke();ctx.setLineDash([]);
+    path();ctx.strokeStyle='#0d1419';ctx.lineWidth=25;ctx.lineCap='round';ctx.stroke();path();ctx.strokeStyle='#7d858a';ctx.lineWidth=19;ctx.stroke();ctx.setLineDash([12,9]);path();ctx.strokeStyle='#f5f5f577';ctx.lineWidth=1.1;ctx.stroke();ctx.setLineDash([]);
     for(let i=8;i<pit.length;i+=10){const a=pit[i];ctx.fillStyle='#ffe06c';ctx.fillRect(a.x-5,a.y-5,10,10)}
     const m=pit[Math.floor(pit.length*.55)];ctx.fillStyle='#18232b';ctx.fillRect(m.x-36,m.y-18,72,36);ctx.fillStyle='#ffd35b';ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillText('PIT BOX',m.x,m.y+3);
   }
@@ -388,7 +452,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     // Road with multiple depth layers.
     const p=()=>{ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);ctx.closePath()};
     const stroke=(color,width)=>{p();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke()};
-    stroke('#0c1115',t.width+28);stroke('#81898e',t.width+15);stroke('#232a2f',t.width+7);stroke('#454e53',t.width);
+    stroke('#0c1115',t.width+12);stroke('#eee9df',t.width+7);ctx.setLineDash([18,16]);stroke('#e84d56',t.width+7);ctx.setLineDash([]);stroke('#252e36',t.width);
     for(const car of race.cars){const bi=brakeInfo(car,s);if(bi.show&&!car.finished)drawBrakeZone(ctx,{...bi,intensity:Math.min(.72,bi.intensity*.72)},t,s)}
 
     const st=s[0],nx=s[6],ang=Math.atan2(nx.y-st.y,nx.x-st.x);
@@ -415,24 +479,42 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   function drawCar(ctx,c,cam,w,h){
     if(!c||!c.spec||!cam)return;
     const p={x:w/2+(c.x-cam.x)*cam.zoom,y:h/2+(c.y-cam.y)*cam.zoom};
-    const L=23*cam.zoom,W=10*cam.zoom;
-    ctx.save();
-    ctx.translate(p.x,p.y);
-    ctx.rotate((c.angle||0)+Math.PI/2);
-    ctx.fillStyle='#000';
-    ctx.fillRect(-W*.62, -L*.38, W*1.24, L*.9);
-    ctx.fillStyle=c.spec.color||'#4be3ff';
-    ctx.fillRect(-W/2,-L/2,W,L);
-    ctx.fillStyle='#16232d';
-    ctx.fillRect(-W*.33,-L*.25,W*.66,L*.30);
-    ctx.fillStyle='#eefaff';
-    ctx.fillRect(-W*.33,-L*.46,W*.20,3);
-    ctx.fillRect(W*.13,-L*.46,W*.20,3);
-    ctx.fillStyle='#ff5662';
-    ctx.fillRect(-W*.33,L*.39,W*.20,3);
-    ctx.fillRect(W*.13,L*.39,W*.20,3);
-    ctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd35b':'#ffffff';
-    ctx.fillRect(-2,-L*.38,4,L*.74);
+    const ppm=(race&&race.track?race.track.scale:WORLD_PX_PER_M/1.58)*1.58;
+    const L=(c.spec.length||4.6)*ppm*cam.zoom,W=(c.spec.bodyWidth||1.9)*ppm*cam.zoom;
+    const formula=c.spec.shape==='formula',gt=c.spec.shape==='gt',sports=c.spec.shape==='sports';
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate((c.angle||0)+Math.PI/2);
+    ctx.fillStyle='#0007';ctx.beginPath();ctx.ellipse(1,L*.08,W*.67,L*.57,0,0,Math.PI*2);ctx.fill();
+    const tyreW=W*.19,tyreL=L*.21,tyreX=W*.39,frontY=-L*.25,rearY=L*.24;
+    ctx.fillStyle='#11151a';ctx.strokeStyle='#48515a';ctx.lineWidth=Math.max(.7,cam.zoom*.10);
+    for(const x of [-tyreX,tyreX])for(const y of [frontY,rearY]){
+      rr(ctx,x-tyreW/2,y-tyreL/2,tyreW,tyreL,Math.max(1,tyreW*.25));ctx.fill();ctx.stroke();
+      ctx.fillStyle='#69737c';ctx.fillRect(x-tyreW*.28,y-tyreL*.36,tyreW*.56,tyreL*.72);ctx.fillStyle='#11151a';
+    }
+    if(formula){
+      ctx.fillStyle='#252e37';ctx.fillRect(-W*.52,-L*.48,W*1.04,L*.08);ctx.fillRect(-W*.54,L*.37,W*1.08,L*.08);
+      ctx.fillStyle=c.spec.color;ctx.beginPath();ctx.moveTo(0,-L*.53);ctx.lineTo(W*.18,-L*.36);ctx.lineTo(W*.42,-L*.26);ctx.lineTo(W*.46,L*.22);ctx.lineTo(W*.28,L*.35);ctx.lineTo(W*.16,L*.43);ctx.lineTo(-W*.16,L*.43);ctx.lineTo(-W*.28,L*.35);ctx.lineTo(-W*.46,L*.22);ctx.lineTo(-W*.42,-L*.26);ctx.lineTo(-W*.18,-L*.36);ctx.closePath();ctx.fill();ctx.strokeStyle='#f4f8fb';ctx.lineWidth=Math.max(.6,cam.zoom*.08);ctx.stroke();
+      ctx.fillStyle='#172d3d';ctx.beginPath();ctx.ellipse(0,-L*.02,W*.18,L*.18,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#0e1822';ctx.beginPath();ctx.ellipse(0,-L*.04,W*.105,L*.12,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#dce9ef';ctx.fillRect(-W*.18,L*.34,W*.36,L*.035);
+      ctx.fillStyle='#f6fbff';ctx.fillRect(-W*.35,-L*.48,W*.12,L*.025);ctx.fillRect(W*.23,-L*.48,W*.12,L*.025);
+    }else{
+      const half=gt?.43:sports?.40:.39;
+      ctx.fillStyle=c.spec.color;ctx.beginPath();
+      ctx.moveTo(0,-L*.53);ctx.quadraticCurveTo(W*.18,-L*.52,W*.27,-L*.38);
+      ctx.lineTo(W*half,-L*.16);ctx.lineTo(W*.46,L*.20);ctx.quadraticCurveTo(W*.40,L*.44,W*.27,L*.48);
+      ctx.lineTo(-W*.27,L*.48);ctx.quadraticCurveTo(-W*.40,L*.44,-W*.46,L*.20);
+      ctx.lineTo(-W*half,-L*.16);ctx.lineTo(-W*.27,-L*.38);ctx.quadraticCurveTo(-W*.18,-L*.52,0,-L*.53);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#f4f8fb';ctx.lineWidth=Math.max(.6,cam.zoom*.08);ctx.stroke();
+      ctx.fillStyle='#172b39';ctx.beginPath();
+      if(gt){ctx.moveTo(-W*.30,-L*.28);ctx.lineTo(W*.30,-L*.28);ctx.lineTo(W*.29,L*.02);ctx.lineTo(-W*.29,L*.02)}
+      else{ctx.moveTo(-W*.25,-L*.27);ctx.quadraticCurveTo(0,-L*.35,W*.25,-L*.27);ctx.lineTo(W*.27,L*.02);ctx.lineTo(-W*.27,L*.02)}
+      ctx.closePath();ctx.fill();
+      ctx.fillStyle='#243c4b';ctx.beginPath();ctx.moveTo(-W*.27,L*.08);ctx.lineTo(W*.27,L*.08);ctx.lineTo(W*.24,L*.30);ctx.lineTo(-W*.24,L*.30);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#eaf4f7';ctx.fillRect(-W*.30,-L*.43,W*.17,L*.035);ctx.fillRect(W*.13,-L*.43,W*.17,L*.035);
+      ctx.fillStyle='#ff5a63';ctx.fillRect(-W*.31,L*.40,W*.19,L*.035);ctx.fillRect(W*.12,L*.40,W*.19,L*.035);
+      if(gt){ctx.fillStyle='#252f38';ctx.fillRect(-W*.49,L*.34,W*.98,L*.045);ctx.fillStyle='#d9e1e8';ctx.fillRect(-W*.45,L*.30,W*.09,L*.08);ctx.fillRect(W*.36,L*.30,W*.09,L*.08)}
+      else{ctx.fillStyle='#222b33';ctx.fillRect(-W*.34,L*.46,W*.68,L*.04)}
+    }
     ctx.restore();
   }
   function rank(){return [...race.cars].sort((a,b)=>((b.lap+b.progress)-(a.lap+a.progress))||b.points-a.points)}
@@ -450,7 +532,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     mode=q('mode').value;aiCount=+q('aiCount').value;laps=+q('laps').value;selectedP2=+q('p2car').value;selectedTyre=q('tyre').value;selectedPitTyre=q('pitTyre').value;selectedTcs=+q('tcs').value;
     const track=trackDefs[selectedTrack],s=pathSamples(track);track.pitSide=track.pitSide||-1;track.brakeZones=buildBrakeZones(s,track);const pit=buildPit(s,track),cars=[makeCar(all[selectedCar],0,1,false,s)];
     if(mode==='two')cars.push(makeCar(all[selectedP2],1,2,false,s));for(let i=0;i<aiCount;i++)cars.push(makeCar(all[(selectedCar*7+i*5+11)%all.length],cars.length,0,true,s));
-    race={track,s,pit,cars,laps,aiDifficulty,time:0,last:performance.now(),paused:false,started:false,done:false,cam:{x:s[0].x,y:s[0].y,zoom:5.2}};
+    race={track,s,pit,cars,laps,aiDifficulty,time:0,last:performance.now(),paused:false,started:false,done:false,cam:{x:s[0].x,y:s[0].y,zoom:7.8}};
     cars.forEach((car,i)=>{car.x=s[0].x+(i%2?-16:16);car.y=s[0].y+Math.floor(i/2)*12;car.angle=Math.atan2(s[4].y-s[0].y,s[4].x-s[0].x);car.prev=0;car.lapStart=0});
     q('setupView').classList.add('hidden');q('raceView').classList.remove('hidden');q('result').classList.add('hidden');q('speed2').classList.toggle('hidden',mode!=='two');q('p1Name').textContent='P1 · '+race.cars[0].spec.model;resize();countdown();
   }
@@ -472,7 +554,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       const p=race.cars[0];
       if(!p){requestAnimationFrame(loop);return}
       const p2=race.cars.find(c=>c.player===2);
-      const pSpeed=Math.hypot(p.vx,p.vy)*3.6; let tx=p.x+p.vx*.65,ty=p.y+p.vy*.65,z=clamp(5.95-pSpeed/98,3.95,5.95);
+      const pSpeed=Math.hypot(p.vx,p.vy)*3.6; let tx=p.x+p.vx*.65,ty=p.y+p.vy*.65,z=clamp(8.15-pSpeed/180,6.7,8.15);
       if(p2){
         const minX=Math.min(p.x,p2.x),maxX=Math.max(p.x,p2.x),minY=Math.min(p.y,p2.y),maxY=Math.max(p.y,p2.y);
         const spanX=Math.max(1,maxX-minX),spanY=Math.max(1,maxY-minY);

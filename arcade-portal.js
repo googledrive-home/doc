@@ -15,7 +15,7 @@
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Neon Runner":"neon-runner","Memory Match":"memory-match","Moto X3M":"moto-x3m",
   "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes",
-  "Cube Engine":"cube-engine","Mini Golf 3D":"mini-golf-3d","Street Circuit":"street-circuit","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
+  "Cube Engine":"cube-engine","Mini Golf 3D":"mini-golf-3d","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
  };
  const photos={
   "drift-arena":"assets/drift-track-1.webp",
@@ -24,11 +24,10 @@
   "gravel-rally-stage":"assets/drift-track-2.webp",
   "fpv-drone-simulator":"assets/drift-track-1.webp",
   "mini-golf-3d":"https://images.unsplash.com/photo-1657085716783-c0afbdabf96e?auto=format&fit=crop&w=1400&q=85",
-  "street-circuit":"https://images.unsplash.com/photo-1699542108481-d433928cdc6e?auto=format&fit=crop&w=1400&q=85"
  };
  const genreFor=(title,isExternal)=>{
   if(isExternal)return "External Games";
-  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage","Street Circuit"].includes(title))return "Racing";
+  if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage"].includes(title))return "Racing";
   if(["Tennis Rally","Hockey","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Industrial Site Ops","Cube Engine"].includes(title))return "Simulation";
   if(title==="Memory Match")return "Puzzle";
