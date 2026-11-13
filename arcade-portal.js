@@ -129,11 +129,12 @@
   try{localStorage.setItem(USERNAME_KEY,username);}catch(error){}
   updateUsernameDisplay();
   syncPresence();
+  beginPresence();
   $p("portalUsernameModal").classList.remove("open");
  });
  function showAccessPrompt(){
   if(siteAccessGranted){
-   if(!username)showUsernamePrompt();else updateUsernameDisplay();
+   if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
    return;
   }
   $p("portalAccessPassword").value="";
@@ -157,7 +158,7 @@
   try{sessionStorage.setItem(ACCESS_SESSION_KEY,"1");}catch(error){}
   $p("portalAccessModal").classList.remove("open");
   $p("portalAccessPassword").value="";
-  if(!username)showUsernamePrompt();else updateUsernameDisplay();
+  if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
  });
  if(siteAccessGranted){if(!username)showUsernamePrompt();else updateUsernameDisplay();}
  else showAccessPrompt();
@@ -558,6 +559,6 @@
  applyPortalSettings();
  renderProfile();
  updateUsernameDisplay();
- beginPresence();
+ if(siteAccessGranted&&username)beginPresence();
  showView("games");
 })();
