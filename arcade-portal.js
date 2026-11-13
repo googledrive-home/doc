@@ -16,6 +16,7 @@
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Neon Runner":"neon-runner","Memory Match":"memory-match","Moto X3M":"moto-x3m",
   "Learn to Fly":"learn-to-fly","Garden Gnomes":"garden-gnomes",
+  "Sumiro":"sumiro",
   "Cube Engine":"cube-engine","Mini Golf 3D":"mini-golf-3d","Eaglercraft Singleplayer":"eaglercraft-singleplayer",
  };
  const photos={
