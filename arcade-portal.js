@@ -92,6 +92,10 @@
  app.innerHTML=portalMarkup;
  const portalShell=document.getElementById("portalShell");
  const $p=id=>document.getElementById(id);
+ const ACCESS_SESSION_KEY="playspaceSiteAccess";
+ const ACCESS_PASSWORD="710";
+ let siteAccessGranted=false;
+ try{siteAccessGranted=sessionStorage.getItem(ACCESS_SESSION_KEY)==="1";}catch(error){}
  try{username=(localStorage.getItem(USERNAME_KEY)||"").trim().slice(0,24);}catch(error){}
  const presenceSessionKey="playspacePresenceSession";
  try{
@@ -101,6 +105,7 @@
    sessionStorage.setItem(presenceSessionKey,presenceSessionId);
   }
  }catch(error){presenceSessionId="ps-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
+ app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop portal-access-gate" id="portalAccessModal" role="dialog" aria-modal="true" aria-label="Enter site password"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2><p>Enter the site password to continue.</p></div></div><form class="portal-auth-form" id="portalAccessForm"><div class="portal-field"><label for="portalAccessPassword">Site password</label><input id="portalAccessPassword" type="password" inputmode="numeric" maxlength="3" autocomplete="off" required placeholder="Enter password"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalAccessStatus" aria-live="polite"></div></form></section></div>');
  app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalUsernameModal" role="dialog" aria-modal="true" aria-label="Choose a username"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2></div></div><form class="portal-auth-form" id="portalUsernameForm"><div class="portal-field"><label for="portalUsernameInput">Username</label><input id="portalUsernameInput" type="text" maxlength="24" autocomplete="nickname" required placeholder="Choose a username"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalUsernameStatus" aria-live="polite"></div></form></section></div>');
  function updateUsernameDisplay(){
   const name=username||"Player",initial=(name.trim()[0]||"?").toUpperCase();
@@ -126,7 +131,36 @@
   syncPresence();
   $p("portalUsernameModal").classList.remove("open");
  });
- if(!username)showUsernamePrompt();else updateUsernameDisplay();
+ function showAccessPrompt(){
+  if(siteAccessGranted){
+   if(!username)showUsernamePrompt();else updateUsernameDisplay();
+   return;
+  }
+  $p("portalAccessPassword").value="";
+  $p("portalAccessStatus").textContent="";
+  $p("portalAccessStatus").className="portal-status";
+  $p("portalAccessModal").classList.add("open");
+  setTimeout(()=>$p("portalAccessPassword").focus(),30);
+ }
+ $p("portalAccessForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  const entered=$p("portalAccessPassword").value;
+  const status=$p("portalAccessStatus");
+  if(entered!==ACCESS_PASSWORD){
+   status.textContent="That password is not correct. Please try again.";
+   status.className="portal-status error";
+   $p("portalAccessPassword").value="";
+   $p("portalAccessPassword").focus();
+   return;
+  }
+  siteAccessGranted=true;
+  try{sessionStorage.setItem(ACCESS_SESSION_KEY,"1");}catch(error){}
+  $p("portalAccessModal").classList.remove("open");
+  $p("portalAccessPassword").value="";
+  if(!username)showUsernamePrompt();else updateUsernameDisplay();
+ });
+ if(siteAccessGranted){if(!username)showUsernamePrompt();else updateUsernameDisplay();}
+ else showAccessPrompt();
  const games=[];
  const sourceCards=[...document.querySelectorAll("main .grid > .card")];
  const coverPhotoById=photos;
