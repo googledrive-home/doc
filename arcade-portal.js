@@ -92,6 +92,11 @@
  app.innerHTML=portalMarkup;
  const portalShell=document.getElementById("portalShell");
  const $p=id=>document.getElementById(id);
+ function setSiteAccessLock(locked){
+  portalShell.inert=locked;
+  for(const node of document.body.children)if(node!==app)node.inert=locked;
+  document.body.style.overflow=locked?"hidden":"";
+ }
  const ACCESS_SESSION_KEY="playspaceSiteAccess";
  const ACCESS_PASSWORD="710";
  let siteAccessGranted=false;
@@ -134,9 +139,11 @@
  });
  function showAccessPrompt(){
   if(siteAccessGranted){
+   setSiteAccessLock(false);
    if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
    return;
   }
+  setSiteAccessLock(true);
   $p("portalAccessPassword").value="";
   $p("portalAccessStatus").textContent="";
   $p("portalAccessStatus").className="portal-status";
@@ -157,6 +164,7 @@
   siteAccessGranted=true;
   try{sessionStorage.setItem(ACCESS_SESSION_KEY,"1");}catch(error){}
   $p("portalAccessModal").classList.remove("open");
+  setSiteAccessLock(false);
   $p("portalAccessPassword").value="";
   if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
  });
