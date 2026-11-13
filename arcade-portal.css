@@ -124,6 +124,7 @@ body>#bgDecor,body>header,body>main,body>footer{display:none!important}
 .portal-table th{color:var(--portal-muted);font-weight:850;letter-spacing:.1em;text-transform:uppercase}
 .portal-table td{color:#dce4f4}
 .portal-auth-backdrop,.portal-detail-backdrop{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:#02050dd9;backdrop-filter:blur(12px)}
+.portal-auth-backdrop.portal-access-gate{z-index:10000}
 .portal-auth-backdrop.open,.portal-detail-backdrop.open{display:flex}
 .portal-auth-card{width:min(430px,96vw);padding:24px;border:1px solid #ffffff25;border-radius:22px;background:linear-gradient(145deg,#18243a,#0a1321);box-shadow:0 30px 100px #000b;animation:portalRise .22s ease both}
 .portal-auth-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}
