@@ -5,7 +5,7 @@
  const USERNAME_KEY="homeUsername",LEGACY_USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="",externalGamePending=false,externalGameStartPromise=null;
+ let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="",externalGamePending=false,externalGameWentHidden=false,externalGameStartPromise=null;
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d","Neon Runner":"neon-runner",
   "F1 Simulator":"f1-simulator",
@@ -430,17 +430,21 @@
   presenceHeartbeat=setInterval(syncPresence,15000);
  }
  async function finishExternalSessionOnReturn(){
-  if(document.hidden||!externalGamePending)return;
+  if(document.hidden||!externalGamePending||!externalGameWentHidden)return;
   externalGamePending=false;
   try{
    await externalGameStartPromise;
    if(Object.keys(activeGameSessions).length)await finishTrackedGame();
   }finally{
    externalGameStartPromise=null;
+   externalGameWentHidden=false;
    setCurrentGame("");
   }
  }
- document.addEventListener("visibilitychange",()=>{if(!document.hidden){syncPresence();finishExternalSessionOnReturn();}});
+ document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){if(externalGamePending)externalGameWentHidden=true;return;}
+  syncPresence();finishExternalSessionOnReturn();
+ });
  window.addEventListener("focus",finishExternalSessionOnReturn);
  function renderProfile(){
   const host=$p("portalProfileContent");
@@ -576,7 +580,7 @@
    const externalGame=selectedGame?.external?selectedGame:null;
    const opened=originalPortalOpenExternal.apply(this,arguments);
    if(externalGame&&opened){
-    externalGamePending=true;
+    externalGamePending=true;externalGameWentHidden=false;
     setCurrentGame(externalGame.title);
     externalGameStartPromise=startTrackedGame(externalGame.title);
    }
