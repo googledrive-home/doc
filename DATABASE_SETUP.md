@@ -6,7 +6,6 @@ This guide connects the PlaySpace player accounts and cloud saves to a PostgreSQ
 
 - A Supabase account: https://supabase.com/
 - Access to the Render account that hosts the `hockey-multiplayer` service: https://dashboard.render.com/
-- About 10–15 minutes to follow the setup screens.
 
 The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per project. Free projects can pause after a week of very low database activity, and automatic backups are not included. This is suitable for starting and testing PlaySpace, but it is not a promise of permanent uptime or backup protection.
 
