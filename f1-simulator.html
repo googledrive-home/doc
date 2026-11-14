@@ -1,22 +1,6 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d14">
-<title>F1 Simulator</title>
-<meta name="description" content="Play the full 3D F1 simulator with AI opponents, 18 circuits, pit stops, tyre compounds, ERS and DRS.">
-<link rel="canonical" href="https://googledrive-home.github.io/F1/">
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d14}
-#f1-site{display:block;width:100%;height:100%;border:0;background:#080d14}
-</style>
-</head>
-<body>
-<iframe id="f1-site"
-  src="https://googledrive-home.github.io/F1/"
-  title="F1 Simulator standalone website"
-  allow="fullscreen; autoplay; gamepad"
-  allowfullscreen></iframe>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080d14"><title>F1 Simulator</title><meta name="description" content="Play the full 3D F1 simulator. Open the original F1 site directly if the embedded game does not finish loading."><link rel="canonical" href="https://googledrive-home.github.io/F1/">
+<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d14;color:#fff;font-family:system-ui,sans-serif}#f1-site{display:block;width:100%;height:100%;border:0;background:#080d14}#f1-fallback{position:fixed;z-index:5;left:12px;right:12px;bottom:12px;display:none;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border:1px solid #f5cb6b66;border-radius:12px;background:#091522f2;box-shadow:0 8px 32px #0009;font-size:12px}#f1-fallback.visible{display:flex}#f1-fallback p{margin:0;color:#e1eaf4;line-height:1.45}#f1-fallback strong{display:block;margin-bottom:3px;color:#ffe1a0}#f1-fallback .actions{display:flex;gap:7px;flex:none;flex-wrap:wrap}#f1-fallback a,#f1-fallback button{border:1px solid #f1ca75aa;border-radius:8px;padding:8px 10px;background:#18324a;color:#fff;font:700 11px system-ui;text-decoration:none;cursor:pointer;white-space:nowrap}@media(max-width:560px){#f1-fallback{align-items:flex-start;flex-direction:column}#f1-fallback .actions{width:100%}}</style></head>
+<body><iframe id="f1-site" src="https://googledrive-home.github.io/F1/" title="F1 Simulator original website" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe>
+<div id="f1-fallback" role="status" aria-live="polite"><p><strong>Still loading?</strong>The embedded F1 game is taking longer than expected. Retry it or open the original F1 website in a separate tab.</p><div class="actions"><button id="f1-retry" type="button">RETRY</button><a href="https://googledrive-home.github.io/F1/" target="_blank" rel="noopener noreferrer">OPEN ORIGINAL F1 SITE ↗</a></div></div>
+<script>(()=>{const f=document.getElementById("f1-site"),box=document.getElementById("f1-fallback");let t=0;const watch=()=>{clearTimeout(t);box.classList.remove("visible");t=setTimeout(()=>box.classList.add("visible"),18000)};f.addEventListener("load",watch);f.addEventListener("error",()=>box.classList.add("visible"));document.getElementById("f1-retry").addEventListener("click",()=>{f.src="https://googledrive-home.github.io/F1/?homeRetry="+Date.now();watch()});watch()})();</script></body></html>

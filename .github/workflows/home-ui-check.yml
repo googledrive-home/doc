@@ -1,0 +1,43 @@
+name: Home UI validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "arcade-portal.js"
+      - "arcade-portal.css"
+      - "f1-simulator.html"
+      - "home-game-bridge.js"
+      - ".github/workflows/home-ui-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "arcade-portal.js"
+      - "arcade-portal.css"
+      - "f1-simulator.html"
+      - "home-game-bridge.js"
+      - ".github/workflows/home-ui-check.yml"
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Home
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check portal JavaScript syntax
+        run: node --check arcade-portal.js
+      - name: Check cloud-save bridge syntax
+        run: node --check home-game-bridge.js
+      - name: Check F1 wrapper script syntax
+        run: |
+          node --input-type=commonjs -e "
+            const fs = require('node:fs');
+            const html = fs.readFileSync('f1-simulator.html', 'utf8');
+            const match = html.match(/<script>([\\s\\S]*?)<\\/script>/);
+            if (!match) throw new Error('F1 wrapper script not found');
+            new Function(match[1]);
+          "
