@@ -341,9 +341,20 @@
 
  function renderGameSocial(game){
   const liked=(accountData?.likedGames||[]).includes(game.id),favorite=(accountData?.profile?.favoriteGames||[]).includes(game.id),likes=Number(weeklyData?.likes?.[game.id]||0);
+  const progress=careerProgressFor(game,accountData?.career?.[game.id],accountData?.stats?.games?.[game.id]);
   $p("portalDetailSocial").innerHTML='<button type="button" id="portalLikeGame">'+(liked?"♥ Liked":"♡ Like")+' · '+likes+'</button><button type="button" id="portalFavoriteGame">'+(favorite?"★ Favorited":"☆ Favorite")+'</button>';
-  $p("portalDetailProgress").innerHTML=accountData?'<div class="portal-detail-stats"><div class="portal-detail-stat"><small>Sessions played</small><b>'+esc(accountData.stats?.games?.[game.id]?.played||0)+'</b></div><div class="portal-detail-stat"><small>Personal best</small><b>'+esc(accountData.stats?.games?.[game.id]?.bestScore||0)+'</b></div><div class="portal-detail-stat"><small>Career chapter</small><b>'+esc(accountData.career?.[game.id]?.chapter||1)+'</b></div></div>':'<p class="portal-auth-foot">Sign in to save favourites, likes and game progress.</p>';
+  const statsPanel=accountData?'<div class="portal-detail-stats"><div class="portal-detail-stat"><small>Sessions played</small><b>'+esc(accountData.stats?.games?.[game.id]?.played||0)+'</b></div><div class="portal-detail-stat"><small>Personal best</small><b>'+esc(accountData.stats?.games?.[game.id]?.bestScore||0)+'</b></div><div class="portal-detail-stat"><small>Career chapter</small><b>'+progress.chapter+'/6</b></div></div>':'<p class="portal-auth-foot">Sign in to save favourites, likes and game progress.</p>';
+  const careerName=accountData?progress.rank:"Sign in to track your career";
+  const careerMessage=!accountData?"Create a profile to save career ranks and session progress.":progress.complete?"You have completed every career rank for this game.":progress.remaining+" more session"+(progress.remaining===1?"":"s")+" to reach "+progress.nextRank+".";
+  const careerAction=accountData?(progress.sessions?"CONTINUE CAREER":"START CAREER"):"SIGN IN TO SAVE CAREER";
+  $p("portalDetailProgress").innerHTML=statsPanel+'<section class="portal-career-panel"><div class="portal-career-panel-head"><div><div class="portal-eyebrow">CAREER MODE</div><strong>'+esc(careerName)+'</strong></div><span>'+(accountData?"CHAPTER "+progress.chapter+" / 6":"PROFILE REQUIRED")+'</span></div><div class="portal-xp-track"><span style="width:'+(accountData?progress.percent:0)+'%"></span></div><p>'+esc(careerMessage)+'</p><button type="button" class="portal-career-launch" id="portalCareerLaunch">'+careerAction+'</button></section>';
   $p("portalLikeGame").addEventListener("click",()=>toggleGameLike(game));$p("portalFavoriteGame").addEventListener("click",()=>toggleGameFavorite(game));
+  $p("portalCareerLaunch").addEventListener("click",()=>{
+   if(!accountData){showAccountPrompt("login");return;}
+   const launch=game.buttons?.[0];
+   if(!launch){toast("A career start is not available for this game.");return;}
+   setCurrentGame(game.title);launch.click();closeGameDetail();
+  });
  }
  async function toggleGameLike(game){
   if(!accountData){showAccountPrompt("login");return;}
@@ -375,6 +386,24 @@
   catch(error){$p("portalWeeklyShelf").innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">THIS WEEK</div><h2>Weekly highlights unavailable</h2><p>Rankings will appear when the stats service is available.</p></div>';return null;}
  }
  function getGame(gameId){return games.find(game=>game.id===gameId)||null;}
+ const CAREER_STEPS=[{from:0,to:1},{from:1,to:5},{from:5,to:10},{from:10,to:25},{from:25,to:50},{from:50,to:50}];
+ const CAREER_RANKS={
+  "Racing":["Rookie Driver","Club Racer","Semi-Pro Driver","Pro Driver","Elite Driver","Racing Legend"],
+  "Sports":["Rookie","Team Player","All-Star","Pro Athlete","Elite Champion","Hall of Fame"],
+  "Simulation":["Trainee","Operator","Specialist","Expert","Master","Simulation Legend"],
+  "Arcade":["Newcomer","Regular Player","Challenger","Veteran","Arcade Champion","Arcade Legend"],
+  "Puzzle":["Beginner","Solver","Strategist","Mastermind","Grandmaster","Puzzle Legend"],
+  "Sandbox":["Explorer","Builder","Creator","Pioneer","World Maker","Sandbox Legend"],
+  "External Games":["Newcomer","Regular","Skilled Player","Expert","Veteran","Legend"],
+  "default":["Newcomer","Regular","Skilled Player","Expert","Veteran","Legend"]
+ };
+ function careerProgressFor(game,careerItem,gameStats){
+  const sessions=Math.max(0,Math.floor(Math.max(Number(careerItem?.sessions)||0,Number(gameStats?.played)||0)));
+  const stage=sessions>=50?5:sessions>=25?4:sessions>=10?3:sessions>=5?2:sessions>=1?1:0;
+  const step=CAREER_STEPS[stage],ranks=CAREER_RANKS[game?.genre]||CAREER_RANKS.default,complete=sessions>=50;
+  const percent=complete?100:Math.max(0,Math.min(100,Math.round((sessions-step.from)/Math.max(1,step.to-step.from)*100)));
+  return {sessions,stage,chapter:stage+1,rank:ranks[stage]||"Newcomer",nextRank:complete?"":(ranks[stage+1]||"next rank"),nextGoal:complete?50:step.to,remaining:complete?0:Math.max(0,step.to-sessions),percent,complete};
+ }
  function weeklyGameTile(label,gameId,count,emptyText){
   const game=getGame(gameId);
   return '<article class="portal-weekly-card"><small>'+esc(label)+'</small><b>'+esc(game?.title||"No results yet")+'</b><span>'+(count>0?esc(count+" recorded"):esc(emptyText))+'</span></article>';
@@ -408,15 +437,19 @@
   const played=Number(stats.gamesPlayed)||Object.values(stats.games||{}).reduce((sum,item)=>sum+(Number(item.played)||0),0),favorites=(profile.favoriteGames||[]).map(getGame).filter(Boolean),unlocked=accountData.achievements||[],unlockedIds=new Set(unlocked.map(item=>item.id));
   const trophyDefs=games.filter(game=>game.id).flatMap(game=>[{id:"first-"+game.id,title:"First Session",game:game.title,tier:"bronze",target:"1 session"},{id:"regular-"+game.id,title:"Regular Player",game:game.title,tier:"silver",target:"10 sessions"},{id:"dedicated-"+game.id,title:"Dedicated Player",game:game.title,tier:"gold",target:"50 sessions"},{id:"record-"+game.id,title:"Personal Best",game:game.title,tier:"silver",target:"Set a new best score"}]);
   const trophies=[...unlocked.map(item=>({...item,unlocked:true})),...trophyDefs.filter(item=>!unlockedIds.has(item.id)).map(item=>({...item,unlocked:false}))];
-  const career=accountData.career||{},careerCards=Object.entries(career).map(([id,item])=>{const game=getGame(id);return '<div class="portal-trophy-row"><span>🏁</span><div><b>'+esc(game?.title||id)+'</b><small>Chapter '+esc(item.chapter||1)+' · '+esc(item.sessions||0)+' sessions · '+esc(formatDuration(item.seconds||0))+'</small></div></div>';}).join("");
+  const career=accountData.career||{},careerCards=games.filter(game=>game.id).map(game=>{
+   const progress=careerProgressFor(game,career[game.id],stats.games?.[game.id]);
+   return '<button type="button" class="portal-career-card" data-career-open="'+esc(game.id)+'"><span class="portal-career-meta">'+esc(game.genre)+'</span><strong>'+esc(game.title)+'</strong><span class="portal-career-rank">'+esc(progress.rank)+' · Chapter '+progress.chapter+'/6</span><span class="portal-xp-track"><span style="width:'+progress.percent+'%"></span></span><small>'+(progress.complete?"CAREER COMPLETE":esc(progress.sessions+' / '+progress.nextGoal+' sessions'))+'</small></button>';
+  }).join("");
   host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
    '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
-   '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+(careerCards||'<p>Start playing games to build your career records.</p>')+'</div></div></div>'+
+   '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+'<div class="portal-career-grid">'+careerCards+'</div>'+'</div></div></div>'+
    '<div class="portal-section-panel" style="margin-top:15px"><div class="portal-eyebrow">TROPHY CABINET</div><h2>'+unlocked.length+' trophies unlocked</h2><div class="portal-trophy-grid">'+trophies.map(item=>'<div class="portal-trophy-card '+(item.unlocked?"unlocked":"locked")+'"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[item.tier]||"🏆")+'</span><b>'+esc(item.title)+'</b><small>'+esc(item.game||item.description||"PlaySpace")+'</small><em>'+(item.unlocked?"UNLOCKED":esc(item.target||"LOCKED"))+'</em></div>').join("")+'</div></div>';
   $p("portalEditProfile").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalEditStatus");status.textContent="Saving…";status.className="portal-status";try{const result=await apiRequest("/account/profile",{method:"POST",body:{username:$p("portalEditUsername").value,avatar:Number($p("portalEditAvatar").value)}});accountData={...accountData,...result};username=result.profile.username;updateUsernameDisplay();renderProfile();toast("Profile saved.");}catch(error){status.textContent=error.message||"Could not save profile.";status.className="portal-status error";}});
   $p("portalSignOut").addEventListener("click",async()=>{try{await apiRequest("/account/logout",{method:"POST",body:{}});}catch(error){}accountToken="";accountData=null;try{sessionStorage.removeItem("playspaceAccountToken");}catch(error){}username="Guest";updateUsernameDisplay();renderProfile();showAccountPrompt("login");});
   host.querySelectorAll("[data-favorite-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.favoriteOpen);if(game)openGameDetail(game);}));
+  host.querySelectorAll("[data-career-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.careerOpen);if(game)openGameDetail(game);}));
  }
  let friendsData={friends:[],incoming:[],outgoing:[]};
  async function loadFriends(){if(!accountToken)return null;const data=await apiRequest("/account/friends");friendsData=data;return data;}
