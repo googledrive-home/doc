@@ -438,3 +438,52 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-career-launch{justify-self:start;min-height:34px;padding:0 12px;border:1px solid var(--portal-line);border-radius:10px;background:color-mix(in srgb,var(--portal-accent) 23%,#101827);color:var(--portal-text);font-size:9px;font-weight:950}
 .portal-career-launch:hover{border-color:var(--portal-accent);filter:brightness(1.12)}
 @media(max-width:600px){.portal-career-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Home personalised dashboard, game history and cloud backups. */
+.portal-dashboard{display:grid;gap:12px;margin:0 0 18px}
+.portal-dashboard-panel{min-width:0;padding:16px;border:1px solid var(--portal-line);border-radius:16px;background:linear-gradient(145deg,#ffffff0d,#ffffff04)}
+.portal-dashboard-panel h2{margin:4px 0 7px;font-size:17px;letter-spacing:-.035em}
+.portal-dashboard-panel p{margin:0;color:var(--portal-muted);font-size:10px;line-height:1.65}
+.portal-dashboard-guest{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:center}
+.portal-dashboard-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.portal-dashboard-guest-games{display:grid;gap:6px}
+.portal-dashboard-continue{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:150px;background:radial-gradient(circle at 88% 15%,color-mix(in srgb,var(--portal-accent) 35%,transparent),transparent 60%),linear-gradient(145deg,#182c4a,#0c1728)}
+.portal-dashboard-continue-art{width:160px;height:112px;flex:none;display:grid;place-items:center;overflow:hidden}
+.portal-dashboard-continue-art svg{max-width:100%;max-height:100%}
+.portal-dashboard-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.portal-dashboard-metric{display:grid;gap:7px;padding:13px;border:1px solid var(--portal-line);border-radius:13px;background:#ffffff08}
+.portal-dashboard-metric small{font-size:8px;letter-spacing:.1em;color:var(--portal-muted);font-weight:900}
+.portal-dashboard-metric b{font-size:15px}.portal-dashboard-metric span{font-size:9px;color:var(--portal-muted)}
+.portal-dashboard-metric .portal-xp-track{height:6px}
+.portal-dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.portal-dashboard-section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.portal-dashboard-section-head h2{margin:3px 0 0}.portal-dashboard-section-head>span{font-size:8px;color:var(--portal-muted)}
+.portal-dashboard-game{width:100%;display:flex;align-items:center;gap:9px;padding:8px 6px;border:0;border-top:1px solid var(--portal-line);background:transparent;color:var(--portal-text);text-align:left;cursor:pointer}
+.portal-dashboard-game:first-of-type{border-top:0}
+.portal-dashboard-art{width:40px;height:38px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:#ffffff0b}
+.portal-dashboard-art svg{max-width:100%;max-height:100%}
+.portal-dashboard-game-copy{display:grid;gap:3px;min-width:0;flex:1}
+.portal-dashboard-game-copy small{font-size:7px;color:var(--portal-muted);letter-spacing:.08em}
+.portal-dashboard-game-copy b{font-size:10px}.portal-dashboard-game-copy em{font-size:8px;color:var(--portal-muted);font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-dashboard-arrow{color:var(--portal-accent-2);font-size:13px}
+.portal-dashboard-trophy{display:flex;gap:9px;align-items:center;padding:9px 0;border-top:1px solid var(--portal-line)}
+.portal-dashboard-trophy>span{font-size:19px}.portal-dashboard-trophy div{display:grid;gap:3px}
+.portal-dashboard-trophy b{font-size:10px}.portal-dashboard-trophy small{font-size:8px;color:var(--portal-muted)}
+.portal-discovery-controls{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px 0;font-size:9px;color:var(--portal-muted)}
+.portal-discovery-controls label{display:flex;align-items:center;gap:8px}.portal-discovery-controls select{min-width:170px}
+.portal-integration-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.portal-integration-panel>div{display:grid;gap:5px;padding:10px;border:1px solid var(--portal-line);border-radius:10px;background:#ffffff07}
+.portal-integration-panel small{font-size:7px;letter-spacing:.1em;color:var(--portal-muted);font-weight:900}.portal-integration-panel b{font-size:9px}
+.portal-f1-fallback{min-height:35px}
+.portal-history-list{display:grid;gap:2px;margin-top:9px}
+.portal-history-list button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-top:1px solid var(--portal-line);background:transparent;color:var(--portal-text);text-align:left;cursor:pointer}
+.portal-history-list button span{display:grid;gap:3px;min-width:0}
+.portal-history-list b{font-size:10px}.portal-history-list small,.portal-history-list em{font-size:8px;color:var(--portal-muted);font-style:normal}
+.portal-cloud-save-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--portal-line)}
+.portal-cloud-save-card p{margin:4px 0;color:var(--portal-muted);font-size:8px}
+.portal-cloud-save-actions{display:flex;gap:6px;flex-wrap:wrap}.portal-cloud-save-actions button{font-size:8px;padding:7px 10px}
+.portal-cloud-save-actions button:disabled{opacity:.35;cursor:not-allowed}
+.portal-cloud-save-note{font-size:9px;color:var(--portal-muted);line-height:1.6}
+@media(max-width:900px){.portal-dashboard-guest{grid-template-columns:1fr}}
+@media(max-width:650px){.portal-dashboard-grid,.portal-dashboard-metrics{grid-template-columns:1fr}.portal-integration-panel{grid-template-columns:1fr}.portal-dashboard-continue-art{width:90px}.portal-discovery-controls,.portal-cloud-save-card{align-items:flex-start;flex-direction:column}}
