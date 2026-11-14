@@ -3981,7 +3981,7 @@ function recordTimeTrialSample(){
 function completeTimeTrialLap(lapTime){
  if(currentSessionMode!=="timeTrial"||lapRecording.length<40||!(lapTime>15)||lapTime>=timeTrialBest)return false;
  timeTrialBest=lapTime;bestLap=lapTime;timeTrialGhostData=lapRecording.slice();
- window.PlaySpaceGameBridge?.reportScore?.(Math.max(1,Math.floor(1000000-lapTime*1000)));
+ window.HomeGameBridge?.reportScore?.(Math.max(1,Math.floor(1000000-lapTime*1000)));
  saveTimeTrialRecord();buildGhostCar();
  showTeamRadio("New personal best! "+fmtTime(lapTime)+". Your updated ghost is ready for the next lap.");
  return true;
