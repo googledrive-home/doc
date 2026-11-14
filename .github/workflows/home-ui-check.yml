@@ -30,6 +30,8 @@ jobs:
           node-version: 20
       - name: Check portal JavaScript syntax
         run: node --check arcade-portal.js
+      - name: Check backend JavaScript syntax
+        run: node --check hockey-server/src/index.js
       - name: Check cloud-save bridge syntax
         run: node --check home-game-bridge.js
       - name: Check F1 wrapper script syntax
