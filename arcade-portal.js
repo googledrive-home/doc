@@ -48,7 +48,7 @@
     '<div class="portal-nav-label">PERSONAL</div>',
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
-    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button>',
+    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button>',
     '<button class="portal-nav-item" data-view="friends"><span class="portal-nav-icon">♧</span><span class="portal-nav-label-text">Friends</span><span class="portal-nav-count" id="friendCountBadge">0</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
@@ -76,7 +76,7 @@
      '<div class="portal-welcome"><div><div class="portal-eyebrow">YOUR SOUNDTRACK</div><h1>Music</h1><p>Use the built-in player, your playlists and music files saved in this browser.</p></div></div>',
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
-    '<section class="portal-view" id="portalProfileView" data-page="profile">',
+    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Your player card, progress, trophies, career and saved game stats.</p></div></div>',
      '<div id="portalProfileContent"></div>',
     '</section>',
@@ -373,9 +373,10 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="profile")renderProfile();
+  if(view==="leaderboards")renderLeaderboards();
   if(view==="friends")renderFriends();
   if(view==="settings")renderSettings();
   if(view==="music")mountMusicPanel();
@@ -559,6 +560,26 @@
   syncPresence();finishExternalSessionOnReturn();
  });
  window.addEventListener("focus",finishExternalSessionOnReturn);
+ 
+ async function renderLeaderboards(){
+  const host=$p("portalLeaderboardsContent");if(!host)return;
+  const options=games.filter(g=>g.id);
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardGame">Choose a game</label><select id="portalLeaderboardGame" class="portal-control">'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p class="portal-leaderboard-warning">These are unverified personal bests. Scores are submitted by game clients and have not been independently validated by the server. Only players who switch on public leaderboard sharing in their profile are listed.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
+  const select=$p("portalLeaderboardGame"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
+  async function load(){
+   status.textContent="Loading "+(options.find(g=>g.id===select.value)?.title||"game")+"…";rows.innerHTML="";
+   try{
+    const data=await apiRequest("/portal/games/"+encodeURIComponent(select.value)+"/leaderboard");
+    const entries=Array.isArray(data.entries)?data.entries:[];
+    if(!entries.length){status.textContent="No players have opted in with a recorded personal best for this game yet.";return;}
+    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+" · not verified";
+    rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+   }catch(error){status.textContent=error.message||"Leaderboards are unavailable right now.";}
+  }
+  select.addEventListener("change",load);
+  await load();
+ }
+
  function renderProfile(){
   const host=$p("portalProfileContent");
   if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to your player profile</h2><p>Your username, XP, trophies, favourites and statistics are saved to your account when persistent storage is connected.</p><button class="portal-primary" id="profileSignIn">SIGN IN / CREATE PROFILE</button></div>';$p("profileSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
@@ -570,7 +591,7 @@
    const progress=careerProgressFor(game,career[game.id],stats.games?.[game.id]);
    return '<button type="button" class="portal-career-card" data-career-open="'+esc(game.id)+'"><span class="portal-career-meta">'+esc(game.genre)+'</span><strong>'+esc(game.title)+'</strong><span class="portal-career-rank">'+esc(progress.rank)+' · Rank '+progress.chapter+'/6</span><span class="portal-xp-track"><span style="width:'+progress.percent+'%"></span></span><small>'+(progress.complete?"CAREER COMPLETE":esc(progress.sessions+' / '+progress.nextGoal+' sessions'))+'</small></button>';
   }).join("");
-  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
+  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><div class="portal-field portal-privacy-toggle"><label for="portalLeaderboardOptIn"><input id="portalLeaderboardOptIn" type="checkbox" '+(profile.leaderboardOptIn?"checked":"")+' /> Show my username, avatar and best scores on public leaderboards</label><small>Off by default. You can change this any time.</small></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
    '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+'<div class="portal-career-grid">'+careerCards+'</div>'+'</div></div></div>'+
@@ -579,7 +600,7 @@
   host.insertAdjacentHTML("beforeend",'<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">RECENT HISTORY</div><h2>Recently played</h2>'+(history.length?'<div class="portal-history-list">'+history.map(x=>'<button type="button" data-history-open="'+esc(x.game.id)+'"><span><b>'+esc(x.game.title)+'</b><small>'+esc(new Date(x.record.lastPlayedAt).toLocaleString())+'</small></span><em>'+esc(x.record.played||0)+' sessions · '+esc(formatDuration(x.record.seconds||0))+'</em></button>').join("")+'</div>':'<p class="portal-muted">Completed game sessions will appear here.</p>')+'</div><div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CLOUD SAVES</div><h2>Manage your supported backups</h2><p class="portal-muted">View, download and restore saves for games with a Home save bridge.</p><button type="button" class="portal-secondary" id="portalCloudSaveRefresh">LOAD CLOUD SAVES</button><div id="portalCloudSaveManager"></div></div>');
   $p("portalCloudSaveRefresh").addEventListener("click",renderCloudSaveManager);
   host.querySelectorAll("[data-history-open]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.historyOpen);if(g)openGameDetail(g);}));
-  $p("portalEditProfile").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalEditStatus");status.textContent="Saving…";status.className="portal-status";try{const result=await apiRequest("/account/profile",{method:"POST",body:{username:$p("portalEditUsername").value,avatar:Number($p("portalEditAvatar").value)}});accountData={...accountData,...result};username=result.profile.username;updateUsernameDisplay();renderProfile();toast("Profile saved.");}catch(error){status.textContent=error.message||"Could not save profile.";status.className="portal-status error";}});
+  $p("portalEditProfile").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalEditStatus");status.textContent="Saving…";status.className="portal-status";try{const result=await apiRequest("/account/profile",{method:"POST",body:{username:$p("portalEditUsername").value,avatar:Number($p("portalEditAvatar").value),leaderboardOptIn:$p("portalLeaderboardOptIn").checked}});accountData={...accountData,...result};username=result.profile.username;updateUsernameDisplay();renderProfile();toast("Profile saved.");}catch(error){status.textContent=error.message||"Could not save profile.";status.className="portal-status error";}});
   $p("portalSignOut").addEventListener("click",async()=>{try{await apiRequest("/account/logout",{method:"POST",body:{}});}catch(error){}accountToken="";accountData=null;try{sessionStorage.removeItem("homeAccountToken");sessionStorage.removeItem("playspaceAccountToken");}catch(error){}username="Guest";updateUsernameDisplay();renderProfile();showAccountPrompt("login");});
   host.querySelectorAll("[data-favorite-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.favoriteOpen);if(game)openGameDetail(game);}));
   host.querySelectorAll("[data-career-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.careerOpen);if(game)openGameDetail(game);}));
