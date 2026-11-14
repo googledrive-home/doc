@@ -5,7 +5,7 @@
  const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
+ let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "F1 Simulator":"f1-simulator",
@@ -482,20 +482,28 @@
  const gameTitleByType={tennis:"Tennis Rally",hockey:"Hockey",reaction:"Reaction Game",click:"Click Test",breaker:"Neon Breaker",skydash:"Flappy Bird",snake:"Neon Snake",defender:"Space Defender",memory:"Memory Match",vehicle:"Tank Arena"};
  async function startTrackedGame(title){
   const gameId=gameIdByTitle[String(title||"")];if(!accountToken||!gameId)return null;
-  if(Object.keys(activeGameSessions).length)return null;
+  if(Object.keys(activeGameSessions).length||currentTrackedGameId)return null;
+  currentTrackedGameId=gameId;activeGameScores[gameId]=0;
   try{const started=await apiRequest("/account/game/start",{method:"POST",body:{gameId}});activeGameSessions[gameId]=started.sessionId;return started;}
-  catch(error){console.warn("Could not start account game session:",error.message);return null;}
+  catch(error){currentTrackedGameId="";delete activeGameScores[gameId];console.warn("Could not start account game session:",error.message);return null;}
+ }
+ function reportTrackedGameScore(gameId,score){
+  const id=String(gameId||""),value=Number(score);
+  if(!id||id!==currentTrackedGameId||!Number.isFinite(value))return false;
+  const safe=Math.max(0,Math.min(100000000,Math.floor(value)));
+  activeGameScores[id]=Math.max(Number(activeGameScores[id])||0,safe);
+  return true;
  }
  async function finishTrackedGame(){
   const gameId=Object.keys(activeGameSessions)[0];if(!gameId||!accountToken)return null;
-  const sessionId=activeGameSessions[gameId];
+  const sessionId=activeGameSessions[gameId],score=Number(activeGameScores[gameId])||0;
   try{
    const frame=document.getElementById("standaloneGameFrame");
    await frame?.contentWindow?.PlaySpaceGameBridge?.sync?.();
   }catch(error){}
-  delete activeGameSessions[gameId];
+  delete activeGameSessions[gameId];currentTrackedGameId="";delete activeGameScores[gameId];
   try{
-   const result=await apiRequest("/account/game/complete",{method:"POST",body:{sessionId,score:0}});
+   const result=await apiRequest("/account/game/complete",{method:"POST",body:{sessionId,score}});
    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};updateUsernameDisplay();
    if(document.querySelector("#portalProfileView.active"))renderProfile();
    loadWeeklyHighlights().catch(()=>{});
@@ -506,6 +514,7 @@
  window.PlaySpaceAccount={
   isSignedIn:()=>!!accountToken,
   getProfile:()=>accountData?.profile||null,
+  reportScore:(gameId,score)=>reportTrackedGameScore(gameId,score),
   request:(endpoint,options)=>apiRequest(endpoint,options),
   save:(gameId,save)=>apiRequest("/account/saves/"+encodeURIComponent(gameId),{method:"POST",body:{save}}),
   load:(gameId)=>apiRequest("/account/saves/"+encodeURIComponent(gameId)),
