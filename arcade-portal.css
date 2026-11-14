@@ -367,7 +367,7 @@ body[data-portal-theme="graphite"] .portal-game-card:hover{box-shadow:0 0 0 1px 
 @media(prefers-reduced-motion:reduce){#arcadeRoot:before,.portal-theme-swatch.active .portal-theme-preview{animation:none!important}}
 
 
-/* PlaySpace accounts, weekly features, trophies and accessibility. */
+/* Home accounts, weekly features, trophies and accessibility. */
 .portal-weekly-shelf{margin:8px 0 20px}
 .portal-weekly-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:9px}
 .portal-weekly-head h2{margin:4px 0 0;font-size:18px;letter-spacing:-.04em}
