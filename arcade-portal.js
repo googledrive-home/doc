@@ -91,7 +91,7 @@
    '</div>',
   '</section>',
  '</div>',
- '<div class="portal-detail-backdrop" id="portalGameDetail" role="dialog" aria-modal="true" aria-label="Game details"><article class="portal-detail-card"><div class="portal-detail-cover" id="portalDetailCover"><button class="portal-modal-close" type="button" id="portalDetailClose" aria-label="Close">✕</button><div class="portal-cover-art" id="portalDetailArt"></div></div><div class="portal-detail-body"><div class="portal-detail-heading"><div><div class="portal-eyebrow" id="portalDetailGenre"></div><h2 id="portalDetailTitle">Game title</h2><p id="portalDetailDescription"></p></div></div><div class="portal-detail-actions" id="portalDetailPlay"></div></div></article></div>',
+ '<div class="portal-detail-backdrop" id="portalGameDetail" role="dialog" aria-modal="true" aria-label="Game details"><article class="portal-detail-card"><div class="portal-detail-cover" id="portalDetailCover"><button class="portal-modal-close" type="button" id="portalDetailClose" aria-label="Close">✕</button><div class="portal-cover-art" id="portalDetailArt"></div></div><div class="portal-detail-body"><div class="portal-detail-heading"><div><div class="portal-eyebrow" id="portalDetailGenre"></div><h2 id="portalDetailTitle">Game title</h2><p id="portalDetailDescription"></p></div></div><div class="portal-detail-actions" id="portalDetailPlay"></div><div class="portal-vote-row" id="portalDetailSocial"></div><div id="portalDetailProgress"></div></div></article></div>',
  '<div class="portal-toast" id="portalToast" role="status" aria-live="polite"></div>'
  ].join("");
  app.innerHTML=portalMarkup;
@@ -335,7 +335,25 @@
   if(!game.buttons.length){
    const placeholder=document.createElement("span");placeholder.className="portal-muted";placeholder.textContent="Play option unavailable";actions.appendChild(placeholder);
   }
+  renderGameSocial(game);
   $p("portalGameDetail").classList.add("open");
+ }
+
+ function renderGameSocial(game){
+  const liked=(accountData?.likedGames||[]).includes(game.id),favorite=(accountData?.profile?.favoriteGames||[]).includes(game.id),likes=Number(weeklyData?.likes?.[game.id]||0);
+  $p("portalDetailSocial").innerHTML='<button type="button" id="portalLikeGame">'+(liked?"♥ Liked":"♡ Like")+' · '+likes+'</button><button type="button" id="portalFavoriteGame">'+(favorite?"★ Favorited":"☆ Favorite")+'</button>';
+  $p("portalDetailProgress").innerHTML=accountData?'<div class="portal-detail-stats"><div class="portal-detail-stat"><small>Sessions played</small><b>'+esc(accountData.stats?.games?.[game.id]?.played||0)+'</b></div><div class="portal-detail-stat"><small>Personal best</small><b>'+esc(accountData.stats?.games?.[game.id]?.bestScore||0)+'</b></div><div class="portal-detail-stat"><small>Career chapter</small><b>'+esc(accountData.career?.[game.id]?.chapter||1)+'</b></div></div>':'<p class="portal-auth-foot">Sign in to save favourites, likes and game progress.</p>';
+  $p("portalLikeGame").addEventListener("click",()=>toggleGameLike(game));$p("portalFavoriteGame").addEventListener("click",()=>toggleGameFavorite(game));
+ }
+ async function toggleGameLike(game){
+  if(!accountData){showAccountPrompt("login");return;}
+  try{const result=await apiRequest("/account/games/"+encodeURIComponent(game.id)+"/like",{method:"POST",body:{}});const liked=new Set(accountData.likedGames||[]);if(result.liked)liked.add(game.id);else liked.delete(game.id);accountData.likedGames=[...liked];if(weeklyData){weeklyData.likes[game.id]=result.likes;renderWeeklyHighlights();}renderGameSocial(game);toast(result.liked?"Game liked.":"Like removed.");}
+  catch(error){toast(error.message||"Could not save your like.");}
+ }
+ async function toggleGameFavorite(game){
+  if(!accountData){showAccountPrompt("login");return;}
+  try{const result=await apiRequest("/account/favorites",{method:"POST",body:{gameId:game.id}});accountData.profile.favoriteGames=result.favoriteGames||[];renderGameSocial(game);renderCategories();toast(result.favorite?"Added to favourites.":"Removed from favourites.");}
+  catch(error){toast(error.message||"Could not update favourites.");}
  }
 
  function closeGameDetail(){$p("portalGameDetail").classList.remove("open");}
@@ -385,10 +403,40 @@
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPresence();});
  function renderProfile(){
   const host=$p("portalProfileContent");
-  const display=username||"Not set";
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-profile-hero"><div class="portal-avatar">'+esc((username||"P").slice(0,1).toUpperCase())+'</div><div class="portal-eyebrow">SITE USERNAME</div><h2>'+esc(display)+'</h2><div style="margin-top:14px"><button class="portal-primary" id="profileChangeUsername">Change username</button></div></div></div>';
-  $p("profileChangeUsername").addEventListener("click",showUsernamePrompt);
+  if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to your player profile</h2><p>Your username, XP, trophies, favourites and statistics are saved to your account when persistent storage is connected.</p><button class="portal-primary" id="profileSignIn">SIGN IN / CREATE PROFILE</button></div>';$p("profileSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
+  const profile=accountData.profile||{},stats=accountData.stats||{},skin=Number(profile.avatar??profile.skin)||0,avatar=AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];
+  const played=Number(stats.gamesPlayed)||Object.values(stats.games||{}).reduce((sum,item)=>sum+(Number(item.played)||0),0),favorites=(profile.favoriteGames||[]).map(getGame).filter(Boolean),unlocked=accountData.achievements||[],unlockedIds=new Set(unlocked.map(item=>item.id));
+  const trophyDefs=games.filter(game=>game.id).flatMap(game=>[{id:"first-"+game.id,title:"First Session",game:game.title,tier:"bronze",target:"1 session"},{id:"regular-"+game.id,title:"Regular Player",game:game.title,tier:"silver",target:"10 sessions"},{id:"dedicated-"+game.id,title:"Dedicated Player",game:game.title,tier:"gold",target:"50 sessions"},{id:"record-"+game.id,title:"Personal Best",game:game.title,tier:"silver",target:"Set a new best score"}]);
+  const trophies=[...unlocked.map(item=>({...item,unlocked:true})),...trophyDefs.filter(item=>!unlockedIds.has(item.id)).map(item=>({...item,unlocked:false}))];
+  const career=accountData.career||{},careerCards=Object.entries(career).map(([id,item])=>{const game=getGame(id);return '<div class="portal-trophy-row"><span>🏁</span><div><b>'+esc(game?.title||id)+'</b><small>Chapter '+esc(item.chapter||1)+' · '+esc(item.sessions||0)+' sessions · '+esc(formatDuration(item.seconds||0))+'</small></div></div>';}).join("");
+  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
+   '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
+   '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
+   '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+(careerCards||'<p>Start playing games to build your career records.</p>')+'</div></div></div>'+
+   '<div class="portal-section-panel" style="margin-top:15px"><div class="portal-eyebrow">TROPHY CABINET</div><h2>'+unlocked.length+' trophies unlocked</h2><div class="portal-trophy-grid">'+trophies.map(item=>'<div class="portal-trophy-card '+(item.unlocked?"unlocked":"locked")+'"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[item.tier]||"🏆")+'</span><b>'+esc(item.title)+'</b><small>'+esc(item.game||item.description||"PlaySpace")+'</small><em>'+(item.unlocked?"UNLOCKED":esc(item.target||"LOCKED"))+'</em></div>').join("")+'</div></div>';
+  $p("portalEditProfile").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalEditStatus");status.textContent="Saving…";status.className="portal-status";try{const result=await apiRequest("/account/profile",{method:"POST",body:{username:$p("portalEditUsername").value,avatar:Number($p("portalEditAvatar").value)}});accountData={...accountData,...result};username=result.profile.username;updateUsernameDisplay();renderProfile();toast("Profile saved.");}catch(error){status.textContent=error.message||"Could not save profile.";status.className="portal-status error";}});
+  $p("portalSignOut").addEventListener("click",async()=>{try{await apiRequest("/account/logout",{method:"POST",body:{}});}catch(error){}accountToken="";accountData=null;try{sessionStorage.removeItem("playspaceAccountToken");}catch(error){}username="Guest";updateUsernameDisplay();renderProfile();showAccountPrompt("login");});
+  host.querySelectorAll("[data-favorite-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.favoriteOpen);if(game)openGameDetail(game);}));
  }
+ let friendsData={friends:[],incoming:[],outgoing:[]};
+ async function loadFriends(){if(!accountToken)return null;const data=await apiRequest("/account/friends");friendsData=data;return data;}
+ async function renderFriends(){
+  const host=$p("portalFriendsContent");
+  if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to use friends</h2><p>Friend requests and your list are connected to your player account.</p><button class="portal-primary" id="friendsSignIn">SIGN IN</button></div>';$p("friendsSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
+  host.innerHTML='<div class="portal-section-panel"><h2>Add a friend</h2><p>Send a request using their exact username. Requests must be accepted before a player appears in your friends list.</p><form class="portal-friend-add" id="portalFriendAdd"><input id="portalFriendUsername" class="portal-control" placeholder="Username" minlength="3" maxlength="20" required><button class="portal-primary" type="submit">SEND REQUEST</button></form><div class="portal-status" id="portalFriendStatus"></div></div><div class="portal-friend-columns"><section class="portal-section-panel"><div class="portal-eyebrow">INCOMING REQUESTS</div><div id="portalIncomingFriends">Loading…</div></section><section class="portal-section-panel"><div class="portal-eyebrow">YOUR FRIENDS</div><div id="portalFriendsList">Loading…</div></section></div>';
+  try{
+   const data=await loadFriends(),incoming=$p("portalIncomingFriends"),list=$p("portalFriendsList");
+   incoming.innerHTML=data.incoming.length?data.incoming.map(friend=>'<div class="portal-friend-row"><span class="portal-avatar">'+AVATAR_EMOJI[friend.avatar||0]+'</span><div><b>'+esc(friend.username)+'</b><small>Level '+esc(friend.level)+'</small></div><button class="portal-secondary" data-friend-accept="'+esc(friend.username)+'">ACCEPT</button><button class="portal-secondary portal-danger" data-friend-decline="'+esc(friend.username)+'">DECLINE</button></div>').join(""):'<p class="portal-muted">No incoming requests.</p>';
+   list.innerHTML=data.friends.length?data.friends.map(friend=>'<div class="portal-friend-row"><span class="portal-avatar">'+AVATAR_EMOJI[friend.avatar||0]+'</span><div><b>'+esc(friend.username)+'</b><small>Level '+esc(friend.level)+'</small></div><button class="portal-secondary" data-friend-remove="'+esc(friend.username)+'">REMOVE</button><button class="portal-secondary portal-danger" data-friend-block="'+esc(friend.username)+'">BLOCK</button></div>').join(""):'<p class="portal-muted">No friends yet. Add a player by username.</p>';
+   host.querySelectorAll("[data-friend-accept]").forEach(button=>button.addEventListener("click",()=>respondFriend(button.dataset.friendAccept,true)));
+   host.querySelectorAll("[data-friend-decline]").forEach(button=>button.addEventListener("click",()=>respondFriend(button.dataset.friendDecline,false)));
+   host.querySelectorAll("[data-friend-remove]").forEach(button=>button.addEventListener("click",()=>mutateFriend("/account/friends/remove",button.dataset.friendRemove)));
+   host.querySelectorAll("[data-friend-block]").forEach(button=>button.addEventListener("click",()=>mutateFriend("/account/friends/block",button.dataset.friendBlock)));
+  }catch(error){$p("portalIncomingFriends").textContent=error.message;$p("portalFriendsList").textContent="";}
+  $p("portalFriendAdd").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalFriendStatus");status.textContent="Sending…";status.className="portal-status";try{await apiRequest("/account/friends/request",{method:"POST",body:{username:$p("portalFriendUsername").value}});$p("portalFriendUsername").value="";status.textContent="Friend request sent.";status.className="portal-status success";await renderFriends();}catch(error){status.textContent=error.message;status.className="portal-status error";}});
+ }
+ async function respondFriend(name,accept){try{await apiRequest("/account/friends/respond",{method:"POST",body:{username:name,accept}});await renderFriends();}catch(error){toast(error.message);}}
+ async function mutateFriend(endpoint,name){try{await apiRequest(endpoint,{method:"POST",body:{username:name}});await renderFriends();}catch(error){toast(error.message);}}
  function formatDuration(value){
   const total=Math.max(0,Math.floor(Number(value)||0)),hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60);
   return hours?hours+"h "+minutes+"m":minutes+"m";
