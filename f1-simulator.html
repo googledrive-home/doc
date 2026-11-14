@@ -5,23 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d14">
 <title>F1 Simulator</title>
-<meta name="description" content="Play the 3D F1 simulator from the Home game library.">
+<meta name="description" content="Play the full 3D F1 simulator with AI opponents, 18 circuits, pit stops, tyre compounds, ERS and DRS.">
+<link rel="canonical" href="https://googledrive-home.github.io/F1/">
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d14;color:#e9f0f6;font:14px system-ui,sans-serif}
-body{display:grid;place-items:center}
-a{color:#6fffc3}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d14}
+#f1-site{display:block;width:100%;height:100%;border:0;background:#080d14}
 </style>
 </head>
 <body>
-<p>Opening F1 Simulator… <a href="/F1/">Continue to the simulator</a></p>
-<script>
-  // Load the F1 Pages project directly. Both /doc/ and /F1/ share this origin,
-  // allowing the Home account bridge to attach to the game itself.
-  const target = new URL("/F1/", window.location.origin);
-  target.search = window.location.search;
-  target.hash = window.location.hash;
-  window.location.replace(target.href);
-</script>
-<noscript><a href="/F1/">Open F1 Simulator</a></noscript>
+<iframe id="f1-site"
+  src="https://googledrive-home.github.io/F1/"
+  title="F1 Simulator standalone website"
+  allow="fullscreen; autoplay; gamepad"
+  allowfullscreen></iframe>
 </body>
 </html>
