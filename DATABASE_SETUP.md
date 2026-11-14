@@ -15,7 +15,7 @@ The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per 
 2. Sign up, verify your email if asked, and sign in.
 3. Create an organization if Supabase asks. A personal organization is fine.
 4. Choose **New project**.
-5. Enter the project name: `home`.
+5. Enter the project name: `home`. This is the Supabase project display name.
 6. Choose the **Free** plan.
 7. Choose a region near the Render service. You can see the Render region in the service's **Settings** page. If you cannot find it, choose the closest available region for now.
 8. Create a new, strong **Database Password**. This is the database password, not a Home player's password.
@@ -29,7 +29,7 @@ The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per 
 3. Choose **Session pooler** as the connection method.
 4. Choose the **URI** format.
 5. Copy the whole connection string.
-6. If it contains `[YOUR-PASSWORD]`, replace just that placeholder with the Database Password you created in Part A. Keep the rest of the string exactly as Supabase gave it to you.
+6. If it contains `[YOUR-PASSWORD]`, replace just that placeholder with the Database Password you created in Part A. Keep the rest of the string exactly as Supabase gave it to you, including the default `/postgres` database name.
 7. Keep this connection string private. Anyone who has it may be able to connect to your database.
 
 Use **Session pooler** for this Render setup because it works through Supabase's shared connection pooler and avoids common direct-connection IPv4 compatibility problems. Supabase's own connection guide explains where the different connection strings are found.
@@ -38,7 +38,7 @@ Use **Session pooler** for this Render setup because it works through Supabase's
 
 1. Open **https://dashboard.render.com/** and sign in.
 2. Open the workspace containing the service named **hockey-multiplayer**.
-3. Select the **hockey-multiplayer** web service.
+3. Select the **hockey-multiplayer** web service. Keep this existing Render service name unchanged: the Home website currently connects to its `hockey-multiplayer.onrender.com` address.
 4. In its left-hand menu, select **Environment**.
 5. Under Environment Variables, choose **Add Environment Variable**.
 6. In **Key**, enter exactly: `DATABASE_URL`.
