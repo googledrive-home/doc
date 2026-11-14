@@ -5,7 +5,7 @@
  const USERNAME_KEY="homeUsername",LEGACY_USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
+ let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="",externalGamePending=false,externalGameStartPromise=null;
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d","Neon Runner":"neon-runner",
   "F1 Simulator":"f1-simulator",
@@ -429,7 +429,19 @@
   if(presenceHeartbeat)clearInterval(presenceHeartbeat);
   presenceHeartbeat=setInterval(syncPresence,15000);
  }
- document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncPresence();});
+ async function finishExternalSessionOnReturn(){
+  if(document.hidden||!externalGamePending)return;
+  externalGamePending=false;
+  try{
+   await externalGameStartPromise;
+   if(Object.keys(activeGameSessions).length)await finishTrackedGame();
+  }finally{
+   externalGameStartPromise=null;
+   setCurrentGame("");
+  }
+ }
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden){syncPresence();finishExternalSessionOnReturn();}});
+ window.addEventListener("focus",finishExternalSessionOnReturn);
  function renderProfile(){
   const host=$p("portalProfileContent");
   if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to your player profile</h2><p>Your username, XP, trophies, favourites and statistics are saved to your account when persistent storage is connected.</p><button class="portal-primary" id="profileSignIn">SIGN IN / CREATE PROFILE</button></div>';$p("profileSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
@@ -556,6 +568,19 @@
    }
    setCurrentGame(gameTitle);startTrackedGame(gameTitle);
    return originalPortalOpenStandaloneGame.apply(this,arguments);
+  };
+ }
+ const originalPortalOpenExternal=window.openExternal;
+ if(typeof originalPortalOpenExternal==="function"){
+  window.openExternal=function(){
+   const externalGame=selectedGame?.external?selectedGame:null;
+   const opened=originalPortalOpenExternal.apply(this,arguments);
+   if(externalGame&&opened){
+    externalGamePending=true;
+    setCurrentGame(externalGame.title);
+    externalGameStartPromise=startTrackedGame(externalGame.title);
+   }
+   return opened;
   };
  }
  const originalPortalCloseGame=window.closeGame;
