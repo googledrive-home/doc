@@ -277,7 +277,7 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],dev:["ACCESS CONTROL","Restricted"]}[view]||["PLAYSPACE","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["PLAYSPACE","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="profile")renderProfile();
   if(view==="friends")renderFriends();
@@ -296,7 +296,6 @@
   portalSettings.sidebarExpanded=!collapsed;savePortalSettings();
  });
  $p("sidebarProfile").addEventListener("click",()=>showView("profile"));
- $p("portalAccountButton").addEventListener("click",()=>showView("profile"));
  $p("portalQuickSignIn").addEventListener("click",()=>accountData?showView("profile"):showAccountPrompt("login"));
  $p("portalAccountButton").addEventListener("click",()=>accountData?showView("profile"):showAccountPrompt("login"));
  $p("portalGameGroups").addEventListener("click",event=>{
@@ -456,7 +455,12 @@
  }
  async function finishTrackedGame(){
   const gameId=Object.keys(activeGameSessions)[0];if(!gameId||!accountToken)return null;
-  const sessionId=activeGameSessions[gameId];delete activeGameSessions[gameId];
+  const sessionId=activeGameSessions[gameId];
+  try{
+   const frame=document.getElementById("standaloneGameFrame");
+   await frame?.contentWindow?.PlaySpaceGameBridge?.sync?.();
+  }catch(error){}
+  delete activeGameSessions[gameId];
   try{
    const result=await apiRequest("/account/game/complete",{method:"POST",body:{sessionId,score:0}});
    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};updateUsernameDisplay();
@@ -486,7 +490,23 @@
  const originalPortalOpenStandaloneGame=window.openStandaloneGame;
  if(typeof originalPortalOpenStandaloneGame==="function"){
   window.openStandaloneGame=function(file,title){
-   setCurrentGame(title||"Game");startTrackedGame(title||"Game");
+   const gameTitle=String(title||"Game");
+   const gameId=gameIdByTitle[gameTitle]||"";
+   const frame=document.getElementById("standaloneGameFrame");
+   if(frame&&gameId){
+    frame.addEventListener("load",()=>{
+     try{
+      const doc=frame.contentDocument;
+      if(!doc?.head||doc.querySelector("[data-playspace-bridge]"))return;
+      const bridge=document.createElement("script");
+      bridge.src=new URL("./playspace-game-bridge.js",window.location.href).href;
+      bridge.dataset.playspaceBridge="1";
+      bridge.dataset.gameId=gameId;
+      doc.head.appendChild(bridge);
+     }catch(error){console.warn("Could not attach cloud saves to "+gameTitle,error);}
+    },{once:true});
+   }
+   setCurrentGame(gameTitle);startTrackedGame(gameTitle);
    return originalPortalOpenStandaloneGame.apply(this,arguments);
   };
  }
@@ -500,8 +520,9 @@
  const originalPortalCloseStandaloneGame=window.closeStandaloneGame;
  if(typeof originalPortalCloseStandaloneGame==="function"){
   window.closeStandaloneGame=async function(){
+   await finishTrackedGame();
    const result=originalPortalCloseStandaloneGame.apply(this,arguments);
-   await finishTrackedGame();setCurrentGame("");
+   setCurrentGame("");
    return result;
   };
  }
