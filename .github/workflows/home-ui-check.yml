@@ -72,15 +72,13 @@ jobs:
         run: |
           set -euo pipefail
           url="https://hockey-multiplayer.onrender.com/health/storage"
-          for attempt in $(seq 1 36); do
-            response="$(curl --silent --show-error --write-out $'\\n%{http_code}' "$url" || true)"
-            code="${response##*$'\\n'}"
-            body="${response%$'\\n'*}"
-            if [[ "$code" == "200" ]] && grep -q '"database":"connected"' <<< "$body"; then
+          for attempt in $(seq 1 18); do
+            code="$(curl --silent --show-error --output /tmp/render-storage-health.json --write-out '%{http_code}' "$url" || true)"
+            if [[ "$code" == "200" ]] && grep -q '"database":"connected"' /tmp/render-storage-health.json; then
               echo "Render database health is connected."
               exit 0
             fi
-            echo "Waiting for Render storage health (attempt $attempt/36, HTTP $code)."
+            echo "Waiting for Render storage health (attempt $attempt/18, HTTP $code)."
             sleep 10
           done
           echo "Render storage health did not return a connected database."
