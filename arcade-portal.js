@@ -586,7 +586,9 @@
  const originalPortalOpenExternal=window.openExternal;
  if(typeof originalPortalOpenExternal==="function"){
   window.openExternal=function(){
-   const externalGame=selectedGame?.external?selectedGame:null;
+   const targetUrl=String(arguments[0]||"");
+   const isF1Game=targetUrl.replace(/\/+$/,"")==="https://googledrive-home.github.io/F1";
+   const externalGame=selectedGame?.external?selectedGame:(isF1Game?{title:"F1 Simulator"}:null);
    const opened=originalPortalOpenExternal.apply(this,arguments);
    if(externalGame){
     pendingExternalGame=externalGame;
