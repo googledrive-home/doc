@@ -1,6 +1,6 @@
-# PlaySpace
+# Home
 
-PlaySpace is a browser-based game library with player profiles, XP, achievements, friends, career progress and cloud saves.
+Home is a browser-based game library with player profiles, XP, achievements, friends, career progress and cloud saves.
 
 ## Getting started
 
