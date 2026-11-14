@@ -1,13 +1,13 @@
-# Connect a free Supabase PostgreSQL database to PlaySpace
+# Connect a free Supabase PostgreSQL database to Home
 
-This guide connects the PlaySpace player accounts and cloud saves to a PostgreSQL database. You do **not** need to write SQL or edit the website code.
+This guide connects the Home player accounts and cloud saves to a PostgreSQL database. You do **not** need to write SQL or edit the website code.
 
 ## What you need
 
 - A Supabase account: https://supabase.com/
 - Access to the Render account that hosts the `hockey-multiplayer` service: https://dashboard.render.com/
 
-The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per project. Free projects can pause after a week of very low database activity, and automatic backups are not included. This is suitable for starting and testing PlaySpace, but it is not a promise of permanent uptime or backup protection.
+The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per project. Free projects can pause after a week of very low database activity, and automatic backups are not included. This is suitable for starting and testing Home, but it is not a promise of permanent uptime or backup protection.
 
 ## Part A — Create the database in Supabase
 
@@ -15,16 +15,16 @@ The Supabase Free plan is $0 and includes a PostgreSQL database with 500 MB per 
 2. Sign up, verify your email if asked, and sign in.
 3. Create an organization if Supabase asks. A personal organization is fine.
 4. Choose **New project**.
-5. Enter the project name: `playspace`.
+5. Enter the project name: `home`.
 6. Choose the **Free** plan.
 7. Choose a region near the Render service. You can see the Render region in the service's **Settings** page. If you cannot find it, choose the closest available region for now.
-8. Create a new, strong **Database Password**. This is the database password, not a PlaySpace player's password.
+8. Create a new, strong **Database Password**. This is the database password, not a Home player's password.
 9. Save that database password somewhere private and safe. Do not post it in GitHub, a screenshot, or a chat.
 10. Select **Create new project** and wait until the project is ready.
 
 ## Part B — Copy the database connection string
 
-1. Open the `playspace` project in Supabase.
+1. Open the `home` project in Supabase.
 2. At the top of the project page, select **Connect**.
 3. Choose **Session pooler** as the connection method.
 4. Choose the **URI** format.
@@ -66,7 +66,7 @@ Other results:
 
 The ordinary `/health` address only checks whether the web service is responding. Use `/health/storage` to check PostgreSQL specifically.
 
-## Part E — Test a PlaySpace account
+## Part E — Test a Home account
 
 Once the storage check says `connected`:
 
