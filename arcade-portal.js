@@ -297,7 +297,8 @@
  });
  $p("sidebarProfile").addEventListener("click",()=>showView("profile"));
  $p("portalAccountButton").addEventListener("click",()=>showView("profile"));
- $p("portalQuickSignIn").addEventListener("click",showUsernamePrompt);
+ $p("portalQuickSignIn").addEventListener("click",()=>accountData?showView("profile"):showAccountPrompt("login"));
+ $p("portalAccountButton").addEventListener("click",()=>accountData?showView("profile"):showAccountPrompt("login"));
  $p("portalGameGroups").addEventListener("click",event=>{
   const card=event.target.closest("[data-game-card]");if(!card)return;
   const game=games.find(g=>g.id===card.dataset.gameCard);if(game)openGameDetail(game);
@@ -447,17 +448,45 @@
  }
 
  const gameTitleByType={tennis:"Tennis Rally",hockey:"Hockey",reaction:"Reaction Game",click:"Click Test",breaker:"Neon Breaker",skydash:"Flappy Bird",snake:"Neon Snake",defender:"Space Defender",memory:"Memory Match",vehicle:"Tank Arena"};
+ async function startTrackedGame(title){
+  const gameId=gameIdByTitle[String(title||"")];if(!accountToken||!gameId)return null;
+  if(Object.keys(activeGameSessions).length)return null;
+  try{const started=await apiRequest("/account/game/start",{method:"POST",body:{gameId}});activeGameSessions[gameId]=started.sessionId;return started;}
+  catch(error){console.warn("Could not start account game session:",error.message);return null;}
+ }
+ async function finishTrackedGame(){
+  const gameId=Object.keys(activeGameSessions)[0];if(!gameId||!accountToken)return null;
+  const sessionId=activeGameSessions[gameId];delete activeGameSessions[gameId];
+  try{
+   const result=await apiRequest("/account/game/complete",{method:"POST",body:{sessionId,score:0}});
+   const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};updateUsernameDisplay();
+   if(document.querySelector("#portalProfileView.active"))renderProfile();
+   loadWeeklyHighlights().catch(()=>{});
+   toast("+"+result.xpEarned+" XP · "+(result.achievements?.length||0)+" new trophies");
+   return result;
+  }catch(error){console.warn("Could not save game session:",error.message);return null;}
+ }
+ window.PlaySpaceAccount={
+  isSignedIn:()=>!!accountToken,
+  getProfile:()=>accountData?.profile||null,
+  request:(endpoint,options)=>apiRequest(endpoint,options),
+  save:(gameId,save)=>apiRequest("/account/saves/"+encodeURIComponent(gameId),{method:"POST",body:{save}}),
+  load:(gameId)=>apiRequest("/account/saves/"+encodeURIComponent(gameId)),
+  startGame:startTrackedGame,
+  completeGame:finishTrackedGame
+ };
  const originalPortalOpenGame=window.openGame;
  if(typeof originalPortalOpenGame==="function"){
   window.openGame=async function(type){
-   setCurrentGame(gameTitleByType[String(type)]||String(type||"Game"));
+   const title=gameTitleByType[String(type)]||String(type||"Game");
+   setCurrentGame(title);startTrackedGame(title);
    return originalPortalOpenGame.apply(this,arguments);
   };
  }
  const originalPortalOpenStandaloneGame=window.openStandaloneGame;
  if(typeof originalPortalOpenStandaloneGame==="function"){
   window.openStandaloneGame=function(file,title){
-   setCurrentGame(title||"Game");
+   setCurrentGame(title||"Game");startTrackedGame(title||"Game");
    return originalPortalOpenStandaloneGame.apply(this,arguments);
   };
  }
@@ -465,14 +494,14 @@
  if(typeof originalPortalCloseGame==="function"){
   window.closeGame=async function(){
    try{return await originalPortalCloseGame.apply(this,arguments);}
-   finally{setCurrentGame("");}
+   finally{await finishTrackedGame();setCurrentGame("");}
   };
  }
  const originalPortalCloseStandaloneGame=window.closeStandaloneGame;
  if(typeof originalPortalCloseStandaloneGame==="function"){
-  window.closeStandaloneGame=function(){
+  window.closeStandaloneGame=async function(){
    const result=originalPortalCloseStandaloneGame.apply(this,arguments);
-   setCurrentGame("");
+   await finishTrackedGame();setCurrentGame("");
    return result;
   };
  }
@@ -498,7 +527,7 @@
   ["ocean","Ocean","#25a5b7","#7be1d0","#153e54"],
   ["graphite","Graphite","#a0a9ba","#d2d9e1","#3a414d"]
  ];
- const settingDefaults={theme:"playstation",columns:4,cardSize:"normal",motion:true,backgroundGlow:true,hoverEffects:true,sound:true,soundVolume:70,musicEnabled:true,musicVolume:48,autoMusic:false,sidebarExpanded:true,compactDetails:false,reduceTransparency:false,rememberSearch:true,openGameFullscreen:true,confirmExternal:true};
+ const settingDefaults={theme:"playstation",columns:4,cardSize:"normal",motion:true,reduceMotion:false,highContrast:false,textSize:"normal",backgroundGlow:true,hoverEffects:true,sound:true,soundVolume:70,musicEnabled:true,musicVolume:48,autoMusic:false,sidebarExpanded:true,compactDetails:false,reduceTransparency:false,rememberSearch:true,openGameFullscreen:true,confirmExternal:true};
  let portalSettings={...settingDefaults};
  try{portalSettings={...portalSettings,...JSON.parse(localStorage.getItem("arcadePortalSettings")||"{}")};}catch(error){}
  function savePortalSettings(){try{localStorage.setItem("arcadePortalSettings",JSON.stringify(portalSettings));}catch(error){}}
@@ -512,6 +541,9 @@
   document.body.classList.toggle("portal-compact",portalSettings.cardSize==="compact");
   document.body.classList.toggle("portal-hover-off",!portalSettings.hoverEffects);
   document.body.classList.toggle("portal-solid-panels",!!portalSettings.reduceTransparency);
+  document.body.classList.toggle("portal-high-contrast",!!portalSettings.highContrast);
+  document.body.classList.toggle("portal-reduced-motion",!!portalSettings.reduceMotion||!portalSettings.motion);
+  document.body.dataset.portalTextSize=["small","normal","large","xlarge"].includes(portalSettings.textSize)?portalSettings.textSize:"normal";
   if(typeof siteSettings!=="undefined"){
    siteSettings.sfx=!!portalSettings.sound;
    siteSettings.sfxVolume=Math.max(0,Math.min(1,Number(portalSettings.soundVolume)/100));
@@ -529,6 +561,7 @@
    '<div class="portal-settings-grid">'+
     '<section class="portal-setting-group"><h3>Layout and navigation</h3>'+settingSelect("columns","Games per row",[[2,"2 columns"],[3,"3 columns"],[4,"4 columns"],[5,"5 columns"],[6,"6 columns"]],portalSettings.columns)+settingSelect("cardSize","Card shape", [["compact","Compact"],["normal","Rounded"],["round","Extra rounded"],["square","Square"]],portalSettings.cardSize)+settingCheck("sidebarExpanded","Keep sidebar expanded",portalSettings.sidebarExpanded)+settingCheck("rememberSearch","Remember search text",portalSettings.rememberSearch)+'</section>'+
     '<section class="portal-setting-group"><h3>Motion and appearance</h3>'+settingCheck("motion","Smooth animations",portalSettings.motion)+settingCheck("backgroundGlow","Animated ambient glow",portalSettings.backgroundGlow)+settingCheck("hoverEffects","Animated game-card hover",portalSettings.hoverEffects)+settingCheck("reduceTransparency","Use stronger solid panels",portalSettings.reduceTransparency)+settingCheck("compactDetails","Compact game detail screen",portalSettings.compactDetails)+'</section>'+
+    '<section class="portal-setting-group"><h3>Accessibility</h3>'+settingSelect("textSize","Text size",[["small","Small"],["normal","Normal"],["large","Large"],["xlarge","Extra large"]],portalSettings.textSize)+settingCheck("highContrast","High contrast",portalSettings.highContrast)+settingCheck("reduceMotion","Reduce animation and motion",portalSettings.reduceMotion)+'</section>'+
     '<section class="portal-setting-group"><h3>Sound and music</h3>'+settingCheck("sound","Interface sound effects",portalSettings.sound)+settingRange("soundVolume","Sound volume",portalSettings.soundVolume,0,100)+settingCheck("musicEnabled","Music player enabled",portalSettings.musicEnabled)+settingRange("musicVolume","Music volume",portalSettings.musicVolume,0,100)+settingCheck("autoMusic","Start music when opening library",portalSettings.autoMusic)+'</section>'+
     '<section class="portal-setting-group"><h3>Game launch and privacy</h3>'+settingCheck("openGameFullscreen","Open supported games in fullscreen",portalSettings.openGameFullscreen)+settingCheck("confirmExternal","Confirm external game links",portalSettings.confirmExternal)+'</section>'+
    '</div><div class="portal-settings-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="portal-secondary" id="portalResetSettings">Reset settings</button><button class="portal-primary" id="portalSaveSettings">Save settings</button></div><div class="portal-status" id="portalSettingsStatus"></div>';
@@ -621,9 +654,10 @@
  }
  function renderDevMetrics(data){
   const host=$p("portalDevMetrics");host.classList.add("open");
-  const players=Array.isArray(data.players)?data.players:[];
+  const players=Array.isArray(data.players)?data.players:[],accounts=Array.isArray(data.accounts)?data.accounts:[];
   const rows=players.length?players.map(player=>'<tr><td>'+esc(player.name)+'</td><td>'+esc(player.game)+'</td></tr>').join(""):'<tr><td colspan="2" class="portal-muted">No one is online right now.</td></tr>';
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">LIVE ACTIVITY</div><h2 style="margin-top:5px">Who&#39;s online</h2><table class="portal-table"><thead><tr><th>Username</th><th>Playing</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
+  const accountRows=accounts.length?accounts.map(account=>'<tr><td>'+esc(account.username)+'</td><td>'+esc(account.level)+'</td><td>'+esc(account.xp)+'</td><td>'+esc(account.gamesPlayed)+'</td><td>'+esc(formatDuration(account.timePlayedSeconds))+'</td><td>'+esc(account.achievements)+'</td></tr>').join(""):'<tr><td colspan="6" class="portal-muted">No saved player accounts yet.</td></tr>';
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">LIVE ACTIVITY</div><h2 style="margin-top:5px">Who&#39;s online</h2><table class="portal-table"><thead><tr><th>Username</th><th>Playing</th></tr></thead><tbody>'+rows+'</tbody></table><div class="portal-eyebrow" style="margin-top:20px">PLAYER DATABASE</div><h2 style="margin-top:5px">Saved player statistics</h2><div class="portal-online-table-wrap"><table class="portal-table"><thead><tr><th>Username</th><th>Level</th><th>XP</th><th>Games</th><th>Play time</th><th>Trophies</th></tr></thead><tbody>'+accountRows+'</tbody></table></div><div class="portal-muted" style="font-size:8px;margin-top:10px">Updated '+new Date(data.updatedAt||Date.now()).toLocaleTimeString()+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="portal-secondary" id="portalDevRefresh">Refresh now</button><button class="portal-secondary" id="portalDevLock">Lock Dev Mode</button></div></div>';
   $p("portalDevRefresh").addEventListener("click",refreshDevMetrics);
   $p("portalDevLock").addEventListener("click",()=>{
    if(devRefreshTimer)clearInterval(devRefreshTimer);devRefreshTimer=null;devPasswordInMemory="";
