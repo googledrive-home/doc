@@ -209,7 +209,8 @@ app.post("/account/game/complete",async(req,res)=>{
  const now=Date.now(),elapsedMs=now-session.startedAt;if(elapsedMs<10000||elapsedMs>3*60*60*1000)return res.status(400).json({error:"Play a little longer before recording this session."});
  const gameId=session.gameId,elapsedSeconds=Math.round(elapsedMs/1000),score=Math.max(0,Math.min(100000000,Math.floor(Number(req.body?.score)||0)));
  const record=account.stats.games[gameId]||(account.stats.games[gameId]={played:0,seconds:0,bestScore:0,lastPlayedAt:0,plays:[]});
- record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(record.bestScore||0,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
+ const previousBest=record.bestScore||0;
+ record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(previousBest,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
  account.stats.gamesPlayed=(account.stats.gamesPlayed||0)+1;account.stats.timePlayedSeconds+=elapsedSeconds;
  const day=new Date(now).toISOString().slice(0,10);if(account.dailyXp?.date!==day)account.dailyXp={date:day,amount:0};
  const earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned);
