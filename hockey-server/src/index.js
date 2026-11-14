@@ -42,6 +42,11 @@ const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
 function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
+function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpReward=15){
+ if(!Array.isArray(account.achievements))account.achievements=[];
+ if(account.achievements.some(item=>item.id===id))return false;
+ account.achievements.push({id,gameId,title,description,tier,unlockedAt:Date.now()});addPlayerXp(account,xpReward);return true;
+}
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
  data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
@@ -100,7 +105,8 @@ function accountProfile(account){const progress=levelProgress(account.xp||0);ret
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{}};
+ const likedGames=Object.entries(accountStore.gameRatings||{}).filter(([,entry])=>Array.isArray(entry?.userIds)&&entry.userIds.includes(account.id)).map(([gameId])=>gameId);
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 function requirePersistentAccountStorage(res){
@@ -183,8 +189,11 @@ app.post("/account/favorites",async(req,res)=>{
 app.post("/account/games/:gameId/like",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to like games."});
  const gameId=String(req.params.gameId||"");if(!validGameId(gameId))return res.status(404).json({error:"Game not found."});
- const entry=accountStore.gameRatings[gameId]&&typeof accountStore.gameRatings[gameId]==="object"?accountStore.gameRatings[gameId]:(accountStore.gameRatings[gameId]={userIds:[]});
- if(!Array.isArray(entry.userIds))entry.userIds=[];const index=entry.userIds.indexOf(account.id);if(index>=0)entry.userIds.splice(index,1);else entry.userIds.push(account.id);
+ const entry=accountStore.gameRatings[gameId]&&typeof accountStore.gameRatings[gameId]==="object"?accountStore.gameRatings[gameId]:(accountStore.gameRatings[gameId]={userIds:[],likes:[]});
+ if(!Array.isArray(entry.userIds))entry.userIds=[];if(!Array.isArray(entry.likes))entry.likes=[];
+ const index=entry.userIds.indexOf(account.id);
+ if(index>=0){entry.userIds.splice(index,1);entry.likes=entry.likes.filter(item=>item.userId!==account.id);}
+ else{entry.userIds.push(account.id);entry.likes.push({userId:account.id,at:Date.now()});}
  try{await persistAccountStore();res.json({liked:index<0,likes:entry.userIds.length});}catch(error){console.error("Game like save error:",error.message);res.status(503).json({error:"Could not save your like."});}
 });
 app.post("/account/game/start",async(req,res)=>{
@@ -204,17 +213,18 @@ app.post("/account/game/complete",async(req,res)=>{
  account.stats.gamesPlayed=(account.stats.gamesPlayed||0)+1;account.stats.timePlayedSeconds+=elapsedSeconds;
  const day=new Date(now).toISOString().slice(0,10);if(account.dailyXp?.date!==day)account.dailyXp={date:day,amount:0};
  const earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned);
- const unlocked=[];
+ const unlocked=[],xpBefore=account.xp;
  const grant=(id,title,desc,tier,reward)=>{if(unlockAchievement(account,id,gameId,title,desc,tier,reward))unlocked.push({id,title,tier});};
  if(record.played===1)grant("first-"+gameId,"First Session","Played this game for the first time.","bronze",10);
  if(record.played===10)grant("regular-"+gameId,"Regular Player","Played this game 10 times.","silver",20);
  if(record.played===50)grant("dedicated-"+gameId,"Dedicated Player","Played this game 50 times.","gold",40);
+ if(record.bestScore>0&&record.bestScore>previousBest)grant("record-"+gameId,"Personal Best","Set a new best score in this game.","silver",15);
  if(account.stats.gamesPlayed===1)grant("first-game","Welcome to PlaySpace","Completed your first game session.","bronze",15);
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","PlaySpace Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=Math.min(10,1+Math.floor(career.sessions/5));
  account.activeGameSession=null;
- try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:earned,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
 });
 app.get("/account/saves/:gameId",async(req,res)=>{
@@ -273,7 +283,7 @@ app.post("/account/friends/block",async(req,res)=>{
 app.get("/portal/games/weekly",(_req,res)=>{
  const now=Date.now(),weekAgo=now-7*24*60*60*1000,playCounts={},likeCounts={};
  for(const account of accountStore.accounts)for(const [gameId,gameStats] of Object.entries(account.stats?.games||{}))if(validGameId(gameId)){const count=(gameStats.plays||[]).filter(at=>at>=weekAgo).length;playCounts[gameId]=(playCounts[gameId]||0)+count;}
- for(const [gameId,entry] of Object.entries(accountStore.gameRatings||{}))if(validGameId(gameId))likeCounts[gameId]=Array.isArray(entry.userIds)?entry.userIds.length:0;
+ for(const [gameId,entry] of Object.entries(accountStore.gameRatings||{}))if(validGameId(gameId))likeCounts[gameId]=Array.isArray(entry.likes)?entry.likes.filter(item=>item.at>=weekAgo).length:0;
  const gameIds=Object.keys(GAME_CATALOG),byPlays=[...gameIds].sort((a,b)=>(playCounts[b]||0)-(playCounts[a]||0)||a.localeCompare(b)),byLikes=[...gameIds].sort((a,b)=>(likeCounts[b]||0)-(likeCounts[a]||0)||a.localeCompare(b));
  const monday=new Date(now);monday.setUTCHours(0,0,0,0);monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));const weekKey=monday.toISOString().slice(0,10),weekSeed=Array.from(weekKey).reduce((sum,ch)=>sum+ch.charCodeAt(0),0),featured=gameIds[weekSeed%gameIds.length];
  res.setHeader("Cache-Control","no-store");res.json({weekStartsAt:weekKey,featured:{gameId:featured,category:GAME_CATALOG[featured]},mostPlayed:{gameId:byPlays[0],count:playCounts[byPlays[0]]||0},mostLiked:{gameId:byLikes[0],count:likeCounts[byLikes[0]]||0},plays:playCounts,likes:likeCounts});
