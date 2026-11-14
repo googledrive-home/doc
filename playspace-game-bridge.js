@@ -10,9 +10,12 @@
     "apex-formula-racing": key => key === "apexFormulaWorldTourV1" || /^apexFormulaTimeTrialV1:/i.test(key),
     "f1-simulator": key => /^(?=.*(?:f1|formula|championship|career|progress|save|record|time.?trial))(?!.+setting).+$/i.test(key),
     "gravel-rally-stage": key => /^gravel-(?:best-|career-|tournament-)/i.test(key),
-    "tank-arena-3d": key => key === "tankArenaMapEditor.v1"
+    "tank-arena-3d": key => key === "tankArenaMapEditor.v1",
+    "open-world-drive": key => key === "playspaceOpenWorldDriveSaveV1",
+    "drift-arena": key => key === "playspaceDriftArenaV1"
   };
   const stampKey = "__playspace_cloud_stamp_" + gameId;
+  const reloadKey = "__playspace_cloud_reload_" + gameId;
   let applyingCloud = false;
   let syncTimer = null;
   let syncing = false;
@@ -57,9 +60,9 @@
     if (!api || !api.isSignedIn?.() || !gameId || syncing) return false;
     syncing = true;
     try {
-      await api.save(gameId, snapshot());
+      const saved = await api.save(gameId, snapshot());
       applyingCloud = true;
-      localStorage.setItem(stampKey, String(Date.now()));
+      localStorage.setItem(stampKey, String(Number(saved?.updatedAt) || Date.now()));
       applyingCloud = false;
       return true;
     } finally {
@@ -80,6 +83,14 @@
           if (isSaveKey(key) && typeof value === "string") localStorage.setItem(key, value);
         }
         localStorage.setItem(stampKey, String(cloud.updatedAt));
+        const cloudVersion = String(cloud.updatedAt);
+        const alreadyReloaded = localStorage.getItem(reloadKey) === cloudVersion;
+        if (!alreadyReloaded) {
+          localStorage.setItem(reloadKey, cloudVersion);
+          applyingCloud = false;
+          window.location.reload();
+          return true;
+        }
         applyingCloud = false;
         return true;
       }
@@ -118,7 +129,14 @@
     console.warn("PlaySpace could not watch local saves:", error);
   }
 
-  window.PlaySpaceGameBridge = { gameId, sync, hydrate };
+  function reportScore(score) {
+    const value = Number(score);
+    if (!Number.isFinite(value)) return false;
+    const api = getApi();
+    return api?.reportScore?.(gameId, Math.max(0, Math.min(100000000, Math.floor(value)))) ?? false;
+  }
+
+  window.PlaySpaceGameBridge = { gameId, sync, hydrate, reportScore };
   hydrate();
   window.addEventListener("pagehide", () => { sync().catch(() => {}); });
 })();
