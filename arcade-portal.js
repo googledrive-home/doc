@@ -509,7 +509,11 @@
    loadWeeklyHighlights().catch(()=>{});
    toast("+"+result.xpEarned+" XP · "+(result.achievements?.length||0)+" new trophies");
    return result;
-  }catch(error){console.warn("Could not save game session:",error.message);return null;}
+  }catch(error){
+   // A short or interrupted game must not leave the server-side account session locked.
+   try{await apiRequest("/account/game/cancel",{method:"POST",body:{sessionId}});}catch(cancelError){}
+   console.warn("Could not save game session:",error.message);return null;
+  }
  }
  const homeAccountApi={
   isSignedIn:()=>!!accountToken,
