@@ -72,7 +72,8 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   const all=[];let cid=0;Object.entries(brands).forEach(([brand,models],bi)=>models.forEach((model,mi)=>all.push({id:cid++,brand,model,power:330+bi*24+mi*31,weight:1160+bi*26+mi*34,top:292+bi*5+mi*8,grip:1.07-(mi*.012),accel:24+bi*.18+mi*.42,brake:27+mi*.55,steer:1.01+(mi%2)*.035,color:palette[(bi+mi)%palette.length],shape:shapeFor(model),fuelCap:56+(bi%3)*2+(mi%3)*2})));
   const keys=new Set();let paused=false,last=performance.now(),worldW=6200,worldH=4400,day=0.22;
   let race={track:null,s:null,pit:[{x:100,y:100}],cars:[],laps:999,aiDifficulty:'medium',time:0};
-  let player=null,selectedCar=1,cash=0,driftScore=0,engineLevel=0,gripLevel=0,noticeTimer=0,missionIndex=0,mission=null,trial=null,collectibles=[],discovered=new Set(),maxSpeed=0;
+  let player=null,selectedCar=1,cash=0,driftScore=0,engineLevel=0,gripLevel=0,noticeTimer=0,missionIndex=0,mission=null,trial=null,collectibles=[],discovered=new Set(),maxSpeed=0,lastWorldSaveAt=0;
+  const WORLD_SAVE_KEY="playspaceOpenWorldDriveSaveV1";
   const roads=[
     [[300,540],[1120,540],[1900,540],[2700,540],[3550,540],[4700,540],[5820,540]],
     [[520,900],[520,1700],[520,2560],[520,3400],[520,4120]],
@@ -234,15 +235,55 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       if(keys.has(' '))service();
       day=(day+dt*.004)%1;
     }
+    if(!paused&&now-lastWorldSaveAt>10000){saveWorldProgress();lastWorldSaveAt=now;}
     render();requestAnimationFrame(loop)
   }
   function reset(){player=makeCar(all[selectedCar]);player.x=1800;player.y=540;player.angle=0;player.fuel=player.fuelCap;player.spec.top+=engineLevel*4;player.spec.accel*=1+engineLevel*.035;player.spec.grip*=1+gripLevel*.028;notice('RESPAWN','Back at Downtown Plaza')}
+  function saveWorldProgress(){
+    if(!player)return;
+    const state={
+      version:1,cash,driftScore,engineLevel,gripLevel,missionIndex,
+      discovered:[...discovered],maxSpeed,selectedCar,
+      collectibles:collectibles.map((item,index)=>item.got?(item.id||String(index)):null).filter(Boolean),
+      car:{x:player.x,y:player.y,angle:player.angle,fuel:player.fuel,tyreWear:player.tyreWear}
+    };
+    try{localStorage.setItem(WORLD_SAVE_KEY,JSON.stringify(state));}catch(error){}
+    window.PlaySpaceGameBridge?.reportScore?.(Math.max(0,Math.floor(driftScore+cash)));
+  }
+  function loadWorldProgress(){
+    let state=null;
+    try{state=JSON.parse(localStorage.getItem(WORLD_SAVE_KEY)||"null");}catch(error){}
+    if(!state||state.version!==1){reset();return;}
+    cash=Math.max(0,Math.min(100000000,Math.floor(Number(state.cash)||0)));
+    driftScore=Math.max(0,Math.min(100000000,Math.floor(Number(state.driftScore)||0)));
+    engineLevel=Math.max(0,Math.min(20,Math.floor(Number(state.engineLevel)||0)));
+    gripLevel=Math.max(0,Math.min(20,Math.floor(Number(state.gripLevel)||0)));
+    missionIndex=Math.max(0,Math.floor(Number(state.missionIndex)||0));
+    maxSpeed=Math.max(0,Number(state.maxSpeed)||0);
+    const carIndex=Number(state.selectedCar);
+    if(Number.isInteger(carIndex)&&carIndex>=0&&carIndex<all.length)selectedCar=carIndex;
+    const known=new Set(locations.map(item=>item.name));
+    discovered=new Set(Array.isArray(state.discovered)?state.discovered.filter(name=>known.has(name)):[]);
+    reset();
+    const savedCar=state.car;
+    if(savedCar&&Number.isFinite(Number(savedCar.x))&&Number.isFinite(Number(savedCar.y))){
+      player.x=clamp(Number(savedCar.x),100,worldW-100);
+      player.y=clamp(Number(savedCar.y),100,worldH-100);
+      if(Number.isFinite(Number(savedCar.angle)))player.angle=Number(savedCar.angle);
+      if(Number.isFinite(Number(savedCar.fuel)))player.fuel=clamp(Number(savedCar.fuel),0,player.fuelCap);
+      if(Number.isFinite(Number(savedCar.tyreWear)))player.tyreWear=clamp(Number(savedCar.tyreWear),0,100);
+    }
+    const collected=new Set(Array.isArray(state.collectibles)?state.collectibles:[]);
+    collectibles.forEach((item,index)=>{if(collected.has(item.id||String(index)))item.got=true;});
+    lastWorldSaveAt=performance.now();
+  }
+  window.addEventListener("pagehide",saveWorldProgress);
   function buildSelect(){q('carSelect').innerHTML=all.map(c=>'<option value="'+c.id+'">'+c.brand+' · '+c.model+'</option>').join('');q('carSelect').value=selectedCar;q('carSelect').onchange=()=>{selectedCar=+q('carSelect').value;reset()}}
   function resize(){const d=devicePixelRatio||1,r=canvas.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width*d));canvas.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);mini.width=420;mini.height=280}
   function enterFS(){document.documentElement.requestFullscreen?.().catch(()=>{})}
   q('pauseBtn').onclick=()=>{paused=!paused;q('pauseOverlay').classList.toggle('show',paused);q('pauseBtn').textContent=paused?'▶ Resume':'⏸ Pause'};q('resumeBtn').onclick=()=>{paused=false;q('pauseOverlay').classList.remove('show');q('pauseBtn').textContent='⏸ Pause'};q('resetBtn').onclick=reset;q('engineBtn').onclick=()=>upgrade('engine');q('gripBtn').onclick=()=>upgrade('grip');q('missionBtn').onclick=startMission;q('mapBtn').onclick=()=>{const box=mini.closest('.map-wrap'),isOpen=!box.classList.contains('expanded');if(isOpen){box.classList.add('expanded');document.body.appendChild(box);q('mapBtn').textContent='CLOSE MAP';notice('MAP','Expanded map opened')}else{box.classList.remove('expanded');document.querySelector('.right').prepend(box);q('mapBtn').textContent='MAP';notice('MAP','Minimap restored')}};q('homeBtn').onclick=()=>{location.href='./drift-arena.html'};
   window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='escape'&&document.querySelector('.map-wrap').classList.contains('expanded')){const box=document.querySelector('.map-wrap');box.classList.remove('expanded');document.querySelector('.right').prepend(box);q('mapBtn').textContent='MAP';return}if(k==='f'){enterFS();return}if(k==='p'){paused=!paused;q('pauseOverlay').classList.toggle('show',paused);q('pauseBtn').textContent=paused?'▶ Resume':'⏸ Pause';return}if(k==='m'){startMission();return}if(k==='enter'){startMission();return}if(k==='r'&&(!trial))startTrial();keys.add(k);if(['w','s','a','d',' '].includes(k))e.preventDefault()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('resize',resize);
-  buildSelect();resize();reset();let pct=0;const load=setInterval(()=>{pct=Math.min(100,pct+8);q('loadFill').style.width=pct+'%';if(pct>=100){clearInterval(load);setTimeout(()=>q('loading').style.display='none',220)}},60);
+  buildSelect();resize();loadWorldProgress();let pct=0;const load=setInterval(()=>{pct=Math.min(100,pct+8);q('loadFill').style.width=pct+'%';if(pct>=100){clearInterval(load);setTimeout(()=>q('loading').style.display='none',220)}},60);
   requestAnimationFrame(loop)
 })();
 </script>
