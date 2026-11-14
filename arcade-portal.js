@@ -226,14 +226,16 @@
  }
  function renderCategories(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
-  const categories=["All Games",...categoryOrder];
+  const favoriteIds=accountData?.profile?.favoriteGames||[];
+  const categories=["All Games","Favorites",...categoryOrder];
   const counts=Object.fromEntries(categoryOrder.map(category=>[category,games.filter(game=>game.genre===category).length]));
   const visible=categories.filter(category=>{
    if(category==="All Games")return games.some(game=>!query||(game.title+" "+game.genre).toLowerCase().includes(query));
+   if(category==="Favorites")return favoriteIds.some(id=>games.some(game=>game.id===id&&(!query||game.title.toLowerCase().includes(query))));
    return counts[category]>0&&(!query||category.toLowerCase().includes(query)||games.some(game=>game.genre===category&&game.title.toLowerCase().includes(query)));
   });
   $p("portalFilterRow").innerHTML=visible.map(category=>{
-   const count=category==="All Games"?games.filter(game=>!query||(game.title+" "+game.genre).toLowerCase().includes(query)).length:games.filter(game=>game.genre===category&&(!query||game.title.toLowerCase().includes(query))).length;
+   const count=category==="All Games"?games.filter(game=>!query||(game.title+" "+game.genre).toLowerCase().includes(query)).length:category==="Favorites"?favoriteIds.length:games.filter(game=>game.genre===category&&(!query||game.title.toLowerCase().includes(query))).length;
    return '<button class="portal-category-tab" type="button" role="tab" data-category-tab="'+esc(category)+'"><span>'+esc(category)+'</span><small>'+count+' games</small><span class="portal-card-arrow">↗</span></button>';
   }).join("");
   $p("portalFilterRow").querySelectorAll("[data-category-tab]").forEach(button=>button.addEventListener("click",()=>openCategory(button.dataset.categoryTab)));
@@ -256,7 +258,8 @@
  function renderGameList(){
   if(!selectedGenre){renderCategories();return;}
   const query=($p("portalSearch").value||"").trim().toLowerCase();
-  const filtered=games.filter(game=>(selectedGenre==="All Games"||game.genre===selectedGenre)&&(!query||(game.title+" "+game.genre+" "+game.description).toLowerCase().includes(query)));
+  const favoriteIds=accountData?.profile?.favoriteGames||[];
+  const filtered=games.filter(game=>(selectedGenre==="All Games"?true:selectedGenre==="Favorites"?favoriteIds.includes(game.id):game.genre===selectedGenre)&&(!query||(game.title+" "+game.genre+" "+game.description).toLowerCase().includes(query)));
   const host=$p("portalGameGroups");host.innerHTML="";
   if(!filtered.length){host.innerHTML='<div class="portal-empty">No games match that search.</div>';return;}
   if(selectedGenre==="All Games"){
@@ -277,10 +280,11 @@
   const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],dev:["ACCESS CONTROL","Restricted"]}[view]||["PLAYSPACE","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="profile")renderProfile();
+  if(view==="friends")renderFriends();
   if(view==="settings")renderSettings();
   if(view==="music")mountMusicPanel();
   if(view==="dev")renderDevView();
-  if(view==="games")showCategoryChooser();
+  if(view==="games"){showCategoryChooser();loadWeeklyHighlights();}
  }
  document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.addEventListener("click",()=>showView(el.dataset.view)));
  $p("portalBackToCategories").addEventListener("click",showCategoryChooser);
@@ -340,16 +344,30 @@
  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeGameDetail();});
  function apiRequest(path,options){
   const config={method:options?.method||"GET",headers:{"Content-Type":"application/json"},cache:"no-store"};
+  if(accountToken)config.headers.Authorization="Bearer "+accountToken;
   if(options?.body!==undefined)config.body=JSON.stringify(options.body);
   return fetch(API_BASE+path,config).then(async response=>{
    const data=await response.json().catch(()=>({}));
-   if(!response.ok){
-    const error=new Error(data.error||("Request failed ("+response.status+")."));
-    error.status=response.status;
-    throw error;
-   }
+   if(!response.ok){const error=new Error(data.error||("Request failed ("+response.status+")."));error.status=response.status;throw error;}
    return data;
   });
+ }
+ async function loadWeeklyHighlights(){
+  try{weeklyData=await apiRequest("/portal/games/weekly");renderWeeklyHighlights();return weeklyData;}
+  catch(error){$p("portalWeeklyShelf").innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">THIS WEEK</div><h2>Weekly highlights unavailable</h2><p>Rankings will appear when the stats service is available.</p></div>';return null;}
+ }
+ function getGame(gameId){return games.find(game=>game.id===gameId)||null;}
+ function weeklyGameTile(label,gameId,count,emptyText){
+  const game=getGame(gameId);
+  return '<article class="portal-weekly-card"><small>'+esc(label)+'</small><b>'+esc(game?.title||"No results yet")+'</b><span>'+(count>0?esc(count+" recorded"):esc(emptyText))+'</span></article>';
+ }
+ function renderWeeklyHighlights(){
+  const host=$p("portalWeeklyShelf");if(!host||!weeklyData)return;
+  const featured=getGame(weeklyData.featured?.gameId),played=weeklyData.mostPlayed||{},liked=weeklyData.mostLiked||{};
+  host.innerHTML='<div class="portal-weekly-head"><div><div class="portal-eyebrow">PLAYSPACE WEEKLY</div><h2>Community highlights</h2></div><span class="portal-week-tag">Week of '+esc(weeklyData.weekStartsAt||"This week")+'</span></div><div class="portal-weekly-grid">'+
+   '<article class="portal-weekly-feature"><small>FEATURED GAME OF THE WEEK</small><b>'+(featured?esc(featured.title):"Coming soon")+'</b><span>'+(featured?esc(featured.genre+" · Try it this week"):"Featured games rotate weekly")+'</span>'+(featured?'<button type="button" class="portal-week-link" data-week-game="'+esc(featured.id)+'">VIEW GAME →</button>':'')+'</article>'+
+   weeklyGameTile("MOST PLAYED THIS WEEK",played.gameId,played.count,"No sessions recorded yet")+weeklyGameTile("MOST LIKED THIS WEEK",liked.gameId,liked.count,"No likes recorded yet")+'</div>';
+  host.querySelector("[data-week-game]")?.addEventListener("click",()=>{const game=getGame(featured.id);if(game)openGameDetail(game);});
  }
  function syncPresence(){
   if(!username||!presenceSessionId)return;
