@@ -7,7 +7,7 @@
  if(!app)return;
  let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
-  "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
+  "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d","Neon Runner":"neon-runner",
   "F1 Simulator":"f1-simulator",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
   "FPV Drone Simulator":"fpv-drone-simulator",
@@ -479,7 +479,7 @@
   clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),3600);
  }
 
- const gameTitleByType={tennis:"Tennis Rally",hockey:"Hockey",reaction:"Reaction Game",click:"Click Test",breaker:"Neon Breaker",skydash:"Flappy Bird",snake:"Neon Snake",defender:"Space Defender",memory:"Memory Match",vehicle:"Tank Arena"};
+ const gameTitleByType={tennis:"Tennis Rally",hockey:"Hockey",reaction:"Reaction Game",click:"Click Test",breaker:"Neon Breaker",skydash:"Flappy Bird",snake:"Neon Snake",defender:"Space Defender",runner:"Neon Runner",memory:"Memory Match",vehicle:"Tank Arena"};
  async function startTrackedGame(title){
   const gameId=gameIdByTitle[String(title||"")];if(!accountToken||!gameId)return null;
   if(Object.keys(activeGameSessions).length||currentTrackedGameId)return null;
@@ -546,7 +546,7 @@
       bridge.dataset.gameId=gameId;
       doc.head.appendChild(bridge);
      }catch(error){console.warn("Could not attach cloud saves to "+gameTitle,error);}
-    },{once:true});
+    });
    }
    setCurrentGame(gameTitle);startTrackedGame(gameTitle);
    return originalPortalOpenStandaloneGame.apply(this,arguments);
