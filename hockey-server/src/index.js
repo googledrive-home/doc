@@ -225,9 +225,9 @@ app.post("/account/game/complete",async(req,res)=>{
  if(record.played===10)grant("regular-"+gameId,"Regular Player","Played this game 10 times.","silver",20);
  if(record.played===50)grant("dedicated-"+gameId,"Dedicated Player","Played this game 50 times.","gold",40);
  if(record.bestScore>0&&record.bestScore>previousBest)grant("record-"+gameId,"Personal Best","Set a new best score in this game.","silver",15);
- if(account.stats.gamesPlayed===1)grant("first-game","Welcome to PlaySpace","Completed your first game session.","bronze",15);
+ if(account.stats.gamesPlayed===1)grant("first-game","Welcome to Home","Completed your first game session.","bronze",15);
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
- if(account.stats.gamesPlayed===100)grant("play-100","PlaySpace Champion","Completed 100 game sessions.","gold",75);
+ if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=Math.min(10,1+Math.floor(career.sessions/5));
  account.activeGameSession=null;
  try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
