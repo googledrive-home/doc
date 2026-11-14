@@ -4,8 +4,14 @@
   "use strict";
   const script = document.currentScript;
   const gameId = String(script?.dataset?.gameId || "");
-  const KEY_ALLOW = /(save|progress|career|high.?score|best.?score|bestscore|record|unlock|inventory|level|stats)/i;
   const KEY_DENY = /(token|password|auth|session|user(name)?|profile|account|music|volume|setting|theme|cookie|presence|upload)/i;
+  const GAME_SAVE_RULES = {
+    "mini-golf-3d": key => key === "playspaceMiniGolf3D_v2",
+    "apex-formula-racing": key => key === "apexFormulaWorldTourV1" || /^apexFormulaTimeTrialV1:/i.test(key),
+    "f1-simulator": key => /^(?=.*(?:f1|formula|championship|career|progress|save|record|time.?trial))(?!.+setting).+$/i.test(key),
+    "gravel-rally-stage": key => /^gravel-(?:best-|career-|tournament-)/i.test(key),
+    "tank-arena-3d": key => key === "tankArenaMapEditor.v1"
+  };
   const stampKey = "__playspace_cloud_stamp_" + gameId;
   let applyingCloud = false;
   let syncTimer = null;
@@ -23,7 +29,11 @@
 
   function isSaveKey(key) {
     const name = String(key || "");
-    return name.length > 0 && name.length <= 120 && KEY_ALLOW.test(name) && !KEY_DENY.test(name);
+    if (!name || name.length > 120 || KEY_DENY.test(name)) return false;
+    const rule = GAME_SAVE_RULES[gameId];
+    if (rule) return rule(name);
+    const slug = gameId.replace(/-/g, "");
+    return name.toLowerCase().includes(slug.toLowerCase()) && /(save|progress|career|high.?score|best.?score|record|unlock|inventory|stats)/i.test(name);
   }
 
   function snapshot() {
@@ -99,6 +109,11 @@
       if (this === window.localStorage && isSaveKey(key)) scheduleSync();
       return result;
     };
+    // Same-origin nested game frames share localStorage but have their own Storage
+    // prototype, so listen for their writes as well.
+    window.addEventListener("storage", event => {
+      if (event.storageArea === window.localStorage && isSaveKey(event.key)) scheduleSync();
+    });
   } catch (error) {
     console.warn("PlaySpace could not watch local saves:", error);
   }
