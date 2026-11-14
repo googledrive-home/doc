@@ -109,6 +109,11 @@ function accountPayload(account){
  return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
+app.get("/health/storage",async(_req,res)=>{
+ if(!process.env.DATABASE_URL||!accountPool)return res.status(503).json({ok:false,database:"not_configured"});
+ try{await accountPool.query("SELECT 1");return res.status(200).json({ok:true,database:"connected"});}
+ catch(error){console.error("Database health check failed:",error.message);return res.status(503).json({ok:false,database:"unavailable"});}
+});
 function requirePersistentAccountStorage(res){
  if(!accountPool&&process.env.NODE_ENV==="production"){
   res.status(503).json({error:"Persistent accounts are not enabled on this server yet. The site owner must connect a persistent PostgreSQL database (DATABASE_URL) and redeploy. Game play is still available."});
