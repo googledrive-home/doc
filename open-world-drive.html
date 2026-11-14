@@ -73,7 +73,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   const keys=new Set();let paused=false,last=performance.now(),worldW=6200,worldH=4400,day=0.22;
   let race={track:null,s:null,pit:[{x:100,y:100}],cars:[],laps:999,aiDifficulty:'medium',time:0};
   let player=null,selectedCar=1,cash=0,driftScore=0,engineLevel=0,gripLevel=0,noticeTimer=0,missionIndex=0,mission=null,trial=null,collectibles=[],discovered=new Set(),maxSpeed=0,lastWorldSaveAt=0;
-  const WORLD_SAVE_KEY="playspaceOpenWorldDriveSaveV1";
+  const WORLD_SAVE_KEY="homeOpenWorldDriveSaveV1",LEGACY_WORLD_SAVE_KEY="playspaceOpenWorldDriveSaveV1";
   const roads=[
     [[300,540],[1120,540],[1900,540],[2700,540],[3550,540],[4700,540],[5820,540]],
     [[520,900],[520,1700],[520,2560],[520,3400],[520,4120]],
@@ -248,11 +248,11 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       car:{x:player.x,y:player.y,angle:player.angle,fuel:player.fuel,tyreWear:player.tyreWear}
     };
     try{localStorage.setItem(WORLD_SAVE_KEY,JSON.stringify(state));}catch(error){}
-    window.PlaySpaceGameBridge?.reportScore?.(Math.max(0,Math.floor(driftScore+cash)));
+    window.HomeGameBridge?.reportScore?.(Math.max(0,Math.floor(driftScore+cash)));
   }
   function loadWorldProgress(){
     let state=null;
-    try{state=JSON.parse(localStorage.getItem(WORLD_SAVE_KEY)||"null");}catch(error){}
+    try{state=JSON.parse(localStorage.getItem(WORLD_SAVE_KEY)||localStorage.getItem(LEGACY_WORLD_SAVE_KEY)||"null");}catch(error){}
     if(!state||state.version!==1){reset();return;}
     cash=Math.max(0,Math.min(100000000,Math.floor(Number(state.cash)||0)));
     driftScore=Math.max(0,Math.min(100000000,Math.floor(Number(state.driftScore)||0)));
