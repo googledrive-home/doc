@@ -5,7 +5,7 @@
  const USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
+ let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="";
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d",
   "F1 Simulator":"f1-simulator",
@@ -49,6 +49,7 @@
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
     '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button>',
+    '<button class="portal-nav-item" data-view="friends"><span class="portal-nav-icon">♧</span><span class="portal-nav-label-text">Friends</span><span class="portal-nav-count" id="friendCountBadge">0</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
    '</nav>',
@@ -57,12 +58,13 @@
   '<section class="portal-content">',
    '<header class="portal-topbar"><div><div class="portal-page-kicker" id="portalPageKicker">PLAYER LIBRARY</div><div class="portal-page-title" id="portalPageTitle">Games</div></div>',
     '<label class="portal-search"><span>⌕</span><input id="portalSearch" type="search" placeholder="Search games..." aria-label="Search games"></label>',
-    '<button class="portal-top-action" id="portalQuickSignIn">Change username</button>',
+    '<button class="portal-top-action" id="portalQuickSignIn">Sign in</button>',
     '<button class="portal-account-button" id="portalAccountButton"><span class="portal-avatar" id="topAvatar">?</span><span id="topAccountName">Guest</span></button>',
    '</header>',
    '<div class="portal-views" id="portalViews">',
     '<section class="portal-view active" id="portalGamesView" data-page="games">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYSPACE LIBRARY</div><h1>Browse games</h1><p>Choose a category to explore its games.</p></div></div>',
+     '<div class="portal-weekly-shelf" id="portalWeeklyShelf"><div class="portal-section-panel"><div class="portal-eyebrow">THIS WEEK</div><h2>Loading game highlights…</h2></div></div>',
      '<div class="portal-category-tabs" id="portalFilterRow" role="tablist" aria-label="Game categories"></div>',
      '<div id="portalCategoryView" hidden><div class="portal-category-toolbar"><button class="portal-secondary" id="portalBackToCategories" type="button">← All categories</button><div><div class="portal-eyebrow">GAME CATEGORY</div><h2 id="portalCategoryTitle"></h2></div></div><div id="portalGameGroups"></div></div>',
     '</section>',
@@ -75,8 +77,12 @@
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
     '<section class="portal-view" id="portalProfileView" data-page="profile">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Change the username shown around the site.</p></div></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Your player card, progress, trophies, career and saved game stats.</p></div></div>',
      '<div id="portalProfileContent"></div>',
+    '</section>',
+    '<section class="portal-view" id="portalFriendsView" data-page="friends">',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">YOUR PEOPLE</div><h1>Friends</h1><p>Add players by username, accept requests and manage your friends list.</p></div></div>',
+     '<div id="portalFriendsContent"></div>',
     '</section>',
     '<section class="portal-view" id="portalDevView" data-page="dev">',
      '<div class="portal-section-panel portal-dev-unlock" id="portalDevGate"><h2>Restricted</h2><form id="portalDevForm" class="portal-profile-form"><div class="portal-field"><label for="portalDevPassword">Password</label><input id="portalDevPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="64" required></div><button class="portal-primary" type="submit">Unlock</button><div class="portal-status" id="portalDevStatus" aria-live="polite"></div></form></div>',
@@ -100,7 +106,7 @@
  const ACCESS_PASSWORD="710";
  let siteAccessGranted=false;
  try{siteAccessGranted=sessionStorage.getItem(ACCESS_SESSION_KEY)==="1";}catch(error){}
- try{username=(localStorage.getItem(USERNAME_KEY)||"").trim().slice(0,24);}catch(error){}
+ try{username=(localStorage.getItem(USERNAME_KEY)||"").trim().slice(0,20);accountToken=sessionStorage.getItem("playspaceAccountToken")||"";}catch(error){}
  const presenceSessionKey="playspacePresenceSession";
  try{
   presenceSessionId=sessionStorage.getItem(presenceSessionKey)||"";
@@ -110,65 +116,83 @@
   }
  }catch(error){presenceSessionId="ps-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
  app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop portal-access-gate" id="portalAccessModal" role="dialog" aria-modal="true" aria-label="Enter site password"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2><p>Enter the site password to continue.</p></div></div><form class="portal-auth-form" id="portalAccessForm"><div class="portal-field"><label for="portalAccessPassword">Site password</label><input id="portalAccessPassword" type="password" inputmode="numeric" maxlength="3" autocomplete="off" required placeholder="Enter password"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalAccessStatus" aria-live="polite"></div></form></section></div>');
- app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalUsernameModal" role="dialog" aria-modal="true" aria-label="Choose a username"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2></div></div><form class="portal-auth-form" id="portalUsernameForm"><div class="portal-field"><label for="portalUsernameInput">Username</label><input id="portalUsernameInput" type="text" maxlength="24" autocomplete="nickname" required placeholder="Choose a username"></div><button class="portal-primary" type="submit">Continue</button><div class="portal-status" id="portalUsernameStatus" aria-live="polite"></div></form></section></div>');
+ app.insertAdjacentHTML("beforeend",'<div class="portal-auth-backdrop" id="portalAuthModal" role="dialog" aria-modal="true" aria-label="Player sign in"><section class="portal-auth-card"><div class="portal-auth-head"><div class="portal-brand-mark">P</div><div><h2>Welcome to PlaySpace</h2><p>Create a player profile or sign in to sync your progress.</p></div></div><div class="portal-auth-tabs"><button type="button" class="active" data-auth-mode="login">SIGN IN</button><button type="button" data-auth-mode="register">CREATE PROFILE</button></div><form class="portal-auth-form" id="portalAuthForm"><div class="portal-field"><label for="portalAuthUsername">Username</label><input id="portalAuthUsername" type="text" maxlength="20" autocomplete="username" minlength="3" required placeholder="3–20 letters, numbers or underscores"></div><div class="portal-field"><label for="portalAuthPassword">Password</label><input id="portalAuthPassword" type="password" maxlength="128" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters"></div><div class="portal-field" id="portalAuthAvatarField" hidden><label for="portalAuthAvatar">Choose an avatar</label><select id="portalAuthAvatar" class="portal-control"><option value="0">🏎️ Racing</option><option value="1">🎮 Gamer</option><option value="2">🏁 Speed</option><option value="3">🐱 Cat</option><option value="4">🐼 Panda</option><option value="5">🦊 Fox</option><option value="6">🐸 Frog</option><option value="7">🐯 Tiger</option><option value="8">🦄 Unicorn</option><option value="9">🤖 Robot</option><option value="10">👾 Alien</option><option value="11">🦈 Shark</option><option value="12">🐲 Dragon</option><option value="13">⭐ Star</option></select></div><button class="portal-primary" id="portalAuthSubmit" type="submit">SIGN IN</button><div class="portal-status" id="portalAuthStatus" aria-live="polite"></div></form><div class="portal-auth-foot">Passwords are protected by the site server. Do not reuse a password from another account.</div><button class="portal-secondary" id="portalGuestContinue" type="button" style="width:100%;margin-top:10px">Continue as guest</button></section></div>');
+ const AVATAR_EMOJI=["🏎️","🎮","🏁","🐱","🐼","🦊","🐸","🐯","🦄","🤖","👾","🦈","🐲","⭐"];
+ function currentAvatar(){const skin=Number(accountData?.profile?.avatar??accountData?.profile?.skin)||0;return AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];}
  function updateUsernameDisplay(){
-  const name=username||"Player",initial=(name.trim()[0]||"?").toUpperCase();
-  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent="Player";
-  $p("sidebarAvatar").textContent=initial;$p("topAvatar").textContent=initial;
-  $p("topAccountName").textContent=name;
+  const name=username||"Guest",initial=currentAvatar();
+  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent=accountData?"Level "+(accountData.profile?.level||1):"Guest player";
+  $p("sidebarAvatar").textContent=initial;$p("topAvatar").textContent=initial;$p("topAccountName").textContent=name;
+  $p("portalQuickSignIn").textContent=accountData?"Account":"Sign in";
+  $p("friendCountBadge").textContent=String(accountData?.profile?.friendCount||0);
  }
- function showUsernamePrompt(){
-  $p("portalUsernameInput").value=username;
-  $p("portalUsernameStatus").textContent="";
-  $p("portalUsernameStatus").className="portal-status";
-  $p("portalUsernameModal").classList.add("open");
-  setTimeout(()=>$p("portalUsernameInput").focus(),30);
+ function setAccountMode(mode){
+  authMode=mode==="register"?"register":"login";
+  $p("portalAuthModal").querySelectorAll("[data-auth-mode]").forEach(button=>button.classList.toggle("active",button.dataset.authMode===authMode));
+  $p("portalAuthSubmit").textContent=authMode==="register"?"CREATE PROFILE":"SIGN IN";
+  $p("portalAuthAvatarField").hidden=authMode!=="register";
+  $p("portalAuthPassword").autocomplete=authMode==="register"?"new-password":"current-password";
+  $p("portalAuthStatus").textContent="";
+  $p("portalAuthStatus").className="portal-status";
  }
- $p("portalUsernameForm").addEventListener("submit",event=>{
+ function showAccountPrompt(mode="login"){
+  $p("portalAuthUsername").value=username||"";
+  $p("portalAuthPassword").value="";
+  setAccountMode(mode);
+  $p("portalAuthModal").classList.add("open");
+  setTimeout(()=>$p("portalAuthUsername").focus(),30);
+ }
+ function acceptAccount(data){
+  accountToken=data.token||accountToken;accountData=data;
+  try{if(accountToken)sessionStorage.setItem("playspaceAccountToken",accountToken);localStorage.setItem(USERNAME_KEY,data.profile.username||data.profile.name);}catch(error){}
+  username=data.profile.username||data.profile.name||"Player";
+  updateUsernameDisplay();$p("portalAuthModal").classList.remove("open");
+  beginPresence();loadFriends().catch(()=>{});loadWeeklyHighlights().catch(()=>{});
+  if(selectedGenre==="Favorites")renderGameList();
+  if(document.querySelector("#portalProfileView.active"))renderProfile();
+ }
+ async function submitAccountAuth(event){
   event.preventDefault();
-  const entered=$p("portalUsernameInput").value.trim().replace(/\\s+/g," ").replace(/[<>\\u0000-\\u001f]/g,"").slice(0,24);
-  const status=$p("portalUsernameStatus");
-  if(!entered){status.textContent="Please enter a username to continue.";status.className="portal-status error";return;}
-  username=entered;
-  try{localStorage.setItem(USERNAME_KEY,username);}catch(error){}
-  updateUsernameDisplay();
-  syncPresence();
-  beginPresence();
-  $p("portalUsernameModal").classList.remove("open");
- });
- function showAccessPrompt(){
-  if(siteAccessGranted){
-   setSiteAccessLock(false);
-   if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
-   return;
+  const entered=$p("portalAuthUsername").value.trim(),password=$p("portalAuthPassword").value;
+  const status=$p("portalAuthStatus");
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(entered)){status.textContent="Use 3–20 letters, numbers or underscores for your username.";status.className="portal-status error";return;}
+  if(password.length<8||password.length>128){status.textContent="Use a password between 8 and 128 characters.";status.className="portal-status error";return;}
+  status.textContent=authMode==="register"?"Creating your profile…":"Signing in…";status.className="portal-status";
+  try{
+   const data=await apiRequest(authMode==="register"?"/account/register":"/account/login",{method:"POST",body:{username:entered,password,avatar:Number($p("portalAuthAvatar").value)||0}});
+   acceptAccount(data);toast(authMode==="register"?"Player profile created.":"Welcome back, "+username+".");
+  }catch(error){
+   status.textContent=error.status===503?error.message:(error.message||"Could not sign in. Please try again.");
+   status.className="portal-status error";
   }
+ }
+ $p("portalAuthForm").addEventListener("submit",submitAccountAuth);
+ $p("portalAuthModal").querySelectorAll("[data-auth-mode]").forEach(button=>button.addEventListener("click",()=>setAccountMode(button.dataset.authMode)));
+ $p("portalGuestContinue").addEventListener("click",()=>{
+  $p("portalAuthModal").classList.remove("open");
+  if(!username)username="Guest";updateUsernameDisplay();beginPresence();
+ });
+ async function continueAfterSiteAccess(){
+  setSiteAccessLock(false);
+  if(accountToken){
+   try{const data=await apiRequest("/account/me");acceptAccount({...data,token:accountToken});return;}
+   catch(error){if(error.status===401){accountToken="";accountData=null;try{sessionStorage.removeItem("playspaceAccountToken");}catch(_){}}}
+  }
+  showAccountPrompt("login");
+ }
+ function showAccessPrompt(){
+  if(siteAccessGranted){continueAfterSiteAccess();return;}
   setSiteAccessLock(true);
-  $p("portalAccessPassword").value="";
-  $p("portalAccessStatus").textContent="";
-  $p("portalAccessStatus").className="portal-status";
-  $p("portalAccessModal").classList.add("open");
-  setTimeout(()=>$p("portalAccessPassword").focus(),30);
+  $p("portalAccessPassword").value="";$p("portalAccessStatus").textContent="";$p("portalAccessStatus").className="portal-status";
+  $p("portalAccessModal").classList.add("open");setTimeout(()=>$p("portalAccessPassword").focus(),30);
  }
  $p("portalAccessForm").addEventListener("submit",event=>{
-  event.preventDefault();
-  const entered=$p("portalAccessPassword").value;
-  const status=$p("portalAccessStatus");
-  if(entered!==ACCESS_PASSWORD){
-   status.textContent="That password is not correct. Please try again.";
-   status.className="portal-status error";
-   $p("portalAccessPassword").value="";
-   $p("portalAccessPassword").focus();
-   return;
-  }
-  siteAccessGranted=true;
-  try{sessionStorage.setItem(ACCESS_SESSION_KEY,"1");}catch(error){}
-  $p("portalAccessModal").classList.remove("open");
-  setSiteAccessLock(false);
-  $p("portalAccessPassword").value="";
-  if(!username)showUsernamePrompt();else {updateUsernameDisplay();beginPresence();}
+  event.preventDefault();const entered=$p("portalAccessPassword").value,status=$p("portalAccessStatus");
+  if(entered!==ACCESS_PASSWORD){status.textContent="That password is not correct. Please try again.";status.className="portal-status error";$p("portalAccessPassword").value="";$p("portalAccessPassword").focus();return;}
+  siteAccessGranted=true;try{sessionStorage.setItem(ACCESS_SESSION_KEY,"1");}catch(error){}
+  $p("portalAccessModal").classList.remove("open");$p("portalAccessPassword").value="";continueAfterSiteAccess();
  });
- if(siteAccessGranted){if(!username)showUsernamePrompt();else updateUsernameDisplay();}
- else showAccessPrompt();
+ if(siteAccessGranted)continueAfterSiteAccess();else showAccessPrompt();
  const games=[];
  const sourceCards=[...document.querySelectorAll("main .grid > .card")];
  const coverPhotoById=photos;
