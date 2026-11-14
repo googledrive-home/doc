@@ -8,6 +8,7 @@ on:
       - "arcade-portal.css"
       - "f1-simulator.html"
       - "home-game-bridge.js"
+      - "hockey-server/src/index.js"
       - ".github/workflows/home-ui-check.yml"
   push:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - "arcade-portal.css"
       - "f1-simulator.html"
       - "home-game-bridge.js"
+      - "hockey-server/src/index.js"
       - ".github/workflows/home-ui-check.yml"
 
 jobs:
