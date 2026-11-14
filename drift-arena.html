@@ -538,22 +538,80 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     ctx.strokeStyle='#b7cf8c18';ctx.lineWidth=1.1*WORLD_PX_PER_M;
     for(let i=0;i<12;i++){const x=(i*617+95)%t.W,y=(i*383+120)%t.H,r=(26+(i%5)*12)*WORLD_PX_PER_M;ctx.beginPath();ctx.ellipse(x,y,r*1.8,r,((i*17)%80)*Math.PI/180,0,Math.PI*2);ctx.stroke()}
   }
+  const reportedRenderErrors=new Set();
+  function reportRenderError(layer,err){
+    console.error('Drift Arena '+layer+' render failed',err);
+    if(reportedRenderErrors.has(layer))return;
+    reportedRenderErrors.add(layer);
+    showGameError(new Error(layer+' rendering failed: '+((err&&err.message)||String(err))));
+  }
   function drawTrack(ctx,t,s,cam,w,h){
-    ctx.save();ctx.translate(w*.5,h*.64);ctx.scale(cam.zoom,cam.zoom*(cam.tilt||.70));ctx.rotate(-(cam.angle||0));ctx.translate(-cam.x,-cam.y);
+    const dpr=window.devicePixelRatio||1;
+    const rebuildWorldTransform=()=>{
+      // Recover from an unbalanced save/restore in a failed drawing layer.
+      for(let i=0;i<24;i++)ctx.restore();
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.translate(w*.5,h*.64);
+      ctx.scale(cam.zoom,cam.zoom*(cam.tilt||.70));
+      ctx.rotate(-(cam.angle||0));
+      ctx.translate(-cam.x,-cam.y);
+    };
+    const layer=(name,draw)=>{
+      try{draw()}
+      catch(err){reportRenderError(name,err);rebuildWorldTransform()}
+    };
+    rebuildWorldTransform();
     const ground=t.environment==='spa'?'#355b3d':t.environment==='monza'?'#47734a':'#70875a';
-    const sky=ctx.createLinearGradient(cam.x,cam.y-1500,cam.x,cam.y+2200);
-    sky.addColorStop(0,themeColour(t,'#527b53'));sky.addColorStop(.35,ground);sky.addColorStop(.72,'#416c43');sky.addColorStop(1,'#203d2c');
-    ctx.fillStyle=sky;ctx.fillRect(cam.x-12500,cam.y-12500,25000,25000);
-    drawGrassTexture(ctx,t);drawWorldLighting(ctx,cam,t);drawEnvironment(ctx,t,s,cam);drawPitLane(ctx,race.pit,t);
+    layer('background',()=>{
+      const sky=ctx.createLinearGradient(cam.x,cam.y-1500,cam.x,cam.y+2200);
+      sky.addColorStop(0,themeColour(t,'#527b53'));sky.addColorStop(.35,ground);sky.addColorStop(.72,'#416c43');sky.addColorStop(1,'#203d2c');
+      ctx.fillStyle=sky;ctx.fillRect(cam.x-12500,cam.y-12500,25000,25000);
+    });
+    layer('grass texture',()=>drawGrassTexture(ctx,t));
+    layer('world lighting',()=>drawWorldLighting(ctx,cam,t));
+    layer('trackside scenery',()=>drawEnvironment(ctx,t,s,cam));
+    layer('pit lane',()=>drawPitLane(ctx,race.pit,t));
+
+    // Keep the critical road pass independent from optional scenery. A single
+    // faulty tree, billboard or texture must never leave the player with a green screen.
+    const path=()=>{
+      ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);
+      for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);
+      ctx.closePath();
+    };
+    const stroke=(color,width)=>{
+      path();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+    };
+    layer('road surface',()=>{
+      stroke('#0b1514dd',t.width+2*(t.kerbWidth||0)+13*WORLD_PX_PER_M);
+      stroke('#d3d8d0',t.width+2*(t.kerbWidth||0)+2.2*WORLD_PX_PER_M);
+      stroke('#272f35',t.width+1.0*WORLD_PX_PER_M);
+      const asphalt=ctx.createLinearGradient(0,cam.y-260,0,cam.y+260);
+      asphalt.addColorStop(0,'#59636a');asphalt.addColorStop(.25,'#3d454b');asphalt.addColorStop(.65,'#30383e');asphalt.addColorStop(1,'#222b32');
+      stroke(asphalt,t.width);
+    });
+    layer('road markings',()=>drawTrackSurfaceTexture(ctx,t,s));
+    layer('kerbs',()=>drawKerbs(ctx,t,s));
+    layer('safety barriers',()=>drawSafetyBarriers(ctx,t,s));
+    for(const car of race.cars)if(car.player)layer('racing guide',()=>drawRacingGuide(ctx,car,s,t));
+    layer('start finish line',()=>drawStartFinish(ctx,t,s));
+    // Return to the pixel-space transform used by drawCar and the HUD.
+    for(let i=0;i<24;i++)ctx.restore();
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function drawTrackFallback(ctx,t,s,cam,w,h){
+    const dpr=window.devicePixelRatio||1;
+    for(let i=0;i<24;i++)ctx.restore();
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.translate(w*.5,h*.64);ctx.scale(cam.zoom,cam.zoom*(cam.tilt||.70));ctx.rotate(-(cam.angle||0));ctx.translate(-cam.x,-cam.y);
+    ctx.fillStyle=t.environment==='spa'?'#355b3d':t.environment==='monza'?'#47734a':'#70875a';
+    ctx.fillRect(cam.x-12500,cam.y-12500,25000,25000);
     const path=()=>{ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);ctx.closePath()};
     const stroke=(color,width)=>{path();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke()};
-    stroke('#0b1514dd',t.width+2*(t.kerbWidth||0)+13*WORLD_PX_PER_M);
+    stroke('#0b1514',t.width+2*(t.kerbWidth||0)+13*WORLD_PX_PER_M);
     stroke('#d3d8d0',t.width+2*(t.kerbWidth||0)+2.2*WORLD_PX_PER_M);
-    stroke('#272f35',t.width+1.0*WORLD_PX_PER_M);
-    const asphalt=ctx.createLinearGradient(0,cam.y-260,0,cam.y+260);asphalt.addColorStop(0,'#59636a');asphalt.addColorStop(.25,'#3d454b');asphalt.addColorStop(.65,'#30383e');asphalt.addColorStop(1,'#222b32');
-    stroke(asphalt,t.width);drawTrackSurfaceTexture(ctx,t,s);drawKerbs(ctx,t,s);drawSafetyBarriers(ctx,t,s);
-    for(const car of race.cars)if(car.player)drawRacingGuide(ctx,car,s,t);
-    drawStartFinish(ctx,t,s);ctx.restore();
+    stroke('#30383e',t.width);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
   }
   function themeColour(t,fallback){return t.environment==='silverstone'?'#6f895a':t.environment==='spa'?'#436b4c':fallback;}
   function drawSpeedFX(){return;}
@@ -677,11 +735,29 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       race.cam.angle=wrap((race.cam.angle||wantedAngle)+wrap(wantedAngle-(race.cam.angle||wantedAngle))*(p2?.16:.105));
       race.cam.tilt=lerp(race.cam.tilt||.72,clamp(.76-pSpeed/1900,.61,.76),.075);
       if(p2&&race.cam.zoom>z+.04)race.cam.zoom=z;
-      const w=canvas.clientWidth,h=canvas.clientHeight;
+      // Keep the camera finite: an invalid pose used to turn the canvas transform
+      // into NaN, making every track and car draw disappear behind the green CSS fill.
+      if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isFinite(p.angle)){
+        const anchor=nearest(race.s,Number.isFinite(p.x)?p.x:race.s[0].x,Number.isFinite(p.y)?p.y:race.s[0].y);
+        p.x=anchor.x;p.y=anchor.y;p.vx=0;p.vy=0;p.angle=Math.atan2(anchor.ty,anchor.tx);
+      }
+      if(!Number.isFinite(race.cam.x))race.cam.x=p.x;
+      if(!Number.isFinite(race.cam.y))race.cam.y=p.y;
+      if(!Number.isFinite(race.cam.zoom))race.cam.zoom=4.2;
+      if(!Number.isFinite(race.cam.angle))race.cam.angle=(p.angle||0)+Math.PI/2;
+      if(!Number.isFinite(race.cam.tilt))race.cam.tilt=.72;
+      race.cam.zoom=clamp(race.cam.zoom,1.8,6.2);
+      const w=canvas.clientWidth,h=canvas.clientHeight,dpr=window.devicePixelRatio||1;
+      // Recover the 2D context if a previous optional drawing layer failed midway.
+      for(let i=0;i<24;i++)ctx.restore();
+      ctx.setTransform(dpr,0,0,dpr,0,0);
       ctx.clearRect(0,0,w,h);
-      try{drawTrack(ctx,race.track,race.s,race.cam,w,h)}catch(err){console.error('drawTrack',err)}
+      try{drawTrack(ctx,race.track,race.s,race.cam,w,h)}catch(err){
+        reportRenderError('main track scene',err);
+        try{drawTrackFallback(ctx,race.track,race.s,race.cam,w,h)}catch(fallbackErr){reportRenderError('fallback track scene',fallbackErr)}
+      }
       const drawOrder=[...race.cars].sort((a,b)=>{const yy=c=>{const dx=c.x-race.cam.x,dy=c.y-race.cam.y;return -dx*Math.sin(race.cam.angle)+dy*Math.cos(race.cam.angle)};return yy(a)-yy(b)});
-      for(const car of drawOrder){try{drawCar(ctx,car,race.cam,w,h)}catch(err){console.error('drawCar',err)}}
+      for(const car of drawOrder){try{drawCar(ctx,car,race.cam,w,h)}catch(err){reportRenderError('car model',err)}}
       try{drawScreenLighting(ctx,w,h,pSpeed);mapDraw();hud()}catch(err){console.error('HUD',err)}
       if(race.done)result();
     }catch(err){showGameError(err)}
