@@ -1,6 +1,6 @@
-# PlaySpace account and game server
+# Home account and game server
 
-This Node.js service hosts the Colyseus game server and the PlaySpace account API. The static game portal remains on GitHub Pages.
+This Node.js service hosts the Colyseus game server and the Home account API. The static game portal remains on GitHub Pages.
 
 ## Deploy to Render
 
