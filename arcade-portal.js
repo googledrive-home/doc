@@ -63,10 +63,10 @@
    '</header>',
    '<div class="portal-views" id="portalViews">',
     '<section class="portal-view active" id="portalGamesView" data-page="games">',
-     '<div class="portal-welcome"><div><div class="portal-eyebrow">HOME LIBRARY</div><h1>Browse games</h1><p>Choose a category to explore its games.</p></div></div>',
+     '<div class="portal-welcome"><div><div class="portal-eyebrow">HOME LIBRARY</div><h1>Browse games</h1><p>Choose a category to explore its games.</p></div></div><div class="portal-dashboard" id="portalDashboardShelf" aria-live="polite"></div>',
      '<div class="portal-weekly-shelf" id="portalWeeklyShelf"><div class="portal-section-panel"><div class="portal-eyebrow">THIS WEEK</div><h2>Loading game highlights…</h2></div></div>',
      '<div class="portal-category-tabs" id="portalFilterRow" role="tablist" aria-label="Game categories"></div>',
-     '<div id="portalCategoryView" hidden><div class="portal-category-toolbar"><button class="portal-secondary" id="portalBackToCategories" type="button">← All categories</button><div><div class="portal-eyebrow">GAME CATEGORY</div><h2 id="portalCategoryTitle"></h2></div></div><div id="portalGameGroups"></div></div>',
+     '<div id="portalCategoryView" hidden><div class="portal-category-toolbar"><button class="portal-secondary" id="portalBackToCategories" type="button">← All categories</button><div><div class="portal-eyebrow">GAME CATEGORY</div><h2 id="portalCategoryTitle"></h2></div></div><div class="portal-discovery-controls"><label for="portalGameSort">Sort games <select id="portalGameSort" class="portal-control"><option value="recommended">Recommended</option><option value="popular">Most played this week</option><option value="liked">Most liked this week</option><option value="playtime">Most playtime</option><option value="recent">Recently played</option><option value="az">A–Z</option></select></label><span id="portalDiscoveryCount"></span></div><div id="portalGameGroups"></div></div>',
     '</section>',
     '<section class="portal-view" id="portalSettingsView" data-page="settings">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">MAKE IT YOURS</div><h1>Settings</h1><p>Personalise the library, your themes, layout, audio and motion. These preferences are saved in this browser.</p></div></div>',
@@ -146,7 +146,7 @@
   accountToken=data.token||accountToken;accountData=data;
   try{if(accountToken)sessionStorage.setItem("homeAccountToken",accountToken);localStorage.setItem(USERNAME_KEY,data.profile.username||data.profile.name);}catch(error){}
   username=data.profile.username||data.profile.name||"Player";
-  updateUsernameDisplay();$p("portalAuthModal").classList.remove("open");
+  updateUsernameDisplay();$p("portalAuthModal").classList.remove("open");renderDashboard();
   beginPresence();loadFriends().catch(()=>{});loadWeeklyHighlights().catch(()=>{});
   if(selectedGenre==="Favorites")renderGameList();
   if(document.querySelector("#portalProfileView.active"))renderProfile();
@@ -218,6 +218,90 @@
  $p("gameCountBadge").textContent=String(games.length);
  if(games.length)$p("portalGameGroups").dataset.ready="1";
  const categoryOrder=["Racing","Sports","Simulation","Arcade","Puzzle","External Games"];
+
+ const CLOUD_SAVE_GAMES=[
+  {id:"f1-simulator",title:"F1 Simulator"},{id:"apex-formula-racing",title:"APEX Formula Racing"},
+  {id:"gravel-rally-stage",title:"Gravel Rally Stage"},{id:"tank-arena-3d",title:"Tank Arena"},
+  {id:"open-world-drive",title:"Open World Drive"},{id:"drift-arena",title:"Drift Arena"},
+  {id:"mini-golf-3d",title:"Mini Golf 3D"}
+ ];
+ function isAllowedCloudSaveKey(gameId,key){
+  const name=String(key||"");
+  if(!name||name.length>120||/(token|password|auth|session|user(name)?|profile|account|music|volume|setting|theme|cookie|presence|upload)/i.test(name))return false;
+  switch(gameId){
+   case "mini-golf-3d":return name==="homeMiniGolf3D_v2"||name==="playspaceMiniGolf3D_v2";
+   case "apex-formula-racing":return name==="apexFormulaWorldTourV1"||/^apexFormulaTimeTrialV1:/i.test(name);
+   case "f1-simulator":return /^(?=.*(?:f1|formula|championship|career|progress|save|record|time.?trial))(?!.+setting).+$/i.test(name);
+   case "gravel-rally-stage":return /^gravel-(?:best-|career-|tournament-)/i.test(name);
+   case "tank-arena-3d":return name==="tankArenaMapEditor.v1";
+   case "open-world-drive":return name==="homeOpenWorldDriveSaveV1"||name==="playspaceOpenWorldDriveSaveV1";
+   case "drift-arena":return name==="homeDriftArenaV1"||name==="playspaceDriftArenaV1";
+   default:return false;
+  }
+ }
+ function dashboardTile(game,meta,detail){
+  return '<button type="button" class="portal-dashboard-game" data-dashboard-game="'+esc(game.id)+'"><span class="portal-dashboard-art">'+game.art+'</span><span class="portal-dashboard-game-copy"><small>'+esc(meta)+'</small><b>'+esc(game.title)+'</b><em>'+esc(detail)+'</em></span><span class="portal-dashboard-arrow">↗</span></button>';
+ }
+ function renderDashboard(){
+  const host=$p("portalDashboardShelf");if(!host)return;
+  if(!accountData){
+   const picks=[getGame(weeklyData?.featured?.gameId),getGame(weeklyData?.mostPlayed?.gameId),getGame(weeklyData?.mostLiked?.gameId)].filter((g,i,a)=>g&&a.findIndex(x=>x.id===g.id)===i).slice(0,3);
+   host.innerHTML='<section class="portal-dashboard-panel portal-dashboard-guest"><div><div class="portal-eyebrow">YOUR ARCADE STARTS HERE</div><h2>Welcome to Home</h2><p>Browse as a guest, or sign in to save your favourites, gaming history, XP and supported cloud saves.</p><div class="portal-dashboard-actions"><button class="portal-primary" id="portalDashboardSignIn" type="button">SIGN IN / CREATE PROFILE</button><button class="portal-secondary" id="portalDashboardBrowse" type="button">BROWSE GAMES</button></div></div><div class="portal-dashboard-guest-games">'+(picks.length?picks.map(g=>dashboardTile(g,"WEEKLY PICK",g.genre)).join(""):'<span class="portal-muted">Weekly picks will appear here when available.</span>')+'</div></section>';
+   $p("portalDashboardSignIn")?.addEventListener("click",()=>showAccountPrompt("login"));
+   $p("portalDashboardBrowse")?.addEventListener("click",showCategoryChooser);
+   return;
+  }
+  const profile=accountData.profile||{},stats=accountData.stats||{};
+  const records=Object.entries(stats.games||{}).map(([id,r])=>({game:getGame(id),record:r||{}})).filter(x=>x.game&&Number(x.record.lastPlayedAt)>0).sort((a,b)=>(Number(b.record.lastPlayedAt)||0)-(Number(a.record.lastPlayedAt)||0));
+  const favorites=(profile.favoriteGames||[]).map(getGame).filter(Boolean),recent=records.slice(0,4);
+  const genreWeights={};favorites.forEach(g=>genreWeights[g.genre]=(genreWeights[g.genre]||0)+3);recent.forEach(x=>genreWeights[x.game.genre]=(genreWeights[x.game.genre]||0)+1);
+  const recommendations=games.filter(g=>g.id&&!records.some(x=>x.game.id===g.id)).sort((a,b)=>{
+   const score=g=>(genreWeights[g.genre]||0)*10+(Number(weeklyData?.likes?.[g.id])||0)*2+(Number(weeklyData?.plays?.[g.id])||0);
+   return score(b)-score(a)||a.title.localeCompare(b.title);
+  }).slice(0,3);
+  const week=Date.now()-7*86400000;
+  const weekSessions=Object.values(stats.games||{}).reduce((n,r)=>n+(Array.isArray(r.plays)?r.plays.filter(t=>Number(t)>=week&&Number(t)<=Date.now()).length:0),0);
+  const trophies=(accountData.achievements||[]).slice().sort((a,b)=>(Number(b.unlockedAt)||0)-(Number(a.unlockedAt)||0)).slice(0,3);
+  const latest=recent[0],xp=Number(profile.xp)||0,progress=Math.max(0,Math.min(100,Number(profile.levelProgress)||0));
+  const resume=latest?'<section class="portal-dashboard-panel portal-dashboard-continue"><div><div class="portal-eyebrow">CONTINUE YOUR JOURNEY</div><h2>Pick up where you left off</h2><p>'+esc(latest.game.title)+' · '+esc(new Date(latest.record.lastPlayedAt).toLocaleDateString())+'</p><button type="button" class="portal-primary" data-dashboard-game="'+esc(latest.game.id)+'">OPEN GAME DETAILS</button></div><div class="portal-dashboard-continue-art">'+latest.game.art+'</div></section>':'<section class="portal-dashboard-panel"><div class="portal-eyebrow">READY TO PLAY?</div><h2>Your first session starts here</h2><p>Choose a game and Home will start building your play history.</p></section>';
+  host.innerHTML=resume+
+   '<div class="portal-dashboard-metrics"><article class="portal-dashboard-metric"><small>PLAYER LEVEL</small><b>LEVEL '+esc(profile.level||1)+'</b><span>'+xp.toLocaleString()+' XP · '+progress+'% to next level</span><div class="portal-xp-track"><span style="width:'+progress+'%"></span></div></article><article class="portal-dashboard-metric"><small>LAST 7 DAYS</small><b>'+weekSessions+' sessions</b><span>Completed tracked sessions</span></article><article class="portal-dashboard-metric"><small>ALL-TIME PLAYTIME</small><b>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</b><span>'+esc(stats.gamesPlayed||0)+' sessions recorded</span></article></div>'+
+   '<div class="portal-dashboard-grid">'+
+   '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENTLY PLAYED</div><h2>Your recent games</h2></div><span>'+records.length+' tracked</span></div>'+(recent.length?recent.map(x=>dashboardTile(x.game,"LAST PLAYED "+new Date(x.record.lastPlayedAt).toLocaleDateString(),x.record.played+" sessions · "+formatDuration(x.record.seconds||0))).join(""):'<p class="portal-muted">Completed sessions will appear here.</p>')+'</section>'+
+   '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">FAVOURITES</div><h2>Your games</h2></div></div>'+(favorites.length?favorites.slice(0,4).map(g=>dashboardTile(g,"FAVOURITE",g.genre)).join(""):'<p class="portal-muted">Favourite a game to add it here.</p>')+'</section>'+
+   '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">DISCOVER</div><h2>Recommended for you</h2></div></div>'+(recommendations.length?recommendations.map(g=>dashboardTile(g,"BASED ON YOUR PLAY",g.genre)).join(""):'<p class="portal-muted">Play more games to build recommendations.</p>')+'</section>'+
+   '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENT TROPHIES</div><h2>Latest unlocks</h2></div></div>'+(trophies.length?trophies.map(t=>'<div class="portal-dashboard-trophy"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[t.tier]||"🏆")+'</span><div><b>'+esc(t.title)+'</b><small>'+esc(t.gameId?getGame(t.gameId)?.title||"Home":"Home")+' · '+esc(t.unlockedAt?new Date(t.unlockedAt).toLocaleDateString():"Unlocked")+'</small></div></div>').join(""):'<p class="portal-muted">Your trophy unlocks will appear here.</p>')+'</section></div>';
+  host.querySelectorAll("[data-dashboard-game]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.dashboardGame);if(g)openGameDetail(g);}));
+ }
+ function downloadCloudBackup(filename,data){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),a=document.createElement("a");
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+ }
+ async function renderCloudSaveManager(){
+  const host=$p("portalCloudSaveManager");if(!host)return;
+  if(!accountData){host.innerHTML='<p class="portal-muted">Sign in to view private cloud saves.</p>';return;}
+  host.innerHTML='<p class="portal-muted">Loading saved games…</p>';
+  const results=await Promise.all(CLOUD_SAVE_GAMES.map(async g=>{try{return {game:g,data:await apiRequest("/account/saves/"+encodeURIComponent(g.id))};}catch(error){return {game:g,error};}}));
+  host.innerHTML=results.map(({game,data,error})=>{
+   if(error)return '<article class="portal-cloud-save-card"><b>'+esc(game.title)+'</b><p>'+esc(error.message)+'</p></article>';
+   if(!data.save)return '<article class="portal-cloud-save-card"><b>'+esc(game.title)+'</b><p>No cloud save stored yet.</p></article>';
+   const keys=data.save.items&&typeof data.save.items==="object"?Object.keys(data.save.items).filter(k=>isAllowedCloudSaveKey(game.id,k)):[],bytes=new Blob([JSON.stringify(data.save)]).size;
+   return '<article class="portal-cloud-save-card"><div><b>'+esc(game.title)+'</b><p>'+keys.length+' saved item(s) · '+(bytes/1024).toFixed(1)+' KB</p><p>Last sync: '+esc(data.updatedAt?new Date(data.updatedAt).toLocaleString():"unknown")+'</p></div><div class="portal-cloud-save-actions"><button type="button" data-save-export="'+esc(game.id)+'">DOWNLOAD</button><button type="button" data-save-restore="'+esc(game.id)+'" '+(data.save.version===1&&keys.length?"":"disabled")+'>RESTORE</button></div></article>';
+  }).join("")+'<p class="portal-cloud-save-note">Restore only affects approved save keys. Home downloads the current local save first if it would be replaced. Import and automatic conflict merging are not enabled.</p>';
+  const byId=Object.fromEntries(results.filter(x=>x.data?.save).map(x=>[x.game.id,x]));
+  host.querySelectorAll("[data-save-export]").forEach(b=>b.addEventListener("click",()=>{const item=byId[b.dataset.saveExport];if(item)downloadCloudBackup("home-"+item.game.id+"-cloud-save.json",{gameId:item.game.id,updatedAt:item.data.updatedAt,save:item.data.save});}));
+  host.querySelectorAll("[data-save-restore]").forEach(b=>b.addEventListener("click",()=>{
+   const item=byId[b.dataset.saveRestore],save=item?.data?.save;if(!save||save.version!==1||save.gameId!==item.game.id||!save.items||typeof save.items!=="object"||Array.isArray(save.items)){toast("This backup is not a supported Home save.");return;}
+   const entries=Object.entries(save.items).filter(([k,v])=>isAllowedCloudSaveKey(item.game.id,k)&&typeof v==="string");
+   if(!entries.length){toast("No approved save keys were found.");return;}
+   const current={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(isAllowedCloudSaveKey(item.game.id,k)){const v=localStorage.getItem(k);if(v!==null)current[k]=v;}}
+   if(!confirm("Restore "+item.game.title+"? This replaces "+entries.length+" local game-save key(s). A backup of the current local save will be downloaded first when present."))return;
+   if(Object.keys(current).length)downloadCloudBackup("home-"+item.game.id+"-local-before-restore.json",{gameId:item.game.id,items:current,exportedAt:Date.now()});
+   try{entries.forEach(([k,v])=>localStorage.setItem(k,v));localStorage.setItem("__home_cloud_stamp_"+item.game.id,String(Number(item.data.updatedAt)||Date.now()));toast(item.game.title+" restored. Open the game to continue.");}
+   catch(error){toast("Could not restore this save: "+error.message);}
+  }));
+ }
+
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
@@ -260,6 +344,18 @@
   const query=($p("portalSearch").value||"").trim().toLowerCase();
   const favoriteIds=accountData?.profile?.favoriteGames||[];
   const filtered=games.filter(game=>(selectedGenre==="All Games"?true:selectedGenre==="Favorites"?favoriteIds.includes(game.id):game.genre===selectedGenre)&&(!query||(game.title+" "+game.genre+" "+game.description).toLowerCase().includes(query)));
+  const sortMode=$p("portalGameSort")?.value||"recommended";
+  const score=g=>(favoriteIds.includes(g.id)?100:0)+(Number(weeklyData?.likes?.[g.id])||0)*2+(Number(weeklyData?.plays?.[g.id])||0);
+  filtered.sort((a,b)=>{
+   const stat=(g,k)=>Number(accountData?.stats?.games?.[g.id]?.[k])||0;
+   if(sortMode==="az")return a.title.localeCompare(b.title);
+   if(sortMode==="popular")return (Number(weeklyData?.plays?.[b.id])||0)-(Number(weeklyData?.plays?.[a.id])||0);
+   if(sortMode==="liked")return (Number(weeklyData?.likes?.[b.id])||0)-(Number(weeklyData?.likes?.[a.id])||0);
+   if(sortMode==="playtime")return stat(b,"seconds")-stat(a,"seconds");
+   if(sortMode==="recent")return stat(b,"lastPlayedAt")-stat(a,"lastPlayedAt");
+   return score(b)-score(a)||a.title.localeCompare(b.title);
+  });
+  $p("portalDiscoveryCount").textContent=filtered.length+" games";
   const host=$p("portalGameGroups");host.innerHTML="";
   if(!filtered.length){host.innerHTML='<div class="portal-empty">No games match that search.</div>';return;}
   if(selectedGenre==="All Games"){
@@ -284,10 +380,11 @@
   if(view==="settings")renderSettings();
   if(view==="music")mountMusicPanel();
   if(view==="dev")renderDevView();
-  if(view==="games"){showCategoryChooser();loadWeeklyHighlights();}
+  if(view==="games"){showCategoryChooser();renderDashboard();loadWeeklyHighlights();}
  }
  document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.addEventListener("click",()=>showView(el.dataset.view)));
  $p("portalBackToCategories").addEventListener("click",showCategoryChooser);
+ $p("portalGameSort").addEventListener("change",renderGameList);
  $p("portalSearch").addEventListener("input",()=>{
   if(selectedGenre)renderGameList();else renderCategories();
  });
@@ -336,6 +433,12 @@
    const placeholder=document.createElement("span");placeholder.className="portal-muted";placeholder.textContent="Play option unavailable";actions.appendChild(placeholder);
   }
   renderGameSocial(game);
+  const directF1=game.title==="F1 Simulator";
+  if(directF1){
+   const fallback=document.createElement("button");fallback.type="button";fallback.className="portal-secondary portal-f1-fallback";fallback.textContent="OPEN ORIGINAL F1 SITE IN A NEW TAB ↗";
+   fallback.addEventListener("click",()=>{window.openExternal("https://googledrive-home.github.io/F1/");closeGameDetail();});
+   actions.appendChild(fallback);
+  }
   $p("portalGameDetail").classList.add("open");
  }
 
@@ -347,7 +450,8 @@
   const careerName=accountData?progress.rank:"Sign in to track your career";
   const careerMessage=!accountData?"Create a profile to save career ranks and session progress.":progress.complete?"You have completed every career rank for this game.":progress.remaining+" more session"+(progress.remaining===1?"":"s")+" to reach "+progress.nextRank+".";
   const careerAction=accountData?(progress.sessions?"CONTINUE PLAYING":"PLAY TO PROGRESS"):"SIGN IN TO SAVE PROGRESS";
-  $p("portalDetailProgress").innerHTML=statsPanel+'<section class="portal-career-panel"><div class="portal-career-panel-head"><div><div class="portal-eyebrow">CAREER TRACK</div><strong>'+esc(careerName)+'</strong></div><span>'+(accountData?"RANK "+(progress.stage+1)+" / 6":"PROFILE REQUIRED")+'</span></div><div class="portal-xp-track"><span style="width:'+(accountData?progress.percent:0)+'%"></span></div><p>'+esc(careerMessage)+'</p><button type="button" class="portal-career-launch" id="portalCareerLaunch">'+careerAction+'</button></section>';
+  const capability='<section class="portal-integration-panel"><div><small>PLAYER STATS</small><b>'+(game.id?"Home account tracking":"Not connected")+'</b></div><div><small>CLOUD SAVES</small><b>'+(CLOUD_SAVE_GAMES.some(x=>x.id===game.id)?"Supported bridge":"Not integrated")+'</b></div><div><small>LAUNCH</small><b>'+(game.external?"External site":"Home game frame")+'</b></div></section>';
+  $p("portalDetailProgress").innerHTML=statsPanel+capability+'<section class="portal-career-panel"><div class="portal-career-panel-head"><div><div class="portal-eyebrow">CAREER TRACK</div><strong>'+esc(careerName)+'</strong></div><span>'+(accountData?"RANK "+(progress.stage+1)+" / 6":"PROFILE REQUIRED")+'</span></div><div class="portal-xp-track"><span style="width:'+(accountData?progress.percent:0)+'%"></span></div><p>'+esc(careerMessage)+'</p><button type="button" class="portal-career-launch" id="portalCareerLaunch">'+careerAction+'</button></section>';
   $p("portalLikeGame").addEventListener("click",()=>toggleGameLike(game));$p("portalFavoriteGame").addEventListener("click",()=>toggleGameFavorite(game));
   $p("portalCareerLaunch").addEventListener("click",()=>{
    if(!accountData){showAccountPrompt("login");return;}
@@ -382,7 +486,7 @@
   });
  }
  async function loadWeeklyHighlights(){
-  try{weeklyData=await apiRequest("/portal/games/weekly");renderWeeklyHighlights();return weeklyData;}
+  try{weeklyData=await apiRequest("/portal/games/weekly");renderWeeklyHighlights();renderDashboard();return weeklyData;}
   catch(error){$p("portalWeeklyShelf").innerHTML='<div class="portal-section-panel"><div class="portal-eyebrow">THIS WEEK</div><h2>Weekly highlights unavailable</h2><p>Rankings will appear when the stats service is available.</p></div>';return null;}
  }
  function getGame(gameId){return games.find(game=>game.id===gameId)||null;}
@@ -471,6 +575,10 @@
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+'<div class="portal-career-grid">'+careerCards+'</div>'+'</div></div></div>'+
    '<div class="portal-section-panel" style="margin-top:15px"><div class="portal-eyebrow">TROPHY CABINET</div><h2>'+unlocked.length+' trophies unlocked</h2><div class="portal-trophy-grid">'+trophies.map(item=>'<div class="portal-trophy-card '+(item.unlocked?"unlocked":"locked")+'"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[item.tier]||"🏆")+'</span><b>'+esc(item.title)+'</b><small>'+esc(item.game||item.description||"Home")+'</small><em>'+(item.unlocked?"UNLOCKED":esc(item.target||"LOCKED"))+'</em></div>').join("")+'</div></div>';
+  const history=Object.entries(stats.games||{}).map(([id,r])=>({game:getGame(id),record:r||{}})).filter(x=>x.game&&Number(x.record.lastPlayedAt)>0).sort((a,b)=>Number(b.record.lastPlayedAt)-Number(a.record.lastPlayedAt)).slice(0,8);
+  host.insertAdjacentHTML("beforeend",'<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">RECENT HISTORY</div><h2>Recently played</h2>'+(history.length?'<div class="portal-history-list">'+history.map(x=>'<button type="button" data-history-open="'+esc(x.game.id)+'"><span><b>'+esc(x.game.title)+'</b><small>'+esc(new Date(x.record.lastPlayedAt).toLocaleString())+'</small></span><em>'+esc(x.record.played||0)+' sessions · '+esc(formatDuration(x.record.seconds||0))+'</em></button>').join("")+'</div>':'<p class="portal-muted">Completed game sessions will appear here.</p>')+'</div><div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CLOUD SAVES</div><h2>Manage your supported backups</h2><p class="portal-muted">View, download and restore saves for games with a Home save bridge.</p><button type="button" class="portal-secondary" id="portalCloudSaveRefresh">LOAD CLOUD SAVES</button><div id="portalCloudSaveManager"></div></div>');
+  $p("portalCloudSaveRefresh").addEventListener("click",renderCloudSaveManager);
+  host.querySelectorAll("[data-history-open]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.historyOpen);if(g)openGameDetail(g);}));
   $p("portalEditProfile").addEventListener("submit",async event=>{event.preventDefault();const status=$p("portalEditStatus");status.textContent="Saving…";status.className="portal-status";try{const result=await apiRequest("/account/profile",{method:"POST",body:{username:$p("portalEditUsername").value,avatar:Number($p("portalEditAvatar").value)}});accountData={...accountData,...result};username=result.profile.username;updateUsernameDisplay();renderProfile();toast("Profile saved.");}catch(error){status.textContent=error.message||"Could not save profile.";status.className="portal-status error";}});
   $p("portalSignOut").addEventListener("click",async()=>{try{await apiRequest("/account/logout",{method:"POST",body:{}});}catch(error){}accountToken="";accountData=null;try{sessionStorage.removeItem("homeAccountToken");sessionStorage.removeItem("playspaceAccountToken");}catch(error){}username="Guest";updateUsernameDisplay();renderProfile();showAccountPrompt("login");});
   host.querySelectorAll("[data-favorite-open]").forEach(button=>button.addEventListener("click",()=>{const game=getGame(button.dataset.favoriteOpen);if(game)openGameDetail(game);}));
