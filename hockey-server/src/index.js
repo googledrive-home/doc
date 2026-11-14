@@ -210,6 +210,15 @@ app.post("/account/game/start",async(req,res)=>{
  const sessionId=randomBytes(18).toString("hex");account.activeGameSession={id:sessionId,gameId,startedAt:now};
  try{await persistAccountStore();res.json({sessionId,gameId,startedAt:now});}catch(error){account.activeGameSession=null;console.error("Game session save error:",error.message);res.status(503).json({error:"Could not start game tracking."});}
 });
+app.post("/account/game/cancel",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to cancel this game session."});
+ const sessionId=String(req.body?.sessionId||"");
+ if(!sessionId||account.activeGameSession?.id!==sessionId)return res.json({ok:true,cancelled:false});
+ account.activeGameSession=null;
+ try{await persistAccountStore();res.json({ok:true,cancelled:true});}
+ catch(error){console.error("Game session cancellation error:",error.message);res.status(503).json({error:"Could not clear this game session."});}
+});
 app.post("/account/game/complete",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save game progress."});
  const session=account.activeGameSession,sessionId=String(req.body?.sessionId||"");if(!session||session.id!==sessionId)return res.status(409).json({error:"This game session has expired. Start the game again."});
@@ -230,7 +239,7 @@ app.post("/account/game/complete",async(req,res)=>{
  if(account.stats.gamesPlayed===1)grant("first-game","Welcome to Home","Completed your first game session.","bronze",15);
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
- account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=Math.min(10,1+Math.floor(career.sessions/5));
+ account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
  account.activeGameSession=null;
  try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
@@ -283,16 +292,14 @@ app.post("/account/friends/block",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to manage privacy."});
  const target=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===usernameKey(req.body?.username));if(!target)return res.status(404).json({error:"Player not found."});
  if(target.id===account.id)return res.status(400).json({error:"You cannot block yourself."});
- account.blockedAccounts=[...new Set([...(account.blockedAccounts||[]),target.id])];account.friends=(account.friends||[]).filter(id=>id!==target.id);target.friends=(target.friends||[]).filter(id=>id!==account.id);
- account.incomingFriendRequests=(account.incomingFriendRequests||[]).filter(id=>id!==target.id);account.outgoingFriendRequests=(account.outgoingFriendRequests||[]).filter(id=>id!==target.id);
- target.incomingFriendRequests=(target.incomingFriendRequests||[]).filter(id=>id!==account.id);target.outgoingFriendRequests=(target.outgoingFriendRequests||[]).filter(id=>id!==account.id);
- try{await persistAccountStore();res.json({ok:true});}catch(error){console.error("Block player error:",error.message);res.status(503).json({error:"Could not update privacy settings."});}
-});
-app.get("/portal/games/weekly",(_req,res)=>{
- const now=Date.now(),weekAgo=now-7*24*60*60*1000,playCounts={},likeCounts={};
- for(const account of accountStore.accounts)for(const [gameId,gameStats] of Object.entries(account.stats?.games||{}))if(validGameId(gameId)){const count=(gameStats.plays||[]).filter(at=>at>=weekAgo).length;playCounts[gameId]=(playCounts[gameId]||0)+count;}
- for(const [gameId,entry] of Object.entries(accountStore.gameRatings||{}))if(validGameId(gameId))likeCounts[gameId]=Array.isArray(entry.likes)?entry.likes.filter(item=>item.at>=weekAgo).length:0;
+ account.blockedAccounts=[...new Set([...(account.blockedAccounts||[]),target.id])];acapp.get("/portal/games/weekly",(_req,res)=>{
+ const now=Date.now(),monday=new Date(now);monday.setUTCHours(0,0,0,0);monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));const weekStartsAt=monday.getTime(),playCounts={},likeCounts={};
+ for(const account of accountStore.accounts)for(const [gameId,gameStats] of Object.entries(account.stats?.games||{}))if(validGameId(gameId)){const count=(gameStats.plays||[]).filter(at=>at>=weekStartsAt).length;playCounts[gameId]=(playCounts[gameId]||0)+count;}
+ for(const [gameId,entry] of Object.entries(accountStore.gameRatings||{}))if(validGameId(gameId))likeCounts[gameId]=Array.isArray(entry.likes)?entry.likes.filter(item=>item.at>=weekStartsAt).length:0;
  const gameIds=Object.keys(GAME_CATALOG),byPlays=[...gameIds].sort((a,b)=>(playCounts[b]||0)-(playCounts[a]||0)||a.localeCompare(b)),byLikes=[...gameIds].sort((a,b)=>(likeCounts[b]||0)-(likeCounts[a]||0)||a.localeCompare(b));
+ const weekKey=monday.toISOString().slice(0,10),weekSeed=Array.from(weekKey).reduce((sum,ch)=>sum+ch.charCodeAt(0),0),featured=gameIds[weekSeed%gameIds.length];
+ res.setHeader("Cache-Control","no-store");res.json({weekStartsAt:weekKey,featured:{gameId:featured,category:GAME_CATALOG[featured]},mostPlayed:{gameId:byPlays[0],count:playCounts[byPlays[0]]||0},mostLiked:{gameId:byLikes[0],count:likeCounts[byLikes[0]]||0},plays:playCounts,likes:likeCounts});
+});a]||0)||a.localeCompare(b)),byLikes=[...gameIds].sort((a,b)=>(likeCounts[b]||0)-(likeCounts[a]||0)||a.localeCompare(b));
  const monday=new Date(now);monday.setUTCHours(0,0,0,0);monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));const weekKey=monday.toISOString().slice(0,10),weekSeed=Array.from(weekKey).reduce((sum,ch)=>sum+ch.charCodeAt(0),0),featured=gameIds[weekSeed%gameIds.length];
  res.setHeader("Cache-Control","no-store");res.json({weekStartsAt:weekKey,featured:{gameId:featured,category:GAME_CATALOG[featured]},mostPlayed:{gameId:byPlays[0],count:playCounts[byPlays[0]]||0},mostLiked:{gameId:byLikes[0],count:likeCounts[byLikes[0]]||0},plays:playCounts,likes:likeCounts});
 });
