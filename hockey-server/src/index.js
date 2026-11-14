@@ -172,6 +172,112 @@ app.post("/account/logout",async(req,res)=>{
  try{await persistAccountStore();res.json({ok:true});}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't sign out cleanly. Please close this tab."});}
 });
+
+const authenticatedAccount=req=>resolveAccountToken(getRequestToken(req));
+app.post("/account/favorites",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save favourites."});
+ const gameId=String(req.body?.gameId||"");if(!validGameId(gameId))return res.status(400).json({error:"Choose a valid game."});
+ const set=new Set(account.favoriteGames||[]),wasFavorite=set.has(gameId);if(wasFavorite)set.delete(gameId);else set.add(gameId);account.favoriteGames=[...set];
+ try{await persistAccountStore();res.json({favorite:!wasFavorite,favoriteGames:account.favoriteGames});}catch(error){console.error("Favourite save error:",error.message);res.status(503).json({error:"Could not save this favourite."});}
+});
+app.post("/account/games/:gameId/like",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to like games."});
+ const gameId=String(req.params.gameId||"");if(!validGameId(gameId))return res.status(404).json({error:"Game not found."});
+ const entry=accountStore.gameRatings[gameId]&&typeof accountStore.gameRatings[gameId]==="object"?accountStore.gameRatings[gameId]:(accountStore.gameRatings[gameId]={userIds:[]});
+ if(!Array.isArray(entry.userIds))entry.userIds=[];const index=entry.userIds.indexOf(account.id);if(index>=0)entry.userIds.splice(index,1);else entry.userIds.push(account.id);
+ try{await persistAccountStore();res.json({liked:index<0,likes:entry.userIds.length});}catch(error){console.error("Game like save error:",error.message);res.status(503).json({error:"Could not save your like."});}
+});
+app.post("/account/game/start",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to track game progress."});
+ const gameId=String(req.body?.gameId||"");if(!validGameId(gameId))return res.status(400).json({error:"Choose a valid game."});
+ const now=Date.now();if(account.activeGameSession&&now-account.activeGameSession.startedAt<3*60*60*1000)return res.status(409).json({error:"Finish your current game session first."});
+ const sessionId=randomBytes(18).toString("hex");account.activeGameSession={id:sessionId,gameId,startedAt:now};
+ try{await persistAccountStore();res.json({sessionId,gameId,startedAt:now});}catch(error){account.activeGameSession=null;console.error("Game session save error:",error.message);res.status(503).json({error:"Could not start game tracking."});}
+});
+app.post("/account/game/complete",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save game progress."});
+ const session=account.activeGameSession,sessionId=String(req.body?.sessionId||"");if(!session||session.id!==sessionId)return res.status(409).json({error:"This game session has expired. Start the game again."});
+ const now=Date.now(),elapsedMs=now-session.startedAt;if(elapsedMs<10000||elapsedMs>3*60*60*1000)return res.status(400).json({error:"Play a little longer before recording this session."});
+ const gameId=session.gameId,elapsedSeconds=Math.round(elapsedMs/1000),score=Math.max(0,Math.min(100000000,Math.floor(Number(req.body?.score)||0)));
+ const record=account.stats.games[gameId]||(account.stats.games[gameId]={played:0,seconds:0,bestScore:0,lastPlayedAt:0,plays:[]});
+ record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(record.bestScore||0,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
+ account.stats.gamesPlayed=(account.stats.gamesPlayed||0)+1;account.stats.timePlayedSeconds+=elapsedSeconds;
+ const day=new Date(now).toISOString().slice(0,10);if(account.dailyXp?.date!==day)account.dailyXp={date:day,amount:0};
+ const earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned);
+ const unlocked=[];
+ const grant=(id,title,desc,tier,reward)=>{if(unlockAchievement(account,id,gameId,title,desc,tier,reward))unlocked.push({id,title,tier});};
+ if(record.played===1)grant("first-"+gameId,"First Session","Played this game for the first time.","bronze",10);
+ if(record.played===10)grant("regular-"+gameId,"Regular Player","Played this game 10 times.","silver",20);
+ if(record.played===50)grant("dedicated-"+gameId,"Dedicated Player","Played this game 50 times.","gold",40);
+ if(account.stats.gamesPlayed===1)grant("first-game","Welcome to PlaySpace","Completed your first game session.","bronze",15);
+ if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
+ if(account.stats.gamesPlayed===100)grant("play-100","PlaySpace Champion","Completed 100 game sessions.","gold",75);
+ account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=Math.min(10,1+Math.floor(career.sessions/5));
+ account.activeGameSession=null;
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:earned,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
+ catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
+});
+app.get("/account/saves/:gameId",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to load cloud saves."});
+ const gameId=String(req.params.gameId||"");if(!validGameId(gameId))return res.status(404).json({error:"Game not found."});
+ res.setHeader("Cache-Control","no-store");res.json({gameId,save:account.saves?.[gameId]??null,updatedAt:account.saveUpdatedAt?.[gameId]||null});
+});
+app.post("/account/saves/:gameId",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save to the cloud."});
+ const gameId=String(req.params.gameId||"");if(!validGameId(gameId))return res.status(404).json({error:"Game not found."});
+ const save=req.body?.save;if(!save||typeof save!=="object"||Array.isArray(save))return res.status(400).json({error:"Save data must be a JSON object."});
+ if(Buffer.byteLength(JSON.stringify(save),"utf8")>48*1024)return res.status(413).json({error:"Each cloud save must be smaller than 48 KB."});
+ account.saves[gameId]=save;account.saveUpdatedAt=account.saveUpdatedAt||{};account.saveUpdatedAt[gameId]=Date.now();
+ try{await persistAccountStore();res.json({ok:true,gameId,updatedAt:account.saveUpdatedAt[gameId]});}catch(error){console.error("Cloud save error:",error.message);res.status(503).json({error:"Could not save to the cloud."});}
+});
+app.get("/account/friends",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view friends."});
+ const publicFriend=id=>{const p=accountStore.accounts.find(a=>a.id===id);return p?{username:p.username||p.name,avatar:p.skin||0,level:levelProgress(p.xp||0).level}:null;};
+ res.setHeader("Cache-Control","no-store");res.json({friends:(account.friends||[]).map(publicFriend).filter(Boolean),incoming:(account.incomingFriendRequests||[]).map(publicFriend).filter(Boolean),outgoing:(account.outgoingFriendRequests||[]).map(publicFriend).filter(Boolean)});
+});
+app.post("/account/friends/request",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to add friends."});
+ const targetName=usernameKey(req.body?.username);if(!/^[a-z0-9_]{3,20}$/.test(targetName))return res.status(400).json({error:"Enter a valid username."});
+ const target=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===targetName);if(!target)return res.status(404).json({error:"No player has that username."});
+ if(target.id===account.id)return res.status(400).json({error:"You cannot add yourself."});
+ if((account.blockedAccounts||[]).includes(target.id)||(target.blockedAccounts||[]).includes(account.id))return res.status(403).json({error:"A friend request cannot be sent to this player."});
+ if((account.friends||[]).includes(target.id))return res.status(409).json({error:"You are already friends."});
+ if((account.outgoingFriendRequests||[]).includes(target.id))return res.status(409).json({error:"A request is already waiting."});
+ if(!(target.incomingFriendRequests||[]).includes(account.id))target.incomingFriendRequests.push(account.id);
+ if(!(account.outgoingFriendRequests||[]).includes(target.id))account.outgoingFriendRequests.push(target.id);
+ try{await persistAccountStore();res.json({ok:true,message:"Friend request sent."});}catch(error){console.error("Friend request error:",error.message);res.status(503).json({error:"Could not send the friend request."});}
+});
+app.post("/account/friends/respond",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to manage friend requests."});
+ const senderName=usernameKey(req.body?.username),sender=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===senderName);
+ if(!sender||!(account.incomingFriendRequests||[]).includes(sender.id))return res.status(404).json({error:"Friend request not found."});
+ const accept=req.body?.accept===true;account.incomingFriendRequests=account.incomingFriendRequests.filter(id=>id!==sender.id);sender.outgoingFriendRequests=(sender.outgoingFriendRequests||[]).filter(id=>id!==account.id);
+ if(accept){account.friends=[...new Set([...(account.friends||[]),sender.id])];sender.friends=[...new Set([...(sender.friends||[]),account.id])];}
+ try{await persistAccountStore();res.json({ok:true,accepted:accept});}catch(error){console.error("Friend response error:",error.message);res.status(503).json({error:"Could not update that request."});}
+});
+app.post("/account/friends/remove",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to manage friends."});
+ const target=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===usernameKey(req.body?.username));if(!target)return res.status(404).json({error:"Friend not found."});
+ account.friends=(account.friends||[]).filter(id=>id!==target.id);target.friends=(target.friends||[]).filter(id=>id!==account.id);
+ try{await persistAccountStore();res.json({ok:true});}catch(error){console.error("Friend removal error:",error.message);res.status(503).json({error:"Could not remove friend."});}
+});
+app.post("/account/friends/block",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to manage privacy."});
+ const target=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===usernameKey(req.body?.username));if(!target)return res.status(404).json({error:"Player not found."});
+ if(target.id===account.id)return res.status(400).json({error:"You cannot block yourself."});
+ account.blockedAccounts=[...new Set([...(account.blockedAccounts||[]),target.id])];account.friends=(account.friends||[]).filter(id=>id!==target.id);target.friends=(target.friends||[]).filter(id=>id!==account.id);
+ account.incomingFriendRequests=(account.incomingFriendRequests||[]).filter(id=>id!==target.id);account.outgoingFriendRequests=(account.outgoingFriendRequests||[]).filter(id=>id!==target.id);
+ target.incomingFriendRequests=(target.incomingFriendRequests||[]).filter(id=>id!==account.id);target.outgoingFriendRequests=(target.outgoingFriendRequests||[]).filter(id=>id!==account.id);
+ try{await persistAccountStore();res.json({ok:true});}catch(error){console.error("Block player error:",error.message);res.status(503).json({error:"Could not update privacy settings."});}
+});
+app.get("/portal/games/weekly",(_req,res)=>{
+ const now=Date.now(),weekAgo=now-7*24*60*60*1000,playCounts={},likeCounts={};
+ for(const account of accountStore.accounts)for(const [gameId,gameStats] of Object.entries(account.stats?.games||{}))if(validGameId(gameId)){const count=(gameStats.plays||[]).filter(at=>at>=weekAgo).length;playCounts[gameId]=(playCounts[gameId]||0)+count;}
+ for(const [gameId,entry] of Object.entries(accountStore.gameRatings||{}))if(validGameId(gameId))likeCounts[gameId]=Array.isArray(entry.userIds)?entry.userIds.length:0;
+ const gameIds=Object.keys(GAME_CATALOG),byPlays=[...gameIds].sort((a,b)=>(playCounts[b]||0)-(playCounts[a]||0)||a.localeCompare(b)),byLikes=[...gameIds].sort((a,b)=>(likeCounts[b]||0)-(likeCounts[a]||0)||a.localeCompare(b));
+ const monday=new Date(now);monday.setUTCHours(0,0,0,0);monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));const weekKey=monday.toISOString().slice(0,10),weekSeed=Array.from(weekKey).reduce((sum,ch)=>sum+ch.charCodeAt(0),0),featured=gameIds[weekSeed%gameIds.length];
+ res.setHeader("Cache-Control","no-store");res.json({weekStartsAt:weekKey,featured:{gameId:featured,category:GAME_CATALOG[featured]},mostPlayed:{gameId:byPlays[0],count:playCounts[byPlays[0]]||0},mostLiked:{gameId:byLikes[0],count:likeCounts[byLikes[0]]||0},plays:playCounts,likes:likeCounts});
+});
 const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
@@ -223,8 +329,9 @@ app.post("/portal/admin/metrics",(req,res)=>{
  const players=[...latestByName.values()]
   .sort((a,b)=>a.name.localeCompare(b.name))
   .map(({name,game})=>({name,game}));
+ const accounts=accountStore.accounts.map(account=>({username:account.username||account.name,level:levelProgress(account.xp||0).level,xp:account.xp||0,avatar:account.skin||0,gamesPlayed:account.stats?.gamesPlayed||Object.values(account.stats?.games||{}).reduce((sum,g)=>sum+(g.played||0),0),timePlayedSeconds:account.stats?.timePlayedSeconds||0,achievements:(account.achievements||[]).length,lastLoginAt:account.lastLoginAt||null})).sort((a,b)=>a.username.localeCompare(b.username));
  res.setHeader("Cache-Control","no-store");
- res.json({players,updatedAt:now});
+ res.json({players,accounts,updatedAt:now});
 });
 
 function competitionStandings(comp){
