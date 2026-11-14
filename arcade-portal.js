@@ -5,7 +5,7 @@
  const USERNAME_KEY="homeUsername",LEGACY_USERNAME_KEY="playspaceUsername";
  const app=document.getElementById("arcadeRoot");
  if(!app)return;
- let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="",externalGamePending=false,externalGameWentHidden=false,externalGameStartPromise=null;
+ let username="",accountToken="",accountData=null,authMode="login",activeGameSessions={},activeGameScores={},currentTrackedGameId="",weeklyData=null,selectedGenre="",selectedGame=null,devPasswordInMemory="",devRefreshTimer=null,devServerWarmup=null,devServerWarm=false,devServerWarmAt=0,currentPlayingGame="",presenceHeartbeat=null,presenceSessionId="",externalGamePending=false,externalGameWentHidden=false,externalGameStartPromise=null,pendingExternalGame=null,externalLaunchTimer=null;
  const gameIdByTitle={
   "Drift Arena":"drift-arena","Open World Drive":"open-world-drive","Tank Arena":"tank-arena-3d","Neon Runner":"neon-runner",
   "F1 Simulator":"f1-simulator",
@@ -442,7 +442,16 @@
   }
  }
  document.addEventListener("visibilitychange",()=>{
-  if(document.hidden){if(externalGamePending)externalGameWentHidden=true;return;}
+  if(document.hidden){
+   if(pendingExternalGame&&!externalGamePending){
+    const game=pendingExternalGame;pendingExternalGame=null;
+    clearTimeout(externalLaunchTimer);externalLaunchTimer=null;
+    externalGamePending=true;externalGameWentHidden=true;
+    setCurrentGame(game.title);
+    externalGameStartPromise=startTrackedGame(game.title);
+   }else if(externalGamePending)externalGameWentHidden=true;
+   return;
+  }
   syncPresence();finishExternalSessionOnReturn();
  });
  window.addEventListener("focus",finishExternalSessionOnReturn);
@@ -579,10 +588,14 @@
   window.openExternal=function(){
    const externalGame=selectedGame?.external?selectedGame:null;
    const opened=originalPortalOpenExternal.apply(this,arguments);
-   if(externalGame&&opened){
-    externalGamePending=true;externalGameWentHidden=false;
+   if(externalGame){
+    pendingExternalGame=externalGame;
     setCurrentGame(externalGame.title);
-    externalGameStartPromise=startTrackedGame(externalGame.title);
+    clearTimeout(externalLaunchTimer);
+    externalLaunchTimer=setTimeout(()=>{
+     pendingExternalGame=null;
+     if(!externalGamePending)setCurrentGame("");
+    },30000);
    }
    return opened;
   };
