@@ -172,7 +172,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   const trackDefs=circuitSources.map(makeCircuit);
   const keys=new Set();
 
-  let selectedBrand='Formula',selectedCar=0,selectedP2=0,selectedTrack=0,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2;
+  let selectedBrand='Formula',selectedCar=0,selectedP2=0,selectedTrack=0,mode='solo',aiCount=3,aiDifficulty='medium',laps=3,sound=true,audio=null,race=null,selectedTyre='medium',selectedPitTyre='soft',selectedTcs=2,raceResultSaved=false;
 
   function svg(car){
     const formula=car.shape==='formula',gt=car.shape==='gt';
@@ -694,11 +694,26 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     const p2=race.cars.find(c=>c.player===2);if(p2){const s2=Math.round(Math.hypot(p2.vx,p2.vy)*3.6),f2=clamp(s2/p2.spec.top,0,1)*67;q('speedText2').textContent=s2;q('ring2').style.setProperty('--fill',f2+'%');q('state2').textContent=p2.pitting?'PIT STOP':p2.inPit?'PIT LANE':p2.slip>10?'SLIP '+Math.round(p2.slip)+'°':'GRIP'}
   }
   function mapDraw(){if(!race)return;const ctx=q('map').getContext('2d');mini(race.track,ctx,race.pit);const sx=ctx.canvas.width/race.track.W,sy=ctx.canvas.height/race.track.H;race.cars.forEach(c=>{ctx.fillStyle=c.player===1?'#4be3ff':c.player===2?'#ffd35b':'#fff';ctx.beginPath();ctx.arc(c.x*sx,c.y*sy,c.player?4:3,0,Math.PI*2);ctx.fill()})}
-  function result(){const list=rank(),me=race.cars[0],pos=list.findIndex(c=>c.player===1)+1;let rows='';list.forEach((c,i)=>rows+='<div class="standing '+(c.player?'me':'')+'"><span>'+ (i+1) +'</span><div><b>'+(c.player===1?'P1':c.player===2?'P2':'AI')+' · '+c.spec.model+'</b><small>'+c.spec.brand+' · '+c.spec.power+' hp</small></div><span>'+c.lap+' lap</span><span>'+Math.round(c.points)+' pts</span></div>');q('result').innerHTML='<h2>'+(pos===1?'🏁 Victory!':'Race Complete')+'</h2><p>'+me.spec.brand+' · '+me.spec.model+' · '+race.track.name+'</p><div class="result-grid"><div class="result-card"><b>'+pos+'/'+race.cars.length+'</b><span>POSITION</span></div><div class="result-card"><b>'+fmt(me.finish||race.time)+'</b><span>TIME</span></div><div class="result-card"><b>'+Math.round(me.points)+'</b><span>DRIVE PTS</span></div><div class="result-card"><b>'+ (me.best?fmt(me.best):'--')+'</b><span>BEST LAP</span></div></div><div class="standings">'+rows+'</div><div style="display:flex;justify-content:center;gap:8px;margin-top:12px"><button class="btn primary" id="again">↻ Race Again</button><button class="btn" id="back">← Setup</button></div>';q('result').classList.remove('hidden');q('again').onclick=()=>{startRace();requestAnimationFrame(loop)};q('back').onclick=exitRace}
+  function result(){const list=rank(),me=race.cars[0],pos=list.findIndex(c=>c.player===1)+1;
+    if(!raceResultSaved){
+      raceResultSaved=true;
+      const score=Math.max(0,Math.round(me.points)+Math.max(0,race.cars.length-pos)*1000+(pos===1?5000:0));
+      try{
+        const key="playspaceDriftArenaV1",saved=JSON.parse(localStorage.getItem(key)||"null")||{version:1,recent:[],bestByTrack:{}};
+        const record={track:race.track.name,position:pos,finishSeconds:Number(me.finish||race.time),drivePoints:Math.round(me.points),score,updatedAt:Date.now()};
+        saved.recent=[record,...(Array.isArray(saved.recent)?saved.recent:[])].slice(0,20);
+        const prior=saved.bestByTrack?.[race.track.name];
+        if(!prior||score>Number(prior.score||0))saved.bestByTrack={...(saved.bestByTrack||{}),[race.track.name]:record};
+        localStorage.setItem(key,JSON.stringify(saved));
+      }catch(error){}
+      window.PlaySpaceGameBridge?.reportScore?.(score);
+    }
+    let rows='';list.forEach((c,i)=>rows+='<div class="standing '+(c.player?'me':'')+'"><span>'+ (i+1) +'</span><div><b>'+(c.player===1?'P1':c.player===2?'P2':'AI')+' · '+c.spec.model+'</b><small>'+c.spec.brand+' · '+c.spec.power+' hp</small></div><span>'+c.lap+' lap</span><span>'+Math.round(c.points)+' pts</span></div>');q('result').innerHTML='<h2>'+(pos===1?'🏁 Victory!':'Race Complete')+'</h2><p>'+me.spec.brand+' · '+me.spec.model+' · '+race.track.name+'</p><div class="result-grid"><div class="result-card"><b>'+pos+'/'+race.cars.length+'</b><span>POSITION</span></div><div class="result-card"><b>'+fmt(me.finish||race.time)+'</b><span>TIME</span></div><div class="result-card"><b>'+Math.round(me.points)+'</b><span>DRIVE PTS</span></div><div class="result-card"><b>'+ (me.best?fmt(me.best):'--')+'</b><span>BEST LAP</span></div></div><div class="standings">'+rows+'</div><div style="display:flex;justify-content:center;gap:8px;margin-top:12px"><button class="btn primary" id="again">↻ Race Again</button><button class="btn" id="back">← Setup</button></div>';q('result').classList.remove('hidden');q('again').onclick=()=>{startRace();requestAnimationFrame(loop)};q('back').onclick=exitRace}
   function startRace(){
     mode=q('mode').value;aiCount=+q('aiCount').value;laps=+q('laps').value;selectedP2=+q('p2car').value;selectedTyre=q('tyre').value;selectedPitTyre=q('pitTyre').value;selectedTcs=+q('tcs').value;
     const track=trackDefs[selectedTrack],s=pathSamples(track);track.pitSide=track.pitSide||-1;const pit=buildPit(s,track),cars=[makeCar(all[selectedCar],0,1,false,s)];
     if(mode==='two')cars.push(makeCar(all[selectedP2],1,2,false,s));for(let i=0;i<aiCount;i++)cars.push(makeCar(all[(selectedCar*7+i*5+11)%all.length],cars.length,0,true,s));
+    raceResultSaved=false;
     race={track,s,pit,cars,laps,aiDifficulty,time:0,last:performance.now(),paused:false,started:false,done:false,cam:{x:s[0].x,y:s[0].y,zoom:5.8,angle:Math.atan2(s[1].y-s[0].y,s[1].x-s[0].x)+Math.PI/2,tilt:.72}};
     cars.forEach((car,i)=>{const row=Math.floor(i/2),offset=24+row*8,back=Math.max(1,Math.round(offset*WORLD_PX_PER_M/(track.sampleStepPx||8))),p=s[(s.length-back+s.length)%s.length],side=i%2?1:-1;car.x=p.x+p.nx*side*2.8*WORLD_PX_PER_M;car.y=p.y+p.ny*side*2.8*WORLD_PX_PER_M;car.angle=Math.atan2(p.ty,p.tx);car.prev=(s.length-back)/s.length;car.lap=-1;car.lapStart=0;car.stuck=0});
     q('setupView').classList.add('hidden');q('raceView').classList.remove('hidden');q('result').classList.add('hidden');q('speed2').classList.toggle('hidden',mode!=='two');q('p1Name').textContent='P1 · '+race.cars[0].spec.model;resize();countdown();
