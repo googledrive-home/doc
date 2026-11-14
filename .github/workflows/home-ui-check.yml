@@ -45,3 +45,59 @@ jobs:
             if (!match) throw new Error('F1 wrapper script not found');
             new Function(match[1]);
           "
+
+  production-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check published Home portal
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            if curl --fail --silent --show-error "https://googledrive-home.github.io/doc/arcade-portal.js" -o /tmp/home-portal-live.js &&
+               grep -q "function renderDashboard" /tmp/home-portal-live.js &&
+               grep -q "portalLeaderboardsView" /tmp/home-portal-live.js; then
+              node --check /tmp/home-portal-live.js
+              echo "Home Pages is serving the dashboard and leaderboard UI."
+              exit 0
+            fi
+            echo "Waiting for the expected Home Pages build (attempt $attempt/18)."
+            sleep 10
+          done
+          echo "The published Home portal did not contain the expected features."
+          exit 1
+
+      - name: Check Render database health
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://hockey-multiplayer.onrender.com/health/storage"
+          for attempt in $(seq 1 36); do
+            response="$(curl --silent --show-error --write-out $'\\n%{http_code}' "$url" || true)"
+            code="${response##*$'\\n'}"
+            body="${response%$'\\n'*}"
+            if [[ "$code" == "200" ]] && grep -q '"database":"connected"' <<< "$body"; then
+              echo "Render database health is connected."
+              exit 0
+            fi
+            echo "Waiting for Render storage health (attempt $attempt/36, HTTP $code)."
+            sleep 10
+          done
+          echo "Render storage health did not return a connected database."
+          exit 1
+
+      - name: Check live leaderboard API response
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://hockey-multiplayer.onrender.com/portal/games/f1-simulator/leaderboard" \
+            -o /tmp/home-leaderboard.json
+          node --input-type=commonjs -e "
+            const fs = require('node:fs');
+            const data = JSON.parse(fs.readFileSync('/tmp/home-leaderboard.json', 'utf8'));
+            if (data.gameId !== 'f1-simulator' || data.verified !== false || !Array.isArray(data.entries)) {
+              throw new Error('Unexpected live leaderboard response shape');
+            }
+            console.log('The live leaderboard returns the expected unverified response.');
+          "
