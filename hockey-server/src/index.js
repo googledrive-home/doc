@@ -60,7 +60,9 @@ function cleanAccountStore(value){
   if(!Array.isArray(account.recentMatches))account.recentMatches=[];
   account.username=cleanUsername(account.username||account.name||"Player").slice(0,20);account.name=cleanName(account.name||account.username);
   account.xp=Math.max(0,Math.floor(Number(account.xp)||0));account.favoriteGames=Array.isArray(account.favoriteGames)?[...new Set(account.favoriteGames.filter(validGameId))].slice(0,40):[];
-  account.achievements=Array.isArray(account.achievements)?account.achievements.slice(-500):[];account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
+  account.achievements=Array.isArray(account.achievements)?account.achievements.slice(-500):[];
+  for(const achievement of account.achievements){if(achievement.title==="Welcome to PlaySpace")achievement.title="Welcome to Home";if(achievement.title==="PlaySpace Champion")achievement.title="Home Champion";}
+  account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
   account.incomingFriendRequests=Array.isArray(account.incomingFriendRequests)?account.incomingFriendRequests.slice(0,100):[];account.outgoingFriendRequests=Array.isArray(account.outgoingFriendRequests)?account.outgoingFriendRequests.slice(0,100):[];
   account.blockedAccounts=Array.isArray(account.blockedAccounts)?account.blockedAccounts.slice(0,500):[];account.saves=account.saves&&typeof account.saves==="object"?account.saves:{};account.career=account.career&&typeof account.career==="object"?account.career:{};
   account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.activeGameSession=account.activeGameSession||null;
