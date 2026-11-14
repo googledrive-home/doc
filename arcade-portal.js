@@ -106,10 +106,10 @@
  const ACCESS_PASSWORD="710";
  let siteAccessGranted=false;
  try{siteAccessGranted=sessionStorage.getItem(ACCESS_SESSION_KEY)==="1"||sessionStorage.getItem(LEGACY_ACCESS_SESSION_KEY)==="1";if(siteAccessGranted){sessionStorage.setItem(ACCESS_SESSION_KEY,"1");sessionStorage.removeItem(LEGACY_ACCESS_SESSION_KEY);}}catch(error){}
- try{username=(localStorage.getItem(USERNAME_KEY)||localStorage.getItem(LEGACY_USERNAME_KEY)||"").trim().slice(0,20);accountToken=sessionStorage.getItem("homeAccountToken")||sessionStorage.getItem("playspaceAccountToken")||"";if(username)localStorage.setItem(USERNAME_KEY,username);if(accountToken)sessionStorage.setItem("homeAccountToken",accountToken);}catch(error){}
+ try{username=(localStorage.getItem(USERNAME_KEY)||localStorage.getItem(LEGACY_USERNAME_KEY)||"").trim().slice(0,20);accountToken=sessionStorage.getItem("homeAccountToken")||sessionStorage.getItem("playspaceAccountToken")||"";if(username){localStorage.setItem(USERNAME_KEY,username);localStorage.removeItem(LEGACY_USERNAME_KEY);}if(accountToken){sessionStorage.setItem("homeAccountToken",accountToken);sessionStorage.removeItem("playspaceAccountToken");}}catch(error){}
  const presenceSessionKey="homePresenceSession",legacyPresenceSessionKey="playspacePresenceSession";
  try{
-  presenceSessionId=sessionStorage.getItem(presenceSessionKey)||sessionStorage.getItem(legacyPresenceSessionKey)||"";sessionStorage.setItem(presenceSessionKey,presenceSessionId);
+  presenceSessionId=sessionStorage.getItem(presenceSessionKey)||sessionStorage.getItem(legacyPresenceSessionKey)||"";sessionStorage.setItem(presenceSessionKey,presenceSessionId);sessionStorage.removeItem(legacyPresenceSessionKey);
   if(!/^[a-zA-Z0-9_-]{16,80}$/.test(presenceSessionId)){
    presenceSessionId=(window.crypto&&typeof window.crypto.randomUUID==="function")?window.crypto.randomUUID():("home-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2));
    sessionStorage.setItem(presenceSessionKey,presenceSessionId);
