@@ -59,7 +59,7 @@ function cleanAccountStore(value){
   if(!account.stats.games||typeof account.stats.games!=="object"||Array.isArray(account.stats.games))account.stats.games={};
   if(!Array.isArray(account.recentMatches))account.recentMatches=[];
   account.username=cleanUsername(account.username||account.name||"Player").slice(0,20);account.name=cleanName(account.name||account.username);
-  account.xp=Math.max(0,Math.floor(Number(account.xp)||0));account.favoriteGames=Array.isArray(account.favoriteGames)?[...new Set(account.favoriteGames.filter(validGameId))].slice(0,40):[];
+  account.xp=Math.max(0,Math.floor(Number(account.xp)||0));account.leaderboardOptIn=account.leaderboardOptIn===true;account.favoriteGames=Array.isArray(account.favoriteGames)?[...new Set(account.favoriteGames.filter(validGameId))].slice(0,40):[];
   account.achievements=Array.isArray(account.achievements)?account.achievements.slice(-500):[];
   for(const achievement of account.achievements){if(achievement.title==="Welcome to PlaySpace")achievement.title="Welcome to Home";if(achievement.title==="PlaySpace Champion")achievement.title="Home Champion";}
   account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
@@ -103,7 +103,7 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
@@ -174,7 +174,7 @@ app.post("/account/profile",async(req,res)=>{
  if(!/^[A-Za-z0-9_]{3,20}$/.test(username))return res.status(400).json({error:"Username must be 3–20 letters, numbers or underscores."});
  if(accountStore.accounts.some(a=>a.id!==account.id&&usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken."});
  if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid avatar."});
- account.username=username;account.name=username;account.skin=skin;
+ account.username=username;account.name=username;account.skin=skin;if(typeof req.body?.leaderboardOptIn==="boolean")account.leaderboardOptIn=req.body.leaderboardOptIn;
  try{await persistAccountStore();res.json(accountPayload(account));}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Could not save your profile. Please try again."});}
 });
@@ -305,6 +305,30 @@ app.get("/portal/games/weekly",(_req,res)=>{
  const weekKey=monday.toISOString().slice(0,10),weekSeed=Array.from(weekKey).reduce((sum,ch)=>sum+ch.charCodeAt(0),0),featured=gameIds[weekSeed%gameIds.length];
  res.setHeader("Cache-Control","no-store");res.json({weekStartsAt:weekKey,featured:{gameId:featured,category:GAME_CATALOG[featured]},mostPlayed:{gameId:byPlays[0],count:playCounts[byPlays[0]]||0},mostLiked:{gameId:byLikes[0],count:likeCounts[byLikes[0]]||0},plays:playCounts,likes:likeCounts});
 });
+
+app.get("/portal/games/:gameId/leaderboard",(_req,res)=>{
+ const gameId=String(_req.params.gameId||"");
+ if(!validGameId(gameId))return res.status(404).json({error:"Game not found."});
+ const entries=[];
+ for(const account of accountStore.accounts){
+  if(account.leaderboardOptIn!==true)continue;
+  const stats=account.stats?.games?.[gameId];
+  const bestScore=Math.max(0,Math.min(100000000,Math.floor(Number(stats?.bestScore)||0)));
+  if(!bestScore)continue;
+  entries.push({
+   username:cleanUsername(account.username||account.name||"Player").slice(0,20),
+   avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),
+   level:levelProgress(account.xp||0).level,
+   bestScore,
+   sessions:Math.max(0,Math.floor(Number(stats.played)||0)),
+   lastPlayedAt:Math.max(0,Number(stats.lastPlayedAt)||0)
+  });
+ }
+ entries.sort((a,b)=>b.bestScore-a.bestScore||b.lastPlayedAt-a.lastPlayedAt||a.username.localeCompare(b.username));
+ res.setHeader("Cache-Control","no-store");
+ res.json({gameId,verified:false,metric:"bestScore",entries:entries.slice(0,50).map((item,index)=>({...item,rank:index+1}))});
+});
+
 const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
