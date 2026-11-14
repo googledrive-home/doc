@@ -1569,6 +1569,7 @@ function updateCarHud(input,drift){
 function formatTime(t){const m=Math.floor(t/60),s=t-m*60;return String(m).padStart(2,"0")+":"+s.toFixed(3).padStart(6,"0");}
 function finishStage(){
  if(stageFinished)return;stageFinished=true;gameActive=false;
+ window.PlaySpaceGameBridge?.reportScore?.(Math.max(1,Math.floor(1000000/Math.max(.001,elapsed))));
  const track=TRACKS[selectedTrack],stage=track.stages[selectedStage],key="gravel-best-"+selectedTrack+"-"+stage.id;
  let best=Number(localStorage.getItem(key)||"0");if(!best||elapsed<best){best=elapsed;localStorage.setItem(key,String(best));}
  let summary=stage.name+" · "+formatTime(elapsed)+" · "+stage.km.toFixed(1)+" KM"+(best===elapsed?" · NEW PERSONAL BEST":" · BEST "+formatTime(best));
