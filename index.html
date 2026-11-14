@@ -950,7 +950,7 @@ function spawnRunnerPattern(){
   return runnerConfig().pattern*(.95+Math.random()*.22)
 }
 function runnerAabb(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
-function runnerEnd(){if(runOver)return;runOver=true;runRunning=false;cancelAnimationFrame(runAnim);beep(150,.14,'sawtooth',.035);$('rstate').textContent='GAME OVER';drawRunner()}
+function runnerEnd(){if(runOver)return;runOver=true;runRunning=false;cancelAnimationFrame(runAnim);reportPortalGameScore('neon-runner',Math.max(0,Math.floor(runScore)));beep(150,.14,'sawtooth',.035);$('rstate').textContent='GAME OVER';drawRunner()}
 function runnerCollectCoin(q,i){const px=runPlayer.x+runPlayer.w/2,py=runPlayer.y+runPlayer.h/2;if(Math.hypot(px-q.x,py-q.y)<(runMagnet>0?60:34)){runScore+=runDouble>0?20:10;runCoins.splice(i,1);beep(900,.035,'triangle',.018);return true}return false}
 function runnerCollectPower(p,i){const px=runPlayer.x+runPlayer.w/2,py=runPlayer.y+runPlayer.h/2;if(Math.hypot(px-p.x,py-p.y)<38){if(p.type==='shield')runShield=6;if(p.type==='magnet')runMagnet=7;if(p.type==='double')runDouble=7;if(p.type==='super')runSuperJump=7;runPowers.splice(i,1);beep(820,.07,'sine',.03);return true}return false}
 function runnerLoop(now){if(gamePaused){runLast=now;runAnim=requestAnimationFrame(runnerLoop);return;}
