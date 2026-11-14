@@ -22,7 +22,7 @@ defineTypes(MatchState,{players:{map:Player},puck:Puck,game:"string",mode:"strin
 
 const app=express();
 app.use((req,res,next)=>{res.setHeader("Access-Control-Allow-Origin","*");res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");res.setHeader("Access-Control-Allow-Headers","Content-Type,Authorization");if(req.method==="OPTIONS")return res.sendStatus(204);next();});
-app.use(express.json({limit:"4kb"}));
+app.use(express.json({limit:"64kb"}));
 app.get("/",(_req,res)=>res.json({name:"Hockey & Tank Arena Multiplayer",status:"ok",protocol:"Colyseus WebSocket",games:["hockey","tank"],version:1}));
 app.get("/health",(_req,res)=>res.status(200).json({ok:true}));
 // Account storage uses PostgreSQL when DATABASE_URL is configured. Local JSON fallback
@@ -34,7 +34,14 @@ let accountPool=null;
 let accountStore={version:1,accounts:[],sessions:[],gameRatings:{}};
 let accountWriteQueue=Promise.resolve();
 const accountRateLimits=new Map();
-const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{}});
+const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{},gamesPlayed:0});
+const GAME_CATALOG={"drift-arena":"Racing","open-world-drive":"Racing","tank-arena-3d":"Simulation","f1-simulator":"Racing","apex-formula-racing":"Racing","gravel-rally-stage":"Racing","fpv-drone-simulator":"Simulation","pool-8-ball":"Sports","tennis-rally":"Sports","hockey":"Sports","reaction-game":"Arcade","click-test":"Arcade","neon-breaker":"Arcade","flappy-bird":"Arcade","neon-snake":"Arcade","space-defender":"Arcade","memory-match":"Puzzle","moto-x3m":"Racing","learn-to-fly":"Arcade","garden-gnomes":"Puzzle","sumiro":"Puzzle","cube-engine":"Simulation","mini-golf-3d":"Sports","eaglercraft-singleplayer":"Sandbox"};
+const validGameId=value=>Object.hasOwn(GAME_CATALOG,String(value||""));
+const cleanUsername=value=>String(value??"").trim().replace(/\\s+/g," ");
+const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
+const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
+function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
+function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
  data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
@@ -46,6 +53,12 @@ function cleanAccountStore(value){
   if(!account.stats.maps||typeof account.stats.maps!=="object"||Array.isArray(account.stats.maps))account.stats.maps={};
   if(!account.stats.games||typeof account.stats.games!=="object"||Array.isArray(account.stats.games))account.stats.games={};
   if(!Array.isArray(account.recentMatches))account.recentMatches=[];
+  account.username=cleanUsername(account.username||account.name||"Player").slice(0,20);account.name=cleanName(account.name||account.username);
+  account.xp=Math.max(0,Math.floor(Number(account.xp)||0));account.favoriteGames=Array.isArray(account.favoriteGames)?[...new Set(account.favoriteGames.filter(validGameId))].slice(0,40):[];
+  account.achievements=Array.isArray(account.achievements)?account.achievements.slice(-500):[];account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
+  account.incomingFriendRequests=Array.isArray(account.incomingFriendRequests)?account.incomingFriendRequests.slice(0,100):[];account.outgoingFriendRequests=Array.isArray(account.outgoingFriendRequests)?account.outgoingFriendRequests.slice(0,100):[];
+  account.blockedAccounts=Array.isArray(account.blockedAccounts)?account.blockedAccounts.slice(0,500):[];account.saves=account.saves&&typeof account.saves==="object"?account.saves:{};account.career=account.career&&typeof account.career==="object"?account.career:{};
+  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
  return data;
@@ -83,11 +96,11 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){return {id:account.id,email:account.email,name:account.name,skin:account.skin||0,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[]};
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{}};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 function requirePersistentAccountStorage(res){
@@ -112,25 +125,24 @@ function createAccountSession(account){
 }
 app.post("/account/register",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
- const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||""),name=String(req.body?.name||"Player").trim().replace(/\s+/g," ");
+ const username=cleanUsername(req.body?.username),key=usernameKey(username),password=String(req.body?.password||"");
  if(!loginRateLimit(req,"register"))return res.status(429).json({error:"Too many account requests. Please try again in 15 minutes."});
- if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:"Enter a valid email address."});
+ if(!/^[A-Za-z0-9_]{3,20}$/.test(username))return res.status(400).json({error:"Username must be 3–20 letters, numbers or underscores."});
  if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
- if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
- if(accountStore.accounts.some(a=>a.email===email))return res.status(409).json({error:"An account with that email already exists. Sign in instead."});
+ if(accountStore.accounts.some(a=>usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken. Choose another or sign in."});
  const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
- const account={id:randomBytes(12).toString("hex"),email,name:cleanName(name),skin:Math.max(0,Math.min(13,Number(req.body?.skin)||0)),createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
  accountStore.accounts.push(account);const token=createAccountSession(account);
  try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
  catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
 });
 app.post("/account/login",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
- const email=String(req.body?.email||"").trim().toLowerCase(),password=String(req.body?.password||"");
- if(!loginRateLimit(req,"login:"+email))return res.status(429).json({error:"Too many sign-in attempts. Please try again in 15 minutes."});
- const account=accountStore.accounts.find(a=>a.email===email),salt=account?Buffer.from(account.passwordSalt,"base64"):Buffer.alloc(16,7),expected=account?Buffer.from(account.passwordHash,"base64"):Buffer.alloc(64);
+ const username=cleanUsername(req.body?.username),key=usernameKey(username),password=String(req.body?.password||"");
+ if(!loginRateLimit(req,"login:"+key))return res.status(429).json({error:"Too many sign-in attempts. Please try again in 15 minutes."});
+ const account=accountStore.accounts.find(a=>usernameKey(a.username||a.name)===key),salt=account?Buffer.from(account.passwordSalt,"base64"):Buffer.alloc(16,7),expected=account?Buffer.from(account.passwordHash,"base64"):Buffer.alloc(64);
  const actual=scryptSync(password.slice(0,128),salt,64),valid=actual.length===expected.length&&timingSafeEqual(actual,expected);
- if(!account||!valid)return res.status(401).json({error:"Email or password is incorrect."});
+ if(!account||!valid)return res.status(401).json({error:"Username or password is incorrect."});
  account.lastLoginAt=Date.now();const token=createAccountSession(account);
  try{await persistAccountStore();res.json({token,...accountPayload(account)});}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
@@ -144,14 +156,14 @@ app.get("/account/me",async(req,res)=>{
 });
 app.post("/account/profile",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
- const account=resolveAccountToken(getRequestToken(req));
- if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
- const name=String(req.body?.name??account.name).trim().replace(/\s+/g," "),skin=Number(req.body?.skin??account.skin);
- if(name.length<1||name.length>18||/[<>\u0000-\u001f]/.test(name))return res.status(400).json({error:"Player name must be 1–18 characters."});
- if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid player skin."});
- account.name=cleanName(name);account.skin=skin;
+ const account=resolveAccountToken(getRequestToken(req));if(!account)return res.status(401).json({error:"Your sign-in has expired. Please sign in again."});
+ const username=cleanUsername(req.body?.username??account.username??account.name),key=usernameKey(username),skin=Number(req.body?.avatar??account.skin);
+ if(!/^[A-Za-z0-9_]{3,20}$/.test(username))return res.status(400).json({error:"Username must be 3–20 letters, numbers or underscores."});
+ if(accountStore.accounts.some(a=>a.id!==account.id&&usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken."});
+ if(!Number.isInteger(skin)||skin<0||skin>13)return res.status(400).json({error:"Choose a valid avatar."});
+ account.username=username;account.name=username;account.skin=skin;
  try{await persistAccountStore();res.json(accountPayload(account));}
- catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Couldn't save your profile. Please try again."});}
+ catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Could not save your profile. Please try again."});}
 });
 app.post("/account/logout",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
