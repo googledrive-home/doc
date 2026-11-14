@@ -297,7 +297,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     }
     ctx.restore();
   }
-  function nearest(s,x,y){let best={d:1e9,i:0,t:0};for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,t=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*t,py=a.y+aby*t,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t}}const a=s[best.i],b=s[(best.i+1)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,progress:(best.i+best.t)/s.length,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}}
+  function nearest(s,x,y){let best={d:1e9,i:0,t:0};for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],abx=b.x-a.x,aby=b.y-a.y,l2=abx*abx+aby*aby||1,t=clamp(((x-a.x)*abx+(y-a.y)*aby)/l2,0,1),px=a.x+abx*t,py=a.y+aby*t,d=Math.hypot(x-px,y-py);if(d<best.d)best={d,i,t}}const a=s[best.i],b=s[(best.i+1)%s.length],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return{x:a.x+dx*best.t,y:a.y+dy*best.t,d:best.d,i:best.i,progress:(best.i+best.t)/s.length,tx:dx/l,ty:dy/l,nx:-dy/l,ny:dx/l}}
   function makeCar(spec,slot,player,isAI,s){
     const p=s[(20+slot*12)%s.length],a=Math.atan2(p.ty,p.tx),tyreKey=isAI?'medium':selectedTyre;
     return{spec,x:p.x+(slot%2?14:-14),y:p.y+Math.floor(slot/2)*12,angle:a,vx:0,vy:0,lap:0,progress:0,prev:0,player,ai:isAI,finished:false,finish:0,points:0,best:null,slip:0,drift:0,stuck:0,steerState:0,fuel:spec.fuelCap,fuelCap:spec.fuelCap,tyre:tyreKey,tyreWear:100,tcs:isAI?2:selectedTcs,inPit:false,pitting:false,pitTimer:0,serviceFlash:0,brakeState:0,lapStart:0}
@@ -316,7 +316,7 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
     const speed=Math.hypot(car.vx||0,car.vy||0)*3.6,lookMeters=clamp(18+speed*.12,24,68);
     const target=s[(idx+sampleCountForMeters(lookMeters))%s.length]||s[idx],aim=Math.atan2(target.y-car.y,target.x-car.x);
     const aimErr=wrap(aim-(car.angle||0)),tangentErr=wrap(Math.atan2(target.ty,target.tx)-(car.angle||0));
-    const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny,maxSteer=(17-10*clamp(speed/330,0,1))*Math.PI/180*(car.spec.steer||1);
+    const lateral=(car.x-n.x)*n.nx+(car.y-n.y)*n.ny,maxSteer=(20-9*clamp(speed/330,0,1))*Math.PI/180*(car.spec.steer||1);
     const wb=car.spec.wheelbase||2.72,pursuit=Math.atan2(2*wb*Math.sin(aimErr),Math.max(lookMeters,1)),correction=Math.atan2(-lateral,Math.max(lookMeters*.75,1));
     let steer=clamp((pursuit+correction*.42+tangentErr*.12)/Math.max(maxSteer,.035),-1,1);
     const plan=cornerPlan(car,s,idx),desired=plan.target*cfg.aggression;
@@ -335,9 +335,9 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
       f*=Math.max(0,1-dt*5);l*=Math.max(0,1-dt*7);car.vx=Math.cos(car.angle)*f;car.vy=Math.sin(car.angle)*f;car.pitTimer-=dt;
       if(car.pitTimer<=0){car.fuel=car.fuelCap;car.tyre=selectedPitTyre;car.tyreWear=100;car.pitting=false;car.serviceFlash=1.6}
     }else{
-      car.serviceFlash=Math.max(0,car.serviceFlash-dt);car.steerState=lerp(car.steerState,inp.steer,clamp(dt*1.75,0,1));
-      const speedFrac=clamp(kmh/340,0,1),maxSteer=(17-10*speedFrac)*Math.PI/180*sp.steer,wheelbase=car.spec.wheelbase||2.72;
-      car.angle+=clamp(Math.tan(car.steerState*maxSteer)*Math.abs(f)/wheelbase,-.72,.72)*dt;
+      car.serviceFlash=Math.max(0,car.serviceFlash-dt);const steeringRate=inp.steer?8:12;car.steerState=lerp(car.steerState,inp.steer,1-Math.exp(-steeringRate*dt));
+      const speedFrac=clamp(kmh/340,0,1),maxSteer=(20-9*speedFrac)*Math.PI/180*sp.steer,wheelbase=car.spec.wheelbase||2.72;
+      car.angle+=clamp(Math.tan(car.steerState*maxSteer)*Math.abs(f)/wheelbase,-.88,.88)*dt;
       const fuelFrac=clamp(car.fuel/car.fuelCap,0,1),fuelPower=.68+.32*fuelFrac,tcsCut=inp.throttle&&car.tcs>0?clamp((car.tcs/5)*Math.max(0,Math.abs(l)-2.5)/11,0,.58):0;
       if(inp.throttle&&car.fuel>0){const sf=clamp(Math.abs(f)/Math.max(1,top),0,1),accelScale=clamp(1-.88*Math.pow(sf,1.65),.12,1);f+=sp.accel*.46*accelScale*dt*(1-tcsCut)*fuelPower;}
       car.brakeState=lerp(car.brakeState||0,inp.brake?1:0,clamp(dt*(inp.brake?2.0:3.0),0,1)); const brakeForce=sp.brake*.64*car.brakeState; if(brakeForce>0)f-=Math.min(Math.abs(f),brakeForce*dt)*Math.sign(f||1);
@@ -540,10 +540,9 @@ button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]){pointe
   }
   const reportedRenderErrors=new Set();
   function reportRenderError(layer,err){
-    console.error('Drift Arena '+layer+' render failed',err);
     if(reportedRenderErrors.has(layer))return;
     reportedRenderErrors.add(layer);
-    showGameError(new Error(layer+' rendering failed: '+((err&&err.message)||String(err))));
+    console.warn('Drift Arena recovered from a '+layer+' drawing error:',err);
   }
   function drawTrack(ctx,t,s,cam,w,h){
     const dpr=window.devicePixelRatio||1;
