@@ -1,0 +1,32 @@
+name: Temporary Render database connection check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-render-database.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the Render account database health endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --silent --show-error --max-time 20 --write-out $'\nHTTP_STATUS:%{http_code}' https://hockey-multiplayer.onrender.com/health/storage)"
+          printf '%s\n' "$response"
+          if [[ "$response" == *'"database":"connected"'* && "$response" == *'HTTP_STATUS:200'* ]]; then
+            echo "DATABASE_HEALTH=CONNECTED"
+          elif [[ "$response" == *'"database":"not_configured"'* ]]; then
+            echo "DATABASE_HEALTH=NOT_CONFIGURED"
+            exit 1
+          else
+            echo "DATABASE_HEALTH=UNAVAILABLE"
+            exit 1
+          fi
