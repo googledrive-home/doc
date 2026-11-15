@@ -390,10 +390,11 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],challenges:["PLAY · PROGRESS · REWARD","Challenges"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],challenges:["PLAY · PROGRESS · REWARD","Challenges"],achievements:["MILESTONES · REWARDS · PROGRESS","Achievements"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="shop")renderShop();
    if(view==="challenges")renderChallenges();
+   if(view==="achievements")renderAchievements();
    if(view==="profile")renderProfile();
   if(view==="leaderboards")renderLeaderboards();
   if(view==="friends")renderFriends();
@@ -614,6 +615,36 @@
    }catch(error){status.textContent=error.message||"Leaderboards are unavailable right now.";}
   }
   category.addEventListener("change",load);game.addEventListener("change",load);await load();
+ }
+ function renderAchievements(){
+  const host=$p("portalAchievementsContent");if(!host)return;
+  if(!accountData){
+   host.innerHTML='<div class="portal-section-panel"><h2>Sign in to track achievements</h2><p>Your unlocked milestones are saved to your player account.</p><button class="portal-primary" id="achievementSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+   $p("achievementSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+  }
+  const earned=Array.isArray(accountData.achievements)?accountData.achievements:[];
+  const earnedIds=new Set(earned.map(item=>item.id));
+  const stats=accountData.stats||{},f1=accountData.f1Stats||{};
+  const milestones=[
+   {id:"first-game",title:"Welcome to Home",description:"Complete your first game session.",current:stats.gamesPlayed||0,target:1,tier:"bronze"},
+   {id:"play-25",title:"Play Regular",description:"Complete 25 game sessions across Home.",current:stats.gamesPlayed||0,target:25,tier:"silver"},
+   {id:"play-100",title:"Home Champion",description:"Complete 100 game sessions across Home.",current:stats.gamesPlayed||0,target:100,tier:"gold"},
+   {id:"f1-first-race",title:"First Grand Prix",description:"Complete your first F1 Simulator race.",current:f1.races||0,target:1,tier:"bronze"},
+   {id:"f1-first-win",title:"First Victory",description:"Win your first F1 Simulator race.",current:f1.wins||0,target:1,tier:"silver"},
+   {id:"f1-ten-podiums",title:"Podium Regular",description:"Achieve ten F1 Simulator podiums.",current:f1.podiums||0,target:10,tier:"gold"}
+  ];
+  const locked=milestones.filter(item=>!earnedIds.has(item.id));
+  const unlockedCards=earned.map(item=>{
+   const tier=String(item.tier||"bronze").toLowerCase(),when=item.unlockedAt?new Date(item.unlockedAt).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"Unlocked";
+   return '<article class="portal-achievement-card earned"><div class="portal-achievement-icon">✦</div><div class="portal-achievement-copy"><span class="portal-achievement-tier '+esc(tier)+'">'+esc(tier)+'</span><h3>'+esc(item.title||"Achievement")+'</h3><p>'+esc(item.description||"A platform achievement.")+'</p><small>'+esc(when)+'</small></div><span class="portal-achievement-state">UNLOCKED</span></article>';
+  }).join("");
+  const lockedCards=locked.map(item=>{
+   const progress=Math.min(item.target,Math.max(0,Number(item.current)||0)),percent=Math.round(progress/item.target*100);
+   return '<article class="portal-achievement-card locked"><div class="portal-achievement-icon">🔒</div><div class="portal-achievement-copy"><span class="portal-achievement-tier '+esc(item.tier)+'">'+esc(item.tier)+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p><div class="portal-challenge-progress-label"><span>'+progress+' / '+item.target+'</span><b>'+percent+'%</b></div><div class="portal-xp-track"><span style="width:'+percent+'%"></span></div></div><span class="portal-achievement-state">LOCKED</span></article>';
+  }).join("");
+  host.innerHTML='<section class="portal-achievement-summary"><div><div class="portal-eyebrow">YOUR COLLECTION</div><strong>'+earned.length+' unlocked achievements</strong><small>Progress is shared across the Home platform and connected games.</small></div><div><b>'+earned.length+'</b><span>UNLOCKED</span></div></section>'+
+   '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">YOUR TROPHIES</div><h2>Unlocked</h2></div><span>'+earned.length+' achievements</span></div>'+(unlockedCards?'<div class="portal-achievement-grid">'+unlockedCards+'</div>':'<p class="portal-muted">Complete a game or racing milestone to unlock your first achievement.</p>')+'</section>'+
+   '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">NEXT TARGETS</div><h2>Still to unlock</h2></div><span>'+locked.length+' milestones</span></div>'+(lockedCards?'<div class="portal-achievement-grid">'+lockedCards+'</div>':'<p class="portal-muted">You have completed all currently listed milestones.</p>')+'</section>';
  }
  async function renderChallenges(){
    const host=$p("portalChallengesContent");if(!host)return;
