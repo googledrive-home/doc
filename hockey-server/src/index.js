@@ -58,6 +58,37 @@ const SHOP_ITEMS = [
 ];
 const SHOP_TIER_BY_ID=Object.fromEntries(SHOP_TIERS.map(tier=>[tier.id,tier]));
 const SHOP_ITEM_BY_ID=Object.fromEntries(SHOP_ITEMS.map(item=>[item.id,item]));
+const DAILY_CHALLENGES = [
+ {id:"daily-session",title:"Get Playing",description:"Complete one game session.",metric:"sessionsToday",target:1,xp:20,coins:25},
+ {id:"daily-double",title:"Two Sessions",description:"Complete two game sessions today.",metric:"sessionsToday",target:2,xp:25,coins:35},
+ {id:"daily-race",title:"Race Day",description:"Complete an F1 Simulator race.",metric:"f1RacesToday",target:1,xp:30,coins:35}
+];
+const WEEKLY_CHALLENGES = [
+ {id:"weekly-five",title:"Regular Player",description:"Complete five game sessions this week.",metric:"sessionsWeek",target:5,xp:60,coins:80},
+ {id:"weekly-races",title:"Race Weekend",description:"Complete three F1 Simulator races this week.",metric:"f1RacesWeek",target:3,xp:75,coins:100},
+ {id:"weekly-achievements",title:"Achievement Hunter",description:"Unlock three achievements this week.",metric:"achievementsWeek",target:3,xp:60,coins:80}
+];
+function challengeWeekKey(now=Date.now()){
+ const date=new Date(now);date.setUTCHours(0,0,0,0);
+ date.setUTCDate(date.getUTCDate()-((date.getUTCDay()+6)%7));
+ return date.toISOString().slice(0,10);
+}
+function ensureChallengeActivity(account,now=Date.now()){
+ const day=new Date(now).toISOString().slice(0,10),week=challengeWeekKey(now);
+ let activity=account.challengeActivity;
+ if(!activity||activity.week!==week)activity={day,week,sessionsToday:0,f1RacesToday:0,achievementsToday:0,sessionsWeek:0,f1RacesWeek:0,achievementsWeek:0};
+ else if(activity.day!==day){activity.day=day;activity.sessionsToday=0;activity.f1RacesToday=0;activity.achievementsToday=0;}
+ for(const key of ["sessionsToday","f1RacesToday","achievementsToday","sessionsWeek","f1RacesWeek","achievementsWeek"])activity[key]=Math.max(0,Math.floor(Number(activity[key])||0));
+ account.challengeActivity=activity;return activity;
+}
+function challengesForAccount(account,now=Date.now()){
+ const activity=ensureChallengeActivity(account,now),claimed=new Set(account.challengeClaims||[]);
+ const map=(items,period,periodKey)=>items.map(challenge=>{
+  const claimKey=period+":"+periodKey+":"+challenge.id,progress=Math.min(challenge.target,activity[challenge.metric]||0);
+  return {...challenge,period,progress,completed:progress>=challenge.target,claimed:claimed.has(claimKey),claimKey};
+ });
+ return {currency:SHOP_CURRENCY,day:activity.day,week:activity.week,daily:map(DAILY_CHALLENGES,"daily",activity.day),weekly:map(WEEKLY_CHALLENGES,"weekly",activity.week)};
+}
 const cleanUsername=value=>String(value??"").trim().replace(/\\s+/g," ");
 const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
@@ -114,6 +145,8 @@ function cleanAccountStore(value){
   for(const key of ["races","wins","podiums","dnfs","points"])account.f1Stats[key]=Math.max(0,Math.floor(Number(account.f1Stats[key])||0));
   account.f1RecentResults=Array.isArray(account.f1RecentResults)?account.f1RecentResults.slice(0,50):[];
   account.f1Career=account.f1Career&&typeof account.f1Career==="object"?account.f1Career:{season:1,races:0,wins:0,podiums:0,points:0};
+  account.challengeActivity=account.challengeActivity&&typeof account.challengeActivity==="object"?account.challengeActivity:null;
+  account.challengeClaims=Array.isArray(account.challengeClaims)?account.challengeClaims.slice(-300):[];
   account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
@@ -236,6 +269,32 @@ app.post("/account/logout",async(req,res)=>{
 });
 
 const authenticatedAccount=req=>resolveAccountToken(getRequestToken(req));
+app.get("/account/challenges",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view challenges."});
+ res.setHeader("Cache-Control","no-store");res.json(challengesForAccount(account));
+});
+app.post("/account/challenges/claim",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to claim challenge rewards."});
+ const period=req.body?.period==="weekly"?"weekly":"daily",challengeId=String(req.body?.challengeId||"");
+ const challenge=(period==="daily"?DAILY_CHALLENGES:WEEKLY_CHALLENGES).find(item=>item.id===challengeId);
+ if(!challenge)return res.status(404).json({error:"That challenge does not exist."});
+ const now=Date.now(),snapshot=challengesForAccount(account,now),entry=snapshot[period].find(item=>item.id===challengeId);
+ if(!entry?.completed)return res.status(409).json({error:"Complete the challenge before claiming its reward."});
+ if(entry.claimed)return res.status(409).json({error:"You have already claimed this challenge reward."});
+ const old={xp:account.xp,coins:account.coins,coinsEarnedTotal:account.coinsEarnedTotal,dailyCoins:{...(account.dailyCoins||{})},coinTransactions:[...(account.coinTransactions||[])],challengeClaims:[...(account.challengeClaims||[])]};
+ account.challengeClaims=[...old.challengeClaims,entry.claimKey].slice(-300);
+ addPlayerXp(account,challenge.xp);
+ const coinEarned=grantPlayerCoins(account,challenge.coins,"Challenge reward: "+challenge.title,"challenge:"+entry.claimKey);
+ try{
+  await persistAccountStore();
+  res.json({ok:true,challengeId,period,xpEarned:challenge.xp,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},challenges:challengesForAccount(account,now)});
+ }catch(error){
+  account.xp=old.xp;account.coins=old.coins;account.coinsEarnedTotal=old.coinsEarnedTotal;account.dailyCoins=old.dailyCoins;account.coinTransactions=old.coinTransactions;account.challengeClaims=old.challengeClaims;
+  console.error("Challenge claim error:",error.message);res.status(503).json({error:"The reward could not be saved. Please try again."});
+ }
+});
 app.get("/account/shop",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to visit the shop."});
@@ -372,6 +431,10 @@ app.post("/account/game/complete",async(req,res)=>{
   if(f1.podiums===10)grant("f1-ten-podiums","Podium Regular","Achieved ten F1 Simulator podiums.","gold",50);
   f1Result={...resultEntry,stats:f1,career:careerF1};
  }
+ const challengeActivity=ensureChallengeActivity(account,now);
+ challengeActivity.sessionsToday++;challengeActivity.sessionsWeek++;
+ if(f1RacePayload){challengeActivity.f1RacesToday++;challengeActivity.f1RacesWeek++;}
+ if(unlocked.length){challengeActivity.achievementsToday+=unlocked.length;challengeActivity.achievementsWeek+=unlocked.length;}
  const coinEarned=grantPlayerCoins(account,Math.min(15,5+Math.floor(elapsedSeconds/180)),"Completed a game session","game-session:"+session.id);
  account.activeGameSession=null;
  try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career,f1Result});}
