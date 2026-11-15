@@ -337,9 +337,10 @@ app.post("/account/inventory/equip",async(req,res)=>{
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to customise your profile."});
  const itemId=String(req.body?.itemId||""),item=SHOP_ITEM_BY_ID[itemId],equip=req.body?.equip!==false;
  if(!item||(account.inventory||[]).every(entry=>entry.itemId!==itemId))return res.status(404).json({error:"You do not own that item."});
- const previous={...(account.equippedItems||{})};
- if(equip)account.equippedItems={...previous,[item.slot]:itemId};
- else if(previous[item.slot]===itemId){delete previous[item.slot];account.equippedItems=previous;}
+ const previous={...(account.equippedItems||{})},next={...previous};
+ if(equip)next[item.slot]=itemId;
+ else if(next[item.slot]===itemId)delete next[item.slot];
+ account.equippedItems=next;
  try{await persistAccountStore();res.json({ok:true,equippedItems:account.equippedItems});}
  catch(error){account.equippedItems=previous;console.error("Shop equip error:",error.message);res.status(503).json({error:"Could not save that customisation."});}
 });
