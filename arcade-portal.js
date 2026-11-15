@@ -437,7 +437,7 @@
   const directF1=game.title==="F1 Simulator";
   if(directF1){
    const fallback=document.createElement("button");fallback.type="button";fallback.className="portal-secondary portal-f1-fallback";fallback.textContent="OPEN ORIGINAL F1 SITE IN A NEW TAB ↗";
-   fallback.addEventListener("click",()=>{window.openExternal("https://googledrive-home.github.io/F1/");closeGameDetail();});
+   fallback.addEventListener("click",()=>{window.openExternal("https://f1.gokart.games/");closeGameDetail();});
    actions.appendChild(fallback);
   }
   $p("portalGameDetail").classList.add("open");
@@ -716,9 +716,23 @@
  if(typeof originalPortalOpenExternal==="function"){
   window.openExternal=function(){
    const targetUrl=String(arguments[0]||"");
-   const isF1Game=targetUrl.replace(/\/+$/,"")==="https://googledrive-home.github.io/F1";
+   const normalizedTarget=targetUrl.replace(/\/+$/,"");
+   const isF1Game=normalizedTarget==="https://googledrive-home.github.io/F1"||normalizedTarget==="https://f1.gokart.games";
    const externalGame=selectedGame?.external?selectedGame:(isF1Game?{title:"F1 Simulator"}:null);
-   const opened=originalPortalOpenExternal.apply(this,arguments);
+   let opened;
+   if(isF1Game&&accountToken){
+    // Open synchronously during the click so browser popup blockers do not stop it.
+    opened=window.open("about:blank","_blank");
+    if(opened){
+     apiRequest("/account/bridge",{method:"POST",body:{}}).then(result=>{
+      const destination="https://f1.gokart.games/#home_code="+encodeURIComponent(result.code);
+      opened.location.replace(destination);
+     }).catch(error=>{
+      try{opened.close();}catch(_){}
+      toast(error.message||"Could not connect your Home account to F1 Simulator.");
+     });
+    }else opened=originalPortalOpenExternal.apply(this,arguments);
+   }else opened=originalPortalOpenExternal.apply(this,arguments);
    if(externalGame){
     pendingExternalGame=externalGame;
     setCurrentGame(externalGame.title);
