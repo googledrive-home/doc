@@ -525,6 +525,25 @@ app.get("/portal/games/:gameId/leaderboard",(_req,res)=>{
  res.json({gameId,verified:false,metric:"bestScore",entries:entries.slice(0,50).map((item,index)=>({...item,rank:index+1}))});
 });
 
+app.get("/portal/leaderboard",(_req,res)=>{
+ const supported=new Set(["xp","level","achievements","gamesPlayed","f1Wins","f1Podiums","f1Points","coinsEarned"]);
+ const requested=String(_req.query.category||"xp"),category=supported.has(requested)?requested:"xp";
+ const rows=[];
+ for(const account of accountStore.accounts){
+  if(account.leaderboardOptIn!==true)continue;
+  const level=levelProgress(account.xp||0).level,f1=account.f1Stats||{};
+  const values={xp:Math.max(0,Number(account.xp)||0),level,achievements:(account.achievements||[]).length,gamesPlayed:Math.max(0,Number(account.stats?.gamesPlayed)||0),f1Wins:Math.max(0,Number(f1.wins)||0),f1Podiums:Math.max(0,Number(f1.podiums)||0),f1Points:Math.max(0,Number(f1.points)||0),coinsEarned:Math.max(0,Number(account.coinsEarnedTotal)||0)};
+  const value=values[category]||0;if(!value)continue;
+  rows.push({username:cleanUsername(account.username||account.name||"Player").slice(0,20),avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),level,value,xp:values.xp,achievements:values.achievements});
+ }
+ rows.sort((a,b)=>b.value-a.value||b.xp-a.xp||a.username.localeCompare(b.username));
+ const entries=rows.slice(0,50).map((item,index)=>({...item,rank:index+1}));
+ const current=resolveAccountToken(getRequestToken(_req));
+ const currentIndex=current&&current.leaderboardOptIn===true?rows.findIndex(item=>item.username===cleanUsername(current.username||current.name).slice(0,20)):-1;
+ res.setHeader("Cache-Control","no-store");
+ res.json({category,verified:!category.startsWith("f1"),entries,currentPlayerRank:currentIndex>=0?currentIndex+1:null,totalPlayers:rows.length});
+});
+
 const httpServer=createServer(app);
 const gameServer=new Server({transport:new WebSocketTransport({server:httpServer})});
 const CAPACITY={ "1v1":2,"2v2":4,"3v3":6,"2v2-ai":1 };
