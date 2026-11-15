@@ -58,6 +58,7 @@ const SHOP_ITEMS = [
 ];
 const SHOP_TIER_BY_ID=Object.fromEntries(SHOP_TIERS.map(tier=>[tier.id,tier]));
 const SHOP_ITEM_BY_ID=Object.fromEntries(SHOP_ITEMS.map(item=>[item.id,item]));
+const F1_CIRCUIT_IDS = new Set(["bahrain","shanghai","catalunya","monaco","montreal","red-bull-ring","silverstone","hungaroring","spa","monza","cota","mexico","interlagos","yas-marina","imola","zandvoort","jeddah","miami","rwanda"]);
 const DAILY_CHALLENGES = [
  {id:"daily-session",title:"Get Playing",description:"Complete one game session.",metric:"sessionsToday",target:1,xp:20,coins:25},
  {id:"daily-double",title:"Two Sessions",description:"Complete two game sessions today.",metric:"sessionsToday",target:2,xp:25,coins:35},
@@ -185,7 +186,7 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,coins:account.coins||0,coinsEarnedTotal:account.coinsEarnedTotal||0,coinsSpentTotal:account.coinsSpentTotal||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true,f1Team:account.f1Career?.team||null};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,coins:account.coins||0,coinsEarnedTotal:account.coinsEarnedTotal||0,coinsSpentTotal:account.coinsSpentTotal||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true,f1Team:account.f1Career?.team||null,f1Career:account.f1Career||null};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
@@ -332,6 +333,24 @@ app.post("/account/shop/purchase",async(req,res)=>{
   console.error("Shop purchase error:",error.message);res.status(503).json({error:"The purchase could not be saved. No coins have been charged."});
  }
 });
+app.get("/account/f1/championship",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your championship."});
+ res.setHeader("Cache-Control","no-store");res.json({championship:account.f1Career?.championship||null});
+});
+app.post("/account/f1/championship",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to start a championship."});
+ const name=String(req.body?.name||"Home Grand Prix").trim().replace(/[<>]/g,"").slice(0,32)||"Home Grand Prix";
+ const rounds=Array.isArray(req.body?.rounds)?req.body.rounds.map(value=>String(value||"")):[];
+ if(rounds.length<3||rounds.length>10||rounds.some(id=>!F1_CIRCUIT_IDS.has(id))||new Set(rounds).size!==rounds.length)return res.status(400).json({error:"Choose between 3 and 10 different official circuits."});
+ const current=account.f1Career||{season:1,races:0,wins:0,podiums:0,points:0};
+ if(current.championship?.status==="active")return res.status(409).json({error:"Finish or abandon your current championship before starting another."});
+ const championship={id:randomBytes(10).toString("hex"),name,season:Math.max(1,Number(current.season)||1),rounds,currentRound:0,points:0,wins:0,podiums:0,status:"active",results:[],createdAt:Date.now()};
+ account.f1Career={...current,championship};
+ try{await persistAccountStore();res.json({ok:true,championship,f1Career:account.f1Career});}
+ catch(error){account.f1Career=current;console.error("F1 championship create error:",error.message);res.status(503).json({error:"Could not save your championship."});}
+});
 app.get("/account/f1/team",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your F1 team."});
@@ -412,8 +431,9 @@ app.post("/account/game/complete",async(req,res)=>{
   if(!input||typeof input!=="object"||Array.isArray(input))return res.status(400).json({error:"Race result must be an object."});
   const position=Number(input.position),laps=Number(input.laps),bestLapMs=input.bestLapMs==null?null:Number(input.bestLapMs),timeMs=input.timeMs==null?null:Number(input.timeMs);
   const circuit=String(input.circuit||"Unknown circuit").replace(/[<>]/g,"").trim().slice(0,80)||"Unknown circuit";
-  if(!Number.isInteger(position)||position<1||position>32||!Number.isInteger(laps)||laps<0||laps>200||typeof input.finished!=="boolean"||(bestLapMs!==null&&(!Number.isFinite(bestLapMs)||bestLapMs<1000||bestLapMs>3600000))||(timeMs!==null&&(!Number.isFinite(timeMs)||timeMs<1000||timeMs>86400000)))return res.status(400).json({error:"Race result contains invalid values."});
-  f1RacePayload={position,laps,finished:input.finished,bestLapMs,timeMs,circuit};
+  const circuitId=String(input.circuitId||"");
+  if(!Number.isInteger(position)||position<1||position>32||!Number.isInteger(laps)||laps<0||laps>200||typeof input.finished!=="boolean"||(bestLapMs!==null&&(!Number.isFinite(bestLapMs)||bestLapMs<1000||bestLapMs>3600000))||(timeMs!==null&&(!Number.isFinite(timeMs)||timeMs<1000||timeMs>86400000))||(circuitId&& !F1_CIRCUIT_IDS.has(circuitId)))return res.status(400).json({error:"Race result contains invalid values."});
+  f1RacePayload={position,laps,finished:input.finished,bestLapMs,timeMs,circuit,circuitId};
  }
  const record=account.stats.games[gameId]||(account.stats.games[gameId]={played:0,seconds:0,bestScore:0,lastPlayedAt:0,plays:[]});
  const previousBest=record.bestScore||0;
@@ -445,10 +465,19 @@ app.post("/account/game/complete",async(req,res)=>{
   if(f1RacePayload.bestLapMs!==null)f1.bestLapMs=f1.bestLapMs===null?f1RacePayload.bestLapMs:Math.min(f1.bestLapMs,f1RacePayload.bestLapMs);
   const resultEntry={...f1RacePayload,points:racePoints,createdAt:now};
   account.f1RecentResults=[resultEntry,...(account.f1RecentResults||[])].slice(0,50);
+  const championship=careerF1.championship;
+  if(championship?.status==="active"&&championship.rounds?.[championship.currentRound]===f1RacePayload.circuitId){
+   championship.results=[...(championship.results||[]),{round:championship.currentRound+1,circuitId:f1RacePayload.circuitId,...resultEntry}].slice(0,20);
+   championship.points=(Number(championship.points)||0)+racePoints;
+   if(f1RacePayload.finished&&f1RacePayload.position===1)championship.wins=(Number(championship.wins)||0)+1;
+   if(f1RacePayload.finished&&f1RacePayload.position<=3)championship.podiums=(Number(championship.podiums)||0)+1;
+   championship.currentRound++;
+   if(championship.currentRound>=championship.rounds.length){championship.status="completed";championship.completedAt=now;careerF1.season=Math.max(Number(careerF1.season)||1,Number(championship.season)||1)+1;}
+  }
   if(f1.races===1)grant("f1-first-race","First Grand Prix","Completed your first F1 Simulator race.","bronze",20);
   if(f1.wins===1)grant("f1-first-win","First Victory","Won your first F1 Simulator race.","silver",35);
   if(f1.podiums===10)grant("f1-ten-podiums","Podium Regular","Achieved ten F1 Simulator podiums.","gold",50);
-  f1Result={...resultEntry,stats:f1,career:careerF1};
+  f1Result={...resultEntry,stats:f1,career:careerF1,championship:careerF1.championship||null};
  }
  const challengeActivity=ensureChallengeActivity(account,now);
  challengeActivity.sessionsToday++;challengeActivity.sessionsWeek++;
