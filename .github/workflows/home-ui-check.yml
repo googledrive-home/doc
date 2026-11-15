@@ -10,6 +10,7 @@ on:
       - "home-game-bridge.js"
       - "hockey-server/src/index.js"
       - "shop.js"
+      - "challenges.js"
       - "index.html"
       - ".github/workflows/home-ui-check.yml"
   push:
@@ -21,6 +22,7 @@ on:
       - "home-game-bridge.js"
       - "hockey-server/src/index.js"
       - "shop.js"
+      - "challenges.js"
       - "index.html"
       - ".github/workflows/home-ui-check.yml"
 
@@ -38,6 +40,8 @@ jobs:
         run: node --check arcade-portal.js
       - name: Check shop JavaScript syntax
         run: node --check shop.js
+      - name: Check challenges JavaScript syntax
+        run: node --check challenges.js
       - name: Check backend JavaScript syntax
         run: node --check hockey-server/src/index.js
       - name: Check cloud-save bridge syntax
