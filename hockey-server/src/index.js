@@ -334,7 +334,7 @@ app.get("/account/platform-leaderboard",async(req,res)=>{
    "credits-earned":Math.max(0,Number(account.currencyEarnedTotal)||0)
   }[category];
   entries.push({
-   id:account.id,username:account.username||account.name||"Player",
+   accountId:account.id,username:account.username||account.name||"Player",
    avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),
    xp,level,achievements:(account.achievements||[]).length,
    games:Math.max(0,Number(account.stats?.gamesPlayed)||0),
@@ -343,8 +343,8 @@ app.get("/account/platform-leaderboard",async(req,res)=>{
  }
  entries.sort((a,b)=>(b.value-a.value)||(b.xp-a.xp)||a.username.localeCompare(b.username));
  const limit=Math.max(1,Math.min(100,Math.floor(Number(req.query.limit)||50)));
- const visible=entries.slice(0,limit).map((item,index)=>({...item,rank:index+1}));
- const viewer=authenticatedAccount(req),viewerEntry=viewer?entries.find(item=>item.id===viewer.id):null;
+ const visible=entries.slice(0,limit).map((item,index)=>{const {accountId,...publicEntry}=item;return {...publicEntry,rank:index+1};});
+ const viewer=authenticatedAccount(req),viewerEntry=viewer?entries.find(item=>item.accountId===viewer.id):null;
  const label={
   xp:"Total XP",level:"Player level",achievements:"Achievements unlocked",
   games:"Games played","weekly-xp":"XP this week","credits-earned":"Credits earned"
@@ -353,7 +353,7 @@ app.get("/account/platform-leaderboard",async(req,res)=>{
  res.json({
   category,label,period:category==="weekly-xp"?period:null,
   optInOnly:true,entries:visible,
-  viewer:viewerEntry?{rank:entries.findIndex(item=>item.id===viewer.id)+1,value:viewerEntry.value}:null,
+  viewer:viewerEntry?{rank:entries.findIndex(item=>item.accountId===viewer.id)+1,value:viewerEntry.value}:null,
   totalPlayers:entries.length
  });
 });
