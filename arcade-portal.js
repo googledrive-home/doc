@@ -268,6 +268,28 @@
    card.querySelector("#portalF1CareerRetry")?.addEventListener("click",()=>renderF1CareerSummary(host));
   });
  }
+ function renderDailyChallengeSummary(host){
+  const grid=host.querySelector(".portal-dashboard-grid");
+  if(!grid)return;
+  const card=document.createElement("section");
+  card.className="portal-dashboard-panel portal-dashboard-challenges";
+  card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">TODAY\'S GOALS</div><h2>Daily challenges</h2></div><span>LIVE PROGRESS</span></div><p class="portal-muted">Loading your challenges…</p>';
+  grid.insertBefore(card,grid.firstChild);
+  apiRequest("/account/challenges").then(data=>{
+   const active=data.daily.items||[];
+   card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">TODAY\'S GOALS</div><h2>Daily challenges</h2></div><span>'+active.filter(x=>x.completed).length+'/'+active.length+' complete</span></div>'+
+    (active.length?active.map(item=>{
+      const progress=Math.max(0,Math.min(item.target,Number(item.progress)||0));
+      const pct=item.target?Math.round(progress/item.target*100):0;
+      return '<div class="portal-dashboard-challenge"><div><b>'+esc(item.title)+'</b><small>'+esc(item.description)+'</small></div><span class="portal-dashboard-challenge-count">'+progress+'/'+item.target+'</span><div class="portal-xp-track"><span style="width:'+pct+'%"></span></div><small class="portal-dashboard-challenge-reward">+'+Number(item.xpReward).toLocaleString()+' XP · +'+Number(item.currencyReward).toLocaleString()+' Credits</small></div>';
+    }).join(""):'<p class="portal-muted">No daily challenges are available right now.</p>')+
+    '<button type="button" class="portal-secondary" id="portalDashboardChallengesOpen">VIEW ALL CHALLENGES</button>';
+   card.querySelector("#portalDashboardChallengesOpen")?.addEventListener("click",()=>window.HomeChallenges?.open());
+  }).catch(()=>{
+   card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">TODAY\'S GOALS</div><h2>Daily challenges</h2></div></div><p class="portal-muted">Challenge progress is temporarily unavailable.</p><button type="button" class="portal-secondary" id="portalDashboardChallengesRetry">RETRY</button>';
+   card.querySelector("#portalDashboardChallengesRetry")?.addEventListener("click",()=>renderDailyChallengeSummary(host));
+  });
+ }
  function renderDashboard(){
   const host=$p("portalDashboardShelf");if(!host)return;
   if(!accountData){
@@ -297,6 +319,7 @@
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">FAVOURITES</div><h2>Your games</h2></div></div>'+(favorites.length?favorites.slice(0,4).map(g=>dashboardTile(g,"FAVOURITE",g.genre)).join(""):'<p class="portal-muted">Favourite a game to add it here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">DISCOVER</div><h2>Recommended for you</h2></div></div>'+(recommendations.length?recommendations.map(g=>dashboardTile(g,"BASED ON YOUR PLAY",g.genre)).join(""):'<p class="portal-muted">Play more games to build recommendations.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENT TROPHIES</div><h2>Latest unlocks</h2></div></div>'+(trophies.length?trophies.map(t=>'<div class="portal-dashboard-trophy"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[t.tier]||"🏆")+'</span><div><b>'+esc(t.title)+'</b><small>'+esc(t.gameId?getGame(t.gameId)?.title||"Home":"Home")+' · '+esc(t.unlockedAt?new Date(t.unlockedAt).toLocaleDateString():"Unlocked")+'</small></div></div>').join(""):'<p class="portal-muted">Your trophy unlocks will appear here.</p>')+'</section></div>';
+  renderDailyChallengeSummary(host);
   renderF1CareerSummary(host);
   host.querySelectorAll("[data-dashboard-game]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.dashboardGame);if(g)openGameDetail(g);}));
   host.querySelectorAll("[data-open-shop]").forEach(b=>b.addEventListener("click",()=>window.HomeShop?.open()));
