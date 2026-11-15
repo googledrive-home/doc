@@ -587,3 +587,10 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-challenge-complete{margin-top:12px;padding-top:10px;border-top:1px solid var(--portal-line);color:var(--portal-good);font-size:8px;font-weight:850}
 .portal-challenge-reset{margin-top:9px;color:var(--portal-muted);font-size:8px}
 @media(max-width:560px){.portal-challenge-summary{align-items:flex-start;flex-direction:column}.portal-challenge-footer{align-items:flex-start;flex-direction:column}}
+
+.portal-dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.portal-wallet-metric{min-width:0;width:100%;text-align:left;cursor:pointer;color:var(--portal-text);font:inherit}
+.portal-wallet-metric:hover{border-color:color-mix(in srgb,var(--portal-accent) 55%,var(--portal-line));background:#ffffff0d}
+.portal-wallet-metric b{font-size:15px}
+@media(max-width:900px){.portal-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.portal-dashboard-metrics{grid-template-columns:1fr}}
