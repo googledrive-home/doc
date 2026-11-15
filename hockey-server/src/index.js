@@ -185,7 +185,7 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,coins:account.coins||0,coinsEarnedTotal:account.coinsEarnedTotal||0,coinsSpentTotal:account.coinsSpentTotal||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,coins:account.coins||0,coinsEarnedTotal:account.coinsEarnedTotal||0,coinsSpentTotal:account.coinsSpentTotal||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true,f1Team:account.f1Career?.team||null};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
@@ -331,6 +331,24 @@ app.post("/account/shop/purchase",async(req,res)=>{
   account.coins=balanceBefore;account.coinsSpentTotal=spentBefore;account.inventory=inventoryBefore;account.coinTransactions=transactionsBefore;
   console.error("Shop purchase error:",error.message);res.status(503).json({error:"The purchase could not be saved. No coins have been charged."});
  }
+});
+app.get("/account/f1/team",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your F1 team."});
+ res.setHeader("Cache-Control","no-store");res.json({team:account.f1Career?.team||null});
+});
+app.post("/account/f1/team",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save your F1 team."});
+ const name=String(req.body?.name||"").trim().replace(/[<>]/g,"").slice(0,24);
+ const colour=value=>/^#[0-9a-fA-F]{6}$/.test(String(value||""))?String(value).toLowerCase():null;
+ const paint=colour(req.body?.paint),accent=colour(req.body?.accent),helmet=colour(req.body?.helmet);
+ const number=Number(req.body?.number);
+ if(!/^[A-Za-z0-9 _-]{3,24}$/.test(name)||!paint||!accent||!helmet||!Number.isInteger(number)||number<0||number>99)return res.status(400).json({error:"Enter a team name, three valid colours and a driver number from 0 to 99."});
+ const previous=account.f1Career||{season:1,races:0,wins:0,podiums:0,points:0},team={name,paint,accent,helmet,number,updatedAt:Date.now()};
+ account.f1Career={...previous,team};
+ try{await persistAccountStore();res.json({ok:true,team,f1Career:account.f1Career});}
+ catch(error){account.f1Career=previous;console.error("F1 team save error:",error.message);res.status(503).json({error:"Could not save your team. Please try again."});}
 });
 app.post("/account/inventory/equip",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
