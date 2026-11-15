@@ -9,6 +9,8 @@ on:
       - "f1-simulator.html"
       - "home-game-bridge.js"
       - "hockey-server/src/index.js"
+      - "shop.js"
+      - "index.html"
       - ".github/workflows/home-ui-check.yml"
   push:
     branches: [main]
@@ -18,6 +20,8 @@ on:
       - "f1-simulator.html"
       - "home-game-bridge.js"
       - "hockey-server/src/index.js"
+      - "shop.js"
+      - "index.html"
       - ".github/workflows/home-ui-check.yml"
 
 jobs:
@@ -32,6 +36,8 @@ jobs:
           node-version: 20
       - name: Check portal JavaScript syntax
         run: node --check arcade-portal.js
+      - name: Check shop JavaScript syntax
+        run: node --check shop.js
       - name: Check backend JavaScript syntax
         run: node --check hockey-server/src/index.js
       - name: Check cloud-save bridge syntax
