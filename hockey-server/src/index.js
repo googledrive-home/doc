@@ -37,11 +37,48 @@ const accountRateLimits=new Map();
 const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{},gamesPlayed:0});
 const GAME_CATALOG={"drift-arena":"Racing","open-world-drive":"Racing","tank-arena-3d":"Simulation","f1-simulator":"Racing","apex-formula-racing":"Racing","gravel-rally-stage":"Racing","fpv-drone-simulator":"Simulation","pool-8-ball":"Sports","tennis-rally":"Sports","hockey":"Sports","reaction-game":"Arcade","click-test":"Arcade","neon-breaker":"Arcade","neon-runner":"Arcade","flappy-bird":"Arcade","neon-snake":"Arcade","space-defender":"Arcade","memory-match":"Puzzle","moto-x3m":"Racing","learn-to-fly":"Arcade","garden-gnomes":"Puzzle","sumiro":"Puzzle","cube-engine":"Simulation","mini-golf-3d":"Sports","eaglercraft-singleplayer":"Sandbox"};
 const validGameId=value=>Object.hasOwn(GAME_CATALOG,String(value||""));
+const SHOP_CURRENCY = "Home Coins";
+const SHOP_TIERS = [
+ {id:"starter",name:"Starter",minLevel:1,description:"The first collection of profile extras."},
+ {id:"bronze",name:"Bronze",minLevel:5,description:"A few rewards for regular players."},
+ {id:"silver",name:"Silver",minLevel:10,description:"More distinctive profile customisations."},
+ {id:"gold",name:"Gold",minLevel:20,description:"Rewards for committed players."},
+ {id:"elite",name:"Elite",minLevel:35,description:"A small collection for experienced players."},
+ {id:"legendary",name:"Legendary",minLevel:50,description:"The highest progression tier."}
+];
+const SHOP_ITEMS = [
+ {id:"checkered-badge",name:"Checkered Badge",description:"A classic racing badge for your player inventory.",category:"Badges",slot:"badge",icon:"🏁",tier:"starter",level:1,price:150},
+ {id:"racer-nameplate",name:"Racer Nameplate",description:"A clean nameplate for your player identity.",category:"Nameplates",slot:"nameplate",icon:"🏎️",tier:"starter",level:1,price:250},
+ {id:"pitwall-banner",name:"Pit Wall Banner",description:"A motorsport-inspired profile banner.",category:"Banners",slot:"banner",icon:"🛠️",tier:"bronze",level:5,price:400},
+ {id:"silver-frame",name:"Silver Profile Frame",description:"A refined frame for your player avatar.",category:"Frames",slot:"frame",icon:"🥈",tier:"silver",level:10,price:650},
+ {id:"podium-banner",name:"Podium Banner",description:"Celebrate your progress with a podium-inspired banner.",category:"Banners",slot:"banner",icon:"🏆",tier:"silver",level:10,price:850},
+ {id:"gold-nameplate",name:"Gold Nameplate",description:"A gold-accented nameplate for your profile.",category:"Nameplates",slot:"nameplate",icon:"🌟",tier:"gold",level:20,price:1200},
+ {id:"elite-frame",name:"Elite Profile Frame",description:"A premium frame reserved for higher-level players.",category:"Frames",slot:"frame",icon:"💠",tier:"elite",level:35,price:2200},
+ {id:"champion-crest",name:"Champion Crest",description:"A rare crest for the highest level of progression.",category:"Badges",slot:"badge",icon:"👑",tier:"legendary",level:50,price:4000}
+];
+const SHOP_TIER_BY_ID=Object.fromEntries(SHOP_TIERS.map(tier=>[tier.id,tier]));
+const SHOP_ITEM_BY_ID=Object.fromEntries(SHOP_ITEMS.map(item=>[item.id,item]));
 const cleanUsername=value=>String(value??"").trim().replace(/\\s+/g," ");
 const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
 function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
+function grantPlayerCoins(account,amount,reason,reference){
+ const ref=String(reference||"").slice(0,120);
+ if(ref&&(account.coinTransactions||[]).some(item=>item.reference===ref))return 0;
+ const now=Date.now(),day=new Date(now).toISOString().slice(0,10);
+ if(account.dailyCoins?.date!==day)account.dailyCoins={date:day,amount:0};
+ const requested=Math.max(0,Math.floor(Number(amount)||0));
+ const earned=Math.min(requested,Math.max(0,100-(Number(account.dailyCoins.amount)||0)));
+ if(!earned)return 0;
+ account.coins=Math.min(2147483647,(Number(account.coins)||0)+earned);
+ account.coinsEarnedTotal=Math.min(2147483647,(Number(account.coinsEarnedTotal)||0)+earned);
+ account.dailyCoins.amount=(Number(account.dailyCoins.amount)||0)+earned;
+ account.coinTransactions=Array.isArray(account.coinTransactions)?account.coinTransactions:[];
+ account.coinTransactions.push({id:randomBytes(8).toString("hex"),type:"earn",amount:earned,reason:String(reason||"Game reward").slice(0,100),reference:ref,createdAt:now});
+ account.coinTransactions=account.coinTransactions.slice(-200);
+ return earned;
+}
 function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpReward=15){
  if(!Array.isArray(account.achievements))account.achievements=[];
  if(account.achievements.some(item=>item.id===id))return false;
@@ -65,7 +102,15 @@ function cleanAccountStore(value){
   account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
   account.incomingFriendRequests=Array.isArray(account.incomingFriendRequests)?account.incomingFriendRequests.slice(0,100):[];account.outgoingFriendRequests=Array.isArray(account.outgoingFriendRequests)?account.outgoingFriendRequests.slice(0,100):[];
   account.blockedAccounts=Array.isArray(account.blockedAccounts)?account.blockedAccounts.slice(0,500):[];account.saves=account.saves&&typeof account.saves==="object"?account.saves:{};account.career=account.career&&typeof account.career==="object"?account.career:{};
-  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.activeGameSession=account.activeGameSession||null;
+  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};
+  account.coins=Math.max(0,Math.floor(Number(account.coins)||0));
+  account.coinsEarnedTotal=Math.max(0,Math.floor(Number(account.coinsEarnedTotal)||0));
+  account.coinsSpentTotal=Math.max(0,Math.floor(Number(account.coinsSpentTotal)||0));
+  account.dailyCoins=account.dailyCoins&&typeof account.dailyCoins==="object"?account.dailyCoins:{date:"",amount:0};
+  account.coinTransactions=Array.isArray(account.coinTransactions)?account.coinTransactions.slice(-200):[];
+  account.inventory=Array.isArray(account.inventory)?account.inventory.filter(item=>item&&SHOP_ITEM_BY_ID[item.itemId]).slice(-500):[];
+  account.equippedItems=account.equippedItems&&typeof account.equippedItems==="object"&&!Array.isArray(account.equippedItems)?account.equippedItems:{};
+  account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
  return data;
@@ -103,12 +148,12 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,coins:account.coins||0,coinsEarnedTotal:account.coinsEarnedTotal||0,coinsSpentTotal:account.coinsSpentTotal||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
  const likedGames=Object.entries(accountStore.gameRatings||{}).filter(([,entry])=>Array.isArray(entry?.userIds)&&entry.userIds.includes(account.id)).map(([gameId])=>gameId);
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames};
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,inventory:Array.isArray(account.inventory)?account.inventory:[],equippedItems:account.equippedItems||{},currency:{name:SHOP_CURRENCY,balance:account.coins||0,earnedTotal:account.coinsEarnedTotal||0,spentTotal:account.coinsSpentTotal||0,transactions:(account.coinTransactions||[]).slice(-30).reverse()}};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 app.get("/health/storage",async(_req,res)=>{
@@ -144,7 +189,7 @@ app.post("/account/register",async(req,res)=>{
  if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
  if(accountStore.accounts.some(a=>usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken. Choose another or sign in."});
  const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
- const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},coins:0,coinsEarnedTotal:0,coinsSpentTotal:0,dailyCoins:{date:"",amount:0},coinTransactions:[],inventory:[],equippedItems:{},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
  accountStore.accounts.push(account);const token=createAccountSession(account);
  try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
  catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
@@ -187,6 +232,54 @@ app.post("/account/logout",async(req,res)=>{
 });
 
 const authenticatedAccount=req=>resolveAccountToken(getRequestToken(req));
+app.get("/account/shop",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to visit the shop."});
+ const level=levelProgress(account.xp||0).level,owned=new Set((account.inventory||[]).map(item=>item.itemId));
+ const tiers=SHOP_TIERS.map(tier=>({...tier,unlocked:level>=tier.minLevel}));
+ const items=SHOP_ITEMS.map(item=>({...item,tierName:SHOP_TIER_BY_ID[item.tier]?.name||item.tier,owned:owned.has(item.id),unlocked:level>=item.level}));
+ res.setHeader("Cache-Control","no-store");
+ res.json({currency:SHOP_CURRENCY,balance:account.coins||0,level,tiers,items,inventory:account.inventory||[],equippedItems:account.equippedItems||{}});
+});
+app.get("/account/inventory",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your inventory."});
+ const items=(account.inventory||[]).map(entry=>({...SHOP_ITEM_BY_ID[entry.itemId],acquiredAt:entry.acquiredAt,equipped:account.equippedItems?.[SHOP_ITEM_BY_ID[entry.itemId]?.slot]===entry.itemId})).filter(item=>item.id);
+ res.setHeader("Cache-Control","no-store");res.json({items,equippedItems:account.equippedItems||{},balance:account.coins||0,currency:SHOP_CURRENCY});
+});
+app.post("/account/shop/purchase",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to purchase shop items."});
+ const itemId=String(req.body?.itemId||""),item=SHOP_ITEM_BY_ID[itemId];
+ if(!item)return res.status(404).json({error:"That shop item does not exist."});
+ const level=levelProgress(account.xp||0).level;
+ if(level<item.level)return res.status(403).json({error:"Reach level "+item.level+" to unlock this item."});
+ if((account.inventory||[]).some(entry=>entry.itemId===itemId))return res.status(409).json({error:"You already own this item."});
+ if((Number(account.coins)||0)<item.price)return res.status(400).json({error:"You need "+(item.price-(Number(account.coins)||0))+" more "+SHOP_CURRENCY+" to buy this item."});
+ const now=Date.now(),balanceBefore=account.coins||0,inventoryBefore=[...(account.inventory||[])],transactionsBefore=[...(account.coinTransactions||[])],spentBefore=account.coinsSpentTotal||0;
+ account.coins=balanceBefore-item.price;
+ account.coinsSpentTotal=spentBefore+item.price;
+ account.inventory=[...inventoryBefore,{itemId,acquiredAt:now}];
+ account.coinTransactions=[...transactionsBefore,{id:randomBytes(8).toString("hex"),type:"spend",amount:item.price,reason:"Shop purchase: "+item.name,reference:"purchase:"+randomBytes(10).toString("hex"),itemId,createdAt:now}].slice(-200);
+ try{
+  await persistAccountStore();
+  res.json({ok:true,item,balance:account.coins,inventory:account.inventory,equippedItems:account.equippedItems||{}});
+ }catch(error){
+  account.coins=balanceBefore;account.coinsSpentTotal=spentBefore;account.inventory=inventoryBefore;account.coinTransactions=transactionsBefore;
+  console.error("Shop purchase error:",error.message);res.status(503).json({error:"The purchase could not be saved. No coins have been charged."});
+ }
+});
+app.post("/account/inventory/equip",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to customise your profile."});
+ const itemId=String(req.body?.itemId||""),item=SHOP_ITEM_BY_ID[itemId],equip=req.body?.equip!==false;
+ if(!item||(account.inventory||[]).every(entry=>entry.itemId!==itemId))return res.status(404).json({error:"You do not own that item."});
+ const previous={...(account.equippedItems||{})};
+ if(equip)account.equippedItems={...previous,[item.slot]:itemId};
+ else if(previous[item.slot]===itemId){delete previous[item.slot];account.equippedItems=previous;}
+ try{await persistAccountStore();res.json({ok:true,equippedItems:account.equippedItems});}
+ catch(error){account.equippedItems=previous;console.error("Shop equip error:",error.message);res.status(503).json({error:"Could not save that customisation."});}
+});
 app.post("/account/favorites",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save favourites."});
  const gameId=String(req.body?.gameId||"");if(!validGameId(gameId))return res.status(400).json({error:"Choose a valid game."});
@@ -240,8 +333,9 @@ app.post("/account/game/complete",async(req,res)=>{
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
+ const coinEarned=grantPlayerCoins(account,Math.min(15,5+Math.floor(elapsedSeconds/180)),"Completed a game session","game-session:"+session.id);
  account.activeGameSession=null;
- try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
 });
 app.get("/account/saves/:gameId",async(req,res)=>{
