@@ -110,6 +110,10 @@ function cleanAccountStore(value){
   account.coinTransactions=Array.isArray(account.coinTransactions)?account.coinTransactions.slice(-200):[];
   account.inventory=Array.isArray(account.inventory)?account.inventory.filter(item=>item&&SHOP_ITEM_BY_ID[item.itemId]).slice(-500):[];
   account.equippedItems=account.equippedItems&&typeof account.equippedItems==="object"&&!Array.isArray(account.equippedItems)?account.equippedItems:{};
+  account.f1Stats=account.f1Stats&&typeof account.f1Stats==="object"?account.f1Stats:{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null};
+  for(const key of ["races","wins","podiums","dnfs","points"])account.f1Stats[key]=Math.max(0,Math.floor(Number(account.f1Stats[key])||0));
+  account.f1RecentResults=Array.isArray(account.f1RecentResults)?account.f1RecentResults.slice(0,50):[];
+  account.f1Career=account.f1Career&&typeof account.f1Career==="object"?account.f1Career:{season:1,races:0,wins:0,podiums:0,points:0};
   account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
@@ -153,7 +157,7 @@ function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
  const likedGames=Object.entries(accountStore.gameRatings||{}).filter(([,entry])=>Array.isArray(entry?.userIds)&&entry.userIds.includes(account.id)).map(([gameId])=>gameId);
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,inventory:Array.isArray(account.inventory)?account.inventory:[],equippedItems:account.equippedItems||{},currency:{name:SHOP_CURRENCY,balance:account.coins||0,earnedTotal:account.coinsEarnedTotal||0,spentTotal:account.coinsSpentTotal||0,transactions:(account.coinTransactions||[]).slice(-30).reverse()}};
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,inventory:Array.isArray(account.inventory)?account.inventory:[],equippedItems:account.equippedItems||{},currency:{name:SHOP_CURRENCY,balance:account.coins||0,earnedTotal:account.coinsEarnedTotal||0,spentTotal:account.coinsSpentTotal||0,transactions:(account.coinTransactions||[]).slice(-30).reverse()},f1Stats:account.f1Stats||{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null},f1Career:account.f1Career||{season:1,races:0,wins:0,podiums:0,points:0},f1RecentResults:account.f1RecentResults||[]};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 app.get("/health/storage",async(_req,res)=>{
@@ -296,6 +300,13 @@ app.post("/account/games/:gameId/like",async(req,res)=>{
  else{entry.userIds.push(account.id);entry.likes.push({userId:account.id,at:Date.now()});}
  try{await persistAccountStore();res.json({liked:index<0,likes:entry.userIds.length});}catch(error){console.error("Game like save error:",error.message);res.status(503).json({error:"Could not save your like."});}
 });
+app.get("/account/game/active",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to check game progress."});
+ const session=account.activeGameSession;
+ res.setHeader("Cache-Control","no-store");
+ res.json({active:!!session,gameId:session?.gameId||null,sessionId:session?.id||null,startedAt:session?.startedAt||null});
+});
 app.post("/account/game/start",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to track game progress."});
  const gameId=String(req.body?.gameId||"");if(!validGameId(gameId))return res.status(400).json({error:"Choose a valid game."});
@@ -317,6 +328,15 @@ app.post("/account/game/complete",async(req,res)=>{
  const session=account.activeGameSession,sessionId=String(req.body?.sessionId||"");if(!session||session.id!==sessionId)return res.status(409).json({error:"This game session has expired. Start the game again."});
  const now=Date.now(),elapsedMs=now-session.startedAt;if(elapsedMs<10000||elapsedMs>3*60*60*1000)return res.status(400).json({error:"Play a little longer before recording this session."});
  const gameId=session.gameId,elapsedSeconds=Math.round(elapsedMs/1000),score=Math.max(0,Math.min(100000000,Math.floor(Number(req.body?.score)||0)));
+ let f1RacePayload=null;
+ if(gameId==="f1-simulator"&&req.body?.f1Result!==undefined){
+  const input=req.body.f1Result;
+  if(!input||typeof input!=="object"||Array.isArray(input))return res.status(400).json({error:"Race result must be an object."});
+  const position=Number(input.position),laps=Number(input.laps),bestLapMs=input.bestLapMs==null?null:Number(input.bestLapMs),timeMs=input.timeMs==null?null:Number(input.timeMs);
+  const circuit=String(input.circuit||"Unknown circuit").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").trim().slice(0,80)||"Unknown circuit";
+  if(!Number.isInteger(position)||position<1||position>32||!Number.isInteger(laps)||laps<0||laps>200||typeof input.finished!=="boolean"||(bestLapMs!==null&&(!Number.isFinite(bestLapMs)||bestLapMs<1000||bestLapMs>3600000))||(timeMs!==null&&(!Number.isFinite(timeMs)||timeMs<1000||timeMs>86400000)))return res.status(400).json({error:"Race result contains invalid values."});
+  f1RacePayload={position,laps,finished:input.finished,bestLapMs,timeMs,circuit};
+ }
  const record=account.stats.games[gameId]||(account.stats.games[gameId]={played:0,seconds:0,bestScore:0,lastPlayedAt:0,plays:[]});
  const previousBest=record.bestScore||0;
  record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(previousBest,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
@@ -333,9 +353,28 @@ app.post("/account/game/complete",async(req,res)=>{
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
+ let f1Result=null;
+ if(gameId==="f1-simulator"&&f1RacePayload){
+  const f1=account.f1Stats||(account.f1Stats={races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null});
+  const careerF1=account.f1Career||(account.f1Career={season:1,races:0,wins:0,podiums:0,points:0});
+  const pointsByPosition=[25,18,15,12,10,8,6,4,2,1],racePoints=f1RacePayload.finished?(pointsByPosition[f1RacePayload.position-1]||0):0;
+  f1.races++;careerF1.races++;
+  if(!f1RacePayload.finished)f1.dnfs++;
+  if(f1RacePayload.finished&&f1RacePayload.position===1){f1.wins++;careerF1.wins++;}
+  if(f1RacePayload.finished&&f1RacePayload.position<=3){f1.podiums++;careerF1.podiums++;}
+  f1.points+=racePoints;careerF1.points+=racePoints;
+  f1.bestFinish=f1.bestFinish===null?f1RacePayload.position:Math.min(f1.bestFinish,f1RacePayload.position);
+  if(f1RacePayload.bestLapMs!==null)f1.bestLapMs=f1.bestLapMs===null?f1RacePayload.bestLapMs:Math.min(f1.bestLapMs,f1RacePayload.bestLapMs);
+  const resultEntry={...f1RacePayload,points:racePoints,createdAt:now};
+  account.f1RecentResults=[resultEntry,...(account.f1RecentResults||[])].slice(0,50);
+  if(f1.races===1)grant("f1-first-race","First Grand Prix","Completed your first F1 Simulator race.","bronze",20);
+  if(f1.wins===1)grant("f1-first-win","First Victory","Won your first F1 Simulator race.","silver",35);
+  if(f1.podiums===10)grant("f1-ten-podiums","Podium Regular","Achieved ten F1 Simulator podiums.","gold",50);
+  f1Result={...resultEntry,stats:f1,career:careerF1};
+ }
  const coinEarned=grantPlayerCoins(account,Math.min(15,5+Math.floor(elapsedSeconds/180)),"Completed a game session","game-session:"+session.id);
  account.activeGameSession=null;
- try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career,f1Result});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
 });
 app.get("/account/saves/:gameId",async(req,res)=>{
