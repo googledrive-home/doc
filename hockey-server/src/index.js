@@ -92,6 +92,51 @@ function changeCurrency(account,amount,reason,reference=""){
 function awardCurrency(account,amount,reason,reference=""){
  return changeCurrency(account,Math.max(0,Math.floor(Number(amount)||0)),reason,reference);
 }
+function challengePeriods(now=Date.now()){
+ const date=new Date(now),daily=date.toISOString().slice(0,10),monday=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+ monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+ return {daily,weekly:monday.toISOString().slice(0,10)};
+}
+function currentChallengeBuckets(account,now=Date.now()){
+ const periods=challengePeriods(now);
+ account.challengeProgress=account.challengeProgress&&typeof account.challengeProgress==="object"?account.challengeProgress:{};
+ for(const type of ["daily","weekly"]){
+  const period=periods[type],stored=account.challengeProgress[type];
+  if(!stored||stored.period!==period||typeof stored.items!=="object"||!stored.items)account.challengeProgress[type]={period,items:{}};
+ }
+ return account.challengeProgress;
+}
+function getChallengePayload(account,now=Date.now()){
+ const buckets=currentChallengeBuckets(account,now);
+ const make=type=>CHALLENGE_DEFINITIONS[type].map(def=>{
+  const progress=buckets[type].items[def.id]||{progress:0,completedAt:null,rewarded:false};
+  return {...def,progress:Math.min(def.target,Math.max(0,Number(progress.progress)||0)),completed:!!progress.completedAt,rewarded:progress.rewarded===true};
+ });
+ return {
+  daily:{period:buckets.daily.period,resetsAt:Date.parse(buckets.daily.period+"T00:00:00Z")+86400000,items:make("daily")},
+  weekly:{period:buckets.weekly.period,resetsAt:Date.parse(buckets.weekly.period+"T00:00:00Z")+7*86400000,items:make("weekly")}
+ };
+}
+function advancePlatformChallenges(account,gameId){
+ const buckets=currentChallengeBuckets(account),completed=[];
+ let xpEarned=0,currencyEarned=0;
+ for(const type of ["daily","weekly"]){
+  const bucket=buckets[type];
+  for(const def of CHALLENGE_DEFINITIONS[type]){
+   if(def.gameId&&def.gameId!==gameId)continue;
+   const entry=bucket.items[def.id]||(bucket.items[def.id]={progress:0,completedAt:null,rewarded:false});
+   if(entry.completedAt)continue;
+   entry.progress=Math.min(def.target,(Number(entry.progress)||0)+1);
+   if(entry.progress<def.target)continue;
+   entry.completedAt=Date.now();entry.rewarded=true;
+   addPlayerXp(account,def.xpReward);
+   const credits=awardCurrency(account,def.currencyReward,"challenge_reward","challenge:"+type+":"+bucket.period+":"+def.id);
+   xpEarned+=def.xpReward;currencyEarned+=credits;
+   completed.push({id:def.id,title:def.title,type,xpReward:def.xpReward,currencyReward:credits,completedAt:entry.completedAt});
+  }
+ }
+ return {completed,xpEarned,currencyEarned};
+}
 function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpReward=15){
  if(!Array.isArray(account.achievements))account.achievements=[];
  if(account.achievements.some(item=>item.id===id))return false;
