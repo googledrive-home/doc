@@ -63,7 +63,13 @@ const cleanUsername=value=>String(value??"").trim().replace(/\\s+/g," ");
 const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
-function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
+function addPlayerXp(account,amount,reason="activity"){
+ const before=Math.max(0,Math.floor(Number(account.xp)||0)),reward=Math.max(0,Math.floor(Number(amount)||0));
+ account.xp=Math.max(0,Math.min(2147483647,before+reward));
+ const applied=account.xp-before;
+ if(applied>0){if(!Array.isArray(account.xpTransactions))account.xpTransactions=[];account.xpTransactions.push({amount:applied,reason:String(reason||"activity").slice(0,60),createdAt:Date.now()});account.xpTransactions=account.xpTransactions.slice(-500);}
+ return applied;
+}
 const CHALLENGE_DEFINITIONS=Object.freeze({
  daily:[
   {id:"daily-play-one",title:"First Session",description:"Complete any game session today.",target:1,xpReward:20,currencyReward:15},
@@ -84,7 +90,7 @@ function changeCurrency(account,amount,reason,reference=""){
  if(value<0&&balance+value<0)return 0;
  const applied=value>0?Math.min(value,2147483647-balance):value;
  if(!applied)return 0;
- account.currencyBalance=balance+applied;
+ account.currencyBalance=balance+applied;if(applied>0)account.currencyEarnedTotal=Math.max(0,Math.floor(Number(account.currencyEarnedTotal)||0))+applied;
  account.currencyTransactions.push({id:randomBytes(10).toString("hex"),amount:applied,balanceAfter:account.currencyBalance,reason:String(reason||"adjustment").slice(0,60),reference:ref,createdAt:Date.now()});
  account.currencyTransactions=account.currencyTransactions.slice(-250);
  return applied;
@@ -129,7 +135,7 @@ function advancePlatformChallenges(account,gameId){
    entry.progress=Math.min(def.target,(Number(entry.progress)||0)+1);
    if(entry.progress<def.target)continue;
    entry.completedAt=Date.now();entry.rewarded=true;
-   addPlayerXp(account,def.xpReward);
+   addPlayerXp(account,def.xpReward,"challenge_reward");
    const credits=awardCurrency(account,def.currencyReward,"challenge_reward","challenge:"+type+":"+bucket.period+":"+def.id);
    xpEarned+=def.xpReward;currencyEarned+=credits;
    completed.push({id:def.id,title:def.title,type,xpReward:def.xpReward,currencyReward:credits,completedAt:entry.completedAt});
@@ -140,7 +146,7 @@ function advancePlatformChallenges(account,gameId){
 function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpReward=15){
  if(!Array.isArray(account.achievements))account.achievements=[];
  if(account.achievements.some(item=>item.id===id))return false;
- account.achievements.push({id,gameId,title,description,tier,unlockedAt:Date.now()});addPlayerXp(account,xpReward);awardCurrency(account,5,"achievement_reward","achievement:"+id);return true;
+ account.achievements.push({id,gameId,title,description,tier,unlockedAt:Date.now()});addPlayerXp(account,xpReward,"achievement_reward");awardCurrency(account,5,"achievement_reward","achievement:"+id);return true;
 }
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
@@ -160,7 +166,7 @@ function cleanAccountStore(value){
   account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
   account.incomingFriendRequests=Array.isArray(account.incomingFriendRequests)?account.incomingFriendRequests.slice(0,100):[];account.outgoingFriendRequests=Array.isArray(account.outgoingFriendRequests)?account.outgoingFriendRequests.slice(0,100):[];
   account.blockedAccounts=Array.isArray(account.blockedAccounts)?account.blockedAccounts.slice(0,500):[];account.saves=account.saves&&typeof account.saves==="object"?account.saves:{};account.career=account.career&&typeof account.career==="object"?account.career:{};
-  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.dailyCurrency=account.dailyCurrency&&typeof account.dailyCurrency==="object"?account.dailyCurrency:{date:"",amount:0};account.currencyBalance=Math.max(0,Math.floor(Number(account.currencyBalance)||0));account.currencyTransactions=Array.isArray(account.currencyTransactions)?account.currencyTransactions.slice(-250):[];account.shopInventory=Array.isArray(account.shopInventory)?account.shopInventory.filter(item=>item&&typeof item.itemId==="string").slice(-500):[];account.equippedShopItems=account.equippedShopItems&&typeof account.equippedShopItems==="object"&&!Array.isArray(account.equippedShopItems)?account.equippedShopItems:{};account.challengeProgress=account.challengeProgress&&typeof account.challengeProgress==="object"?account.challengeProgress:{};account.activeGameSession=account.activeGameSession||null;
+  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.dailyCurrency=account.dailyCurrency&&typeof account.dailyCurrency==="object"?account.dailyCurrency:{date:"",amount:0};account.currencyBalance=Math.max(0,Math.floor(Number(account.currencyBalance)||0));account.currencyTransactions=Array.isArray(account.currencyTransactions)?account.currencyTransactions.slice(-250):[];account.shopInventory=Array.isArray(account.shopInventory)?account.shopInventory.filter(item=>item&&typeof item.itemId==="string").slice(-500):[];account.equippedShopItems=account.equippedShopItems&&typeof account.equippedShopItems==="object"&&!Array.isArray(account.equippedShopItems)?account.equippedShopItems:{};account.challengeProgress=account.challengeProgress&&typeof account.challengeProgress==="object"?account.challengeProgress:{};account.currencyEarnedTotal=Math.max(0,Math.floor(Number(account.currencyEarnedTotal)||0));account.xpTransactions=Array.isArray(account.xpTransactions)?account.xpTransactions.slice(-500):[];account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
  return data;
@@ -239,7 +245,7 @@ app.post("/account/register",async(req,res)=>{
  if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
  if(accountStore.accounts.some(a=>usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken. Choose another or sign in."});
  const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
- const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,currencyBalance:0,currencyTransactions:[],dailyCurrency:{date:"",amount:0},shopInventory:[],equippedShopItems:{},favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,xpTransactions:[],currencyBalance:0,currencyEarnedTotal:0,currencyTransactions:[],dailyCurrency:{date:"",amount:0},shopInventory:[],equippedShopItems:{},favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
  accountStore.accounts.push(account);const token=createAccountSession(account);
  try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
  catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
@@ -395,7 +401,7 @@ app.post("/account/game/complete",async(req,res)=>{
  record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(previousBest,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
  account.stats.gamesPlayed=(account.stats.gamesPlayed||0)+1;account.stats.timePlayedSeconds+=elapsedSeconds;
  const day=new Date(now).toISOString().slice(0,10);if(account.dailyXp?.date!==day)account.dailyXp={date:day,amount:0};
- const xpBefore=account.xp,levelBefore=levelProgress(xpBefore).level,earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned);
+ const xpBefore=account.xp,levelBefore=levelProgress(xpBefore).level,earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned,"game_completion");
  if(account.dailyCurrency?.date!==day)account.dailyCurrency={date:day,amount:0};
  const gameCreditTarget=Math.min(12,3+Math.floor(elapsedSeconds/180)),gameCredits=awardCurrency(account,Math.min(gameCreditTarget,Math.max(0,100-(Number(account.dailyCurrency.amount)||0))),"game_completion","game-session:"+sessionId);account.dailyCurrency.amount=(Number(account.dailyCurrency.amount)||0)+gameCredits;
  const unlocked=[];
