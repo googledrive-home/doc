@@ -317,6 +317,46 @@ app.get("/account/challenges",async(req,res)=>{
  res.setHeader("Cache-Control","no-store");
  res.json(getChallengePayload(account));
 });
+app.get("/account/platform-leaderboard",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const allowed=["xp","level","achievements","games","weekly-xp","credits-earned"];
+ const requested=String(req.query.category||"xp"),category=allowed.includes(requested)?requested:"xp";
+ const period=challengePeriods().weekly,weekStart=Date.parse(period+"T00:00:00Z");
+ const entries=[];
+ for(const account of accountStore.accounts){
+  if(account.leaderboardOptIn!==true)continue;
+  const xp=Math.max(0,Math.floor(Number(account.xp)||0)),level=levelProgress(xp).level;
+  const weeklyXp=(account.xpTransactions||[]).reduce((total,tx)=>total+(Number(tx.createdAt)>=weekStart?Math.max(0,Number(tx.amount)||0):0),0);
+  const value={
+   xp,level,achievements:(account.achievements||[]).length,
+   games:Math.max(0,Number(account.stats?.gamesPlayed)||0),
+   "weekly-xp":weeklyXp,
+   "credits-earned":Math.max(0,Number(account.currencyEarnedTotal)||0)
+  }[category];
+  entries.push({
+   id:account.id,username:account.username||account.name||"Player",
+   avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),
+   xp,level,achievements:(account.achievements||[]).length,
+   games:Math.max(0,Number(account.stats?.gamesPlayed)||0),
+   weeklyXp,currencyEarned:Math.max(0,Number(account.currencyEarnedTotal)||0),value
+  });
+ }
+ entries.sort((a,b)=>(b.value-a.value)||(b.xp-a.xp)||a.username.localeCompare(b.username));
+ const limit=Math.max(1,Math.min(100,Math.floor(Number(req.query.limit)||50)));
+ const visible=entries.slice(0,limit).map((item,index)=>({...item,rank:index+1}));
+ const viewer=authenticatedAccount(req),viewerEntry=viewer?entries.find(item=>item.id===viewer.id):null;
+ const label={
+  xp:"Total XP",level:"Player level",achievements:"Achievements unlocked",
+  games:"Games played","weekly-xp":"XP this week","credits-earned":"Credits earned"
+ }[category];
+ res.setHeader("Cache-Control","public, max-age=30");
+ res.json({
+  category,label,period:category==="weekly-xp"?period:null,
+  optInOnly:true,entries:visible,
+  viewer:viewerEntry?{rank:entries.findIndex(item=>item.id===viewer.id)+1,value:viewerEntry.value}:null,
+  totalPlayers:entries.length
+ });
+});
 app.get("/account/shop",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to use the shop."});
