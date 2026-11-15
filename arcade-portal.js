@@ -332,9 +332,16 @@
 
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
+  const activity=accountData?.stats?.games?.[game.id]||{};
+  const played=Math.max(0,Number(activity.played)||0);
+  const seconds=Math.max(0,Number(activity.seconds)||0);
+  const lastPlayed=Number(activity.lastPlayedAt)||0;
+  const activityLabel=played
+   ? played.toLocaleString()+" sessions · "+formatDuration(seconds)+(lastPlayed?" · Last played "+new Date(lastPlayed).toLocaleDateString():"")
+   : "Not played yet";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
    '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><div class="portal-cover-art">'+game.art+'</div></div>'+
-   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div></div></article>';
+   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div><div class="portal-game-activity">'+esc(activityLabel)+'</div></div></article>';
  }
  function renderCategories(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
