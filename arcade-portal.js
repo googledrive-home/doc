@@ -242,6 +242,31 @@
  function dashboardTile(game,meta,detail){
   return '<button type="button" class="portal-dashboard-game" data-dashboard-game="'+esc(game.id)+'"><span class="portal-dashboard-art">'+game.art+'</span><span class="portal-dashboard-game-copy"><small>'+esc(meta)+'</small><b>'+esc(game.title)+'</b><em>'+esc(detail)+'</em></span><span class="portal-dashboard-arrow">↗</span></button>';
  }
+ function renderF1CareerSummary(host){
+  const grid=host.querySelector(".portal-dashboard-grid");
+  if(!grid)return;
+  const card=document.createElement("section");
+  card.className="portal-dashboard-panel portal-f1-career-summary";
+  card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div><span>HOME SYNC</span></div><p class="portal-muted">Loading your F1 career…</p>';
+  grid.insertBefore(card,grid.firstChild);
+  apiRequest("/account/saves/f1-simulator").then(data=>{
+   const career=data.save?.progression?.career;
+   const stats=career?.stats;
+   if(!stats){
+    card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div></div><p class="portal-muted">Your F1 career will appear here after your first Career Mode race.</p><button type="button" class="portal-secondary" id="portalF1CareerOpen">OPEN F1 SIMULATOR</button>';
+   }else{
+    const active=career.activeSeason;
+    const last=Array.isArray(career.seasons)&&career.seasons.length?career.seasons[career.seasons.length-1]:null;
+    const season=active||last;
+    const seasonText=season?(season.status==="completed"?"Season "+season.seasonNumber+" completed":"Season "+season.seasonNumber+" · Round "+Math.min((season.currentRound||0)+1,season.rounds?.length||5)+"/"+(season.rounds?.length||5)):"No season started";
+    card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div><span>'+esc(seasonText)+'</span></div><div class="portal-f1-career-stats"><div><strong>'+Number(stats.starts||0).toLocaleString()+'</strong><small>Starts</small></div><div><strong>'+Number(stats.wins||0).toLocaleString()+'</strong><small>Wins</small></div><div><strong>'+Number(stats.podiums||0).toLocaleString()+'</strong><small>Podiums</small></div><div><strong>'+Number(stats.points||0).toLocaleString()+'</strong><small>Career points</small></div><div><strong>'+Number(stats.championships||0).toLocaleString()+'</strong><small>Titles</small></div></div><p class="portal-muted">Best lap: '+(Number.isFinite(stats.bestLap)?esc(stats.bestLap.toFixed(3))+" s":"Not set yet")+'</p><button type="button" class="portal-secondary" id="portalF1CareerOpen">VIEW RACING GAME</button>';
+   }
+   card.querySelector("#portalF1CareerOpen")?.addEventListener("click",()=>{const game=getGame("f1-simulator");if(game)openGameDetail(game);});
+  }).catch(()=>{
+   card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div></div><p class="portal-muted">F1 career data is not available right now.</p><button type="button" class="portal-secondary" id="portalF1CareerRetry">RETRY</button>';
+   card.querySelector("#portalF1CareerRetry")?.addEventListener("click",()=>renderF1CareerSummary(host));
+  });
+ }
  function renderDashboard(){
   const host=$p("portalDashboardShelf");if(!host)return;
   if(!accountData){
@@ -271,6 +296,7 @@
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">FAVOURITES</div><h2>Your games</h2></div></div>'+(favorites.length?favorites.slice(0,4).map(g=>dashboardTile(g,"FAVOURITE",g.genre)).join(""):'<p class="portal-muted">Favourite a game to add it here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">DISCOVER</div><h2>Recommended for you</h2></div></div>'+(recommendations.length?recommendations.map(g=>dashboardTile(g,"BASED ON YOUR PLAY",g.genre)).join(""):'<p class="portal-muted">Play more games to build recommendations.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENT TROPHIES</div><h2>Latest unlocks</h2></div></div>'+(trophies.length?trophies.map(t=>'<div class="portal-dashboard-trophy"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[t.tier]||"🏆")+'</span><div><b>'+esc(t.title)+'</b><small>'+esc(t.gameId?getGame(t.gameId)?.title||"Home":"Home")+' · '+esc(t.unlockedAt?new Date(t.unlockedAt).toLocaleDateString():"Unlocked")+'</small></div></div>').join(""):'<p class="portal-muted">Your trophy unlocks will appear here.</p>')+'</section></div>';
+  renderF1CareerSummary(host);
   host.querySelectorAll("[data-dashboard-game]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.dashboardGame);if(g)openGameDetail(g);}));
   host.querySelectorAll("[data-open-shop]").forEach(b=>b.addEventListener("click",()=>window.HomeShop?.open()));
  }
