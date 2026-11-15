@@ -551,3 +551,31 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 @media(max-width:1100px){.portal-shop-tier-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:720px){.portal-shop-item-grid{grid-template-columns:1fr}.portal-shop-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-shop-inventory-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:440px){.portal-shop-wallet{align-items:flex-start;flex-direction:column}.portal-shop-tier-grid,.portal-shop-inventory-list{grid-template-columns:1fr}.portal-shop-item{align-items:flex-start}.portal-shop-item-icon{width:38px;height:38px}.portal-shop-item-action button{max-width:108px;padding:7px}}
+
+
+/* Daily and weekly challenges — consistent with the existing Home panels. */
+.portal-challenge-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;padding:16px 18px;border:1px solid var(--portal-line);border-radius:var(--portal-radius);background:linear-gradient(120deg,var(--portal-panel-2),var(--portal-panel))}
+.portal-challenge-summary>div:first-child{display:grid;gap:5px}
+.portal-challenge-summary strong{font-size:18px}
+.portal-challenge-summary small{font-size:8px;color:var(--portal-muted)}
+.portal-challenge-summary-counts{display:grid;gap:6px;text-align:right}
+.portal-challenge-summary-counts span{font-size:9px;color:var(--portal-muted)}
+.portal-challenge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.portal-challenge-card{display:flex;align-items:center;gap:12px;min-width:0;padding:13px;border:1px solid var(--portal-line);border-radius:13px;background:#ffffff05}
+.portal-challenge-card.completed{border-color:color-mix(in srgb,var(--portal-good) 42%,var(--portal-line))}
+.portal-challenge-card.claimed{opacity:.7}
+.portal-challenge-copy{flex:1;min-width:0}
+.portal-challenge-type{font-size:7px;font-weight:950;letter-spacing:.1em;color:var(--portal-accent-2)}
+.portal-challenge-copy h3{margin:5px 0;font-size:12px}
+.portal-challenge-copy p{margin:0 0 10px;font-size:8px;line-height:1.5;color:var(--portal-muted)}
+.portal-challenge-progress-label{display:flex;justify-content:space-between;gap:10px;margin-bottom:5px;font-size:8px;color:var(--portal-muted)}
+.portal-challenge-progress-label b{color:var(--portal-text)}
+.portal-challenge-copy .portal-xp-track{height:6px}
+.portal-challenge-copy>small{display:block;margin-top:7px;font-size:7px;color:var(--portal-muted)}
+.portal-challenge-action{flex:none}
+.portal-challenge-action button{padding:8px 10px;font-size:8px}
+.portal-challenge-action button:disabled{opacity:.45;cursor:default}
+.portal-dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1100px){.portal-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.portal-challenge-grid{grid-template-columns:1fr}.portal-challenge-summary{align-items:flex-start;flex-direction:column}.portal-challenge-summary-counts{text-align:left}}
+@media(max-width:650px){.portal-dashboard-metrics{grid-template-columns:1fr}}
