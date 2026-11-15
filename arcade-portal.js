@@ -48,7 +48,7 @@
     '<div class="portal-nav-label">PERSONAL</div>',
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
-    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button>',
+    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button><button class="portal-nav-item" data-view="shop"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Shop</span><span class="portal-nav-count">COINS</span></button>',
     '<button class="portal-nav-item" data-view="friends"><span class="portal-nav-icon">♧</span><span class="portal-nav-label-text">Friends</span><span class="portal-nav-count" id="friendCountBadge">0</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
@@ -76,7 +76,7 @@
      '<div class="portal-welcome"><div><div class="portal-eyebrow">YOUR SOUNDTRACK</div><h1>Music</h1><p>Use the built-in player, your playlists and music files saved in this browser.</p></div></div>',
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
-    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
+    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalShopView" data-page="shop"><div class="portal-welcome"><div><div class="portal-eyebrow">EARN · UNLOCK · CUSTOMISE</div><h1>Shop</h1><p>Spend Home Coins earned through play on profile cosmetics. Reach higher levels to unlock more collections.</p></div></div><div id="portalShopContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Your player card, progress, trophies, career and saved game stats.</p></div></div>',
      '<div id="portalProfileContent"></div>',
     '</section>',
@@ -121,7 +121,7 @@
  function currentAvatar(){const skin=Number(accountData?.profile?.avatar??accountData?.profile?.skin)||0;return AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];}
  function updateUsernameDisplay(){
   const name=username||"Guest",initial=currentAvatar();
-  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent=accountData?"Level "+(accountData.profile?.level||1):"Guest player";
+  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent=accountData?"Level "+(accountData.profile?.level||1)+" · "+Number(accountData.profile?.coins||0).toLocaleString()+" coins":"Guest player";
   $p("sidebarAvatar").textContent=initial;$p("topAvatar").textContent=initial;$p("topAccountName").textContent=name;
   $p("portalQuickSignIn").textContent=accountData?"Account":"Sign in";
   $p("friendCountBadge").textContent=String(accountData?.profile?.friendCount||0);
@@ -265,13 +265,14 @@
   const latest=recent[0],xp=Number(profile.xp)||0,progress=Math.max(0,Math.min(100,Number(profile.levelProgress)||0));
   const resume=latest?'<section class="portal-dashboard-panel portal-dashboard-continue"><div><div class="portal-eyebrow">CONTINUE YOUR JOURNEY</div><h2>Pick up where you left off</h2><p>'+esc(latest.game.title)+' · '+esc(new Date(latest.record.lastPlayedAt).toLocaleDateString())+'</p><button type="button" class="portal-primary" data-dashboard-game="'+esc(latest.game.id)+'">OPEN GAME DETAILS</button></div><div class="portal-dashboard-continue-art">'+latest.game.art+'</div></section>':'<section class="portal-dashboard-panel"><div class="portal-eyebrow">READY TO PLAY?</div><h2>Your first session starts here</h2><p>Choose a game and Home will start building your play history.</p></section>';
   host.innerHTML=resume+
-   '<div class="portal-dashboard-metrics"><article class="portal-dashboard-metric"><small>PLAYER LEVEL</small><b>LEVEL '+esc(profile.level||1)+'</b><span>'+xp.toLocaleString()+' XP · '+progress+'% to next level</span><div class="portal-xp-track"><span style="width:'+progress+'%"></span></div></article><article class="portal-dashboard-metric"><small>LAST 7 DAYS</small><b>'+weekSessions+' sessions</b><span>Completed tracked sessions</span></article><article class="portal-dashboard-metric"><small>ALL-TIME PLAYTIME</small><b>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</b><span>'+esc(stats.gamesPlayed||0)+' sessions recorded</span></article></div>'+
+   '<div class="portal-dashboard-metrics"><article class="portal-dashboard-metric"><small>PLAYER LEVEL</small><b>LEVEL '+esc(profile.level||1)+'</b><span>'+xp.toLocaleString()+' XP · '+progress+'% to next level</span><div class="portal-xp-track"><span style="width:'+progress+'%"></span></div></article><article class="portal-dashboard-metric"><small>HOME COINS</small><b>◈ '+Number(profile.coins||0).toLocaleString()+'</b><span>Earn coins through play and challenges</span><button type="button" class="portal-secondary" data-open-shop>VISIT SHOP</button></article><article class="portal-dashboard-metric"><small>LAST 7 DAYS</small><b>'+weekSessions+' sessions</b><span>Completed tracked sessions</span></article><article class="portal-dashboard-metric"><small>ALL-TIME PLAYTIME</small><b>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</b><span>'+esc(stats.gamesPlayed||0)+' sessions recorded</span></article></div>'+
    '<div class="portal-dashboard-grid">'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENTLY PLAYED</div><h2>Your recent games</h2></div><span>'+records.length+' tracked</span></div>'+(recent.length?recent.map(x=>dashboardTile(x.game,"LAST PLAYED "+new Date(x.record.lastPlayedAt).toLocaleDateString(),x.record.played+" sessions · "+formatDuration(x.record.seconds||0))).join(""):'<p class="portal-muted">Completed sessions will appear here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">FAVOURITES</div><h2>Your games</h2></div></div>'+(favorites.length?favorites.slice(0,4).map(g=>dashboardTile(g,"FAVOURITE",g.genre)).join(""):'<p class="portal-muted">Favourite a game to add it here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">DISCOVER</div><h2>Recommended for you</h2></div></div>'+(recommendations.length?recommendations.map(g=>dashboardTile(g,"BASED ON YOUR PLAY",g.genre)).join(""):'<p class="portal-muted">Play more games to build recommendations.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENT TROPHIES</div><h2>Latest unlocks</h2></div></div>'+(trophies.length?trophies.map(t=>'<div class="portal-dashboard-trophy"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[t.tier]||"🏆")+'</span><div><b>'+esc(t.title)+'</b><small>'+esc(t.gameId?getGame(t.gameId)?.title||"Home":"Home")+' · '+esc(t.unlockedAt?new Date(t.unlockedAt).toLocaleDateString():"Unlocked")+'</small></div></div>').join(""):'<p class="portal-muted">Your trophy unlocks will appear here.</p>')+'</section></div>';
   host.querySelectorAll("[data-dashboard-game]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.dashboardGame);if(g)openGameDetail(g);}));
+   host.querySelector("[data-open-shop]")?.addEventListener("click",()=>showView("shop"));
  }
  function downloadCloudBackup(filename,data){
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),a=document.createElement("a");
@@ -373,9 +374,10 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
-  if(view==="profile")renderProfile();
+  if(view==="shop")renderShop();
+   if(view==="profile")renderProfile();
   if(view==="leaderboards")renderLeaderboards();
   if(view==="friends")renderFriends();
   if(view==="settings")renderSettings();
@@ -580,7 +582,58 @@
   await load();
  }
 
- function renderProfile(){
+ async function renderShop(){
+   const host=$p("portalShopContent");if(!host)return;
+   if(!accountData){
+    host.innerHTML='<div class="portal-section-panel"><h2>Sign in to visit the shop</h2><p>Your Home Coins and purchased items are saved to your player account.</p><button class="portal-primary" id="shopSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+    $p("shopSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+   }
+   host.innerHTML='<div class="portal-section-panel"><p class="portal-muted">Loading your shop…</p></div>';
+   try{
+    const data=await apiRequest("/account/shop");
+    accountData.profile={...accountData.profile,coins:data.balance};
+    const tierCards=data.tiers.map(tier=>'<article class="portal-shop-tier '+(tier.unlocked?"unlocked":"locked")+'"><div class="portal-shop-tier-top"><b>'+esc(tier.name)+' tier</b><span>'+(tier.unlocked?"UNLOCKED":"LEVEL "+esc(tier.minLevel))+'</span></div><p>'+esc(tier.description)+'</p><small>'+(tier.unlocked?"Available in the shop":"Reach level "+esc(tier.minLevel)+" to unlock")+'</small></article>').join("");
+    const cards=data.items.map(item=>{
+     const isEquipped=data.equippedItems?.[item.slot]===item.id;
+     let action="";
+     if(item.owned)action='<button type="button" class="portal-secondary" data-shop-equip="'+esc(item.id)+'" data-equipped="'+(isEquipped?"1":"0")+'">'+(isEquipped?"UNEQUIP":"EQUIP")+'</button>';
+     else if(!item.unlocked)action='<button type="button" class="portal-secondary" disabled>LEVEL '+esc(item.level)+' REQUIRED</button>';
+     else if(Number(data.balance)<Number(item.price))action='<button type="button" class="portal-secondary" disabled>NEED '+(Number(item.price)-Number(data.balance)).toLocaleString()+' MORE</button>';
+     else action='<button type="button" class="portal-primary" data-shop-buy="'+esc(item.id)+'">BUY · '+Number(item.price).toLocaleString()+'</button>';
+     return '<article class="portal-shop-item '+(!item.unlocked?"locked":"")+'"><div class="portal-shop-item-icon" aria-hidden="true">'+esc(item.icon)+'</div><div class="portal-shop-item-copy"><div class="portal-shop-item-meta">'+esc(item.tierName)+' · '+esc(item.category)+'</div><h3>'+esc(item.name)+'</h3><p>'+esc(item.description)+'</p><small>Level '+esc(item.level)+' · '+Number(item.price).toLocaleString()+' Home Coins</small></div><div class="portal-shop-item-action">'+(item.owned?'<span class="portal-shop-owned">OWNED</span>':"")+action+'</div></article>';
+    }).join("");
+    const owned=data.items.filter(item=>item.owned);
+    const transactions=(accountData.currency?.transactions||[]).slice(0,6);
+    host.innerHTML='<section class="portal-shop-wallet"><div><div class="portal-eyebrow">YOUR BALANCE</div><strong>◈ '+Number(data.balance).toLocaleString()+'</strong><small>Home Coins · earned through gameplay</small></div><div class="portal-shop-wallet-actions"><span>LEVEL '+esc(data.level)+'</span><button type="button" class="portal-secondary" id="shopRefresh">REFRESH</button></div></section>'+
+     '<section class="portal-section-panel portal-shop-intro"><div><div class="portal-eyebrow">PROGRESSION</div><h2>Unlock higher collections</h2><p>Player levels unlock new shop tiers. Home Coins are used to buy cosmetics. Currency cannot be used to buy XP or levels.</p></div><div class="portal-shop-tier-grid">'+tierCards+'</div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">THE COLLECTION</div><h2>Available items</h2></div><span>'+owned.length+' owned · '+data.items.length+' items</span></div><div class="portal-shop-item-grid">'+cards+'</div></section>'+
+     '<section class="portal-section-panel portal-shop-owned-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">YOUR INVENTORY</div><h2>Owned and equipped</h2></div><span>'+owned.length+' items</span></div>'+(owned.length?'<div class="portal-shop-inventory-list">'+owned.map(item=>'<div><span>'+esc(item.icon)+'</span><b>'+esc(item.name)+'</b><small>'+(data.equippedItems?.[item.slot]===item.id?"Equipped":"In inventory")+'</small></div>').join("")+'</div>':'<p class="portal-muted">Items you purchase will appear here. Equip them to customise your player profile.</p>')+'</section>'+
+     '<section class="portal-section-panel"><div class="portal-eyebrow">RECENT ACTIVITY</div><h2>Coin history</h2>'+(transactions.length?'<div class="portal-shop-transactions">'+transactions.map(tx=>'<div><span>'+esc(tx.reason||"Account activity")+'</span><b class="'+(tx.type==="earn"?"earned":"spent")+'">'+(tx.type==="earn"?"+":"−")+Number(tx.amount||0).toLocaleString()+'</b></div>').join("")+'</div>':'<p class="portal-muted">Your earning and purchase history will appear here.</p>')+'</section>';
+    $p("shopRefresh").addEventListener("click",renderShop);
+    host.querySelectorAll("[data-shop-buy]").forEach(button=>button.addEventListener("click",()=>purchaseShopItem(button.dataset.shopBuy,button)));
+    host.querySelectorAll("[data-shop-equip]").forEach(button=>button.addEventListener("click",()=>equipShopItem(button.dataset.shopEquip,button.dataset.equipped!=="1")));
+   }catch(error){
+    host.innerHTML='<div class="portal-section-panel"><h2>Shop unavailable</h2><p>'+esc(error.message||"Could not load the shop.")+'</p><button class="portal-secondary" id="shopRetry" type="button">TRY AGAIN</button></div>';
+    $p("shopRetry")?.addEventListener("click",renderShop);
+   }
+  }
+  async function purchaseShopItem(itemId,button){
+   if(!accountData)return;
+   if(button)button.disabled=true;
+   try{
+    const result=await apiRequest("/account/shop/purchase",{method:"POST",body:{itemId}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast("Purchased "+result.item.name+". Added to your inventory.");renderShop();
+   }catch(error){if(button)button.disabled=false;toast(error.message||"Purchase failed.");}
+  }
+  async function equipShopItem(itemId,equip){
+   try{
+    const result=await apiRequest("/account/inventory/equip",{method:"POST",body:{itemId,equip}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast(equip?"Item equipped.":"Item unequipped.");renderShop();
+   }catch(error){toast(error.message||"Could not update your inventory.");}
+  }
+  function renderProfile(){
   const host=$p("portalProfileContent");
   if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to your player profile</h2><p>Your username, XP, trophies, favourites and statistics are saved to your account when persistent storage is connected.</p><button class="portal-primary" id="profileSignIn">SIGN IN / CREATE PROFILE</button></div>';$p("profileSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
   const profile=accountData.profile||{},stats=accountData.stats||{},skin=Number(profile.avatar??profile.skin)||0,avatar=AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];
