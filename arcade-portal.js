@@ -252,6 +252,7 @@
   apiRequest("/account/saves/f1-simulator").then(data=>{
    const career=data.save?.progression?.career;
    const stats=career?.stats;
+   const teamName=String(data.save?.progression?.team?.name||"No team created");
    if(!stats){
     card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div></div><p class="portal-muted">Your F1 career will appear here after your first Career Mode race.</p><button type="button" class="portal-secondary" id="portalF1CareerOpen">OPEN F1 SIMULATOR</button>';
    }else{
@@ -259,7 +260,7 @@
     const last=Array.isArray(career.seasons)&&career.seasons.length?career.seasons[career.seasons.length-1]:null;
     const season=active||last;
     const seasonText=season?(season.status==="completed"?"Season "+season.seasonNumber+" completed":"Season "+season.seasonNumber+" · Round "+Math.min((season.currentRound||0)+1,season.rounds?.length||5)+"/"+(season.rounds?.length||5)):"No season started";
-    card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div><span>'+esc(seasonText)+'</span></div><div class="portal-f1-career-stats"><div><strong>'+Number(stats.starts||0).toLocaleString()+'</strong><small>Starts</small></div><div><strong>'+Number(stats.wins||0).toLocaleString()+'</strong><small>Wins</small></div><div><strong>'+Number(stats.podiums||0).toLocaleString()+'</strong><small>Podiums</small></div><div><strong>'+Number(stats.points||0).toLocaleString()+'</strong><small>Career points</small></div><div><strong>'+Number(stats.championships||0).toLocaleString()+'</strong><small>Titles</small></div></div><p class="portal-muted">Best lap: '+(Number.isFinite(stats.bestLap)?esc(stats.bestLap.toFixed(3))+" s":"Not set yet")+'</p><button type="button" class="portal-secondary" id="portalF1CareerOpen">VIEW RACING GAME</button>';
+    card.innerHTML='<div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR</div><h2>Racing career</h2></div><span>'+esc(seasonText)+'</span></div><p class="portal-muted">Team: '+esc(teamName)+'</p><div class="portal-f1-career-stats"><div><strong>'+Number(stats.starts||0).toLocaleString()+'</strong><small>Starts</small></div><div><strong>'+Number(stats.wins||0).toLocaleString()+'</strong><small>Wins</small></div><div><strong>'+Number(stats.podiums||0).toLocaleString()+'</strong><small>Podiums</small></div><div><strong>'+Number(stats.points||0).toLocaleString()+'</strong><small>Career points</small></div><div><strong>'+Number(stats.championships||0).toLocaleString()+'</strong><small>Titles</small></div></div><p class="portal-muted">Best lap: '+(Number.isFinite(stats.bestLap)?esc(stats.bestLap.toFixed(3))+" s":"Not set yet")+'</p><button type="button" class="portal-secondary" id="portalF1CareerOpen">VIEW RACING GAME</button>';
    }
    card.querySelector("#portalF1CareerOpen")?.addEventListener("click",()=>{const game=getGame("f1-simulator");if(game)openGameDetail(game);});
   }).catch(()=>{
