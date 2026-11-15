@@ -359,6 +359,7 @@ app.get("/account/platform-leaderboard",async(req,res)=>{
 });
 app.get("/account/shop",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
+ res.setHeader("Cache-Control","private, no-store");
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to use the shop."});
  const level=levelProgress(account.xp||0).level,owned=new Set((account.shopInventory||[]).map(item=>item.itemId));
  res.setHeader("Cache-Control","no-store");
