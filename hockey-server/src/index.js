@@ -305,6 +305,12 @@ app.post("/account/logout",async(req,res)=>{
 });
 
 const authenticatedAccount=req=>resolveAccountToken(getRequestToken(req));
+app.get("/account/challenges",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your challenges."});
+ res.setHeader("Cache-Control","no-store");
+ res.json(getChallengePayload(account));
+});
 app.get("/account/shop",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
  const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to use the shop."});
