@@ -48,7 +48,7 @@
     '<div class="portal-nav-label">PERSONAL</div>',
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
-    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button><button class="portal-nav-item" data-view="shop"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Shop</span><span class="portal-nav-count">COINS</span></button>',
+    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button><button class="portal-nav-item" data-view="shop"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Shop</span><span class="portal-nav-count">COINS</span></button><button class="portal-nav-item" data-view="challenges"><span class="portal-nav-icon">✓</span><span class="portal-nav-label-text">Challenges</span></button>',
     '<button class="portal-nav-item" data-view="friends"><span class="portal-nav-icon">♧</span><span class="portal-nav-label-text">Friends</span><span class="portal-nav-count" id="friendCountBadge">0</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
@@ -76,7 +76,8 @@
      '<div class="portal-welcome"><div><div class="portal-eyebrow">YOUR SOUNDTRACK</div><h1>Music</h1><p>Use the built-in player, your playlists and music files saved in this browser.</p></div></div>',
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
-    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalShopView" data-page="shop"><div class="portal-welcome"><div><div class="portal-eyebrow">EARN · UNLOCK · CUSTOMISE</div><h1>Shop</h1><p>Spend Home Coins earned through play on profile cosmetics. Reach higher levels to unlock more collections.</p></div></div><div id="portalShopContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
+    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalChallengesView" data-page="challenges"><div class="portal-welcome"><div><div class="portal-eyebrow">PLAY · PROGRESS · REWARD</div><h1>Challenges</h1><p>Complete daily and weekly goals across Home games to earn XP and Home Coins.</p></div></div><div id="portalChallengesContent"></div></section>
+     <section class="portal-view" id="portalShopView" data-page="shop"><div class="portal-welcome"><div><div class="portal-eyebrow">EARN · UNLOCK · CUSTOMISE</div><h1>Shop</h1><p>Spend Home Coins earned through play on profile cosmetics. Reach higher levels to unlock more collections.</p></div></div><div id="portalShopContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Your player card, progress, trophies, career and saved game stats.</p></div></div>',
      '<div id="portalProfileContent"></div>',
     '</section>',
@@ -374,9 +375,10 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],challenges:["PLAY · PROGRESS · REWARD","Challenges"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
   if(view==="shop")renderShop();
+   if(view==="challenges")renderChallenges();
    if(view==="profile")renderProfile();
   if(view==="leaderboards")renderLeaderboards();
   if(view==="friends")renderFriends();
@@ -582,7 +584,41 @@
   await load();
  }
 
- async function renderShop(){
+ async function renderChallenges(){
+   const host=$p("portalChallengesContent");if(!host)return;
+   if(!accountData){
+    host.innerHTML='<div class="portal-section-panel"><h2>Sign in to track challenges</h2><p>Your daily and weekly challenge progress is connected to your player account.</p><button class="portal-primary" id="challengeSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+    $p("challengeSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+   }
+   host.innerHTML='<div class="portal-section-panel"><p class="portal-muted">Loading challenges…</p></div>';
+   try{
+    const data=await apiRequest("/account/challenges");
+    const cards=(items)=>items.map(challenge=>{
+     const progress=Math.max(0,Math.min(challenge.target,challenge.progress||0)),percent=Math.round(progress/challenge.target*100);
+     const action=challenge.claimed?'<button class="portal-secondary" disabled>CLAIMED</button>':challenge.completed?'<button class="portal-primary" data-challenge-claim="'+esc(challenge.period)+'|'+esc(challenge.id)+'">CLAIM REWARD</button>':'<button class="portal-secondary" disabled>IN PROGRESS</button>';
+     return '<article class="portal-challenge-card '+(challenge.claimed?"claimed":challenge.completed?"completed":"")+'"><div class="portal-challenge-copy"><div class="portal-challenge-type">'+(challenge.period==="daily"?"DAILY CHALLENGE":"WEEKLY CHALLENGE")+'</div><h3>'+esc(challenge.title)+'</h3><p>'+esc(challenge.description)+'</p><div class="portal-challenge-progress-label"><span>'+progress+' / '+challenge.target+'</span><b>'+percent+'%</b></div><div class="portal-xp-track"><span style="width:'+percent+'%"></span></div><small>Reward: '+challenge.xp+' XP · '+challenge.coins+' Home Coins</small></div><div class="portal-challenge-action">'+action+'</div></article>';
+    }).join("");
+    const dailyDone=data.daily.filter(item=>item.claimed).length,weeklyDone=data.weekly.filter(item=>item.claimed).length;
+    host.innerHTML='<section class="portal-challenge-summary"><div><div class="portal-eyebrow">YOUR PROGRESS</div><strong>Home challenges</strong><small>Daily goals use the server UTC date · weekly goals reset Monday</small></div><div class="portal-challenge-summary-counts"><span>'+dailyDone+' / '+data.daily.length+' daily claimed</span><span>'+weeklyDone+' / '+data.weekly.length+' weekly claimed</span></div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">RESET EACH DAY</div><h2>Daily challenges</h2></div><span>'+data.day+'</span></div><div class="portal-challenge-grid">'+cards(data.daily)+'</div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">RESET EACH WEEK</div><h2>Weekly challenges</h2></div><span>Week of '+data.week+'</span></div><div class="portal-challenge-grid">'+cards(data.weekly)+'</div></section>';
+    host.querySelectorAll("[data-challenge-claim]").forEach(button=>button.addEventListener("click",()=>{
+     const [period,id]=button.dataset.challengeClaim.split("|");claimChallenge(period,id,button);
+    }));
+   }catch(error){
+    host.innerHTML='<div class="portal-section-panel"><h2>Challenges unavailable</h2><p>'+esc(error.message||"Could not load your challenges.")+'</p><button class="portal-secondary" id="challengeRetry" type="button">TRY AGAIN</button></div>';
+    $p("challengeRetry")?.addEventListener("click",renderChallenges);
+   }
+  }
+  async function claimChallenge(period,challengeId,button){
+   if(button)button.disabled=true;
+   try{
+    const result=await apiRequest("/account/challenges/claim",{method:"POST",body:{period,challengeId}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast("Challenge reward: +"+result.xpEarned+" XP · +"+result.coinEarned+" Home Coins.");renderChallenges();renderDashboard();
+   }catch(error){if(button)button.disabled=false;toast(error.message||"Could not claim challenge reward.");}
+  }
+  async function renderShop(){
    const host=$p("portalShopContent");if(!host)return;
    if(!accountData){
     host.innerHTML='<div class="portal-section-panel"><h2>Sign in to visit the shop</h2><p>Your Home Coins and purchased items are saved to your player account.</p><button class="portal-primary" id="shopSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
