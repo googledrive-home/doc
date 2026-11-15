@@ -579,3 +579,19 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 @media(max-width:1100px){.portal-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.portal-challenge-grid{grid-template-columns:1fr}.portal-challenge-summary{align-items:flex-start;flex-direction:column}.portal-challenge-summary-counts{text-align:left}}
 @media(max-width:650px){.portal-dashboard-metrics{grid-template-columns:1fr}}
+
+
+/* Shared F1 career card and equipped shop cosmetics, styled with Home's existing tokens. */
+.portal-f1-career-panel{margin:14px 0;background:linear-gradient(115deg,var(--portal-panel-2),var(--portal-panel))}
+.portal-f1-career-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.portal-f1-career-stats>div{display:grid;gap:4px;padding:10px;border:1px solid var(--portal-line);border-radius:11px;background:#ffffff06}
+.portal-f1-career-stats small{font-size:7px;letter-spacing:.12em;color:var(--portal-muted);font-weight:900}
+.portal-f1-career-stats b{font-size:20px;font-variant-numeric:tabular-nums}
+.portal-f1-last-result{margin:8px 0;color:var(--portal-muted);font-size:9px}
+.portal-profile-hero.has-shop-banner{position:relative;overflow:hidden}
+.portal-profile-banner{display:flex;align-items:center;gap:8px;padding:11px 13px;margin:-6px 0 14px;border:1px solid var(--portal-line);border-radius:12px;background:linear-gradient(100deg,var(--portal-panel-2),color-mix(in srgb,var(--portal-accent) 13%,var(--portal-panel)));color:var(--portal-text);font-size:10px;font-weight:850}
+.portal-profile-banner span{font-size:17px}
+.portal-profile-hero .portal-avatar.has-shop-frame{outline:3px solid var(--portal-accent-2);outline-offset:3px;box-shadow:0 0 0 6px color-mix(in srgb,var(--portal-accent-2) 16%,transparent)}
+.portal-equipped-badge{display:inline-grid;place-items:center;width:27px;height:27px;margin:0 0 8px;border:1px solid var(--portal-line);border-radius:9px;background:var(--portal-panel-2);font-size:15px}
+.portal-profile-hero h2.has-shop-nameplate{display:inline-block;padding:6px 11px;border:1px solid color-mix(in srgb,var(--portal-warn) 45%,var(--portal-line));border-radius:9px;background:color-mix(in srgb,var(--portal-warn) 10%,var(--portal-panel));}
+@media(max-width:650px){.portal-f1-career-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
