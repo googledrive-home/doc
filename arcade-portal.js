@@ -313,9 +313,16 @@
 
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
+  const record=accountData?.stats?.games?.[game.id]||{};
+  const played=Math.max(0,Number(record.played)||0),seconds=Math.max(0,Number(record.seconds)||0);
+  const lastPlayed=Number(record.lastPlayedAt)||0;
+  const lastLabel=lastPlayed?new Date(lastPlayed).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"Not played yet";
+  const description=String(game.description||"").trim();
+  const isFeatured=game.id==="f1-simulator";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
-   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><div class="portal-cover-art">'+game.art+'</div></div>'+
-   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div></div></article>';
+   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span>'+(isFeatured?'<span class="portal-cover-featured">FEATURED</span>':"")+'<div class="portal-cover-art">'+game.art+'</div></div>'+
+   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div>'+(description?'<p class="portal-game-description">'+esc(description)+'</p>':"")+'<div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div>'+
+   '<div class="portal-game-card-stats"><span>'+played+' '+(played===1?"session":"sessions")+'</span><span>'+esc(formatDuration(seconds))+' played</span><span>'+esc(lastLabel)+'</span></div></div></article>';
  }
  function renderCategories(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
