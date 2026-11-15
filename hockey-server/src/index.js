@@ -408,10 +408,11 @@ app.post("/account/game/complete",async(req,res)=>{
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
+ const challengeRewards=advancePlatformChallenges(account,gameId);
  const levelAfter=levelProgress(account.xp).level;let levelCredits=0;for(let level=levelBefore+1;level<=Math.min(levelAfter,levelBefore+20);level++)levelCredits+=awardCurrency(account,10,"level_up","level:"+level);
- const achievementCredits=unlocked.length*5,currencyEarned=gameCredits+levelCredits+achievementCredits;
+ const achievementCredits=unlocked.length*5,currencyEarned=gameCredits+levelCredits+achievementCredits+challengeRewards.currencyEarned;
  account.activeGameSession=null;
- try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),currencyEarned,currencyBalance:account.currencyBalance||0,gameStats:record,achievements:unlocked,career});}
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),currencyEarned,currencyBalance:account.currencyBalance||0,gameStats:record,achievements:unlocked,challenges:challengeRewards.completed,career});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
 });
 app.get("/account/saves/:gameId",async(req,res)=>{
