@@ -600,3 +600,10 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-leaderboard-self{display:inline-flex;margin:0 0 10px;padding:7px 10px;border:1px solid var(--portal-line);border-radius:9px;color:var(--portal-text);background:#ffffff08;font-size:9px;font-weight:800}
 .portal-leaderboard-table-wrap{overflow-x:auto}
 @media(max-width:520px){.portal-leaderboard-tabs{flex-wrap:wrap}}
+
+.portal-f1-career-summary{grid-column:1/-1}
+.portal-f1-career-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0}
+.portal-f1-career-stats>div{padding:12px;border:1px solid var(--portal-line);border-radius:11px;background:#ffffff06}
+.portal-f1-career-stats strong{display:block;font-size:clamp(16px,2.5vw,22px);font-variant-numeric:tabular-nums}
+.portal-f1-career-stats small{display:block;margin-top:4px;color:var(--portal-muted);font-size:8px}
+@media(max-width:560px){.portal-f1-career-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
