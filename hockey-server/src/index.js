@@ -31,25 +31,126 @@ const ACCOUNT_SESSION_MS=30*24*60*60*1000;
 const ACCOUNT_DATA_DIR=process.env.DATA_DIR||path.join(process.cwd(),"data");
 const ACCOUNT_FILE=path.join(ACCOUNT_DATA_DIR,"accounts.json");
 let accountPool=null;
-let accountStore={version:1,accounts:[],sessions:[],gameRatings:{}};
+let accountStore={version:1,accounts:[],sessions:[],bridgeCodes:[],gameRatings:{}};
 let accountWriteQueue=Promise.resolve();
 const accountRateLimits=new Map();
 const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{},gamesPlayed:0});
 const GAME_CATALOG={"drift-arena":"Racing","open-world-drive":"Racing","tank-arena-3d":"Simulation","f1-simulator":"Racing","apex-formula-racing":"Racing","gravel-rally-stage":"Racing","fpv-drone-simulator":"Simulation","pool-8-ball":"Sports","tennis-rally":"Sports","hockey":"Sports","reaction-game":"Arcade","click-test":"Arcade","neon-breaker":"Arcade","neon-runner":"Arcade","flappy-bird":"Arcade","neon-snake":"Arcade","space-defender":"Arcade","memory-match":"Puzzle","moto-x3m":"Racing","learn-to-fly":"Arcade","garden-gnomes":"Puzzle","sumiro":"Puzzle","cube-engine":"Simulation","mini-golf-3d":"Sports","eaglercraft-singleplayer":"Sandbox"};
 const validGameId=value=>Object.hasOwn(GAME_CATALOG,String(value||""));
+const SHOP_TIERS=Object.freeze([
+ {id:"starter",name:"Starter",minLevel:1,description:"A first selection of profile upgrades."},
+ {id:"bronze",name:"Bronze",minLevel:5,description:"For players building their collection."},
+ {id:"silver",name:"Silver",minLevel:10,description:"A wider range of profile finishes."},
+ {id:"gold",name:"Gold",minLevel:20,description:"Stand-out rewards for committed players."},
+ {id:"elite",name:"Elite",minLevel:35,description:"Rare items for experienced players."},
+ {id:"legendary",name:"Legendary",minLevel:50,description:"The highest shop tier."}
+]);
+const SHOP_ITEMS=Object.freeze([
+ {id:"frame-classic",name:"Classic Frame",description:"A clean frame for your player avatar.",category:"Frames",price:50,minLevel:1,tier:"starter",slot:"frame",appearance:"classic"},
+ {id:"badge-rookie",name:"Rookie Badge",description:"Show that your player journey has begun.",category:"Badges",price:30,minLevel:1,tier:"starter",slot:"badge",appearance:"Rookie"},
+ {id:"frame-copper",name:"Copper Frame",description:"A warm metallic finish for your avatar.",category:"Frames",price:120,minLevel:5,tier:"bronze",slot:"frame",appearance:"copper"},
+ {id:"banner-checkered",name:"Checkered Banner",description:"A motorsport-inspired profile banner.",category:"Banners",price:140,minLevel:5,tier:"bronze",slot:"banner",appearance:"checkered"},
+ {id:"frame-silver",name:"Silver Frame",description:"A refined silver avatar frame.",category:"Frames",price:220,minLevel:10,tier:"silver",slot:"frame",appearance:"silver"},
+ {id:"badge-racing-regular",name:"Racing Regular",description:"A badge for players who keep coming back.",category:"Badges",price:180,minLevel:10,tier:"silver",slot:"badge",appearance:"Racing Regular"},
+ {id:"banner-grand-prix",name:"Grand Prix Banner",description:"A clean racing banner for your profile.",category:"Banners",price:350,minLevel:20,tier:"gold",slot:"banner",appearance:"grand-prix"},
+ {id:"frame-gold",name:"Gold Frame",description:"A gold finish for your player avatar.",category:"Frames",price:400,minLevel:20,tier:"gold",slot:"frame",appearance:"gold"},
+ {id:"badge-elite",name:"Elite Player",description:"A badge reserved for higher-level players.",category:"Badges",price:750,minLevel:35,tier:"elite",slot:"badge",appearance:"Elite Player"},
+ {id:"frame-carbon",name:"Carbon Frame",description:"A technical carbon-style avatar frame.",category:"Frames",price:850,minLevel:35,tier:"elite",slot:"frame",appearance:"carbon"},
+ {id:"banner-champion",name:"Champion Banner",description:"A championship-inspired profile banner.",category:"Banners",price:1300,minLevel:50,tier:"legendary",slot:"banner",appearance:"champion"},
+ {id:"frame-legendary",name:"Legendary Frame",description:"The top-tier frame for dedicated players.",category:"Frames",price:1500,minLevel:50,tier:"legendary",slot:"frame",appearance:"legendary"}
+]);
 const cleanUsername=value=>String(value??"").trim().replace(/\\s+/g," ");
 const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
-function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
+function addPlayerXp(account,amount,reason="activity"){
+ const before=Math.max(0,Math.floor(Number(account.xp)||0)),reward=Math.max(0,Math.floor(Number(amount)||0));
+ account.xp=Math.max(0,Math.min(2147483647,before+reward));
+ const applied=account.xp-before;
+ if(applied>0){if(!Array.isArray(account.xpTransactions))account.xpTransactions=[];account.xpTransactions.push({amount:applied,reason:String(reason||"activity").slice(0,60),createdAt:Date.now()});account.xpTransactions=account.xpTransactions.slice(-500);}
+ return applied;
+}
+const CHALLENGE_DEFINITIONS=Object.freeze({
+ daily:[
+  {id:"daily-play-one",title:"First Session",description:"Complete any game session today.",target:1,xpReward:20,currencyReward:15},
+  {id:"daily-f1-one",title:"Back on Track",description:"Complete an F1 Simulator session today.",target:1,gameId:"f1-simulator",xpReward:25,currencyReward:20}
+ ],
+ weekly:[
+  {id:"weekly-play-five",title:"Regular Player",description:"Complete five game sessions this week.",target:5,xpReward:75,currencyReward:80},
+  {id:"weekly-f1-three",title:"Race Week",description:"Complete three F1 Simulator sessions this week.",target:3,gameId:"f1-simulator",xpReward:100,currencyReward:100}
+ ]
+});
+function changeCurrency(account,amount,reason,reference=""){
+ const value=Math.trunc(Number(amount));
+ if(!Number.isFinite(value)||value===0)return 0;
+ if(!Array.isArray(account.currencyTransactions))account.currencyTransactions=[];
+ const ref=String(reference||"").slice(0,120);
+ if(ref&&account.currencyTransactions.some(item=>item.reference===ref))return 0;
+ const balance=Math.max(0,Math.min(2147483647,Math.floor(Number(account.currencyBalance)||0)));
+ if(value<0&&balance+value<0)return 0;
+ const applied=value>0?Math.min(value,2147483647-balance):value;
+ if(!applied)return 0;
+ account.currencyBalance=balance+applied;if(applied>0)account.currencyEarnedTotal=Math.max(0,Math.floor(Number(account.currencyEarnedTotal)||0))+applied;
+ account.currencyTransactions.push({id:randomBytes(10).toString("hex"),amount:applied,balanceAfter:account.currencyBalance,reason:String(reason||"adjustment").slice(0,60),reference:ref,createdAt:Date.now()});
+ account.currencyTransactions=account.currencyTransactions.slice(-250);
+ return applied;
+}
+function awardCurrency(account,amount,reason,reference=""){
+ return changeCurrency(account,Math.max(0,Math.floor(Number(amount)||0)),reason,reference);
+}
+function challengePeriods(now=Date.now()){
+ const date=new Date(now),daily=date.toISOString().slice(0,10),monday=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+ monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+ return {daily,weekly:monday.toISOString().slice(0,10)};
+}
+function currentChallengeBuckets(account,now=Date.now()){
+ const periods=challengePeriods(now);
+ account.challengeProgress=account.challengeProgress&&typeof account.challengeProgress==="object"?account.challengeProgress:{};
+ for(const type of ["daily","weekly"]){
+  const period=periods[type],stored=account.challengeProgress[type];
+  if(!stored||stored.period!==period||typeof stored.items!=="object"||!stored.items)account.challengeProgress[type]={period,items:{}};
+ }
+ return account.challengeProgress;
+}
+function getChallengePayload(account,now=Date.now()){
+ const buckets=currentChallengeBuckets(account,now);
+ const make=type=>CHALLENGE_DEFINITIONS[type].map(def=>{
+  const progress=buckets[type].items[def.id]||{progress:0,completedAt:null,rewarded:false};
+  return {...def,progress:Math.min(def.target,Math.max(0,Number(progress.progress)||0)),completed:!!progress.completedAt,rewarded:progress.rewarded===true};
+ });
+ return {
+  daily:{period:buckets.daily.period,resetsAt:Date.parse(buckets.daily.period+"T00:00:00Z")+86400000,items:make("daily")},
+  weekly:{period:buckets.weekly.period,resetsAt:Date.parse(buckets.weekly.period+"T00:00:00Z")+7*86400000,items:make("weekly")}
+ };
+}
+function advancePlatformChallenges(account,gameId){
+ const buckets=currentChallengeBuckets(account),completed=[];
+ let xpEarned=0,currencyEarned=0;
+ for(const type of ["daily","weekly"]){
+  const bucket=buckets[type];
+  for(const def of CHALLENGE_DEFINITIONS[type]){
+   if(def.gameId&&def.gameId!==gameId)continue;
+   const entry=bucket.items[def.id]||(bucket.items[def.id]={progress:0,completedAt:null,rewarded:false});
+   if(entry.completedAt)continue;
+   entry.progress=Math.min(def.target,(Number(entry.progress)||0)+1);
+   if(entry.progress<def.target)continue;
+   entry.completedAt=Date.now();entry.rewarded=true;
+   addPlayerXp(account,def.xpReward,"challenge_reward");
+   const credits=awardCurrency(account,def.currencyReward,"challenge_reward","challenge:"+type+":"+bucket.period+":"+def.id);
+   xpEarned+=def.xpReward;currencyEarned+=credits;
+   completed.push({id:def.id,title:def.title,type,xpReward:def.xpReward,currencyReward:credits,completedAt:entry.completedAt});
+  }
+ }
+ return {completed,xpEarned,currencyEarned};
+}
 function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpReward=15){
  if(!Array.isArray(account.achievements))account.achievements=[];
  if(account.achievements.some(item=>item.id===id))return false;
- account.achievements.push({id,gameId,title,description,tier,unlockedAt:Date.now()});addPlayerXp(account,xpReward);return true;
+ account.achievements.push({id,gameId,title,description,tier,unlockedAt:Date.now()});addPlayerXp(account,xpReward,"achievement_reward");awardCurrency(account,5,"achievement_reward","achievement:"+id);return true;
 }
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
- data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
+ data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];data.bridgeCodes=Array.isArray(data.bridgeCodes)?data.bridgeCodes.filter(code=>code&&typeof code.tokenHash==="string"&&typeof code.accountId==="string"&&Number(code.expiresAt)>Date.now()).slice(-100):[];
  for(const account of data.accounts){
   if(!account.stats||typeof account.stats!=="object")account.stats=emptyAccountStats();
   const defaults=emptyAccountStats();
@@ -65,7 +166,7 @@ function cleanAccountStore(value){
   account.friends=Array.isArray(account.friends)?account.friends.slice(0,500):[];
   account.incomingFriendRequests=Array.isArray(account.incomingFriendRequests)?account.incomingFriendRequests.slice(0,100):[];account.outgoingFriendRequests=Array.isArray(account.outgoingFriendRequests)?account.outgoingFriendRequests.slice(0,100):[];
   account.blockedAccounts=Array.isArray(account.blockedAccounts)?account.blockedAccounts.slice(0,500):[];account.saves=account.saves&&typeof account.saves==="object"?account.saves:{};account.career=account.career&&typeof account.career==="object"?account.career:{};
-  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.activeGameSession=account.activeGameSession||null;
+  account.dailyXp=account.dailyXp&&typeof account.dailyXp==="object"?account.dailyXp:{date:"",amount:0};account.dailyCurrency=account.dailyCurrency&&typeof account.dailyCurrency==="object"?account.dailyCurrency:{date:"",amount:0};account.currencyBalance=Math.max(0,Math.floor(Number(account.currencyBalance)||0));account.currencyTransactions=Array.isArray(account.currencyTransactions)?account.currencyTransactions.slice(-250):[];account.shopInventory=Array.isArray(account.shopInventory)?account.shopInventory.filter(item=>item&&typeof item.itemId==="string").slice(-500):[];account.equippedShopItems=account.equippedShopItems&&typeof account.equippedShopItems==="object"&&!Array.isArray(account.equippedShopItems)?account.equippedShopItems:{};account.challengeProgress=account.challengeProgress&&typeof account.challengeProgress==="object"?account.challengeProgress:{};account.currencyEarnedTotal=Math.max(0,Math.floor(Number(account.currencyEarnedTotal)||0));account.xpTransactions=Array.isArray(account.xpTransactions)?account.xpTransactions.slice(-500):[];account.activeGameSession=account.activeGameSession||null;
  }
  data.gameRatings=data.gameRatings&&typeof data.gameRatings==="object"&&!Array.isArray(data.gameRatings)?data.gameRatings:{};
  return data;
@@ -103,12 +204,12 @@ function resolveAccountToken(token){
  const digest=tokenDigest(token),session=accountStore.sessions.find(s=>s.tokenHash===digest&&s.expiresAt>Date.now());
  return session?accountStore.accounts.find(a=>a.id===session.accountId)||null:null;
 }
-function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
+function accountProfile(account){const progress=levelProgress(account.xp||0);return {id:account.id,username:account.username||account.name,name:account.name||account.username,skin:account.skin||0,avatar:account.skin||0,xp:account.xp||0,currencyBalance:account.currencyBalance||0,...progress,createdAt:account.createdAt,lastLoginAt:account.lastLoginAt||null,favoriteGames:account.favoriteGames||[],achievementCount:(account.achievements||[]).length,friendCount:(account.friends||[]).length,leaderboardOptIn:account.leaderboardOptIn===true};}
 function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
  const likedGames=Object.entries(accountStore.gameRatings||{}).filter(([,entry])=>Array.isArray(entry?.userIds)&&entry.userIds.includes(account.id)).map(([gameId])=>gameId);
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames};
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,currency:{name:"Credits",balance:account.currencyBalance||0,transactions:(account.currencyTransactions||[]).slice(-20).reverse()},shopInventory:account.shopInventory||[],equippedShopItems:account.equippedShopItems||{}};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 app.get("/health/storage",async(_req,res)=>{
@@ -144,7 +245,7 @@ app.post("/account/register",async(req,res)=>{
  if(password.length<8||password.length>128)return res.status(400).json({error:"Use a password between 8 and 128 characters."});
  if(accountStore.accounts.some(a=>usernameKey(a.username||a.name)===key))return res.status(409).json({error:"That username is already taken. Choose another or sign in."});
  const now=Date.now(),salt=randomBytes(16),passwordHash=scryptSync(password,salt,64);
- const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
+ const account={id:randomBytes(12).toString("hex"),username,name:username,skin:Math.max(0,Math.min(13,Number(req.body?.avatar)||0)),xp:0,xpTransactions:[],currencyBalance:0,currencyEarnedTotal:0,currencyTransactions:[],dailyCurrency:{date:"",amount:0},shopInventory:[],equippedShopItems:{},favoriteGames:[],achievements:[],friends:[],incomingFriendRequests:[],outgoingFriendRequests:[],blockedAccounts:[],saves:{},career:{},dailyXp:{date:"",amount:0},activeGameSession:null,createdAt:now,lastLoginAt:now,passwordSalt:salt.toString("base64"),passwordHash:passwordHash.toString("base64"),stats:emptyAccountStats(),recentMatches:[]};
  accountStore.accounts.push(account);const token=createAccountSession(account);
  try{await persistAccountStore();res.status(201).json({token,...accountPayload(account)});}
  catch(error){accountStore.accounts=accountStore.accounts.filter(a=>a.id!==account.id);accountStore.sessions=accountStore.sessions.filter(s=>s.accountId!==account.id);console.error("Account storage error:",error.message);res.status(503).json({error:"Account storage is unavailable right now. Please try again shortly."});}
@@ -178,6 +279,29 @@ app.post("/account/profile",async(req,res)=>{
  try{await persistAccountStore();res.json(accountPayload(account));}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Could not save your profile. Please try again."});}
 });
+app.post("/account/bridge",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to connect F1 Simulator."});
+ const now=Date.now(),code=randomBytes(32).toString("base64url"),entry={tokenHash:tokenDigest(code),accountId:account.id,createdAt:now,expiresAt:now+2*60*1000};
+ accountStore.bridgeCodes=(accountStore.bridgeCodes||[]).filter(item=>item.expiresAt>now&&item.accountId!==account.id);
+ accountStore.bridgeCodes.push(entry);
+ try{await persistAccountStore();res.setHeader("Cache-Control","no-store");res.json({code,expiresAt:entry.expiresAt});}
+ catch(error){accountStore.bridgeCodes=accountStore.bridgeCodes.filter(item=>item.tokenHash!==entry.tokenHash);console.error("Account bridge creation error:",error.message);res.status(503).json({error:"Could not create a secure F1 sign-in link."});}
+});
+app.post("/account/bridge/exchange",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ if(!loginRateLimit(req,"bridge-exchange"))return res.status(429).json({error:"Too many connection attempts. Please try again shortly."});
+ const code=String(req.body?.code||"");
+ if(code.length<32||code.length>100)return res.status(400).json({error:"This connection link is invalid or has expired."});
+ const digest=tokenDigest(code),index=(accountStore.bridgeCodes||[]).findIndex(item=>item.tokenHash===digest&&item.expiresAt>Date.now());
+ if(index<0)return res.status(401).json({error:"This connection link has expired or has already been used. Open F1 from Home again."});
+ const entry=accountStore.bridgeCodes[index],account=accountStore.accounts.find(item=>item.id===entry.accountId);
+ if(!account){accountStore.bridgeCodes.splice(index,1);await persistAccountStore();return res.status(401).json({error:"The linked Home account could not be found."});}
+ const token=createAccountSession(account);
+ accountStore.bridgeCodes.splice(index,1);
+ try{await persistAccountStore();res.setHeader("Cache-Control","no-store");res.json({token,...accountPayload(account)});}
+ catch(error){const digestToken=tokenDigest(token);accountStore.sessions=accountStore.sessions.filter(item=>item.tokenHash!==digestToken);accountStore.bridgeCodes.push(entry);console.error("Account bridge exchange error:",error.message);res.status(503).json({error:"Could not finish connecting your Home account."});}
+});
 app.post("/account/logout",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
  const token=getRequestToken(req),digest=token?tokenDigest(token):"";
@@ -187,6 +311,111 @@ app.post("/account/logout",async(req,res)=>{
 });
 
 const authenticatedAccount=req=>resolveAccountToken(getRequestToken(req));
+app.get("/account/challenges",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to view your challenges."});
+ res.setHeader("Cache-Control","no-store");
+ res.json(getChallengePayload(account));
+});
+app.get("/account/platform-leaderboard",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const allowed=["xp","level","achievements","games","weekly-xp","credits-earned"];
+ const requested=String(req.query.category||"xp"),category=allowed.includes(requested)?requested:"xp";
+ const period=challengePeriods().weekly,weekStart=Date.parse(period+"T00:00:00Z");
+ const entries=[];
+ for(const account of accountStore.accounts){
+  if(account.leaderboardOptIn!==true)continue;
+  const xp=Math.max(0,Math.floor(Number(account.xp)||0)),level=levelProgress(xp).level;
+  const weeklyXp=(account.xpTransactions||[]).reduce((total,tx)=>total+(Number(tx.createdAt)>=weekStart?Math.max(0,Number(tx.amount)||0):0),0);
+  const value={
+   xp,level,achievements:(account.achievements||[]).length,
+   games:Math.max(0,Number(account.stats?.gamesPlayed)||0),
+   "weekly-xp":weeklyXp,
+   "credits-earned":Math.max(0,Number(account.currencyEarnedTotal)||0)
+  }[category];
+  entries.push({
+   accountId:account.id,username:account.username||account.name||"Player",
+   avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),
+   xp,level,achievements:(account.achievements||[]).length,
+   games:Math.max(0,Number(account.stats?.gamesPlayed)||0),
+   weeklyXp,currencyEarned:Math.max(0,Number(account.currencyEarnedTotal)||0),value
+  });
+ }
+ entries.sort((a,b)=>(b.value-a.value)||(b.xp-a.xp)||a.username.localeCompare(b.username));
+ const limit=Math.max(1,Math.min(100,Math.floor(Number(req.query.limit)||50)));
+ const visible=entries.slice(0,limit).map((item,index)=>{const {accountId,...publicEntry}=item;return {...publicEntry,rank:index+1};});
+ const viewer=authenticatedAccount(req),viewerEntry=viewer?entries.find(item=>item.accountId===viewer.id):null;
+ const label={
+  xp:"Total XP",level:"Player level",achievements:"Achievements unlocked",
+  games:"Games played","weekly-xp":"XP this week","credits-earned":"Credits earned"
+ }[category];
+ res.setHeader("Cache-Control","private, no-store");
+ res.json({
+  category,label,period:category==="weekly-xp"?period:null,
+  optInOnly:true,entries:visible,
+  viewer:viewerEntry?{rank:entries.findIndex(item=>item.accountId===viewer.id)+1,value:viewerEntry.value}:null,
+  totalPlayers:entries.length
+ });
+});
+app.get("/account/shop",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ res.setHeader("Cache-Control","private, no-store");
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to use the shop."});
+ const level=levelProgress(account.xp||0).level,owned=new Set((account.shopInventory||[]).map(item=>item.itemId));
+ res.setHeader("Cache-Control","no-store");
+ res.json({
+  currency:{name:"Credits",balance:account.currencyBalance||0},
+  level,
+  tiers:SHOP_TIERS.map(tier=>({...tier,unlocked:level>=tier.minLevel})),
+  items:SHOP_ITEMS.map(item=>({...item,owned:owned.has(item.id),unlocked:level>=item.minLevel})),
+  inventory:account.shopInventory||[],
+  equipped:account.equippedShopItems||{},
+  transactions:(account.currencyTransactions||[]).slice(-30).reverse()
+ });
+});
+app.post("/account/shop/purchase",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to purchase shop items."});
+ const itemId=String(req.body?.itemId||""),item=SHOP_ITEMS.find(entry=>entry.id===itemId);
+ if(!item)return res.status(404).json({error:"That shop item does not exist."});
+ const level=levelProgress(account.xp||0).level;
+ if(level<item.minLevel)return res.status(403).json({error:"Reach level "+item.minLevel+" to unlock this item."});
+ if((account.shopInventory||[]).some(entry=>entry.itemId===item.id))return res.status(409).json({error:"You already own this item."});
+ if((account.currencyBalance||0)<item.price)return res.status(409).json({error:"You do not have enough Credits for this item."});
+ const previous={
+  balance:account.currencyBalance||0,earnedTotal:account.currencyEarnedTotal||0,
+  currencyTransactions:(account.currencyTransactions||[]).length,
+  xp:account.xp||0,xpTransactions:(account.xpTransactions||[]).length,
+  achievements:(account.achievements||[]).length,inventory:(account.shopInventory||[]).length
+ },now=Date.now(),newAchievements=[];
+ changeCurrency(account,-item.price,"shop_purchase","purchase:"+randomBytes(12).toString("hex"));
+ account.shopInventory.push({itemId:item.id,acquiredAt:now});
+ if(unlockAchievement(account,"shop-first-purchase","platform","First Purchase","Unlocked your first item in the Home shop.","bronze",15))newAchievements.push("shop-first-purchase");
+ if(account.shopInventory.length>=5&&unlockAchievement(account,"shop-collector-five","platform","Collector","Own five shop items.","silver",25))newAchievements.push("shop-collector-five");
+ if(account.shopInventory.length>=10&&unlockAchievement(account,"shop-collector-ten","platform","Style Curator","Own ten shop items.","gold",40))newAchievements.push("shop-collector-ten");
+ try{await persistAccountStore();res.json({ok:true,item,achievementsUnlocked:newAchievements,currency:{name:"Credits",balance:account.currencyBalance},xp:account.xp,inventory:account.shopInventory,equipped:account.equippedShopItems||{}});}
+ catch(error){
+  account.currencyBalance=previous.balance;account.currencyEarnedTotal=previous.earnedTotal;
+  account.currencyTransactions=(account.currencyTransactions||[]).slice(0,previous.currencyTransactions);
+  account.xp=previous.xp;account.xpTransactions=(account.xpTransactions||[]).slice(0,previous.xpTransactions);
+  account.achievements=(account.achievements||[]).slice(0,previous.achievements);
+  account.shopInventory=(account.shopInventory||[]).slice(0,previous.inventory);
+  console.error("Shop purchase storage error:",error.message);
+  res.status(503).json({error:"The purchase could not be saved. Your balance has been restored."});
+ }
+});
+app.post("/account/shop/equip",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to manage your inventory."});
+ const itemId=String(req.body?.itemId||""),item=SHOP_ITEMS.find(entry=>entry.id===itemId);
+ if(!item)return res.status(404).json({error:"That item does not exist."});
+ if(!(account.shopInventory||[]).some(entry=>entry.itemId===item.id))return res.status(403).json({error:"Purchase or unlock this item before equipping it."});
+ const oldEquipped={...(account.equippedShopItems||{})};account.equippedShopItems=account.equippedShopItems||{};
+ if(req.body?.equipped===false){if(account.equippedShopItems[item.slot]===item.id)delete account.equippedShopItems[item.slot];}
+ else account.equippedShopItems[item.slot]=item.id;
+ try{await persistAccountStore();res.json({ok:true,equipped:account.equippedShopItems});}
+ catch(error){account.equippedShopItems=oldEquipped;console.error("Shop equip storage error:",error.message);res.status(503).json({error:"Could not save your equipped items."});}
+});
 app.post("/account/favorites",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to save favourites."});
  const gameId=String(req.body?.gameId||"");if(!validGameId(gameId))return res.status(400).json({error:"Choose a valid game."});
@@ -229,7 +458,9 @@ app.post("/account/game/complete",async(req,res)=>{
  record.played++;record.seconds+=elapsedSeconds;record.bestScore=Math.max(previousBest,score);record.lastPlayedAt=now;record.plays=[...(record.plays||[]),now].filter(at=>at>now-35*24*60*60*1000).slice(-50);
  account.stats.gamesPlayed=(account.stats.gamesPlayed||0)+1;account.stats.timePlayedSeconds+=elapsedSeconds;
  const day=new Date(now).toISOString().slice(0,10);if(account.dailyXp?.date!==day)account.dailyXp={date:day,amount:0};
- const xpBefore=account.xp,earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned);
+ const xpBefore=account.xp,levelBefore=levelProgress(xpBefore).level,earned=Math.min(Math.min(20,5+Math.floor(elapsedSeconds/120)),Math.max(0,150-account.dailyXp.amount));account.dailyXp.amount+=earned;addPlayerXp(account,earned,"game_completion");
+ if(account.dailyCurrency?.date!==day)account.dailyCurrency={date:day,amount:0};
+ const gameCreditTarget=Math.min(12,3+Math.floor(elapsedSeconds/180)),gameCredits=awardCurrency(account,Math.min(gameCreditTarget,Math.max(0,100-(Number(account.dailyCurrency.amount)||0))),"game_completion","game-session:"+sessionId);account.dailyCurrency.amount=(Number(account.dailyCurrency.amount)||0)+gameCredits;
  const unlocked=[];
  const grant=(id,title,desc,tier,reward)=>{if(unlockAchievement(account,id,gameId,title,desc,tier,reward))unlocked.push({id,title,tier});};
  if(record.played===1)grant("first-"+gameId,"First Session","Played this game for the first time.","bronze",10);
@@ -240,8 +471,11 @@ app.post("/account/game/complete",async(req,res)=>{
  if(account.stats.gamesPlayed===25)grant("play-25","Play Regular","Completed 25 game sessions.","silver",30);
  if(account.stats.gamesPlayed===100)grant("play-100","Home Champion","Completed 100 game sessions.","gold",75);
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
+ const challengeRewards=advancePlatformChallenges(account,gameId);
+ const levelAfter=levelProgress(account.xp).level;let levelCredits=0;for(let level=levelBefore+1;level<=Math.min(levelAfter,levelBefore+20);level++)levelCredits+=awardCurrency(account,10,"level_up","level:"+level);
+ const achievementCredits=unlocked.length*5,currencyEarned=gameCredits+levelCredits+achievementCredits+challengeRewards.currencyEarned;
  account.activeGameSession=null;
- try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),gameStats:record,achievements:unlocked,career});}
+ try{await persistAccountStore();res.json({ok:true,gameId,elapsedSeconds,xpEarned:account.xp-xpBefore,totalXp:account.xp,level:levelProgress(account.xp),currencyEarned,currencyBalance:account.currencyBalance||0,gameStats:record,achievements:unlocked,challenges:challengeRewards.completed,career});}
  catch(error){console.error("Game completion save error:",error.message);res.status(503).json({error:"Could not save your game progress."});}
 });
 app.get("/account/saves/:gameId",async(req,res)=>{
