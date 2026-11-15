@@ -500,3 +500,54 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-leaderboard-table th,.portal-leaderboard-table td{padding:11px 9px;border-bottom:1px solid var(--portal-line);text-align:left;font-size:10px}
 .portal-leaderboard-table th{font-size:8px;letter-spacing:.08em;color:var(--portal-muted);text-transform:uppercase}
 .portal-leaderboard-player{font-weight:850;white-space:nowrap}
+
+
+/* Home Coins shop — uses the existing Home portal palette and panel language. */
+.portal-shop-wallet{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;padding:18px 20px;border:1px solid var(--portal-line);border-radius:var(--portal-radius);background:linear-gradient(120deg,var(--portal-panel-2),var(--portal-panel));}
+.portal-shop-wallet>div:first-child{display:grid;gap:5px}
+.portal-shop-wallet strong{font-size:clamp(25px,4vw,34px);font-weight:950;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+.portal-shop-wallet small{font-size:9px;color:var(--portal-muted)}
+.portal-shop-wallet-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.portal-shop-wallet-actions>span{padding:7px 10px;border:1px solid var(--portal-line);border-radius:20px;color:var(--portal-muted);font-size:9px;font-weight:900;letter-spacing:.08em}
+.portal-shop-intro{margin-bottom:14px}
+.portal-shop-intro>div:first-child p{max-width:640px;margin:7px 0 15px;color:var(--portal-muted);font-size:10px;line-height:1.65}
+.portal-shop-tier-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.portal-shop-tier{min-width:0;padding:11px;border:1px solid var(--portal-line);border-radius:12px;background:#ffffff06}
+.portal-shop-tier.unlocked{border-color:color-mix(in srgb,var(--portal-good) 34%,var(--portal-line))}
+.portal-shop-tier.locked{opacity:.58}
+.portal-shop-tier-top{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.portal-shop-tier-top b{font-size:10px}
+.portal-shop-tier-top span{font-size:7px;font-weight:950;color:var(--portal-good);letter-spacing:.06em}
+.portal-shop-tier.locked .portal-shop-tier-top span{color:var(--portal-muted)}
+.portal-shop-tier p{min-height:28px;margin:7px 0;color:var(--portal-muted);font-size:8px;line-height:1.45}
+.portal-shop-tier small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:13px}
+.portal-shop-section-head h2{margin:4px 0 0;font-size:17px}
+.portal-shop-section-head>span{font-size:8px;color:var(--portal-muted)}
+.portal-shop-item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.portal-shop-item{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid var(--portal-line);border-radius:13px;background:#ffffff05}
+.portal-shop-item.locked{opacity:.72}
+.portal-shop-item-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--portal-panel-2);font-size:23px}
+.portal-shop-item-copy{flex:1;min-width:0}
+.portal-shop-item-meta{font-size:7px;color:var(--portal-accent-2);font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.portal-shop-item-copy h3{margin:4px 0;font-size:11px}
+.portal-shop-item-copy p{margin:0 0 5px;color:var(--portal-muted);font-size:8px;line-height:1.45}
+.portal-shop-item-copy small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-item-action{display:grid;justify-items:end;gap:6px;flex:none}
+.portal-shop-item-action button{max-width:124px;padding:8px 10px;font-size:8px}
+.portal-shop-item-action button:disabled{opacity:.42;cursor:not-allowed}
+.portal-shop-owned{font-size:7px;color:var(--portal-good);font-weight:950;letter-spacing:.08em}
+.portal-shop-inventory-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.portal-shop-inventory-list>div{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--portal-line);border-radius:10px;background:#ffffff05}
+.portal-shop-inventory-list>div>span{font-size:18px}
+.portal-shop-inventory-list b{flex:1;min-width:0;font-size:8px}
+.portal-shop-inventory-list small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-transactions{display:grid;gap:2px;margin-top:9px}
+.portal-shop-transactions>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--portal-line);font-size:9px}
+.portal-shop-transactions>div span{color:var(--portal-muted)}
+.portal-shop-transactions>div b{font-variant-numeric:tabular-nums}
+.portal-shop-transactions .earned{color:var(--portal-good)}
+.portal-shop-transactions .spent{color:var(--portal-warn)}
+@media(max-width:1100px){.portal-shop-tier-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.portal-shop-item-grid{grid-template-columns:1fr}.portal-shop-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-shop-inventory-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.portal-shop-wallet{align-items:flex-start;flex-direction:column}.portal-shop-tier-grid,.portal-shop-inventory-list{grid-template-columns:1fr}.portal-shop-item{align-items:flex-start}.portal-shop-item-icon{width:38px;height:38px}.portal-shop-item-action button{max-width:108px;padding:7px}}
