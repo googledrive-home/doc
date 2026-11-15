@@ -95,17 +95,18 @@ const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
 function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
-function grantPlayerCoins(account,amount,reason,reference){
+function grantPlayerCoins(account,amount,reason,reference,options={}){
  const ref=String(reference||"").slice(0,120);
  if(ref&&(account.coinTransactions||[]).some(item=>item.reference===ref))return 0;
  const now=Date.now(),day=new Date(now).toISOString().slice(0,10);
  if(account.dailyCoins?.date!==day)account.dailyCoins={date:day,amount:0};
  const requested=Math.max(0,Math.floor(Number(amount)||0));
- const earned=Math.min(requested,Math.max(0,250-(Number(account.dailyCoins.amount)||0)));
+ const bypassDailyCap=options.bypassDailyCap===true;
+ const earned=bypassDailyCap?requested:Math.min(requested,Math.max(0,250-(Number(account.dailyCoins.amount)||0)));
  if(!earned)return 0;
  account.coins=Math.min(2147483647,(Number(account.coins)||0)+earned);
  account.coinsEarnedTotal=Math.min(2147483647,(Number(account.coinsEarnedTotal)||0)+earned);
- account.dailyCoins.amount=(Number(account.dailyCoins.amount)||0)+earned;
+ if(!bypassDailyCap)account.dailyCoins.amount=(Number(account.dailyCoins.amount)||0)+earned;
  account.coinTransactions=Array.isArray(account.coinTransactions)?account.coinTransactions:[];
  account.coinTransactions.push({id:randomBytes(8).toString("hex"),type:"earn",amount:earned,reason:String(reason||"Game reward").slice(0,100),reference:ref,createdAt:now});
  account.coinTransactions=account.coinTransactions.slice(-200);
@@ -287,7 +288,7 @@ app.post("/account/challenges/claim",async(req,res)=>{
  const old={xp:account.xp,coins:account.coins,coinsEarnedTotal:account.coinsEarnedTotal,dailyCoins:{...(account.dailyCoins||{})},coinTransactions:[...(account.coinTransactions||[])],challengeClaims:[...(account.challengeClaims||[])]};
  account.challengeClaims=[...old.challengeClaims,entry.claimKey].slice(-300);
  addPlayerXp(account,challenge.xp);
- const coinEarned=grantPlayerCoins(account,challenge.coins,"Challenge reward: "+challenge.title,"challenge:"+entry.claimKey);
+ const coinEarned=grantPlayerCoins(account,challenge.coins,"Challenge reward: "+challenge.title,"challenge:"+entry.claimKey,{bypassDailyCap:true});
  try{
   await persistAccountStore();
   res.json({ok:true,challengeId,period,xpEarned:challenge.xp,coinEarned,currency:{name:SHOP_CURRENCY,balance:account.coins||0},challenges:challengesForAccount(account,now)});
