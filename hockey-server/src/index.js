@@ -64,6 +64,16 @@ const usernameKey=value=>cleanUsername(value).toLocaleLowerCase("en-US");
 const xpNeededForLevel=level=>100+Math.max(0,level-1)*35;
 function levelProgress(totalXp){let remaining=Math.max(0,Math.floor(Number(totalXp)||0)),level=1,needed=xpNeededForLevel(level);while(remaining>=needed&&level<10000){remaining-=needed;level++;needed=xpNeededForLevel(level);}return {level,xpIntoLevel:remaining,xpForNextLevel:needed,levelProgress:Math.round(remaining/needed*100)};}
 function addPlayerXp(account,amount){account.xp=Math.max(0,Math.min(2147483647,Math.floor(Number(account.xp)||0)+Math.max(0,Math.floor(amount||0))));}
+const CHALLENGE_DEFINITIONS=Object.freeze({
+ daily:[
+  {id:"daily-play-one",title:"First Session",description:"Complete any game session today.",target:1,xpReward:20,currencyReward:15},
+  {id:"daily-f1-one",title:"Back on Track",description:"Complete an F1 Simulator session today.",target:1,gameId:"f1-simulator",xpReward:25,currencyReward:20}
+ ],
+ weekly:[
+  {id:"weekly-play-five",title:"Regular Player",description:"Complete five game sessions this week.",target:5,xpReward:75,currencyReward:80},
+  {id:"weekly-f1-three",title:"Race Week",description:"Complete three F1 Simulator sessions this week.",target:3,gameId:"f1-simulator",xpReward:100,currencyReward:100}
+ ]
+});
 function changeCurrency(account,amount,reason,reference=""){
  const value=Math.trunc(Number(amount));
  if(!Number.isFinite(value)||value===0)return 0;
