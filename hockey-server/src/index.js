@@ -100,7 +100,7 @@ function grantPlayerCoins(account,amount,reason,reference){
  const now=Date.now(),day=new Date(now).toISOString().slice(0,10);
  if(account.dailyCoins?.date!==day)account.dailyCoins={date:day,amount:0};
  const requested=Math.max(0,Math.floor(Number(amount)||0));
- const earned=Math.min(requested,Math.max(0,100-(Number(account.dailyCoins.amount)||0)));
+ const earned=Math.min(requested,Math.max(0,250-(Number(account.dailyCoins.amount)||0)));
  if(!earned)return 0;
  account.coins=Math.min(2147483647,(Number(account.coins)||0)+earned);
  account.coinsEarnedTotal=Math.min(2147483647,(Number(account.coinsEarnedTotal)||0)+earned);
@@ -392,7 +392,7 @@ app.post("/account/game/complete",async(req,res)=>{
   const input=req.body.f1Result;
   if(!input||typeof input!=="object"||Array.isArray(input))return res.status(400).json({error:"Race result must be an object."});
   const position=Number(input.position),laps=Number(input.laps),bestLapMs=input.bestLapMs==null?null:Number(input.bestLapMs),timeMs=input.timeMs==null?null:Number(input.timeMs);
-  const circuit=String(input.circuit||"Unknown circuit").replace(/[<>\\u0000-\\u001f\\u007f]/g,"").trim().slice(0,80)||"Unknown circuit";
+  const circuit=String(input.circuit||"Unknown circuit").replace(/[<>]/g,"").trim().slice(0,80)||"Unknown circuit";
   if(!Number.isInteger(position)||position<1||position>32||!Number.isInteger(laps)||laps<0||laps>200||typeof input.finished!=="boolean"||(bestLapMs!==null&&(!Number.isFinite(bestLapMs)||bestLapMs<1000||bestLapMs>3600000))||(timeMs!==null&&(!Number.isFinite(timeMs)||timeMs<1000||timeMs>86400000)))return res.status(400).json({error:"Race result contains invalid values."});
   f1RacePayload={position,laps,finished:input.finished,bestLapMs,timeMs,circuit};
  }
