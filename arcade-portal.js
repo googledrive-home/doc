@@ -568,22 +568,38 @@
  async function renderLeaderboards(){
   const host=$p("portalLeaderboardsContent");if(!host)return;
   const options=games.filter(g=>g.id);
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardGame">Choose a game</label><select id="portalLeaderboardGame" class="portal-control">'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p class="portal-leaderboard-warning">These are unverified personal bests. Scores are submitted by game clients and have not been independently validated by the server. Only players who switch on public leaderboard sharing in their profile are listed.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
-  const select=$p("portalLeaderboardGame"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
+  const categories=[
+   ["xp","Total XP"],["level","Player level"],["achievements","Achievements"],["gamesPlayed","Games played"],
+   ["f1Wins","F1 race wins"],["f1Podiums","F1 podiums"],["f1Points","F1 points"],["coinsEarned","Home Coins earned"],["game","Game personal bests"]
+  ];
+  const metricLabels=Object.fromEntries(categories);
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardCategory">Leaderboard</label><select id="portalLeaderboardCategory" class="portal-control">'+categories.map(([id,label])=>'<option value="'+id+'">'+esc(label)+'</option>').join("")+'</select><label for="portalLeaderboardGame" id="portalLeaderboardGameLabel" hidden>Game</label><select id="portalLeaderboardGame" class="portal-control" hidden>'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p id="portalLeaderboardWarning" class="portal-leaderboard-warning">Only players who enable public leaderboard sharing in their profile are listed. XP, level and achievement totals are calculated by the platform.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
+  const category=$p("portalLeaderboardCategory"),game=$p("portalLeaderboardGame"),gameLabel=$p("portalLeaderboardGameLabel"),warning=$p("portalLeaderboardWarning"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
   async function load(){
-   status.textContent="Loading "+(options.find(g=>g.id===select.value)?.title||"game")+"…";rows.innerHTML="";
+   const global=category.value!=="game";
+   game.hidden=!(!global);gameLabel.hidden=!(!global);
+   status.textContent="Loading "+(global?metricLabels[category.value]:options.find(g=>g.id===game.value)?.title||"game")+"…";rows.innerHTML="";
    try{
-    const data=await apiRequest("/portal/games/"+encodeURIComponent(select.value)+"/leaderboard");
+    let data;
+    if(global)data=await apiRequest("/portal/leaderboard?category="+encodeURIComponent(category.value));
+    else data=await apiRequest("/portal/games/"+encodeURIComponent(game.value)+"/leaderboard");
     const entries=Array.isArray(data.entries)?data.entries:[];
-    if(!entries.length){status.textContent="No players have opted in with a recorded personal best for this game yet.";return;}
-    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+" · not verified";
-    rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+    warning.textContent=global
+     ? data.verified===false?"F1 race totals are reported by the simulator and are not independently verified. Only players who enable public leaderboard sharing are listed.":"Only players who enable public leaderboard sharing are listed. These platform totals are calculated and stored by the server."
+     :"Game personal-best scores are submitted by game clients and have not been independently validated by the server. Only players who enable public leaderboard sharing are listed.";
+    const playerRank=data.currentPlayerRank?'<div class="portal-muted portal-leaderboard-self">Your current position: #'+esc(data.currentPlayerRank)+'</div>':"";
+    if(!entries.length){status.textContent="No opted-in players have a recorded score for this category yet.";return;}
+    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+(global&&data.totalPlayers>entries.length?" · top "+entries.length+" shown":"")+(data.verified===false?" · not verified":"");
+    if(global){
+     const valueLabel=metricLabels[category.value];
+     rows.innerHTML=playerRank+'<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>'+esc(valueLabel)+'</th><th>Total XP</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.value).toLocaleString())+'</td><td>'+esc(Number(item.xp).toLocaleString())+'</td></tr>').join("")+'</tbody></table></div>';
+    }else{
+     rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+    }
    }catch(error){status.textContent=error.message||"Leaderboards are unavailable right now.";}
   }
-  select.addEventListener("change",load);
-  await load();
+  category.addEventListener("change",load);game.addEventListener("change",load);await load();
  }
-
  async function renderChallenges(){
    const host=$p("portalChallengesContent");if(!host)return;
    if(!accountData){
