@@ -565,20 +565,51 @@
  async function renderLeaderboards(){
   const host=$p("portalLeaderboardsContent");if(!host)return;
   const options=games.filter(g=>g.id);
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardGame">Choose a game</label><select id="portalLeaderboardGame" class="portal-control">'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p class="portal-leaderboard-warning">These are unverified personal bests. Scores are submitted by game clients and have not been independently validated by the server. Only players who switch on public leaderboard sharing in their profile are listed.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
-  const select=$p("portalLeaderboardGame"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
-  async function load(){
-   status.textContent="Loading "+(options.find(g=>g.id===select.value)?.title||"game")+"…";rows.innerHTML="";
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-tabs"><button class="portal-filter active" type="button" data-leaderboard-tab="platform">Platform rankings</button><button class="portal-filter" type="button" data-leaderboard-tab="games">Game records</button></div><section id="portalPlatformLeaderboard"><div class="portal-leaderboard-toolbar"><label for="portalPlatformMetric">Rank players by</label><select id="portalPlatformMetric" class="portal-control"><option value="xp">Total XP</option><option value="level">Player level</option><option value="achievements">Achievements unlocked</option><option value="games">Games played</option><option value="weekly-xp">XP this week</option><option value="credits-earned">Credits earned</option></select></div><p class="portal-leaderboard-warning">Platform rankings use progress recorded by Home and are shown only for players who opt in to public leaderboard sharing in their profile.</p><div id="portalPlatformStatus" class="portal-muted" role="status" aria-live="polite">Loading platform rankings…</div><div id="portalPlatformRows"></div></section><section id="portalGameLeaderboard" hidden><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardGame">Choose a game</label><select id="portalLeaderboardGame" class="portal-control">'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p class="portal-leaderboard-warning">These are unverified personal bests. Scores are submitted by game clients and have not been independently validated by the server. Only players who switch on public leaderboard sharing in their profile are listed.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading game records…</div><div id="portalLeaderboardRows"></div></section></div>';
+
+  const platformMetric=$p("portalPlatformMetric");
+  const platformStatus=$p("portalPlatformStatus");
+  const platformRows=$p("portalPlatformRows");
+  const gameSelect=$p("portalLeaderboardGame");
+  const gameStatus=$p("portalLeaderboardStatus");
+  const gameRows=$p("portalLeaderboardRows");
+  const platformSection=$p("portalPlatformLeaderboard");
+  const gameSection=$p("portalGameLeaderboard");
+
+  async function loadPlatform(){
+   platformStatus.textContent="Loading "+platformMetric.selectedOptions[0].textContent+"…";
+   platformRows.innerHTML="";
    try{
-    const data=await apiRequest("/portal/games/"+encodeURIComponent(select.value)+"/leaderboard");
+    const data=await apiRequest("/account/platform-leaderboard?category="+encodeURIComponent(platformMetric.value));
     const entries=Array.isArray(data.entries)?data.entries:[];
-    if(!entries.length){status.textContent="No players have opted in with a recorded personal best for this game yet.";return;}
-    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+" · not verified";
-    rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
-   }catch(error){status.textContent=error.message||"Leaderboards are unavailable right now.";}
+    if(!entries.length){platformStatus.textContent="No players have opted in to the platform leaderboard yet.";return;}
+    platformStatus.textContent=entries.length+" opt-in players · "+(data.label||"Platform ranking");
+    const viewer=data.viewer?'<p class="portal-leaderboard-self">Your current position: #'+esc(data.viewer.rank)+' · '+esc(Number(data.viewer.value).toLocaleString())+'</p>':'';
+    platformRows.innerHTML=viewer+'<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>'+esc(data.label||"Score")+'</th><th>Achievements</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.value).toLocaleString())+'</td><td>'+esc(item.achievements)+'</td></tr>').join("")+'</tbody></table></div>';
+   }catch(error){platformStatus.textContent=error.message||"Platform rankings are unavailable right now.";}
   }
-  select.addEventListener("change",load);
-  await load();
+
+  async function loadGame(){
+   gameStatus.textContent="Loading "+(options.find(g=>g.id===gameSelect.value)?.title||"game")+"…";
+   gameRows.innerHTML="";
+   try{
+    const data=await apiRequest("/portal/games/"+encodeURIComponent(gameSelect.value)+"/leaderboard");
+    const entries=Array.isArray(data.entries)?data.entries:[];
+    if(!entries.length){gameStatus.textContent="No players have opted in with a recorded personal best for this game yet.";return;}
+    gameStatus.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+" · not verified";
+    gameRows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+   }catch(error){gameStatus.textContent=error.message||"Game records are unavailable right now.";}
+  }
+
+  document.querySelectorAll("[data-leaderboard-tab]").forEach(button=>button.addEventListener("click",()=>{
+   const isPlatform=button.dataset.leaderboardTab==="platform";
+   platformSection.hidden=!isPlatform;gameSection.hidden=isPlatform;
+   document.querySelectorAll("[data-leaderboard-tab]").forEach(tab=>tab.classList.toggle("active",tab===button));
+   if(isPlatform)loadPlatform();else loadGame();
+  }));
+  platformMetric.addEventListener("change",loadPlatform);
+  gameSelect.addEventListener("change",loadGame);
+  await loadPlatform();
  }
 
  function renderProfile(){
@@ -592,7 +623,7 @@
    const progress=careerProgressFor(game,career[game.id],stats.games?.[game.id]);
    return '<button type="button" class="portal-career-card" data-career-open="'+esc(game.id)+'"><span class="portal-career-meta">'+esc(game.genre)+'</span><strong>'+esc(game.title)+'</strong><span class="portal-career-rank">'+esc(progress.rank)+' · Rank '+progress.chapter+'/6</span><span class="portal-xp-track"><span style="width:'+progress.percent+'%"></span></span><small>'+(progress.complete?"CAREER COMPLETE":esc(progress.sessions+' / '+progress.nextGoal+' sessions'))+'</small></button>';
   }).join("");
-  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><div class="portal-field portal-privacy-toggle"><label for="portalLeaderboardOptIn"><input id="portalLeaderboardOptIn" type="checkbox" '+(profile.leaderboardOptIn?"checked":"")+' /> Show my username, avatar and best scores on public leaderboards</label><small>Off by default. You can change this any time.</small></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
+  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><div class="portal-field portal-privacy-toggle"><label for="portalLeaderboardOptIn"><input id="portalLeaderboardOptIn" type="checkbox" '+(profile.leaderboardOptIn?"checked":"")+' /> Show my username, avatar and platform progress on public leaderboards</label><small>Off by default. You can change this any time.</small></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
    '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Credits</small><strong>'+esc(profile.currencyBalance||0)+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+'<div class="portal-career-grid">'+careerCards+'</div>'+'</div></div></div>'+
