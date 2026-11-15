@@ -595,3 +595,11 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-equipped-badge{display:inline-grid;place-items:center;width:27px;height:27px;margin:0 0 8px;border:1px solid var(--portal-line);border-radius:9px;background:var(--portal-panel-2);font-size:15px}
 .portal-profile-hero h2.has-shop-nameplate{display:inline-block;padding:6px 11px;border:1px solid color-mix(in srgb,var(--portal-warn) 45%,var(--portal-line));border-radius:9px;background:color-mix(in srgb,var(--portal-warn) 10%,var(--portal-panel));}
 @media(max-width:650px){.portal-f1-career-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Game-card information hierarchy; retains the portal's existing colours and surfaces. */
+.portal-game-description{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:28px;margin:6px 0 8px;color:var(--portal-muted);font-size:9px;line-height:1.5}
+.portal-cover-featured{position:absolute;top:11px;right:11px;z-index:2;padding:5px 7px;border:1px solid color-mix(in srgb,var(--portal-accent-2) 46%,transparent);border-radius:20px;background:var(--portal-panel);color:var(--portal-accent-2);font-size:7px;font-weight:950;letter-spacing:.1em}
+.portal-game-card-stats{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--portal-line)}
+.portal-game-card-stats span{padding:4px 6px;border-radius:6px;background:#ffffff07;color:var(--portal-muted);font-size:7px;font-weight:750;white-space:nowrap}
+.portal-game-card-stats span:first-child{color:var(--portal-text)}
