@@ -594,3 +594,9 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-wallet-metric b{font-size:15px}
 @media(max-width:900px){.portal-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.portal-dashboard-metrics{grid-template-columns:1fr}}
+
+.portal-leaderboard-tabs{display:flex;gap:7px;margin-bottom:15px;padding-bottom:12px;border-bottom:1px solid var(--portal-line)}
+.portal-leaderboard-tabs .portal-filter{min-height:34px}
+.portal-leaderboard-self{display:inline-flex;margin:0 0 10px;padding:7px 10px;border:1px solid var(--portal-line);border-radius:9px;color:var(--portal-text);background:#ffffff08;font-size:9px;font-weight:800}
+.portal-leaderboard-table-wrap{overflow-x:auto}
+@media(max-width:520px){.portal-leaderboard-tabs{flex-wrap:wrap}}
