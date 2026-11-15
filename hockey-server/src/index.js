@@ -349,7 +349,7 @@ app.get("/account/platform-leaderboard",async(req,res)=>{
   xp:"Total XP",level:"Player level",achievements:"Achievements unlocked",
   games:"Games played","weekly-xp":"XP this week","credits-earned":"Credits earned"
  }[category];
- res.setHeader("Cache-Control","public, max-age=30");
+ res.setHeader("Cache-Control","private, no-store");
  res.json({
   category,label,period:category==="weekly-xp"?period:null,
   optInOnly:true,entries:visible,
