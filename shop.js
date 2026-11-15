@@ -159,11 +159,14 @@
     if(hero){
       hero.classList.remove("shop-banner-checkered","shop-banner-grand-prix","shop-banner-champion");
       if(banner)hero.classList.add("shop-banner-"+banner.appearance);
-      const old=hero.querySelector(".portal-shop-profile-badge");old?.remove();
+      const old=hero.querySelector(".portal-shop-profile-badge");
       if(badge){
-        const heading=hero.querySelector("h2");
-        if(heading){const tag=document.createElement("span");tag.className="portal-shop-profile-badge";tag.textContent=badge.appearance;heading.insertAdjacentElement("afterend",tag);}
-      }
+        if(old?.textContent!==badge.appearance){
+          old?.remove();
+          const heading=hero.querySelector("h2");
+          if(heading){const tag=document.createElement("span");tag.className="portal-shop-profile-badge";tag.textContent=badge.appearance;heading.insertAdjacentElement("afterend",tag);}
+        }
+      }else old?.remove();
     }
   }
 
