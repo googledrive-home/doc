@@ -564,3 +564,26 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-profile-hero.shop-banner-champion{border-top:3px solid #d9b55b}
 @media(max-width:900px){.portal-shop-tier-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:560px){.portal-shop-wallet{align-items:flex-start}.portal-shop-level{min-width:72px;padding:10px}.portal-shop-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-shop-transaction{grid-template-columns:minmax(0,1fr) auto;gap:5px 12px}.portal-shop-transaction small{grid-column:1/-1}.portal-shop-top-balance{padding:6px 8px}.portal-shop-top-balance span:last-child{display:none}}
+
+/* Daily and weekly challenges — retain the Home portal's current component language. */
+.portal-challenge-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 22px}
+.portal-challenge-summary>div:first-child{display:grid;gap:5px}
+.portal-challenge-summary strong{font-size:clamp(20px,2.6vw,28px);letter-spacing:-.04em}
+.portal-challenge-summary small{font-size:9px;color:var(--portal-muted)}
+.portal-challenge-group{margin:22px 0 28px}
+.portal-challenge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:11px}
+.portal-challenge-card{min-width:0;padding:16px;border:1px solid var(--portal-line);border-radius:16px;background:linear-gradient(145deg,#ffffff08,#ffffff03)}
+.portal-challenge-card.completed{border-color:color-mix(in srgb,var(--portal-good) 35%,var(--portal-line))}
+.portal-challenge-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.portal-challenge-tag{color:var(--portal-accent-2);font-size:7px;font-weight:950;letter-spacing:.14em}
+.portal-challenge-state{color:var(--portal-muted);font-size:8px;font-weight:850}
+.portal-challenge-card h3{margin:12px 0 5px;font-size:14px;letter-spacing:-.02em}
+.portal-challenge-card p{min-height:30px;margin:0;color:var(--portal-muted);font-size:9px;line-height:1.6}
+.portal-challenge-progress{height:7px;margin:14px 0 8px;overflow:hidden;border-radius:10px;background:#ffffff16}
+.portal-challenge-progress span{display:block;height:100%;border-radius:10px;background:var(--portal-accent);transition:width .25s ease}
+.portal-challenge-card.completed .portal-challenge-progress span{background:var(--portal-good)}
+.portal-challenge-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--portal-muted);font-size:8px}
+.portal-challenge-footer strong{color:var(--portal-text);font-size:8px}
+.portal-challenge-complete{margin-top:12px;padding-top:10px;border-top:1px solid var(--portal-line);color:var(--portal-good);font-size:8px;font-weight:850}
+.portal-challenge-reset{margin-top:9px;color:var(--portal-muted);font-size:8px}
+@media(max-width:560px){.portal-challenge-summary{align-items:flex-start;flex-direction:column}.portal-challenge-footer{align-items:flex-start;flex-direction:column}}
