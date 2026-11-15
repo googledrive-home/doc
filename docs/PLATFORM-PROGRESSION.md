@@ -55,3 +55,14 @@ The existing per-game high-score endpoint is still separate and remains labelled
 ## Important scope boundary
 
 The existing Home game-session tracker awards activity rewards from server-recorded session duration. This does not independently prove that an F1 race was completed or that client-reported race telemetry is authentic. Verified F1 race-result validation is a separate future task.
+
+
+## Dashboard and game cards
+
+The signed-in dashboard now includes a daily-challenge preview with live progress and reward values, a Credits wallet shortcut, recent games, favourites, recommendations, recent achievements and the saved F1 career/team summary.
+
+Game cards use the existing Home design and add per-player session count, total recorded playtime and last-played date from the existing account game statistics.
+
+## Shop achievements
+
+The first shop purchase unlocks **First Purchase**. Owning five shop items unlocks **Collector**; owning ten unlocks **Style Curator**. These achievements use the existing account achievement system and award XP plus the standard achievement Credits reward.
