@@ -131,7 +131,7 @@
     button.disabled=true;button.textContent="Purchasing…";
     try{
       const result=await account.request("/account/shop/purchase",{method:"POST",body:{itemId}});
-      notify("Unlocked "+result.item.name+".");
+      notify("Unlocked "+result.item.name+"."+(result.achievementsUnlocked?.length?" Achievement unlocked!":""));
       await loadShop();
       if(activeTab!=="inventory"){activeTab="inventory";render();}
     }catch(error){notify(error.message||"Purchase failed.");await loadShop();}
