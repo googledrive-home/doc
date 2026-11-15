@@ -607,3 +607,6 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-f1-career-stats strong{display:block;font-size:clamp(16px,2.5vw,22px);font-variant-numeric:tabular-nums}
 .portal-f1-career-stats small{display:block;margin-top:4px;color:var(--portal-muted);font-size:8px}
 @media(max-width:560px){.portal-f1-career-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.portal-game-activity{margin-top:7px;color:var(--portal-muted);font-size:8px;line-height:1.45;white-space:normal}
+.portal-game-card:hover .portal-game-activity{color:color-mix(in srgb,var(--portal-text) 80%,var(--portal-muted))}
