@@ -382,11 +382,27 @@ app.post("/account/shop/purchase",async(req,res)=>{
  if(level<item.minLevel)return res.status(403).json({error:"Reach level "+item.minLevel+" to unlock this item."});
  if((account.shopInventory||[]).some(entry=>entry.itemId===item.id))return res.status(409).json({error:"You already own this item."});
  if((account.currencyBalance||0)<item.price)return res.status(409).json({error:"You do not have enough Credits for this item."});
- const oldBalance=account.currencyBalance||0,oldLength=(account.currencyTransactions||[]).length,oldInventoryLength=(account.shopInventory||[]).length,now=Date.now();
+ const previous={
+  balance:account.currencyBalance||0,earnedTotal:account.currencyEarnedTotal||0,
+  currencyTransactions:(account.currencyTransactions||[]).length,
+  xp:account.xp||0,xpTransactions:(account.xpTransactions||[]).length,
+  achievements:(account.achievements||[]).length,inventory:(account.shopInventory||[]).length
+ },now=Date.now(),newAchievements=[];
  changeCurrency(account,-item.price,"shop_purchase","purchase:"+randomBytes(12).toString("hex"));
  account.shopInventory.push({itemId:item.id,acquiredAt:now});
- try{await persistAccountStore();res.json({ok:true,item, currency:{name:"Credits",balance:account.currencyBalance},inventory:account.shopInventory,equipped:account.equippedShopItems||{}});}
- catch(error){account.currencyBalance=oldBalance;account.currencyTransactions=(account.currencyTransactions||[]).slice(0,oldLength);account.shopInventory=(account.shopInventory||[]).slice(0,oldInventoryLength);console.error("Shop purchase storage error:",error.message);res.status(503).json({error:"The purchase could not be saved. Your balance has been restored."});}
+ if(unlockAchievement(account,"shop-first-purchase","platform","First Purchase","Unlocked your first item in the Home shop.","bronze",15))newAchievements.push("shop-first-purchase");
+ if(account.shopInventory.length>=5&&unlockAchievement(account,"shop-collector-five","platform","Collector","Own five shop items.","silver",25))newAchievements.push("shop-collector-five");
+ if(account.shopInventory.length>=10&&unlockAchievement(account,"shop-collector-ten","platform","Style Curator","Own ten shop items.","gold",40))newAchievements.push("shop-collector-ten");
+ try{await persistAccountStore();res.json({ok:true,item,achievementsUnlocked:newAchievements,currency:{name:"Credits",balance:account.currencyBalance},xp:account.xp,inventory:account.shopInventory,equipped:account.equippedShopItems||{}});}
+ catch(error){
+  account.currencyBalance=previous.balance;account.currencyEarnedTotal=previous.earnedTotal;
+  account.currencyTransactions=(account.currencyTransactions||[]).slice(0,previous.currencyTransactions);
+  account.xp=previous.xp;account.xpTransactions=(account.xpTransactions||[]).slice(0,previous.xpTransactions);
+  account.achievements=(account.achievements||[]).slice(0,previous.achievements);
+  account.shopInventory=(account.shopInventory||[]).slice(0,previous.inventory);
+  console.error("Shop purchase storage error:",error.message);
+  res.status(503).json({error:"The purchase could not be saved. Your balance has been restored."});
+ }
 });
 app.post("/account/shop/equip",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
