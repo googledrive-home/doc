@@ -31,7 +31,7 @@ const ACCOUNT_SESSION_MS=30*24*60*60*1000;
 const ACCOUNT_DATA_DIR=process.env.DATA_DIR||path.join(process.cwd(),"data");
 const ACCOUNT_FILE=path.join(ACCOUNT_DATA_DIR,"accounts.json");
 let accountPool=null;
-let accountStore={version:1,accounts:[],sessions:[],gameRatings:{}};
+let accountStore={version:1,accounts:[],sessions:[],bridgeCodes:[],gameRatings:{}};
 let accountWriteQueue=Promise.resolve();
 const accountRateLimits=new Map();
 const emptyAccountStats=()=>({matchesPlayed:0,wins:0,draws:0,losses:0,goals:0,assists:0,shots:0,shotsOnGoal:0,hits:0,saves:0,goalsAgainst:0,cleanSheets:0,overtimeWins:0,currentWinStreak:0,bestWinStreak:0,timePlayedSeconds:0,matchTimeSeconds:0,modes:{},maps:{},games:{},gamesPlayed:0});
@@ -89,7 +89,7 @@ function unlockAchievement(account,id,gameId,title,description,tier="bronze",xpR
 }
 function cleanAccountStore(value){
  const data=value&&typeof value==="object"?value:{};
- data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];
+ data.version=1;data.accounts=Array.isArray(data.accounts)?data.accounts:[];data.sessions=Array.isArray(data.sessions)?data.sessions:[];data.bridgeCodes=Array.isArray(data.bridgeCodes)?data.bridgeCodes.filter(code=>code&&typeof code.tokenHash==="string"&&typeof code.accountId==="string"&&Number(code.expiresAt)>Date.now()).slice(-100):[];
  for(const account of data.accounts){
   if(!account.stats||typeof account.stats!=="object")account.stats=emptyAccountStats();
   const defaults=emptyAccountStats();
@@ -217,6 +217,29 @@ app.post("/account/profile",async(req,res)=>{
  account.username=username;account.name=username;account.skin=skin;if(typeof req.body?.leaderboardOptIn==="boolean")account.leaderboardOptIn=req.body.leaderboardOptIn;
  try{await persistAccountStore();res.json(accountPayload(account));}
  catch(error){console.error("Account storage error:",error.message);res.status(503).json({error:"Could not save your profile. Please try again."});}
+});
+app.post("/account/bridge",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ const account=authenticatedAccount(req);if(!account)return res.status(401).json({error:"Sign in to connect F1 Simulator."});
+ const now=Date.now(),code=randomBytes(32).toString("base64url"),entry={tokenHash:tokenDigest(code),accountId:account.id,createdAt:now,expiresAt:now+2*60*1000};
+ accountStore.bridgeCodes=(accountStore.bridgeCodes||[]).filter(item=>item.expiresAt>now&&item.accountId!==account.id);
+ accountStore.bridgeCodes.push(entry);
+ try{await persistAccountStore();res.setHeader("Cache-Control","no-store");res.json({code,expiresAt:entry.expiresAt});}
+ catch(error){accountStore.bridgeCodes=accountStore.bridgeCodes.filter(item=>item.tokenHash!==entry.tokenHash);console.error("Account bridge creation error:",error.message);res.status(503).json({error:"Could not create a secure F1 sign-in link."});}
+});
+app.post("/account/bridge/exchange",async(req,res)=>{
+ if(!requirePersistentAccountStorage(res))return;
+ if(!loginRateLimit(req,"bridge-exchange"))return res.status(429).json({error:"Too many connection attempts. Please try again shortly."});
+ const code=String(req.body?.code||"");
+ if(code.length<32||code.length>100)return res.status(400).json({error:"This connection link is invalid or has expired."});
+ const digest=tokenDigest(code),index=(accountStore.bridgeCodes||[]).findIndex(item=>item.tokenHash===digest&&item.expiresAt>Date.now());
+ if(index<0)return res.status(401).json({error:"This connection link has expired or has already been used. Open F1 from Home again."});
+ const entry=accountStore.bridgeCodes[index],account=accountStore.accounts.find(item=>item.id===entry.accountId);
+ if(!account){accountStore.bridgeCodes.splice(index,1);await persistAccountStore();return res.status(401).json({error:"The linked Home account could not be found."});}
+ const token=createAccountSession(account);
+ accountStore.bridgeCodes.splice(index,1);
+ try{await persistAccountStore();res.setHeader("Cache-Control","no-store");res.json({token,...accountPayload(account)});}
+ catch(error){const digestToken=tokenDigest(token);accountStore.sessions=accountStore.sessions.filter(item=>item.tokenHash!==digestToken);accountStore.bridgeCodes.push(entry);console.error("Account bridge exchange error:",error.message);res.status(503).json({error:"Could not finish connecting your Home account."});}
 });
 app.post("/account/logout",async(req,res)=>{
  if(!requirePersistentAccountStorage(res))return;
