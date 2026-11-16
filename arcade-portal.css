@@ -500,3 +500,106 @@ body[data-portal-text-size="large"] .portal-content p,body[data-portal-text-size
 .portal-leaderboard-table th,.portal-leaderboard-table td{padding:11px 9px;border-bottom:1px solid var(--portal-line);text-align:left;font-size:10px}
 .portal-leaderboard-table th{font-size:8px;letter-spacing:.08em;color:var(--portal-muted);text-transform:uppercase}
 .portal-leaderboard-player{font-weight:850;white-space:nowrap}
+
+
+/* Home Coins shop — uses the existing Home portal palette and panel language. */
+.portal-shop-wallet{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;padding:18px 20px;border:1px solid var(--portal-line);border-radius:var(--portal-radius);background:linear-gradient(120deg,var(--portal-panel-2),var(--portal-panel));}
+.portal-shop-wallet>div:first-child{display:grid;gap:5px}
+.portal-shop-wallet strong{font-size:clamp(25px,4vw,34px);font-weight:950;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+.portal-shop-wallet small{font-size:9px;color:var(--portal-muted)}
+.portal-shop-wallet-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.portal-shop-wallet-actions>span{padding:7px 10px;border:1px solid var(--portal-line);border-radius:20px;color:var(--portal-muted);font-size:9px;font-weight:900;letter-spacing:.08em}
+.portal-shop-intro{margin-bottom:14px}
+.portal-shop-intro>div:first-child p{max-width:640px;margin:7px 0 15px;color:var(--portal-muted);font-size:10px;line-height:1.65}
+.portal-shop-tier-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.portal-shop-tier{min-width:0;padding:11px;border:1px solid var(--portal-line);border-radius:12px;background:#ffffff06}
+.portal-shop-tier.unlocked{border-color:color-mix(in srgb,var(--portal-good) 34%,var(--portal-line))}
+.portal-shop-tier.locked{opacity:.58}
+.portal-shop-tier-top{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.portal-shop-tier-top b{font-size:10px}
+.portal-shop-tier-top span{font-size:7px;font-weight:950;color:var(--portal-good);letter-spacing:.06em}
+.portal-shop-tier.locked .portal-shop-tier-top span{color:var(--portal-muted)}
+.portal-shop-tier p{min-height:28px;margin:7px 0;color:var(--portal-muted);font-size:8px;line-height:1.45}
+.portal-shop-tier small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:13px}
+.portal-shop-section-head h2{margin:4px 0 0;font-size:17px}
+.portal-shop-section-head>span{font-size:8px;color:var(--portal-muted)}
+.portal-shop-item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.portal-shop-item{display:flex;align-items:center;gap:11px;min-width:0;padding:12px;border:1px solid var(--portal-line);border-radius:13px;background:#ffffff05}
+.portal-shop-item.locked{opacity:.72}
+.portal-shop-item-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--portal-panel-2);font-size:23px}
+.portal-shop-item-copy{flex:1;min-width:0}
+.portal-shop-item-meta{font-size:7px;color:var(--portal-accent-2);font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.portal-shop-item-copy h3{margin:4px 0;font-size:11px}
+.portal-shop-item-copy p{margin:0 0 5px;color:var(--portal-muted);font-size:8px;line-height:1.45}
+.portal-shop-item-copy small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-item-action{display:grid;justify-items:end;gap:6px;flex:none}
+.portal-shop-item-action button{max-width:124px;padding:8px 10px;font-size:8px}
+.portal-shop-item-action button:disabled{opacity:.42;cursor:not-allowed}
+.portal-shop-owned{font-size:7px;color:var(--portal-good);font-weight:950;letter-spacing:.08em}
+.portal-shop-inventory-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.portal-shop-inventory-list>div{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--portal-line);border-radius:10px;background:#ffffff05}
+.portal-shop-inventory-list>div>span{font-size:18px}
+.portal-shop-inventory-list b{flex:1;min-width:0;font-size:8px}
+.portal-shop-inventory-list small{font-size:7px;color:var(--portal-muted)}
+.portal-shop-transactions{display:grid;gap:2px;margin-top:9px}
+.portal-shop-transactions>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--portal-line);font-size:9px}
+.portal-shop-transactions>div span{color:var(--portal-muted)}
+.portal-shop-transactions>div b{font-variant-numeric:tabular-nums}
+.portal-shop-transactions .earned{color:var(--portal-good)}
+.portal-shop-transactions .spent{color:var(--portal-warn)}
+@media(max-width:1100px){.portal-shop-tier-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.portal-shop-item-grid{grid-template-columns:1fr}.portal-shop-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-shop-inventory-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.portal-shop-wallet{align-items:flex-start;flex-direction:column}.portal-shop-tier-grid,.portal-shop-inventory-list{grid-template-columns:1fr}.portal-shop-item{align-items:flex-start}.portal-shop-item-icon{width:38px;height:38px}.portal-shop-item-action button{max-width:108px;padding:7px}}
+
+
+/* Daily and weekly challenges — consistent with the existing Home panels. */
+.portal-challenge-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;padding:16px 18px;border:1px solid var(--portal-line);border-radius:var(--portal-radius);background:linear-gradient(120deg,var(--portal-panel-2),var(--portal-panel))}
+.portal-challenge-summary>div:first-child{display:grid;gap:5px}
+.portal-challenge-summary strong{font-size:18px}
+.portal-challenge-summary small{font-size:8px;color:var(--portal-muted)}
+.portal-challenge-summary-counts{display:grid;gap:6px;text-align:right}
+.portal-challenge-summary-counts span{font-size:9px;color:var(--portal-muted)}
+.portal-challenge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.portal-challenge-card{display:flex;align-items:center;gap:12px;min-width:0;padding:13px;border:1px solid var(--portal-line);border-radius:13px;background:#ffffff05}
+.portal-challenge-card.completed{border-color:color-mix(in srgb,var(--portal-good) 42%,var(--portal-line))}
+.portal-challenge-card.claimed{opacity:.7}
+.portal-challenge-copy{flex:1;min-width:0}
+.portal-challenge-type{font-size:7px;font-weight:950;letter-spacing:.1em;color:var(--portal-accent-2)}
+.portal-challenge-copy h3{margin:5px 0;font-size:12px}
+.portal-challenge-copy p{margin:0 0 10px;font-size:8px;line-height:1.5;color:var(--portal-muted)}
+.portal-challenge-progress-label{display:flex;justify-content:space-between;gap:10px;margin-bottom:5px;font-size:8px;color:var(--portal-muted)}
+.portal-challenge-progress-label b{color:var(--portal-text)}
+.portal-challenge-copy .portal-xp-track{height:6px}
+.portal-challenge-copy>small{display:block;margin-top:7px;font-size:7px;color:var(--portal-muted)}
+.portal-challenge-action{flex:none}
+.portal-challenge-action button{padding:8px 10px;font-size:8px}
+.portal-challenge-action button:disabled{opacity:.45;cursor:default}
+.portal-dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1100px){.portal-dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.portal-challenge-grid{grid-template-columns:1fr}.portal-challenge-summary{align-items:flex-start;flex-direction:column}.portal-challenge-summary-counts{text-align:left}}
+@media(max-width:650px){.portal-dashboard-metrics{grid-template-columns:1fr}}
+
+
+/* Shared F1 career card and equipped shop cosmetics, styled with Home's existing tokens. */
+.portal-f1-career-panel{margin:14px 0;background:linear-gradient(115deg,var(--portal-panel-2),var(--portal-panel))}
+.portal-f1-career-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.portal-f1-career-stats>div{display:grid;gap:4px;padding:10px;border:1px solid var(--portal-line);border-radius:11px;background:#ffffff06}
+.portal-f1-career-stats small{font-size:7px;letter-spacing:.12em;color:var(--portal-muted);font-weight:900}
+.portal-f1-career-stats b{font-size:20px;font-variant-numeric:tabular-nums}
+.portal-f1-last-result{margin:8px 0;color:var(--portal-muted);font-size:9px}
+.portal-profile-hero.has-shop-banner{position:relative;overflow:hidden}
+.portal-profile-banner{display:flex;align-items:center;gap:8px;padding:11px 13px;margin:-6px 0 14px;border:1px solid var(--portal-line);border-radius:12px;background:linear-gradient(100deg,var(--portal-panel-2),color-mix(in srgb,var(--portal-accent) 13%,var(--portal-panel)));color:var(--portal-text);font-size:10px;font-weight:850}
+.portal-profile-banner span{font-size:17px}
+.portal-profile-hero .portal-avatar.has-shop-frame{outline:3px solid var(--portal-accent-2);outline-offset:3px;box-shadow:0 0 0 6px color-mix(in srgb,var(--portal-accent-2) 16%,transparent)}
+.portal-equipped-badge{display:inline-grid;place-items:center;width:27px;height:27px;margin:0 0 8px;border:1px solid var(--portal-line);border-radius:9px;background:var(--portal-panel-2);font-size:15px}
+.portal-profile-hero h2.has-shop-nameplate{display:inline-block;padding:6px 11px;border:1px solid color-mix(in srgb,var(--portal-warn) 45%,var(--portal-line));border-radius:9px;background:color-mix(in srgb,var(--portal-warn) 10%,var(--portal-panel));}
+@media(max-width:650px){.portal-f1-career-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Game-card information hierarchy; retains the portal's existing colours and surfaces. */
+.portal-game-description{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:28px;margin:6px 0 8px;color:var(--portal-muted);font-size:9px;line-height:1.5}
+.portal-cover-featured{position:absolute;top:11px;right:11px;z-index:2;padding:5px 7px;border:1px solid color-mix(in srgb,var(--portal-accent-2) 46%,transparent);border-radius:20px;background:var(--portal-panel);color:var(--portal-accent-2);font-size:7px;font-weight:950;letter-spacing:.1em}
+.portal-game-card-stats{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--portal-line)}
+.portal-game-card-stats span{padding:4px 6px;border-radius:6px;background:#ffffff07;color:var(--portal-muted);font-size:7px;font-weight:750;white-space:nowrap}
+.portal-game-card-stats span:first-child{color:var(--portal-text)}

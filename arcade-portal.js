@@ -48,7 +48,7 @@
     '<div class="portal-nav-label">PERSONAL</div>',
     '<button class="portal-nav-item" data-view="settings"><span class="portal-nav-icon">⚙</span><span class="portal-nav-label-text">Settings</span></button>',
     '<button class="portal-nav-item" data-view="music"><span class="portal-nav-icon">♫</span><span class="portal-nav-label-text">Music</span></button>',
-    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button>',
+    '<button class="portal-nav-item" data-view="profile"><span class="portal-nav-icon">◉</span><span class="portal-nav-label-text">Profile</span></button><button class="portal-nav-item" data-view="leaderboards"><span class="portal-nav-icon">♜</span><span class="portal-nav-label-text">Leaderboards</span></button><button class="portal-nav-item" data-view="shop"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Shop</span><span class="portal-nav-count">COINS</span></button><button class="portal-nav-item" data-view="challenges"><span class="portal-nav-icon">✓</span><span class="portal-nav-label-text">Challenges</span></button><button class="portal-nav-item" data-view="achievements"><span class="portal-nav-icon">✦</span><span class="portal-nav-label-text">Achievements</span></button>',
     '<button class="portal-nav-item" data-view="friends"><span class="portal-nav-icon">♧</span><span class="portal-nav-label-text">Friends</span><span class="portal-nav-count" id="friendCountBadge">0</span></button>',
     '<div class="portal-nav-label">TOOLS</div>',
     '<button class="portal-nav-item" data-view="dev"><span class="portal-nav-icon">▣</span><span class="portal-nav-label-text">Restricted</span><span class="portal-nav-count">LOCKED</span></button>',
@@ -76,7 +76,11 @@
      '<div class="portal-welcome"><div><div class="portal-eyebrow">YOUR SOUNDTRACK</div><h1>Music</h1><p>Use the built-in player, your playlists and music files saved in this browser.</p></div></div>',
      '<div class="portal-section-panel"><div id="portalMusicHost"></div></div>',
     '</section>',
-    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare opt-in personal bests by game. Scores are currently unverified.</p></div></div><div id="portalLeaderboardsContent"></div></section><section class="portal-view" id="portalProfileView" data-page="profile">',
+    '<section class="portal-view" id="portalLeaderboardsView" data-page="leaderboards"><div class="portal-welcome"><div><div class="portal-eyebrow">FRIENDLY COMPETITION</div><h1>Leaderboards</h1><p>Compare platform progression, achievements and F1 racing records. Only players who opt in are listed; simulator-reported results are labelled.</p></div></div><div id="portalLeaderboardsContent"></div></section>',
+    '<section class="portal-view" id="portalAchievementsView" data-page="achievements"><div class="portal-welcome"><div><div class="portal-eyebrow">MILESTONES · REWARDS · PROGRESS</div><h1>Achievements</h1><p>Track the milestones you have earned across the gaming platform and see what to work towards next.</p></div></div><div id="portalAchievementsContent"></div></section>',
+    '<section class="portal-view" id="portalChallengesView" data-page="challenges"><div class="portal-welcome"><div><div class="portal-eyebrow">PLAY · PROGRESS · REWARD</div><h1>Challenges</h1><p>Complete daily and weekly goals across Home games to earn XP and Home Coins.</p></div></div><div id="portalChallengesContent"></div></section>',
+    '<section class="portal-view" id="portalShopView" data-page="shop"><div class="portal-welcome"><div><div class="portal-eyebrow">EARN · UNLOCK · CUSTOMISE</div><h1>Shop</h1><p>Spend Home Coins earned through play on profile cosmetics. Reach higher levels to unlock more collections.</p></div></div><div id="portalShopContent"></div></section>',
+    '<section class="portal-view" id="portalProfileView" data-page="profile">',
      '<div class="portal-welcome"><div><div class="portal-eyebrow">PLAYER</div><h1>Your profile</h1><p>Your player card, progress, trophies, career and saved game stats.</p></div></div>',
      '<div id="portalProfileContent"></div>',
     '</section>',
@@ -121,7 +125,7 @@
  function currentAvatar(){const skin=Number(accountData?.profile?.avatar??accountData?.profile?.skin)||0;return AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];}
  function updateUsernameDisplay(){
   const name=username||"Guest",initial=currentAvatar();
-  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent=accountData?"Level "+(accountData.profile?.level||1):"Guest player";
+  $p("sidebarName").textContent=name;$p("sidebarStatus").textContent=accountData?"Level "+(accountData.profile?.level||1)+" · "+Number(accountData.profile?.coins||0).toLocaleString()+" coins":"Guest player";
   $p("sidebarAvatar").textContent=initial;$p("topAvatar").textContent=initial;$p("topAccountName").textContent=name;
   $p("portalQuickSignIn").textContent=accountData?"Account":"Sign in";
   $p("friendCountBadge").textContent=String(accountData?.profile?.friendCount||0);
@@ -264,14 +268,20 @@
   const trophies=(accountData.achievements||[]).slice().sort((a,b)=>(Number(b.unlockedAt)||0)-(Number(a.unlockedAt)||0)).slice(0,3);
   const latest=recent[0],xp=Number(profile.xp)||0,progress=Math.max(0,Math.min(100,Number(profile.levelProgress)||0));
   const resume=latest?'<section class="portal-dashboard-panel portal-dashboard-continue"><div><div class="portal-eyebrow">CONTINUE YOUR JOURNEY</div><h2>Pick up where you left off</h2><p>'+esc(latest.game.title)+' · '+esc(new Date(latest.record.lastPlayedAt).toLocaleDateString())+'</p><button type="button" class="portal-primary" data-dashboard-game="'+esc(latest.game.id)+'">OPEN GAME DETAILS</button></div><div class="portal-dashboard-continue-art">'+latest.game.art+'</div></section>':'<section class="portal-dashboard-panel"><div class="portal-eyebrow">READY TO PLAY?</div><h2>Your first session starts here</h2><p>Choose a game and Home will start building your play history.</p></section>';
+
+  const f1Stats=accountData.f1Stats||{},f1Results=accountData.f1RecentResults||[],f1Game=getGame("f1-simulator"),f1Latest=f1Results[0];
+  const f1Panel='<section class="portal-dashboard-panel portal-f1-career-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">F1 SIMULATOR CAREER</div><h2>'+(Number(f1Stats.races)>0?"Your racing record":"Start your racing career")+'</h2></div><span>'+(Number(f1Stats.races)>0?Number(f1Stats.races)+" races":"Ready when you are")+'</span></div>'+(Number(f1Stats.races)>0?'<div class="portal-f1-career-stats"><div><small>WINS</small><b>'+Number(f1Stats.wins||0)+'</b></div><div><small>PODIUMS</small><b>'+Number(f1Stats.podiums||0)+'</b></div><div><small>POINTS</small><b>'+Number(f1Stats.points||0)+'</b></div><div><small>BEST FINISH</small><b>'+(f1Stats.bestFinish?("P"+Number(f1Stats.bestFinish)):"—")+'</b></div></div>'+(f1Latest?'<p class="portal-f1-last-result">Latest: '+esc(f1Latest.circuit||"F1 race")+' · '+(f1Latest.finished?"P"+esc(f1Latest.position):"DNF")+' · '+esc(new Date(f1Latest.createdAt).toLocaleDateString())+'</p>':''):'<p class="portal-muted">Connect your Home account in the F1 Simulator driver profile to save results across the platform.</p>')+'<div class="portal-dashboard-actions"><button type="button" class="portal-primary" data-open-f1>OPEN F1 SIMULATOR</button></div></section>';
   host.innerHTML=resume+
-   '<div class="portal-dashboard-metrics"><article class="portal-dashboard-metric"><small>PLAYER LEVEL</small><b>LEVEL '+esc(profile.level||1)+'</b><span>'+xp.toLocaleString()+' XP · '+progress+'% to next level</span><div class="portal-xp-track"><span style="width:'+progress+'%"></span></div></article><article class="portal-dashboard-metric"><small>LAST 7 DAYS</small><b>'+weekSessions+' sessions</b><span>Completed tracked sessions</span></article><article class="portal-dashboard-metric"><small>ALL-TIME PLAYTIME</small><b>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</b><span>'+esc(stats.gamesPlayed||0)+' sessions recorded</span></article></div>'+
+   '<div class="portal-dashboard-metrics"><article class="portal-dashboard-metric"><small>PLAYER LEVEL</small><b>LEVEL '+esc(profile.level||1)+'</b><span>'+xp.toLocaleString()+' XP · '+progress+'% to next level</span><div class="portal-xp-track"><span style="width:'+progress+'%"></span></div></article><article class="portal-dashboard-metric"><small>HOME COINS</small><b>◈ '+Number(profile.coins||0).toLocaleString()+'</b><span>Earn coins through play and challenges</span><button type="button" class="portal-secondary" data-open-shop>VISIT SHOP</button></article><article class="portal-dashboard-metric"><small>LAST 7 DAYS</small><b>'+weekSessions+' sessions</b><span>Completed tracked sessions</span></article><article class="portal-dashboard-metric"><small>ALL-TIME PLAYTIME</small><b>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</b><span>'+esc(stats.gamesPlayed||0)+' sessions recorded</span></article></div>'+
+   f1Panel+
    '<div class="portal-dashboard-grid">'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENTLY PLAYED</div><h2>Your recent games</h2></div><span>'+records.length+' tracked</span></div>'+(recent.length?recent.map(x=>dashboardTile(x.game,"LAST PLAYED "+new Date(x.record.lastPlayedAt).toLocaleDateString(),x.record.played+" sessions · "+formatDuration(x.record.seconds||0))).join(""):'<p class="portal-muted">Completed sessions will appear here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">FAVOURITES</div><h2>Your games</h2></div></div>'+(favorites.length?favorites.slice(0,4).map(g=>dashboardTile(g,"FAVOURITE",g.genre)).join(""):'<p class="portal-muted">Favourite a game to add it here.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">DISCOVER</div><h2>Recommended for you</h2></div></div>'+(recommendations.length?recommendations.map(g=>dashboardTile(g,"BASED ON YOUR PLAY",g.genre)).join(""):'<p class="portal-muted">Play more games to build recommendations.</p>')+'</section>'+
    '<section class="portal-dashboard-panel"><div class="portal-dashboard-section-head"><div><div class="portal-eyebrow">RECENT TROPHIES</div><h2>Latest unlocks</h2></div></div>'+(trophies.length?trophies.map(t=>'<div class="portal-dashboard-trophy"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[t.tier]||"🏆")+'</span><div><b>'+esc(t.title)+'</b><small>'+esc(t.gameId?getGame(t.gameId)?.title||"Home":"Home")+' · '+esc(t.unlockedAt?new Date(t.unlockedAt).toLocaleDateString():"Unlocked")+'</small></div></div>').join(""):'<p class="portal-muted">Your trophy unlocks will appear here.</p>')+'</section></div>';
   host.querySelectorAll("[data-dashboard-game]").forEach(b=>b.addEventListener("click",()=>{const g=getGame(b.dataset.dashboardGame);if(g)openGameDetail(g);}));
+   host.querySelector("[data-open-shop]")?.addEventListener("click",()=>showView("shop"));
+  host.querySelector("[data-open-f1]")?.addEventListener("click",()=>{if(f1Game)openGameDetail(f1Game);});
  }
  function downloadCloudBackup(filename,data){
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),a=document.createElement("a");
@@ -304,9 +314,16 @@
 
  function cardMarkup(game){
   const photo=coverPhotoById[game.id]||"";
+  const record=accountData?.stats?.games?.[game.id]||{};
+  const played=Math.max(0,Number(record.played)||0),seconds=Math.max(0,Number(record.seconds)||0);
+  const lastPlayed=Number(record.lastPlayedAt)||0;
+  const lastLabel=lastPlayed?new Date(lastPlayed).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"Not played yet";
+  const description=String(game.description||"").trim();
+  const isFeatured=game.id==="f1-simulator";
   return '<article class="portal-game-card" role="button" tabindex="0" data-game-card="'+esc(game.id)+'" style="--game-accent:'+esc(game.accent)+';--game-photo:'+(photo?'url(&quot;'+esc(photo)+'&quot;)':'none')+'" data-photo="'+(photo?"yes":"none")+'">'+
-   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span><div class="portal-cover-art">'+game.art+'</div></div>'+
-   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div><div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div></div></article>';
+   '<div class="portal-game-cover"><span class="portal-cover-badge">'+esc(game.genre)+'</span>'+(isFeatured?'<span class="portal-cover-featured">FEATURED</span>':"")+'<div class="portal-cover-art">'+game.art+'</div></div>'+
+   '<div class="portal-game-info"><div class="portal-game-name">'+esc(game.title)+'</div>'+(description?'<p class="portal-game-description">'+esc(description)+'</p>':"")+'<div class="portal-game-meta"><span class="genre">'+esc(game.genre)+'</span><span>·</span><span>'+(game.external?"External game":"In library")+'</span><span class="portal-card-arrow" style="margin-left:auto">↗</span></div>'+
+   '<div class="portal-game-card-stats"><span>'+played+' '+(played===1?"session":"sessions")+'</span><span>'+esc(formatDuration(seconds))+' played</span><span>'+esc(lastLabel)+'</span></div></div></article>';
  }
  function renderCategories(){
   const query=($p("portalSearch").value||"").trim().toLowerCase();
@@ -373,9 +390,12 @@
  function showView(view){
   document.querySelectorAll(".portal-view").forEach(el=>el.classList.toggle("active",el.dataset.page===view));
   document.querySelectorAll(".portal-nav-item[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
+  const meta={games:["PLAYER LIBRARY","Games"],settings:["PERSONAL SPACE","Settings"],music:["YOUR SOUNDTRACK","Music"],shop:["EARN · UNLOCK · CUSTOMISE","Shop"],challenges:["PLAY · PROGRESS · REWARD","Challenges"],achievements:["MILESTONES · REWARDS · PROGRESS","Achievements"],profile:["PLAYER SETTINGS","Profile"],leaderboards:["FRIENDLY COMPETITION","Leaderboards"],friends:["YOUR PEOPLE","Friends"],dev:["ACCESS CONTROL","Restricted"]}[view]||["HOME","Games"];
   $p("portalPageKicker").textContent=meta[0];$p("portalPageTitle").textContent=meta[1];
-  if(view==="profile")renderProfile();
+  if(view==="shop")renderShop();
+   if(view==="challenges")renderChallenges();
+   if(view==="achievements")renderAchievements();
+   if(view==="profile")renderProfile();
   if(view==="leaderboards")renderLeaderboards();
   if(view==="friends")renderFriends();
   if(view==="settings")renderSettings();
@@ -564,26 +584,157 @@
  async function renderLeaderboards(){
   const host=$p("portalLeaderboardsContent");if(!host)return;
   const options=games.filter(g=>g.id);
-  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardGame">Choose a game</label><select id="portalLeaderboardGame" class="portal-control">'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p class="portal-leaderboard-warning">These are unverified personal bests. Scores are submitted by game clients and have not been independently validated by the server. Only players who switch on public leaderboard sharing in their profile are listed.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
-  const select=$p("portalLeaderboardGame"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
+  const categories=[
+   ["xp","Total XP"],["level","Player level"],["achievements","Achievements"],["gamesPlayed","Games played"],
+   ["f1Wins","F1 race wins"],["f1Podiums","F1 podiums"],["f1Points","F1 points"],["coinsEarned","Home Coins earned"],["game","Game personal bests"]
+  ];
+  const metricLabels=Object.fromEntries(categories);
+  host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardCategory">Leaderboard</label><select id="portalLeaderboardCategory" class="portal-control">'+categories.map(([id,label])=>'<option value="'+id+'">'+esc(label)+'</option>').join("")+'</select><label for="portalLeaderboardGame" id="portalLeaderboardGameLabel" hidden>Game</label><select id="portalLeaderboardGame" class="portal-control" hidden>'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p id="portalLeaderboardWarning" class="portal-leaderboard-warning">Only players who enable public leaderboard sharing in their profile are listed. XP, level and achievement totals are calculated by the platform.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
+  const category=$p("portalLeaderboardCategory"),game=$p("portalLeaderboardGame"),gameLabel=$p("portalLeaderboardGameLabel"),warning=$p("portalLeaderboardWarning"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
   async function load(){
-   status.textContent="Loading "+(options.find(g=>g.id===select.value)?.title||"game")+"…";rows.innerHTML="";
+   const global=category.value!=="game";
+   game.hidden=!(!global);gameLabel.hidden=!(!global);
+   status.textContent="Loading "+(global?metricLabels[category.value]:options.find(g=>g.id===game.value)?.title||"game")+"…";rows.innerHTML="";
    try{
-    const data=await apiRequest("/portal/games/"+encodeURIComponent(select.value)+"/leaderboard");
+    let data;
+    if(global)data=await apiRequest("/portal/leaderboard?category="+encodeURIComponent(category.value));
+    else data=await apiRequest("/portal/games/"+encodeURIComponent(game.value)+"/leaderboard");
     const entries=Array.isArray(data.entries)?data.entries:[];
-    if(!entries.length){status.textContent="No players have opted in with a recorded personal best for this game yet.";return;}
-    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+" · not verified";
-    rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+    warning.textContent=global
+     ? data.verified===false?"F1 race totals are reported by the simulator and are not independently verified. Only players who enable public leaderboard sharing are listed.":"Only players who enable public leaderboard sharing are listed. These platform totals are calculated and stored by the server."
+     :"Game personal-best scores are submitted by game clients and have not been independently validated by the server. Only players who enable public leaderboard sharing are listed.";
+    const playerRank=data.currentPlayerRank?'<div class="portal-muted portal-leaderboard-self">Your current position: #'+esc(data.currentPlayerRank)+'</div>':"";
+    if(!entries.length){status.textContent="No opted-in players have a recorded score for this category yet.";return;}
+    status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+(global&&data.totalPlayers>entries.length?" · top "+entries.length+" shown":"")+(data.verified===false?" · not verified":"");
+    if(global){
+     const valueLabel=metricLabels[category.value];
+     rows.innerHTML=playerRank+'<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>'+esc(valueLabel)+'</th><th>Total XP</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.value).toLocaleString())+'</td><td>'+esc(Number(item.xp).toLocaleString())+'</td></tr>').join("")+'</tbody></table></div>';
+    }else{
+     rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
+    }
    }catch(error){status.textContent=error.message||"Leaderboards are unavailable right now.";}
   }
-  select.addEventListener("change",load);
-  await load();
+  category.addEventListener("change",load);game.addEventListener("change",load);await load();
  }
-
- function renderProfile(){
+ function renderAchievements(){
+  const host=$p("portalAchievementsContent");if(!host)return;
+  if(!accountData){
+   host.innerHTML='<div class="portal-section-panel"><h2>Sign in to track achievements</h2><p>Your unlocked milestones are saved to your player account.</p><button class="portal-primary" id="achievementSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+   $p("achievementSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+  }
+  const earned=Array.isArray(accountData.achievements)?accountData.achievements:[];
+  const earnedIds=new Set(earned.map(item=>item.id));
+  const stats=accountData.stats||{},f1=accountData.f1Stats||{};
+  const milestones=[
+   {id:"first-game",title:"Welcome to Home",description:"Complete your first game session.",current:stats.gamesPlayed||0,target:1,tier:"bronze"},
+   {id:"play-25",title:"Play Regular",description:"Complete 25 game sessions across Home.",current:stats.gamesPlayed||0,target:25,tier:"silver"},
+   {id:"play-100",title:"Home Champion",description:"Complete 100 game sessions across Home.",current:stats.gamesPlayed||0,target:100,tier:"gold"},
+   {id:"f1-first-race",title:"First Grand Prix",description:"Complete your first F1 Simulator race.",current:f1.races||0,target:1,tier:"bronze"},
+   {id:"f1-first-win",title:"First Victory",description:"Win your first F1 Simulator race.",current:f1.wins||0,target:1,tier:"silver"},
+   {id:"f1-ten-podiums",title:"Podium Regular",description:"Achieve ten F1 Simulator podiums.",current:f1.podiums||0,target:10,tier:"gold"}
+  ];
+  const locked=milestones.filter(item=>!earnedIds.has(item.id));
+  const unlockedCards=earned.map(item=>{
+   const tier=String(item.tier||"bronze").toLowerCase(),when=item.unlockedAt?new Date(item.unlockedAt).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"Unlocked";
+   return '<article class="portal-achievement-card earned"><div class="portal-achievement-icon">✦</div><div class="portal-achievement-copy"><span class="portal-achievement-tier '+esc(tier)+'">'+esc(tier)+'</span><h3>'+esc(item.title||"Achievement")+'</h3><p>'+esc(item.description||"A platform achievement.")+'</p><small>'+esc(when)+'</small></div><span class="portal-achievement-state">UNLOCKED</span></article>';
+  }).join("");
+  const lockedCards=locked.map(item=>{
+   const progress=Math.min(item.target,Math.max(0,Number(item.current)||0)),percent=Math.round(progress/item.target*100);
+   return '<article class="portal-achievement-card locked"><div class="portal-achievement-icon">🔒</div><div class="portal-achievement-copy"><span class="portal-achievement-tier '+esc(item.tier)+'">'+esc(item.tier)+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p><div class="portal-challenge-progress-label"><span>'+progress+' / '+item.target+'</span><b>'+percent+'%</b></div><div class="portal-xp-track"><span style="width:'+percent+'%"></span></div></div><span class="portal-achievement-state">LOCKED</span></article>';
+  }).join("");
+  host.innerHTML='<section class="portal-achievement-summary"><div><div class="portal-eyebrow">YOUR COLLECTION</div><strong>'+earned.length+' unlocked achievements</strong><small>Progress is shared across the Home platform and connected games.</small></div><div><b>'+earned.length+'</b><span>UNLOCKED</span></div></section>'+
+   '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">YOUR TROPHIES</div><h2>Unlocked</h2></div><span>'+earned.length+' achievements</span></div>'+(unlockedCards?'<div class="portal-achievement-grid">'+unlockedCards+'</div>':'<p class="portal-muted">Complete a game or racing milestone to unlock your first achievement.</p>')+'</section>'+
+   '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">NEXT TARGETS</div><h2>Still to unlock</h2></div><span>'+locked.length+' milestones</span></div>'+(lockedCards?'<div class="portal-achievement-grid">'+lockedCards+'</div>':'<p class="portal-muted">You have completed all currently listed milestones.</p>')+'</section>';
+ }
+ async function renderChallenges(){
+   const host=$p("portalChallengesContent");if(!host)return;
+   if(!accountData){
+    host.innerHTML='<div class="portal-section-panel"><h2>Sign in to track challenges</h2><p>Your daily and weekly challenge progress is connected to your player account.</p><button class="portal-primary" id="challengeSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+    $p("challengeSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+   }
+   host.innerHTML='<div class="portal-section-panel"><p class="portal-muted">Loading challenges…</p></div>';
+   try{
+    const data=await apiRequest("/account/challenges");
+    const cards=(items)=>items.map(challenge=>{
+     const progress=Math.max(0,Math.min(challenge.target,challenge.progress||0)),percent=Math.round(progress/challenge.target*100);
+     const action=challenge.claimed?'<button class="portal-secondary" disabled>CLAIMED</button>':challenge.completed?'<button class="portal-primary" data-challenge-claim="'+esc(challenge.period)+'|'+esc(challenge.id)+'">CLAIM REWARD</button>':'<button class="portal-secondary" disabled>IN PROGRESS</button>';
+     return '<article class="portal-challenge-card '+(challenge.claimed?"claimed":challenge.completed?"completed":"")+'"><div class="portal-challenge-copy"><div class="portal-challenge-type">'+(challenge.period==="daily"?"DAILY CHALLENGE":"WEEKLY CHALLENGE")+'</div><h3>'+esc(challenge.title)+'</h3><p>'+esc(challenge.description)+'</p><div class="portal-challenge-progress-label"><span>'+progress+' / '+challenge.target+'</span><b>'+percent+'%</b></div><div class="portal-xp-track"><span style="width:'+percent+'%"></span></div><small>Reward: '+challenge.xp+' XP · '+challenge.coins+' Home Coins</small></div><div class="portal-challenge-action">'+action+'</div></article>';
+    }).join("");
+    const dailyDone=data.daily.filter(item=>item.claimed).length,weeklyDone=data.weekly.filter(item=>item.claimed).length;
+    host.innerHTML='<section class="portal-challenge-summary"><div><div class="portal-eyebrow">YOUR PROGRESS</div><strong>Home challenges</strong><small>Daily goals use the server UTC date · weekly goals reset Monday</small></div><div class="portal-challenge-summary-counts"><span>'+dailyDone+' / '+data.daily.length+' daily claimed</span><span>'+weeklyDone+' / '+data.weekly.length+' weekly claimed</span></div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">RESET EACH DAY</div><h2>Daily challenges</h2></div><span>'+data.day+'</span></div><div class="portal-challenge-grid">'+cards(data.daily)+'</div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">RESET EACH WEEK</div><h2>Weekly challenges</h2></div><span>Week of '+data.week+'</span></div><div class="portal-challenge-grid">'+cards(data.weekly)+'</div></section>';
+    host.querySelectorAll("[data-challenge-claim]").forEach(button=>button.addEventListener("click",()=>{
+     const [period,id]=button.dataset.challengeClaim.split("|");claimChallenge(period,id,button);
+    }));
+   }catch(error){
+    host.innerHTML='<div class="portal-section-panel"><h2>Challenges unavailable</h2><p>'+esc(error.message||"Could not load your challenges.")+'</p><button class="portal-secondary" id="challengeRetry" type="button">TRY AGAIN</button></div>';
+    $p("challengeRetry")?.addEventListener("click",renderChallenges);
+   }
+  }
+  async function claimChallenge(period,challengeId,button){
+   if(button)button.disabled=true;
+   try{
+    const result=await apiRequest("/account/challenges/claim",{method:"POST",body:{period,challengeId}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast("Challenge reward: +"+result.xpEarned+" XP · +"+result.coinEarned+" Home Coins.");renderChallenges();renderDashboard();
+   }catch(error){if(button)button.disabled=false;toast(error.message||"Could not claim challenge reward.");}
+  }
+  async function renderShop(){
+   const host=$p("portalShopContent");if(!host)return;
+   if(!accountData){
+    host.innerHTML='<div class="portal-section-panel"><h2>Sign in to visit the shop</h2><p>Your Home Coins and purchased items are saved to your player account.</p><button class="portal-primary" id="shopSignIn" type="button">SIGN IN / CREATE PROFILE</button></div>';
+    $p("shopSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;
+   }
+   host.innerHTML='<div class="portal-section-panel"><p class="portal-muted">Loading your shop…</p></div>';
+   try{
+    const data=await apiRequest("/account/shop");
+    accountData.profile={...accountData.profile,coins:data.balance};
+    const tierCards=data.tiers.map(tier=>'<article class="portal-shop-tier '+(tier.unlocked?"unlocked":"locked")+'"><div class="portal-shop-tier-top"><b>'+esc(tier.name)+' tier</b><span>'+(tier.unlocked?"UNLOCKED":"LEVEL "+esc(tier.minLevel))+'</span></div><p>'+esc(tier.description)+'</p><small>'+(tier.unlocked?"Available in the shop":"Reach level "+esc(tier.minLevel)+" to unlock")+'</small></article>').join("");
+    const cards=data.items.map(item=>{
+     const isEquipped=data.equippedItems?.[item.slot]===item.id;
+     let action="";
+     if(item.owned)action='<button type="button" class="portal-secondary" data-shop-equip="'+esc(item.id)+'" data-equipped="'+(isEquipped?"1":"0")+'">'+(isEquipped?"UNEQUIP":"EQUIP")+'</button>';
+     else if(!item.unlocked)action='<button type="button" class="portal-secondary" disabled>LEVEL '+esc(item.level)+' REQUIRED</button>';
+     else if(Number(data.balance)<Number(item.price))action='<button type="button" class="portal-secondary" disabled>NEED '+(Number(item.price)-Number(data.balance)).toLocaleString()+' MORE</button>';
+     else action='<button type="button" class="portal-primary" data-shop-buy="'+esc(item.id)+'">BUY · '+Number(item.price).toLocaleString()+'</button>';
+     return '<article class="portal-shop-item '+(!item.unlocked?"locked":"")+'"><div class="portal-shop-item-icon" aria-hidden="true">'+esc(item.icon)+'</div><div class="portal-shop-item-copy"><div class="portal-shop-item-meta">'+esc(item.tierName)+' · '+esc(item.category)+'</div><h3>'+esc(item.name)+'</h3><p>'+esc(item.description)+'</p><small>Level '+esc(item.level)+' · '+Number(item.price).toLocaleString()+' Home Coins</small></div><div class="portal-shop-item-action">'+(item.owned?'<span class="portal-shop-owned">OWNED</span>':"")+action+'</div></article>';
+    }).join("");
+    const owned=data.items.filter(item=>item.owned);
+    const transactions=(accountData.currency?.transactions||[]).slice(0,6);
+    host.innerHTML='<section class="portal-shop-wallet"><div><div class="portal-eyebrow">YOUR BALANCE</div><strong>◈ '+Number(data.balance).toLocaleString()+'</strong><small>Home Coins · earned through gameplay</small></div><div class="portal-shop-wallet-actions"><span>LEVEL '+esc(data.level)+'</span><button type="button" class="portal-secondary" id="shopRefresh">REFRESH</button></div></section>'+
+     '<section class="portal-section-panel portal-shop-intro"><div><div class="portal-eyebrow">PROGRESSION</div><h2>Unlock higher collections</h2><p>Player levels unlock new shop tiers. Home Coins are used to buy cosmetics. Currency cannot be used to buy XP or levels.</p></div><div class="portal-shop-tier-grid">'+tierCards+'</div></section>'+
+     '<section class="portal-section-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">THE COLLECTION</div><h2>Available items</h2></div><span>'+owned.length+' owned · '+data.items.length+' items</span></div><div class="portal-shop-item-grid">'+cards+'</div></section>'+
+     '<section class="portal-section-panel portal-shop-owned-panel"><div class="portal-shop-section-head"><div><div class="portal-eyebrow">YOUR INVENTORY</div><h2>Owned and equipped</h2></div><span>'+owned.length+' items</span></div>'+(owned.length?'<div class="portal-shop-inventory-list">'+owned.map(item=>'<div><span>'+esc(item.icon)+'</span><b>'+esc(item.name)+'</b><small>'+(data.equippedItems?.[item.slot]===item.id?"Equipped":"In inventory")+'</small></div>').join("")+'</div>':'<p class="portal-muted">Items you purchase will appear here. Equip them to customise your player profile.</p>')+'</section>'+
+     '<section class="portal-section-panel"><div class="portal-eyebrow">RECENT ACTIVITY</div><h2>Coin history</h2>'+(transactions.length?'<div class="portal-shop-transactions">'+transactions.map(tx=>'<div><span>'+esc(tx.reason||"Account activity")+'</span><b class="'+(tx.type==="earn"?"earned":"spent")+'">'+(tx.type==="earn"?"+":"−")+Number(tx.amount||0).toLocaleString()+'</b></div>').join("")+'</div>':'<p class="portal-muted">Your earning and purchase history will appear here.</p>')+'</section>';
+    $p("shopRefresh").addEventListener("click",renderShop);
+    host.querySelectorAll("[data-shop-buy]").forEach(button=>button.addEventListener("click",()=>purchaseShopItem(button.dataset.shopBuy,button)));
+    host.querySelectorAll("[data-shop-equip]").forEach(button=>button.addEventListener("click",()=>equipShopItem(button.dataset.shopEquip,button.dataset.equipped!=="1")));
+   }catch(error){
+    host.innerHTML='<div class="portal-section-panel"><h2>Shop unavailable</h2><p>'+esc(error.message||"Could not load the shop.")+'</p><button class="portal-secondary" id="shopRetry" type="button">TRY AGAIN</button></div>';
+    $p("shopRetry")?.addEventListener("click",renderShop);
+   }
+  }
+  async function purchaseShopItem(itemId,button){
+   if(!accountData)return;
+   if(button)button.disabled=true;
+   try{
+    const result=await apiRequest("/account/shop/purchase",{method:"POST",body:{itemId}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast("Purchased "+result.item.name+". Added to your inventory.");renderShop();
+   }catch(error){if(button)button.disabled=false;toast(error.message||"Purchase failed.");}
+  }
+  async function equipShopItem(itemId,equip){
+   try{
+    const result=await apiRequest("/account/inventory/equip",{method:"POST",body:{itemId,equip}});
+    const latest=await apiRequest("/account/me");accountData={...latest,token:accountToken};
+    updateUsernameDisplay();toast(equip?"Item equipped.":"Item unequipped.");renderShop();
+   }catch(error){toast(error.message||"Could not update your inventory.");}
+  }
+  function renderProfile(){
   const host=$p("portalProfileContent");
   if(!accountData){host.innerHTML='<div class="portal-section-panel"><h2>Sign in to your player profile</h2><p>Your username, XP, trophies, favourites and statistics are saved to your account when persistent storage is connected.</p><button class="portal-primary" id="profileSignIn">SIGN IN / CREATE PROFILE</button></div>';$p("profileSignIn").addEventListener("click",()=>showAccountPrompt("login"));return;}
-  const profile=accountData.profile||{},stats=accountData.stats||{},skin=Number(profile.avatar??profile.skin)||0,avatar=AVATAR_EMOJI[Math.max(0,Math.min(13,skin))];
+  const profile=accountData.profile||{},stats=accountData.stats||{},skin=Number(profile.avatar??profile.skin)||0,avatar=AVATAR_EMOJI[Math.max(0,Math.min(13,skin))],equipped=accountData.equippedCosmetics||{};
   const played=Number(stats.gamesPlayed)||Object.values(stats.games||{}).reduce((sum,item)=>sum+(Number(item.played)||0),0),favorites=(profile.favoriteGames||[]).map(getGame).filter(Boolean),unlocked=accountData.achievements||[],unlockedIds=new Set(unlocked.map(item=>item.id));
   const trophyDefs=games.filter(game=>game.id).flatMap(game=>[{id:"first-"+game.id,title:"First Session",game:game.title,tier:"bronze",target:"1 session"},{id:"regular-"+game.id,title:"Regular Player",game:game.title,tier:"silver",target:"10 sessions"},{id:"dedicated-"+game.id,title:"Dedicated Player",game:game.title,tier:"gold",target:"50 sessions"},{id:"record-"+game.id,title:"Personal Best",game:game.title,tier:"silver",target:"Set a new best score"}]);
   const trophies=[...unlocked.map(item=>({...item,unlocked:true})),...trophyDefs.filter(item=>!unlockedIds.has(item.id)).map(item=>({...item,unlocked:false}))];
@@ -591,8 +742,8 @@
    const progress=careerProgressFor(game,career[game.id],stats.games?.[game.id]);
    return '<button type="button" class="portal-career-card" data-career-open="'+esc(game.id)+'"><span class="portal-career-meta">'+esc(game.genre)+'</span><strong>'+esc(game.title)+'</strong><span class="portal-career-rank">'+esc(progress.rank)+' · Rank '+progress.chapter+'/6</span><span class="portal-xp-track"><span style="width:'+progress.percent+'%"></span></span><small>'+(progress.complete?"CAREER COMPLETE":esc(progress.sessions+' / '+progress.nextGoal+' sessions'))+'</small></button>';
   }).join("");
-  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero"><div class="portal-avatar">'+avatar+'</div><div class="portal-eyebrow">PLAYER PROFILE</div><h2>'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><div class="portal-field portal-privacy-toggle"><label for="portalLeaderboardOptIn"><input id="portalLeaderboardOptIn" type="checkbox" '+(profile.leaderboardOptIn?"checked":"")+' /> Show my username, avatar and best scores on public leaderboards</label><small>Off by default. You can change this any time.</small></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
-   '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
+  host.innerHTML='<div class="portal-profile-layout"><div class="portal-profile-hero '+(equipped.banner?"has-shop-banner":"")+'">'+(equipped.banner?'<div class="portal-profile-banner"><span>'+esc(equipped.banner.icon)+'</span>'+esc(equipped.banner.name)+'</div>':"")+'<div class="portal-avatar '+(equipped.frame?"has-shop-frame":"")+'">'+avatar+'</div>'+(equipped.badge?'<span class="portal-equipped-badge">'+esc(equipped.badge.icon)+'</span>':"")+'<div class="portal-eyebrow">PLAYER PROFILE</div><h2 class="'+(equipped.nameplate?"has-shop-nameplate":"")+'">'+esc(profile.username||username)+'</h2><div class="portal-level-pill">LEVEL '+esc(profile.level||1)+' · '+esc(profile.xp||0)+' XP</div><div class="portal-xp-track"><span style="width:'+Math.max(0,Math.min(100,Number(profile.levelProgress)||0))+'%"></span></div><small class="portal-muted">'+esc(profile.xpIntoLevel||0)+' / '+esc(profile.xpForNextLevel||100)+' XP to next level</small><form id="portalEditProfile" class="portal-profile-form"><div class="portal-field"><label for="portalEditUsername">Username</label><input id="portalEditUsername" maxlength="20" minlength="3" pattern="[A-Za-z0-9_]{3,20}" value="'+esc(profile.username||username)+'" required></div><div class="portal-field"><label for="portalEditAvatar">Avatar</label><select id="portalEditAvatar" class="portal-control">'+AVATAR_EMOJI.map((emoji,i)=>'<option value="'+i+'" '+(i===skin?"selected":"")+'>'+emoji+' Avatar '+(i+1)+'</option>').join("")+'</select></div><div class="portal-field portal-privacy-toggle"><label for="portalLeaderboardOptIn"><input id="portalLeaderboardOptIn" type="checkbox" '+(profile.leaderboardOptIn?"checked":"")+' /> Show my username, avatar and best scores on public leaderboards</label><small>Off by default. You can change this any time.</small></div><button class="portal-primary" type="submit">SAVE PROFILE</button><div class="portal-status" id="portalEditStatus"></div></form><button class="portal-secondary portal-danger" id="portalSignOut" type="button">SIGN OUT</button></div>'+
+   '<div><div class="portal-stat-grid"><div class="portal-stat-tile"><small>Total XP</small><strong>'+esc(profile.xp||0)+'</strong></div><div class="portal-stat-tile"><small>Home Coins</small><strong>◈ '+Number(profile.coins||0).toLocaleString()+'</strong></div><div class="portal-stat-tile"><small>Games played</small><strong>'+esc(played)+'</strong></div><div class="portal-stat-tile"><small>Play time</small><strong>'+esc(formatDuration(stats.timePlayedSeconds||0))+'</strong></div><div class="portal-stat-tile"><small>Trophies</small><strong>'+unlocked.length+'</strong></div><div class="portal-stat-tile"><small>Hockey wins</small><strong>'+esc(stats.wins||0)+'</strong></div><div class="portal-stat-tile"><small>F1 wins</small><strong>'+esc(accountData.f1Stats?.wins||0)+'</strong></div><div class="portal-stat-tile"><small>F1 podiums</small><strong>'+esc(accountData.f1Stats?.podiums||0)+'</strong></div><div class="portal-stat-tile"><small>F1 points</small><strong>'+esc(accountData.f1Stats?.points||0)+'</strong></div><div class="portal-stat-tile"><small>Win rate</small><strong>'+esc(stats.winRate||0)+'%</strong></div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">FAVOURITE GAMES</div><div class="portal-chip-list">'+(favorites.length?favorites.map(game=>'<button type="button" class="portal-secondary" data-favorite-open="'+esc(game.id)+'">'+esc(game.title)+'</button>').join(""):'<span class="portal-muted">No favourites yet. Open a game and press Favorite.</span>')+'</div></div>'+
    '<div class="portal-section-panel" style="margin-top:14px"><div class="portal-eyebrow">CAREER PROGRESS</div><h2>Game careers</h2>'+'<div class="portal-career-grid">'+careerCards+'</div>'+'</div></div></div>'+
    '<div class="portal-section-panel" style="margin-top:15px"><div class="portal-eyebrow">TROPHY CABINET</div><h2>'+unlocked.length+' trophies unlocked</h2><div class="portal-trophy-grid">'+trophies.map(item=>'<div class="portal-trophy-card '+(item.unlocked?"unlocked":"locked")+'"><span>'+({bronze:"🥉",silver:"🥈",gold:"🥇"}[item.tier]||"🏆")+'</span><b>'+esc(item.title)+'</b><small>'+esc(item.game||item.description||"Home")+'</small><em>'+(item.unlocked?"UNLOCKED":esc(item.target||"LOCKED"))+'</em></div>').join("")+'</div></div>';
