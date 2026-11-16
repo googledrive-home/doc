@@ -56,7 +56,11 @@ jobs:
           for attempt in $(seq 1 18); do
             if curl --fail --silent --show-error "https://googledrive-home.github.io/doc/arcade-portal.js" -o /tmp/home-portal-live.js &&
                grep -q "function renderDashboard" /tmp/home-portal-live.js &&
-               grep -q "portalLeaderboardsView" /tmp/home-portal-live.js; then
+               grep -q "portalLeaderboardsView" /tmp/home-portal-live.js &&
+               grep -q 'data-view="shop"' /tmp/home-portal-live.js &&
+               grep -q "async function renderShop" /tmp/home-portal-live.js &&
+               grep -q "async function renderChallenges" /tmp/home-portal-live.js &&
+               grep -q "function renderAchievements" /tmp/home-portal-live.js; then
               node --check /tmp/home-portal-live.js
               echo "Home Pages is serving the dashboard and leaderboard UI."
               exit 0
