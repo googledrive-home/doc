@@ -586,9 +586,10 @@
   const options=games.filter(g=>g.id);
   const categories=[
    ["xp","Total XP"],["level","Player level"],["achievements","Achievements"],["gamesPlayed","Games played"],
-   ["f1Wins","F1 race wins"],["f1Podiums","F1 podiums"],["f1Points","F1 points"],["coinsEarned","Home Coins earned"],["game","Game personal bests"]
+   ["f1Wins","F1 race wins"],["f1Podiums","F1 podiums"],["f1Points","F1 points"],["f1BestLap","F1 best lap"],["f1BestRace","F1 fastest Grand Prix"],["coinsEarned","Home Coins earned"],["game","Game personal bests"]
   ];
   const metricLabels=Object.fromEntries(categories);
+  const formatF1Lap=ms=>{const seconds=Math.max(0,Number(ms)||0)/1000;return Math.floor(seconds/60)+":"+((seconds%60).toFixed(3)).padStart(6,"0");};
   host.innerHTML='<div class="portal-section-panel"><div class="portal-leaderboard-toolbar"><label for="portalLeaderboardCategory">Leaderboard</label><select id="portalLeaderboardCategory" class="portal-control">'+categories.map(([id,label])=>'<option value="'+id+'">'+esc(label)+'</option>').join("")+'</select><label for="portalLeaderboardGame" id="portalLeaderboardGameLabel" hidden>Game</label><select id="portalLeaderboardGame" class="portal-control" hidden>'+options.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.title)+'</option>').join("")+'</select></div><p id="portalLeaderboardWarning" class="portal-leaderboard-warning">Only players who enable public leaderboard sharing in their profile are listed. XP, level and achievement totals are calculated by the platform.</p><div id="portalLeaderboardStatus" class="portal-muted" role="status" aria-live="polite">Loading leaderboard…</div><div id="portalLeaderboardRows"></div></div>';
   const category=$p("portalLeaderboardCategory"),game=$p("portalLeaderboardGame"),gameLabel=$p("portalLeaderboardGameLabel"),warning=$p("portalLeaderboardWarning"),status=$p("portalLeaderboardStatus"),rows=$p("portalLeaderboardRows");
   async function load(){
@@ -608,7 +609,7 @@
     status.textContent=entries.length+" opt-in player"+(entries.length===1?"":"s")+(global&&data.totalPlayers>entries.length?" · top "+entries.length+" shown":"")+(data.verified===false?" · not verified":"");
     if(global){
      const valueLabel=metricLabels[category.value];
-     rows.innerHTML=playerRank+'<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>'+esc(valueLabel)+'</th><th>Total XP</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.value).toLocaleString())+'</td><td>'+esc(Number(item.xp).toLocaleString())+'</td></tr>').join("")+'</tbody></table></div>';
+     rows.innerHTML=playerRank+'<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>'+esc(valueLabel)+'</th><th>Total XP</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc((category.value==="f1BestLap"||category.value==="f1BestRace")?formatF1Lap(item.value):Number(item.value).toLocaleString())+'</td><td>'+esc(Number(item.xp).toLocaleString())+'</td></tr>').join("")+'</tbody></table></div>';
     }else{
      rows.innerHTML='<div class="portal-leaderboard-table-wrap"><table class="portal-leaderboard-table"><thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>Best score</th><th>Sessions</th></tr></thead><tbody>'+entries.map(item=>'<tr><td>#'+esc(item.rank)+'</td><td><span class="portal-leaderboard-player">'+AVATAR_EMOJI[Math.max(0,Math.min(13,Number(item.avatar)||0))]+' '+esc(item.username)+'</span></td><td>'+esc(item.level)+'</td><td>'+esc(Number(item.bestScore).toLocaleString())+'</td><td>'+esc(item.sessions)+'</td></tr>').join("")+'</tbody></table></div>';
     }
