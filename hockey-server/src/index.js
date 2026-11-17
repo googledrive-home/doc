@@ -143,7 +143,7 @@ function cleanAccountStore(value){
   account.coinTransactions=Array.isArray(account.coinTransactions)?account.coinTransactions.slice(-200):[];
   account.inventory=Array.isArray(account.inventory)?account.inventory.filter(item=>item&&SHOP_ITEM_BY_ID[item.itemId]).slice(-500):[];
   account.equippedItems=account.equippedItems&&typeof account.equippedItems==="object"&&!Array.isArray(account.equippedItems)?account.equippedItems:{};
-  account.f1Stats=account.f1Stats&&typeof account.f1Stats==="object"?account.f1Stats:{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null};
+  account.f1Stats=account.f1Stats&&typeof account.f1Stats==="object"?account.f1Stats:{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null,bestRaceMs:null};
   for(const key of ["races","wins","podiums","dnfs","points"])account.f1Stats[key]=Math.max(0,Math.floor(Number(account.f1Stats[key])||0));
   account.f1RecentResults=Array.isArray(account.f1RecentResults)?account.f1RecentResults.slice(0,50):[];
   account.f1Career=account.f1Career&&typeof account.f1Career==="object"?account.f1Career:{season:1,races:0,wins:0,podiums:0,points:0};
@@ -192,7 +192,7 @@ function accountPayload(account){
  const stats={...emptyAccountStats(),...(account.stats||{})},modeKeys=Object.keys(stats.modes||{}),mapKeys=Object.keys(stats.maps||{});
  const favoriteMode=modeKeys.sort((a,b)=>(stats.modes[b]||0)-(stats.modes[a]||0))[0]||"—",favoriteMap=mapKeys.sort((a,b)=>(stats.maps[b]||0)-(stats.maps[a]||0))[0]||"—";
  const likedGames=Object.entries(accountStore.gameRatings||{}).filter(([,entry])=>Array.isArray(entry?.userIds)&&entry.userIds.includes(account.id)).map(([gameId])=>gameId);
- return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,inventory:Array.isArray(account.inventory)?account.inventory:[],equippedItems:account.equippedItems||{},equippedCosmetics:Object.fromEntries(Object.entries(account.equippedItems||{}).map(([slot,id])=>[slot,SHOP_ITEM_BY_ID[id]]).filter(([,item])=>!!item)),currency:{name:SHOP_CURRENCY,balance:account.coins||0,earnedTotal:account.coinsEarnedTotal||0,spentTotal:account.coinsSpentTotal||0,transactions:(account.coinTransactions||[]).slice(-30).reverse()},f1Stats:account.f1Stats||{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null},f1Career:account.f1Career||{season:1,races:0,wins:0,podiums:0,points:0},f1RecentResults:account.f1RecentResults||[]};
+ return {profile:accountProfile(account),stats:{...stats,winRate:stats.matchesPlayed?Math.round(stats.wins/stats.matchesPlayed*100):0,shootingAccuracy:stats.shotsOnGoal?Math.round(stats.goals/stats.shotsOnGoal*100):0,favoriteMode,favoriteMap},recentMatches:Array.isArray(account.recentMatches)?account.recentMatches.slice(0,30):[],achievements:account.achievements||[],career:account.career||{},likedGames,inventory:Array.isArray(account.inventory)?account.inventory:[],equippedItems:account.equippedItems||{},equippedCosmetics:Object.fromEntries(Object.entries(account.equippedItems||{}).map(([slot,id])=>[slot,SHOP_ITEM_BY_ID[id]]).filter(([,item])=>!!item)),currency:{name:SHOP_CURRENCY,balance:account.coins||0,earnedTotal:account.coinsEarnedTotal||0,spentTotal:account.coinsSpentTotal||0,transactions:(account.coinTransactions||[]).slice(-30).reverse()},f1Stats:account.f1Stats||{races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null,bestRaceMs:null},f1Career:account.f1Career||{season:1,races:0,wins:0,podiums:0,points:0},f1RecentResults:account.f1RecentResults||[]};
 }
 function getRequestToken(req){const header=String(req.headers.authorization||"");return header.startsWith("Bearer ")?header.slice(7).trim():"";}
 app.get("/health/storage",async(_req,res)=>{
@@ -454,7 +454,7 @@ app.post("/account/game/complete",async(req,res)=>{
  account.career[gameId]=account.career[gameId]||{sessions:0,seconds:0,chapter:1,completedAt:null};const career=account.career[gameId];career.sessions++;career.seconds+=elapsedSeconds;career.chapter=career.sessions>=50?6:career.sessions>=25?5:career.sessions>=10?4:career.sessions>=5?3:career.sessions>=1?2:1;
  let f1Result=null;
  if(gameId==="f1-simulator"&&f1RacePayload){
-  const f1=account.f1Stats||(account.f1Stats={races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null});
+  const f1=account.f1Stats||(account.f1Stats={races:0,wins:0,podiums:0,dnfs:0,points:0,bestFinish:null,bestLapMs:null,bestRaceMs:null});
   const careerF1=account.f1Career||(account.f1Career={season:1,races:0,wins:0,podiums:0,points:0});
   const pointsByPosition=[25,18,15,12,10,8,6,4,2,1],racePoints=f1RacePayload.finished?(pointsByPosition[f1RacePayload.position-1]||0):0;
   f1.races++;careerF1.races++;
@@ -463,7 +463,8 @@ app.post("/account/game/complete",async(req,res)=>{
   if(f1RacePayload.finished&&f1RacePayload.position<=3){f1.podiums++;careerF1.podiums++;}
   f1.points+=racePoints;careerF1.points+=racePoints;
   f1.bestFinish=f1.bestFinish===null?f1RacePayload.position:Math.min(f1.bestFinish,f1RacePayload.position);
-  if(f1RacePayload.bestLapMs!==null)f1.bestLapMs=f1.bestLapMs===null?f1RacePayload.bestLapMs:Math.min(f1.bestLapMs,f1RacePayload.bestLapMs);
+  if(f1RacePayload.bestLapMs!==null)f1.bestLapMs=f1.bestLapMs==null?f1RacePayload.bestLapMs:Math.min(f1.bestLapMs,f1RacePayload.bestLapMs);
+  if(f1RacePayload.finished&&f1RacePayload.timeMs!==null)f1.bestRaceMs=f1.bestRaceMs==null?f1RacePayload.timeMs:Math.min(f1.bestRaceMs,f1RacePayload.timeMs);
   const resultEntry={...f1RacePayload,points:racePoints,createdAt:now};
   account.f1RecentResults=[resultEntry,...(account.f1RecentResults||[])].slice(0,50);
   const championship=careerF1.championship;
@@ -575,17 +576,17 @@ app.get("/portal/games/:gameId/leaderboard",(_req,res)=>{
 });
 
 app.get("/portal/leaderboard",(_req,res)=>{
- const supported=new Set(["xp","level","achievements","gamesPlayed","f1Wins","f1Podiums","f1Points","f1BestLap","coinsEarned"]);
+ const supported=new Set(["xp","level","achievements","gamesPlayed","f1Wins","f1Podiums","f1Points","f1BestLap","f1BestRace","coinsEarned"]);
  const requested=String(_req.query.category||"xp"),category=supported.has(requested)?requested:"xp";
  const rows=[];
  for(const account of accountStore.accounts){
   if(account.leaderboardOptIn!==true)continue;
   const level=levelProgress(account.xp||0).level,f1=account.f1Stats||{};
-  const values={xp:Math.max(0,Number(account.xp)||0),level,achievements:(account.achievements||[]).length,gamesPlayed:Math.max(0,Number(account.stats?.gamesPlayed)||0),f1Wins:Math.max(0,Number(f1.wins)||0),f1Podiums:Math.max(0,Number(f1.podiums)||0),f1Points:Math.max(0,Number(f1.points)||0),f1BestLap:Number.isFinite(Number(f1.bestLapMs))?Number(f1.bestLapMs):0,coinsEarned:Math.max(0,Number(account.coinsEarnedTotal)||0)};
+  const values={xp:Math.max(0,Number(account.xp)||0),level,achievements:(account.achievements||[]).length,gamesPlayed:Math.max(0,Number(account.stats?.gamesPlayed)||0),f1Wins:Math.max(0,Number(f1.wins)||0),f1Podiums:Math.max(0,Number(f1.podiums)||0),f1Points:Math.max(0,Number(f1.points)||0),f1BestLap:Number.isFinite(Number(f1.bestLapMs))?Number(f1.bestLapMs):0,f1BestRace:Number.isFinite(Number(f1.bestRaceMs))?Number(f1.bestRaceMs):0,coinsEarned:Math.max(0,Number(account.coinsEarnedTotal)||0)};
   const value=values[category]||0;if(!value)continue;
   rows.push({username:cleanUsername(account.username||account.name||"Player").slice(0,20),avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),level,value,xp:values.xp,achievements:values.achievements});
  }
- rows.sort(category==="f1BestLap"?(a,b)=>a.value-b.value||b.xp-a.xp||a.username.localeCompare(b.username):(a,b)=>b.value-a.value||b.xp-a.xp||a.username.localeCompare(b.username));
+ rows.sort((category==="f1BestLap"||category==="f1BestRace")?(a,b)=>a.value-b.value||b.xp-a.xp||a.username.localeCompare(b.username):(a,b)=>b.value-a.value||b.xp-a.xp||a.username.localeCompare(b.username));
  const entries=rows.slice(0,50).map((item,index)=>({...item,rank:index+1}));
  const current=resolveAccountToken(getRequestToken(_req));
  const currentIndex=current&&current.leaderboardOptIn===true?rows.findIndex(item=>item.username===cleanUsername(current.username||current.name).slice(0,20)):-1;
