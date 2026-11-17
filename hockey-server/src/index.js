@@ -575,17 +575,17 @@ app.get("/portal/games/:gameId/leaderboard",(_req,res)=>{
 });
 
 app.get("/portal/leaderboard",(_req,res)=>{
- const supported=new Set(["xp","level","achievements","gamesPlayed","f1Wins","f1Podiums","f1Points","coinsEarned"]);
+ const supported=new Set(["xp","level","achievements","gamesPlayed","f1Wins","f1Podiums","f1Points","f1BestLap","coinsEarned"]);
  const requested=String(_req.query.category||"xp"),category=supported.has(requested)?requested:"xp";
  const rows=[];
  for(const account of accountStore.accounts){
   if(account.leaderboardOptIn!==true)continue;
   const level=levelProgress(account.xp||0).level,f1=account.f1Stats||{};
-  const values={xp:Math.max(0,Number(account.xp)||0),level,achievements:(account.achievements||[]).length,gamesPlayed:Math.max(0,Number(account.stats?.gamesPlayed)||0),f1Wins:Math.max(0,Number(f1.wins)||0),f1Podiums:Math.max(0,Number(f1.podiums)||0),f1Points:Math.max(0,Number(f1.points)||0),coinsEarned:Math.max(0,Number(account.coinsEarnedTotal)||0)};
+  const values={xp:Math.max(0,Number(account.xp)||0),level,achievements:(account.achievements||[]).length,gamesPlayed:Math.max(0,Number(account.stats?.gamesPlayed)||0),f1Wins:Math.max(0,Number(f1.wins)||0),f1Podiums:Math.max(0,Number(f1.podiums)||0),f1Points:Math.max(0,Number(f1.points)||0),f1BestLap:Number.isFinite(Number(f1.bestLapMs))?Number(f1.bestLapMs):0,coinsEarned:Math.max(0,Number(account.coinsEarnedTotal)||0)};
   const value=values[category]||0;if(!value)continue;
   rows.push({username:cleanUsername(account.username||account.name||"Player").slice(0,20),avatar:Math.max(0,Math.min(13,Number(account.skin)||0)),level,value,xp:values.xp,achievements:values.achievements});
  }
- rows.sort((a,b)=>b.value-a.value||b.xp-a.xp||a.username.localeCompare(b.username));
+ rows.sort(category==="f1BestLap"?(a,b)=>a.value-b.value||b.xp-a.xp||a.username.localeCompare(b.username):(a,b)=>b.value-a.value||b.xp-a.xp||a.username.localeCompare(b.username));
  const entries=rows.slice(0,50).map((item,index)=>({...item,rank:index+1}));
  const current=resolveAccountToken(getRequestToken(_req));
  const currentIndex=current&&current.leaderboardOptIn===true?rows.findIndex(item=>item.username===cleanUsername(current.username||current.name).slice(0,20)):-1;
