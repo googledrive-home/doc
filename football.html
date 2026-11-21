@@ -76,7 +76,7 @@ body.in-match #fullscreenMatch{min-width:92px;}
   <button class="mode-card" data-go="competitions"><div class="mode-icon">🏆</div><h3>Tournaments</h3><p>Create an eight-team cup or start an international tournament.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-go="leagues"><div class="mode-icon">📊</div><h3>League Seasons</h3><p>Choose a club, play fixtures and follow a season table.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-go="career"><div class="mode-icon">🧢</div><h3>Club Career</h3><p>Manage your squad, shape tactics and build a saved club campaign.</p><span class="arrow">↗</span></button>
-  <button class="mode-card" data-go="training"><div class="mode-icon">🎯</div><h3>Training Ground</h3><p>Practise finishing, passing and goalkeeper reactions.</p><span class="arrow">↗</span></button>
+  <button class="mode-card" data-go="training"><div class="mode-icon">🎯</div><h3>Training Ground</h3><p>Practise movement, timing your run-ins and controlling the ball through physical contact.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-go="teams"><div class="mode-icon">👥</div><h3>Club Directory</h3><p>Browse the launch roster pack and player ratings.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-go="settings"><div class="mode-icon">⚙️</div><h3>Game Settings</h3><p>Choose your camera, controls, match length and display options.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-go="quick" data-watch="1"><div class="mode-icon">📺</div><h3>Watch Mode</h3><p>Let two CPU sides play while you watch the match unfold.</p><span class="arrow">↗</span></button>
@@ -147,8 +147,8 @@ body.in-match #fullscreenMatch{min-width:92px;}
 <section id="trainingView" class="view">
  <div class="section-head"><div><h2>Training Ground</h2><p>Sharpen your technique with focused practice scenarios.</p></div><span class="pill">PRACTICE MODE</span></div>
  <div class="mode-grid">
-  <button class="mode-card" data-drill="shoot"><div class="mode-icon">🥅</div><h3>Finishing practice</h3><p>Work on shots and placement against the goalkeeper.</p><span class="arrow">↗</span></button>
-  <button class="mode-card" data-drill="pass"><div class="mode-icon">🎯</div><h3>Passing practice</h3><p>Build passing rhythm and find a teammate in space.</p><span class="arrow">↗</span></button>
+  <button class="mode-card" data-drill="contact"><div class="mode-icon">⚽</div><h3>Contact practice</h3><p>Build speed and strike the ball by running into it.</p><span class="arrow">↗</span></button>
+  <button class="mode-card" data-drill="movement"><div class="mode-icon">🏃</div><h3>Movement practice</h3><p>Practise acceleration, sharp turns and chasing loose balls.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-drill="keeper"><div class="mode-icon">🧤</div><h3>Goalkeeper practice</h3><p>Read shots, move across goal and make a save.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-drill="free"><div class="mode-icon">⚽</div><h3>Free training match</h3><p>Play a friendly match with no season consequences.</p><span class="arrow">↗</span></button>
  </div>
@@ -493,6 +493,7 @@ function resolveBallPlayerContact(){
  for(const p of game.players){
   const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy)||1,min=p.radius+b.radius;
   if(d>=min)continue;
+  game.stats[p.side].contacts++;
   const nx=dx/d,ny=dy/d;b.x=p.x+nx*min;b.y=p.y+ny*min;
   const playerAlong=p.vx*nx+p.vy*ny,ballAlong=b.vx*nx+b.vy*ny,closing=playerAlong-ballAlong;
   if(closing>24&&(p._hitCooldown||0)<=0){
@@ -500,7 +501,7 @@ function resolveBallPlayerContact(){
    b.vx=b.vx*.28+nx*impact+p.vx*.43;b.vy=b.vy*.28+ny*impact+p.vy*.43;
    b.spin=clamp(b.spin+(p.vy*nx-p.vx*ny)*.0015,-1.3,1.3);
    b.vz=Math.max(b.vz,Math.min(34,closing*.055));b.lastTouch=p.side;p._hitCooldown=.18;
-   p.vx*=.91;p.vy*=.91;game.stats[p.side].hits++;game.stats[p.side].contacts++;
+   p.vx*=.91;p.vy*=.91;game.stats[p.side].hits++;
    if(p===game.players[game.active])notify("BALL HIT");
    if(settings.sfx>0)tone(285+Math.min(190,closing*.35),.04,"triangle",settings.sfx/100*.035);
   }else if(closing<0&&ballAlong<0){b.vx-=1.30*ballAlong*nx;b.vy-=1.30*ballAlong*ny}
@@ -688,7 +689,7 @@ function drawPlayer(ctx,p){
  const q=projectWorld(p.x,p.y),r=11.8*q.s,active=game.players[game.active]===p&&!game.watch;
  const shirt=p.team[2]||"#d7e1ea",trim=p.team[3]||"#12202e";
  ctx.save();ctx.translate(q.x,q.y);
- ctx.fillStyle="#02091172";ctx.beginPath();ctx.ellipse(1.6,5.2,r*1.17,r*.47,.05,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#02091182";ctx.beginPath();ctx.ellipse(1.6,5.2,r*1.18,r*.49,.05,0,Math.PI*2);ctx.fill();
  ctx.save();ctx.shadowColor="#000b";ctx.shadowBlur=8*q.s;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle="#0008";ctx.fill();ctx.restore();
  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.clip();
  const gradient=ctx.createRadialGradient(-r*.34,-r*.42,1,r*.1,r*.12,r*1.2);
@@ -696,14 +697,21 @@ function drawPlayer(ctx,p){
  ctx.fillStyle=gradient;ctx.fillRect(-r,-r,r*2,r*2);
  ctx.save();ctx.globalAlpha=.76;ctx.strokeStyle=trim;ctx.lineWidth=Math.max(1.2,r*.13);
  if(p.side===0){for(let x=-r*1.35;x<r*1.35;x+=r*.48){ctx.beginPath();ctx.moveTo(x,-r*1.2);ctx.lineTo(x+r*.68,r*1.2);ctx.stroke()}}
- else{ctx.fillStyle=trim;ctx.beginPath();ctx.moveTo(-r,-r);ctx.lineTo(r*.08,-r);ctx.lineTo(-r*.3,r);ctx.lineTo(-r,r);ctx.closePath();ctx.fill();ctx.globalAlpha=.56;ctx.beginPath();ctx.moveTo(r*.68,-r);ctx.lineTo(r,-r);ctx.lineTo(r,r);ctx.lineTo(r*.16,r);ctx.closePath();ctx.fill()}
+ else{
+  ctx.fillStyle=trim;ctx.beginPath();ctx.moveTo(-r,-r);ctx.lineTo(r*.08,-r);ctx.lineTo(-r*.3,r);ctx.lineTo(-r,r);ctx.closePath();ctx.fill();
+  ctx.globalAlpha=.56;ctx.beginPath();ctx.moveTo(r*.68,-r);ctx.lineTo(r,-r);ctx.lineTo(r,r);ctx.lineTo(r*.16,r);ctx.closePath();ctx.fill();
+ }
  ctx.globalAlpha=.22;ctx.strokeStyle="#fff";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-r*.72,-r*.6);ctx.lineTo(r*.58,-r*.62);ctx.stroke();ctx.restore();
  ctx.globalAlpha=.88;ctx.fillStyle=trim;ctx.beginPath();ctx.arc(-r*.52,-r*.16,r*.13,0,Math.PI*2);ctx.fill();
  ctx.fillStyle="#fff";ctx.font="900 "+Math.max(7,Math.round(r*.86))+"px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(p.number),0,r*.1);
  ctx.restore();
- ctx.strokeStyle="#fff";ctx.globalAlpha=.92;ctx.lineWidth=1.7*q.s;ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.stroke();
+ ctx.save();ctx.strokeStyle="#fff";ctx.globalAlpha=.92;ctx.lineWidth=1.7*q.s;ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.stroke();
  ctx.strokeStyle="#07131e";ctx.globalAlpha=.5;ctx.lineWidth=1;ctx.beginPath();ctx.arc(q.x,q.y,r-1.4*q.s,Math.PI*1.08,Math.PI*1.82);ctx.stroke();
- if(active){const pulse=1+Math.sin(game.time*7)*.08;ctx.strokeStyle="#f0ff82";ctx.globalAlpha=.96;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(q.x,q.y,r+5*pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#efff8e";ctx.beginPath();ctx.moveTo(q.x,q.y-r-7);ctx.lineTo(q.x-4,q.y-r-13);ctx.lineTo(q.x+4,q.y-r-13);ctx.closePath();ctx.fill()}
+ if(active){
+  const pulse=1+Math.sin(game.time*7)*.08;
+  ctx.strokeStyle="#f0ff82";ctx.globalAlpha=.96;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(q.x,q.y,r+5*pulse,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle="#efff8e";ctx.beginPath();ctx.moveTo(q.x,q.y-r-7);ctx.lineTo(q.x-4,q.y-r-13);ctx.lineTo(q.x+4,q.y-r-13);ctx.closePath();ctx.fill();
+ }
  ctx.restore();
 }
 function drawBall(ctx,b){
