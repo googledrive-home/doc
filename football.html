@@ -312,7 +312,7 @@ function startMatch(opts){
  if(game)stopMatch();
  const ht=byName(opts.home||$("homeTeam").value),at=byName(opts.away||$("awayTeam").value);
  const formationH=opts.formationH||$("homeFormation").value||"4-3-3",formationA=opts.formationA||$("awayFormation").value||"4-2-3-1";
- game={home:ht,away:at,players:[...makeSide(ht,0,formationH),...makeSide(at,1,formationA)],ball:{x:640,y:360,vx:0,vy:0,z:0,vz:0,spin:0,lastTouch:-1,radius:7.8},switchCooldown:0,ballTrail:[],pressAssignments:[[],[]],score:[0,0],stats:[newStats(),newStats()],events:[],time:0,half:1,matchSeconds:(Number(opts.duration||$("matchDuration").value)||5)*60,elapsed:0,phase:"kickoff",phaseTimer:1.6,paused:false,finished:false,watch:!!opts.watch||$("watchMode").checked,difficulty:opts.difficulty||$("difficulty").value,weather:opts.weather||$("weather").value,stadium:opts.stadium||$("stadium").value,formation:[formationH,formationA],active:7,cam:{x:640,y:360,zoom:settings.zoom},shotCharge:0,toastCooldown:0,goalFlash:0,training:!!opts.training,trainingType:opts.trainingType||"",lastScorer:null,halfBreak:false,shootout:null,seed:Math.random()};
+ game={home:ht,away:at,players:[...makeSide(ht,0,formationH),...makeSide(at,1,formationA)],ball:{x:640,y:360,vx:0,vy:0,z:0,vz:0,spin:0,lastTouch:-1,radius:7.8},switchCooldown:0,ballTrail:[],pressAssignments:[[],[]],score:[0,0],stats:[newStats(),newStats()],events:[],time:0,half:1,matchSeconds:(Number(opts.duration||$("matchDuration").value)||5)*60,elapsed:0,phase:"kickoff",phaseTimer:1.6,paused:false,finished:false,watch:!!opts.watch||$("watchMode").checked,difficulty:opts.difficulty||$("difficulty").value,weather:opts.weather||$("weather").value,stadium:opts.stadium||$("stadium").value,formation:[formationH,formationA],active:7,cam:{x:640,y:360,zoom:settings.zoom},toastCooldown:0,goalFlash:0,training:!!opts.training,trainingType:opts.trainingType||"",lastScorer:null,halfBreak:false,shootout:null,seed:Math.random()};
  game.players.forEach(p=>placePlayer(p,true));
  $("homeName").textContent=ht[0].toUpperCase();$("awayName").textContent=at[0].toUpperCase();$("homeBadge").textContent=ht[1];$("awayBadge").textContent=at[1];$("homeBadge").style.background=ht[2];$("awayBadge").style.background=at[2];$("homeBadge").style.color=ht[3];$("awayBadge").style.background=at[2];$("scoreText").textContent="0 : 0";$("matchClock").textContent="00:00";$("matchHint").textContent=game.watch?"CPU vs CPU · Watch the match":"Run into the ball to hit it · Q switches player";
  $("changeCamera").textContent="CAMERA: "+settings.camera.toUpperCase();
@@ -520,7 +520,7 @@ function checkBallBounds(){
 }
 function nearestPlayerTo(b,side){return game.players.filter(p=>p.side===side).sort((a,c)=>dist(a,b)-dist(c,b))[0]||null}
 function scoreGoal(side){
- const b=game.ball,scorer=nearestPlayerTo(b,b.lastTouch===side?side:side);
+ const b=game.ball,scorer=nearestPlayerTo(b,side);
  game.score[side]++;game.stats[side].goals++;
  if(scorer){scorer.player.stats.goals++;game.lastScorer=scorer.player.name;}
  const team=side===0?game.home:game.away;
@@ -747,29 +747,12 @@ function drawHUDClock(){
  if(!game)return;const t=Math.min(90,Math.floor(game.time)),sec=Math.floor((game.time%1)*60);
  $("matchClock").textContent=(game.half===1?"1ST ":"2ND ")+String(t).padStart(2,"0")+":"+String(sec).padStart(2,"0")+"'";
 }
-function playKick(power){if(settings.sfx>0)tone(110+Math.min(250,power*.12),.055,"triangle",settings.sfx/100*.05)}
+
 function playGoal(){if(settings.sfx>0){tone(510,.14,"sine",settings.sfx/100*.09);setTimeout(()=>tone(720,.22,"sine",settings.sfx/100*.08),120);tone(250,.2,"triangle",settings.sfx/100*.06)}}
 function tone(freq,duration,type,volume){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type||"sine";o.frequency.value=freq;g.gain.value=volume||.03;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration)}catch(e){}}
 function playCrowd(){stopCrowd();if(settings.crowd<=0)return;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();osc.type="sawtooth";osc.frequency.value=47;filter.type="lowpass";filter.frequency.value=100;gain.gain.value=settings.crowd/100*.012;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();crowdTimer={osc,gain,filter}}catch(e){}}
 function stopCrowd(){if(crowdTimer){try{crowdTimer.osc.stop()}catch(e){}crowdTimer=null}}
-function switchPlayer(){
- if(!game||game.switchCooldown>0)return;
- const team=game.players.slice(0,11).filter(p=>!p.keeper),current=game.players[game.active];
- if(!team.length)return;
- const ranked=team.map(p=>({p,score:dist(p,game.ball)+Math.hypot(p.vx,p.vy)*.09+(p===current?24:0)})).sort((a,b)=>a.score-b.score);
- const currentRank=ranked.findIndex(x=>x.p===current),next=ranked[currentRank===0?1:0]||ranked[0],index=game.players.indexOf(next.p);
- if(index>=0){game.active=index;game.switchCooldown=.22;notify("PLAYER "+String(next.p.number))}
-}
-function initGamepad(){
- if(game.watch||!navigator.getGamepads){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
- const gp=navigator.getGamepads()[0];
- if(!gp){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
- const x=gp.axes[0]||0,y=gp.axes[1]||0;
- gamepadAxis={x:Math.abs(x)>.16?x:0,y:Math.abs(y)>.16?y:0};
- if(gp.buttons[4]?.pressed&&!keys.__gamepadSwitch){keys.__gamepadSwitch=true;switchPlayer()}
- if(!gp.buttons[4]?.pressed)keys.__gamepadSwitch=false;
- gamepadSprint=!!gp.buttons[7]?.pressed;
-}
+// switchPlayer() and initGamepad() are shared by keyboard, touch and controller input.
 window.addEventListener("keydown",e=>{const k=e.key===" "?"space":e.key.toLowerCase();if(game&&Object.values(settings.bindings).includes(k)||e.key===" "){e.preventDefault()}keys[k]=true;if(bindingAction){settings.bindings[bindingAction]=k;bindingAction=null;persist();renderSettings();$("bindStatus").textContent="Key binding updated.";return}});
 window.addEventListener("keyup",e=>{keys[e.key===" "?"space":e.key.toLowerCase()]=false});
 function setupTouch(){const joy=$("touchJoy");if(!joy)return;let origin=null;joy.addEventListener("pointerdown",e=>{origin={x:e.clientX,y:e.clientY};joy.setPointerCapture(e.pointerId)});joy.addEventListener("pointermove",e=>{if(!origin)return;const dx=clamp((e.clientX-origin.x)/30,-1,1),dy=clamp((e.clientY-origin.y)/30,-1,1);keys[settings.bindings.left]=dx<-.25;keys[settings.bindings.right]=dx>.25;keys[settings.bindings.up]=dy<-.25;keys[settings.bindings.down]=dy>.25});function reset(){origin=null;["left","right","up","down"].forEach(k=>keys[settings.bindings[k]]=false)}joy.addEventListener("pointerup",reset);joy.addEventListener("pointercancel",reset);$("touchControls").querySelectorAll("[data-action]").forEach(b=>{b.addEventListener("pointerdown",e=>{e.preventDefault();if(b.dataset.action==="sprint"){keys[settings.bindings.sprint]=true;return}if(b.dataset.action==="switch")switchPlayer()});const release=()=>{if(b.dataset.action==="sprint")keys[settings.bindings.sprint]=false};b.addEventListener("pointerup",release);b.addEventListener("pointercancel",release);b.addEventListener("pointerleave",release)})}
