@@ -275,7 +275,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 let save=loadSave();
-let settings=Object.assign({camera:"broadcast",zoom:.94,crowd:55,sfx:60,names:false,stamina:false,cutscenes:true,motion:true,viewStyle:"2.5d",bindings:{up:"w",down:"s",left:"a",right:"d",sprint:"shift",pass:"j",through:"k",shoot:"l",lob:"i",tackle:"space",switch:"q",skill:"e",shield:"c",camera:"v",pause:"escape"}},save.settings||{});
+let settings=Object.assign({camera:"broadcast",zoom:.94,crowd:55,sfx:60,names:false,stamina:false,cutscenes:true,motion:true,viewStyle:"2.5d",bindings:{up:"w",down:"s",left:"a",right:"d",sprint:"shift",pass:"j",through:"k",shoot:"l",lob:"i",tackle:"space",switch:"q",skill:"e",shield:"c",camera:"v",pause:"escape"}},save.settings||{});if(save.settings?.viewStyle!=="2.5d"){settings.camera="broadcast";settings.zoom=.94;settings.names=false;settings.stamina=false;settings.viewStyle="2.5d";persist();}
 let game=null,raf=0,lastFrame=0,accumulator=0,keys={},bindingAction=null,toastTimer=null,audioCtx=null,crowdTimer=null,watchMode=false,gamepadAxis={x:0,y:0};
 function loadSave(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||"{}");return d&&d.v===1?d:{v:1,settings:{},stats:{played:0,wins:0,goals:0},cup:null,career:null,season:null,records:{}}}catch(e){return{v:1,settings:{},stats:{played:0,wins:0,goals:0},cup:null,career:null,season:null,records:{}}}}
 function persist(){save.settings=settings;try{localStorage.setItem(STORE_KEY,JSON.stringify(save));$("saveIndicator").textContent="SAVE UPDATED";setTimeout(()=>$("saveIndicator").textContent="LOCAL SAVE READY",1700);try{if(window.HomeGameBridge&&window.HomeGameBridge.gameId==="football-2d")window.HomeGameBridge.sync()}catch(e){}}catch(e){$("saveIndicator").textContent="LOCAL SAVE FULL";}}
@@ -346,7 +346,7 @@ function update(dt){
    b.vx*=factor;b.vy*=factor;
    const curve=b.spin*23;b.vx+=(-b.vy/Math.max(next,1))*curve*dt;b.vy+=(b.vx/Math.max(next,1))*curve*dt;
   }
-  b.vz-=620*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;
+  b.vz-=92*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;
   if(b.z<0){
    b.z=0;b.vz=Math.abs(b.vz)*.38;
    if(b.vz<42){b.vz=0;b.vx*=.84;b.vy*=.84;}
@@ -354,7 +354,7 @@ function update(dt){
   }
   b.spin*=Math.exp(-1.05*dt);
  }
- if(!b.owner)attemptPickup();
+ if(!b.owner){resolveBallPlayerContact();attemptPickup();}
  checkBallBounds();
  game.players.forEach(p=>{p.anim+=dt*(Math.hypot(p.vx,p.vy)>.3?6+Math.hypot(p.vx,p.vy)*.012:1);p.stamina=clamp(p.stamina+(Math.hypot(p.vx,p.vy)>2?-.022:.018),32,100)});
  game.stats[0].possession+=b.owner&&b.owner.side===0?dt:0;game.stats[1].possession+=b.owner&&b.owner.side===1?dt:0;
@@ -390,8 +390,8 @@ function performAction(action,p){
  if(action==="pass"||action==="through"||action==="shoot"||action==="lob"||action==="skill"||action==="shield"){
   if(b.owner&&b.owner.side===0){
    const receiver=bestReceiver(p,action==="through"?1:0);
-   if(action==="pass"||action==="through"||action==="lob"){if(receiver){if(isOffside(p,receiver)){game.stats[0].offsides++;notify("OFFSIDE");return}kickBall(p,receiver.x,receiver.y,action==="lob"?190:action==="through"?235:195,action==="lob"?185:0,true);game.stats[0].passes++;} }
-   if(action==="shoot"){kickBall(p,FIELD.right+28,FIELD.centreY,305+p.player.attrs.shooting*.48, rnd(-78,78));game.stats[0].shots++;if(Math.random()<.63)game.stats[0].onTarget++;}
+   if(action==="pass"||action==="through"||action==="lob"){if(receiver){if(isOffside(p,receiver)){game.stats[0].offsides++;notify("OFFSIDE");return}kickBall(p,receiver.x,receiver.y,action==="lob"?190:action==="through"?235:195,action==="lob"?78:0,true);game.stats[0].passes++;} }
+   if(action==="shoot"){kickBall(p,FIELD.right+28,FIELD.centreY,305+p.player.attrs.shooting*.48, rnd(14,32));game.stats[0].shots++;if(Math.random()<.63)game.stats[0].onTarget++;}
    if(action==="skill"){p.pose="skill";p.vx+=p.dir*45;notify("SKILL MOVE");}
    if(action==="shield"){p.vx*=.68;p.vy*=.68;}
   }return;
@@ -424,7 +424,7 @@ function updateAI(p,dt){
  if(playerHas){
   const goalX=side===0?FIELD.right+24:FIELD.left-24,goalDist=Math.hypot(goalX-p.x,FIELD.centreY-p.y);
   if(goalDist<265&&Math.random()<dt*.42*diffFactor()){
-   kickBall(p,goalX,FIELD.centreY,300+p.player.attrs.shooting*.5,rnd(-72,72));
+   kickBall(p,goalX,FIELD.centreY,300+p.player.attrs.shooting*.5,rnd(10,30));
    game.stats[side].shots++;if(side===1)game.stats[1].shotsAgainst++;return
   }
   const mate=bestReceiver(p,1);
@@ -495,6 +495,19 @@ function attemptPickup(){
  if(best&&d<best.radius+7&&Math.hypot(b.vx,b.vy)<245){
   if(b.passFlight&&b.lastTouch===best.side)game.stats[best.side].completed++;
   b.passFlight=false;b.owner=best;b.vx=b.vy=0;b.vz=0;
+ }
+}
+function resolveBallPlayerContact(){
+ const b=game.ball;if(b.owner||b.z>8)return;
+ for(const p of game.players){
+  const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy)||1,min=p.radius+3.2;
+  if(d>=min)continue;
+  const nx=dx/d,ny=dy/d;b.x=p.x+nx*min;b.y=p.y+ny*min;
+  const inward=b.vx*nx+b.vy*ny;
+  if(inward<0){b.vx-=1.42*inward*nx;b.vy-=1.42*inward*ny;}
+  b.vx+=p.vx*.08;b.vy+=p.vy*.08;b.spin=clamp(b.spin+(p.vy*nx-p.vx*ny)*.0015,-1.2,1.2);
+  if(p.keeper&&Math.hypot(b.vx,b.vy)<250){b.owner=p;b.vx=b.vy=b.vz=0;}
+  return;
  }
 }
 function checkBallBounds(){
@@ -604,8 +617,9 @@ function drawPitch(ctx){
  worldRect(ctx,FIELD.right-goalAreaDepth,goalTop,FIELD.right,goalBottom);
  const leftSpot=FIELD.left+103,rightSpot=FIELD.right-103;
  for(const x of [leftSpot,rightSpot]){const p=projectWorld(x,FIELD.centreY);ctx.fillStyle="#f4f8ee";ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fill()}
- worldCircle(ctx,leftSpot,FIELD.centreY,85,-Math.PI/2,Math.PI/2);
- worldCircle(ctx,rightSpot,FIELD.centreY,85,Math.PI/2,Math.PI*1.5);
+ const arcAngle=Math.acos(51/85);
+ worldCircle(ctx,leftSpot,FIELD.centreY,85,-arcAngle,arcAngle);
+ worldCircle(ctx,rightSpot,FIELD.centreY,85,Math.PI-arcAngle,Math.PI+arcAngle);
  for(const [x,y,a0] of [[FIELD.left,FIELD.top,0],[FIELD.right,FIELD.top,Math.PI/2],[FIELD.right,FIELD.bottom,Math.PI],[FIELD.left,FIELD.bottom,-Math.PI/2]]){
   const pts=[];for(let i=0;i<=8;i++){const a=a0+i/8*Math.PI/2;pts.push([x+Math.cos(a)*10,y+Math.sin(a)*10])}worldLine(ctx,pts)
  }
@@ -647,7 +661,7 @@ function drawPlayer(ctx,p){
  }
 }
 function drawBall(ctx,b){
- const q=projectWorld(b.x,b.y),r=4.2*q.s;
+ const q=projectWorld(b.x,b.y),r=2.8*q.s;
  ctx.save();ctx.fillStyle="#07110c66";ctx.beginPath();ctx.ellipse(q.x+1,q.y+2,r*1.15,r*.52,0,0,Math.PI*2);ctx.fill();
  const elevation=b.z*.45;ctx.translate(q.x,q.y-elevation);ctx.rotate(game.time*2+b.spin);
  const grad=ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);grad.addColorStop(0,"#ffffff");grad.addColorStop(1,"#c4d0c7");
