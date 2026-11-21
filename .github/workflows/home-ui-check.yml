@@ -38,21 +38,24 @@ jobs:
         run: node --check hockey-server/src/index.js
       - name: Check cloud-save bridge syntax
         run: node --check home-game-bridge.js
-      - name: Check Football 2D inline script syntax
+      - name: Check Footy inline script syntax
         run: |
           node --input-type=commonjs -e "
             const fs = require('node:fs');
             const html = fs.readFileSync('football.html', 'utf8');
             const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
-            if (!scripts.length) throw new Error('Football 2D script not found');
+            if (!scripts.length) throw new Error('Footy script not found');
             scripts.forEach((match, index) => new Function(match[1]));
-            console.log('Football 2D inline scripts parsed successfully.');
+            console.log('Footy inline scripts parsed successfully.');
           "
       - name: Check Football 2D library integration
         run: |
-          grep -q "openStandaloneGame(.*football.html.*Football 2D" index.html
-          grep -q '"Football 2D":"football-2d"' arcade-portal.js
+          grep -q "openStandaloneGame(.*football.html.*Footy" index.html
+          grep -q '"Footy":"football-2d"' arcade-portal.js
           grep -q '"football-2d":"Sports"' hockey-server/src/index.js
+grep -q '<title>FOOTY' football.html
+grep -q 'body.in-match #root' football.html
+grep -q 'function projectWorld' football.html
       - name: Check F1 wrapper script syntax
         run: |
           node --input-type=commonjs -e "
