@@ -279,7 +279,7 @@ const defaultBindings={up:"w",down:"s",left:"a",right:"d",sprint:"shift",switch:
 let settings=Object.assign({camera:"broadcast",zoom:.94,crowd:55,sfx:60,names:false,stamina:false,cutscenes:true,motion:true,viewStyle:"hockey-football",bindings:defaultBindings},save.settings||{});
 settings.bindings=Object.fromEntries(Object.keys(defaultBindings).map(key=>[key,settings.bindings?.[key]||defaultBindings[key]]));
 if(save.settings?.viewStyle!=="hockey-football"){settings.viewStyle="hockey-football";persist();}
-let game=null,raf=0,lastFrame=0,accumulator=0,keys={},bindingAction=null,toastTimer=null,audioCtx=null,crowdTimer=null,watchMode=false,gamepadAxis={x:0,y:0};
+let game=null,raf=0,lastFrame=0,accumulator=0,keys={},bindingAction=null,toastTimer=null,audioCtx=null,crowdTimer=null,watchMode=false,gamepadAxis={x:0,y:0},gamepadSprint=false;
 function loadSave(){try{const d=JSON.parse(localStorage.getItem(STORE_KEY)||"{}");return d&&d.v===1?d:{v:1,settings:{},stats:{played:0,wins:0,goals:0},cup:null,career:null,season:null,records:{}}}catch(e){return{v:1,settings:{},stats:{played:0,wins:0,goals:0},cup:null,career:null,season:null,records:{}}}}
 function persist(){save.settings=settings;try{localStorage.setItem(STORE_KEY,JSON.stringify(save));$("saveIndicator").textContent="SAVE UPDATED";setTimeout(()=>$("saveIndicator").textContent="LOCAL SAVE READY",1700);try{if(window.HomeGameBridge&&window.HomeGameBridge.gameId==="football-2d")window.HomeGameBridge.sync()}catch(e){}}catch(e){$("saveIndicator").textContent="LOCAL SAVE FULL";}}
 function notify(message){const t=$("hudToast");t.textContent=message;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1900)}
@@ -401,7 +401,7 @@ function updateInputs(dt){
  const len=Math.hypot(dx,dy)||1,pace=.90+(p.player.attrs.pace||70)/850;
  if(dx||dy){dx/=len;dy/=len;p.vx+=dx*430*pace*dt;p.vy+=dy*430*pace*dt;p.pose="run"}else p.pose="idle";
  p.vx*=Math.pow(.12,dt);p.vy*=Math.pow(.12,dt);
- const sprinting=isDown("sprint")&&p.stamina>28,maxSpeed=(sprinting?276:238)*pace,speed=Math.hypot(p.vx,p.vy);
+ const sprinting=(isDown("sprint")||gamepadSprint)&&p.stamina>28,maxSpeed=(sprinting?276:238)*pace,speed=Math.hypot(p.vx,p.vy);
  if(speed>maxSpeed){p.vx*=maxSpeed/speed;p.vy*=maxSpeed/speed}
  if(isDown("switch")&&!keys.__switchLatch){keys.__switchLatch=true;switchPlayer()}
  if(!isDown("switch"))keys.__switchLatch=false;
@@ -422,14 +422,14 @@ function switchPlayer(){
  if(index>=0){game.active=index;game.switchCooldown=.22;notify("PLAYER "+String(next.p.number))}
 }
 function initGamepad(){
- if(game.watch||!navigator.getGamepads){gamepadAxis={x:0,y:0};return}
+ if(game.watch||!navigator.getGamepads){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
  const gp=navigator.getGamepads()[0];
- if(!gp){gamepadAxis={x:0,y:0};return}
+ if(!gp){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
  const x=gp.axes[0]||0,y=gp.axes[1]||0;
  gamepadAxis={x:Math.abs(x)>.16?x:0,y:Math.abs(y)>.16?y:0};
  if(gp.buttons[4]?.pressed&&!keys.__gamepadSwitch){keys.__gamepadSwitch=true;switchPlayer()}
  if(!gp.buttons[4]?.pressed)keys.__gamepadSwitch=false;
- if(gp.buttons[7]?.pressed)keys[settings.bindings.sprint]=true;else keys[settings.bindings.sprint]=false;
+ gamepadSprint=!!gp.buttons[7]?.pressed;
 }
 function hockeyAIPlayer(p,targetX,targetY,dt,paceScale=1){
  const dx=targetX-p.x,dy=targetY-p.y,len=Math.hypot(dx,dy)||1;
@@ -754,22 +754,22 @@ function playCrowd(){stopCrowd();if(settings.crowd<=0)return;try{audioCtx=audioC
 function stopCrowd(){if(crowdTimer){try{crowdTimer.osc.stop()}catch(e){}crowdTimer=null}}
 function switchPlayer(){
  if(!game||game.switchCooldown>0)return;
- const team=game.players.slice(0,11).filter(p=>!p.keeper);
+ const team=game.players.slice(0,11).filter(p=>!p.keeper),current=game.players[game.active];
  if(!team.length)return;
- const ball=game.ball,current=game.players[game.active];
- const ranked=team.map(p=>{
-  const travel=dist(p,ball)+Math.hypot(p.vx,p.vy)*.12;
-  const hasPossession=ball.owner===p;
-  const nearGoal=p.side===0?ball.x>FIELD.right-FIELD.width*.22:ball.x<FIELD.left+FIELD.width*.22;
-  const keeperEmergency=nearGoal&&Math.abs(ball.y-FIELD.centreY)<FIELD.goalHalf*2;
-  return{p,score:hasPossession?-10000:travel+(p===current?22:0)+(p.keeper?keeperEmergency?-50:500:0)}
- }).sort((a,b)=>a.score-b.score);
- const currentRank=ranked.findIndex(x=>x.p===current);
- const next=ranked[currentRank===0?1:0]||ranked[0];
- const nextIndex=game.players.indexOf(next.p);
- if(nextIndex>=0){game.active=nextIndex;game.switchCooldown=.24;notify("PLAYER "+String(next.p.number))}
+ const ranked=team.map(p=>({p,score:dist(p,game.ball)+Math.hypot(p.vx,p.vy)*.09+(p===current?24:0)})).sort((a,b)=>a.score-b.score);
+ const currentRank=ranked.findIndex(x=>x.p===current),next=ranked[currentRank===0?1:0]||ranked[0],index=game.players.indexOf(next.p);
+ if(index>=0){game.active=index;game.switchCooldown=.22;notify("PLAYER "+String(next.p.number))}
 }
-function initGamepad(dt){if(game.watch||!navigator.getGamepads){gamepadAxis={x:0,y:0};return}const gp=navigator.getGamepads()[0];if(!gp){gamepadAxis={x:0,y:0};return}const x=gp.axes[0]||0,y=gp.axes[1]||0;gamepadAxis={x:Math.abs(x)>.16?x:0,y:Math.abs(y)>.16?y:0};const names=["pass","shoot","through","lob","tackle"];const idx=[0,1,2,3,4];for(let i=0;i<idx.length;i++){if(gp.buttons[idx[i]]?.pressed&&!keys["gp"+idx[i]]){keys["gp"+idx[i]]=true;performAction(names[i],p)}if(!gp.buttons[idx[i]]?.pressed)keys["gp"+idx[i]]=false}}
+function initGamepad(){
+ if(game.watch||!navigator.getGamepads){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
+ const gp=navigator.getGamepads()[0];
+ if(!gp){gamepadAxis={x:0,y:0};gamepadSprint=false;return}
+ const x=gp.axes[0]||0,y=gp.axes[1]||0;
+ gamepadAxis={x:Math.abs(x)>.16?x:0,y:Math.abs(y)>.16?y:0};
+ if(gp.buttons[4]?.pressed&&!keys.__gamepadSwitch){keys.__gamepadSwitch=true;switchPlayer()}
+ if(!gp.buttons[4]?.pressed)keys.__gamepadSwitch=false;
+ gamepadSprint=!!gp.buttons[7]?.pressed;
+}
 window.addEventListener("keydown",e=>{const k=e.key===" "?"space":e.key.toLowerCase();if(game&&Object.values(settings.bindings).includes(k)||e.key===" "){e.preventDefault()}keys[k]=true;if(bindingAction){settings.bindings[bindingAction]=k;bindingAction=null;persist();renderSettings();$("bindStatus").textContent="Key binding updated.";return}});
 window.addEventListener("keyup",e=>{keys[e.key===" "?"space":e.key.toLowerCase()]=false});
 function setupTouch(){const joy=$("touchJoy");if(!joy)return;let origin=null;joy.addEventListener("pointerdown",e=>{origin={x:e.clientX,y:e.clientY};joy.setPointerCapture(e.pointerId)});joy.addEventListener("pointermove",e=>{if(!origin)return;const dx=clamp((e.clientX-origin.x)/30,-1,1),dy=clamp((e.clientY-origin.y)/30,-1,1);keys[settings.bindings.left]=dx<-.25;keys[settings.bindings.right]=dx>.25;keys[settings.bindings.up]=dy<-.25;keys[settings.bindings.down]=dy>.25});function reset(){origin=null;["left","right","up","down"].forEach(k=>keys[settings.bindings[k]]=false)}joy.addEventListener("pointerup",reset);joy.addEventListener("pointercancel",reset);$("touchControls").querySelectorAll("[data-action]").forEach(b=>{b.addEventListener("pointerdown",e=>{e.preventDefault();if(b.dataset.action==="sprint"){keys[settings.bindings.sprint]=true;return}if(b.dataset.action==="switch")switchPlayer()});const release=()=>{if(b.dataset.action==="sprint")keys[settings.bindings.sprint]=false};b.addEventListener("pointerup",release);b.addEventListener("pointercancel",release);b.addEventListener("pointerleave",release)})}
