@@ -319,7 +319,9 @@ function newStats(){return{shots:0,onTarget:0,passes:0,completed:0,tackles:0,int
 function placePlayer(p,reset){
  const width=900,height=580,x0=190,y0=70;let nx=p.home[0],ny=p.home[1];
  if(p.side===1)nx=1-nx;
- p.x=x0+nx*width;p.y=y0+ny*height;p.targetX=p.x;p.targetY=p.y;
+ p.x=x0+nx*width;p.y=y0+ny*height;
+ if(p.keeper){p.x=p.side===0?FIELD.left+7:FIELD.right-7;p.y=FIELD.centreY;}
+ p.targetX=p.x;p.targetY=p.y;
  if(reset){p.vx=0;p.vy=0;p.anim=0;p.stamina=100}
 }
 function resizeCanvas(){const c=$("pitchCanvas");if(!c)return;const d=Math.min(window.devicePixelRatio||1,1.7),r=c.getBoundingClientRect();if(r.width>0&&r.height>0){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d)}}
