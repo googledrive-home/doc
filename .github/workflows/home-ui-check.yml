@@ -60,7 +60,15 @@ jobs:
           grep -q 'function resolvePlayerCollisions' football.html
           grep -q 'if(closing>24' football.html
           grep -q 'function drawPlayer(ctx,p)' football.html
-          grep -q 'r=8.4\*q.s' football.html
+          grep -q 'r=10.8\*q.s' football.html
+          grep -q 'const FIVE_FORMATIONS' football.html
+          grep -q 'const PERSONALITIES' football.html
+          grep -q 'function grassTexture()' football.html
+          grep -q 'game.players.slice(0,5)' football.html
+          grep -q '5 v 5 · CPU / LOCAL' football.html
+          grep -q 'AI personalities · Full pitch' index.html
+          ! grep -q '11 v 11' football.html
+          ! grep -q '11v11' index.html
           grep -q '<kbd>Q</kbd> Switch player' football.html
           ! grep -q 'function performAction(' football.html
           ! grep -q 'function kickBall(' football.html
