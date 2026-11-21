@@ -149,7 +149,7 @@ body.in-match #fullscreenMatch{min-width:92px;}
  <div class="mode-grid">
   <button class="mode-card" data-drill="contact"><div class="mode-icon">⚽</div><h3>Contact practice</h3><p>Build speed and strike the ball by running into it.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-drill="movement"><div class="mode-icon">🏃</div><h3>Movement practice</h3><p>Practise acceleration, sharp turns and chasing loose balls.</p><span class="arrow">↗</span></button>
-  <button class="mode-card" data-drill="keeper"><div class="mode-icon">🧤</div><h3>Goalkeeper practice</h3><p>Read shots, move across goal and make a save.</p><span class="arrow">↗</span></button>
+  <button class="mode-card" data-drill="keeper"><div class="mode-icon">🧤</div><h3>Goalkeeper practice</h3><p>Hold your goal line, read the loose ball and meet it with your body.</p><span class="arrow">↗</span></button>
   <button class="mode-card" data-drill="free"><div class="mode-icon">⚽</div><h3>Free training match</h3><p>Play a friendly match with no season consequences.</p><span class="arrow">↗</span></button>
  </div>
  <div class="notice" style="margin-top:14px">Training uses the same match engine and controls as Quick Play. Practice scores are local training records and do not affect a league table.</div>
@@ -318,7 +318,7 @@ function startMatch(opts){
  $("changeCamera").textContent="CAMERA: "+settings.camera.toUpperCase();
  $("matchOverlay").classList.remove("show");showView("match");resizeCanvas();requestAnimationFrame(resizeCanvas);requestMatchFullscreen();game.phase=settings.cutscenes&&!game.training?"intro":"kickoff";game.phaseTimer=game.phase==="intro"?999:1.2;lastFrame=performance.now();accumulator=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);if(settings.cutscenes&&!game.training){overlay("MATCHDAY",""+ht[0]+"  vs  "+at[0],'<p>'+escapeHtml(game.stadium)+' · '+escapeHtml(game.weather)+' conditions</p><p>Players are taking their positions. Kick-off is next.</p><button class="btn" id="introSkip">SKIP INTRO & KICK OFF</button>');$("introSkip").onclick=()=>{$("matchOverlay").classList.remove("show");game.phase="playing";};}playCrowd();persist();
 }
-function newStats(){return{hits:0,contacts:0,saves:0,goals:0,possession:0,ballRecoveries:0}}
+function newStats(){return{hits:0,contacts:0,saves:0,goals:0,possession:0}}
 function placePlayer(p,reset){
  const width=900,height=580,x0=190,y0=70;let nx=p.home[0],ny=p.home[1];
  if(p.side===1)nx=1-nx;
@@ -501,7 +501,7 @@ function resolveBallPlayerContact(){
    b.vx=b.vx*.28+nx*impact+p.vx*.43;b.vy=b.vy*.28+ny*impact+p.vy*.43;
    b.spin=clamp(b.spin+(p.vy*nx-p.vx*ny)*.0015,-1.3,1.3);
    b.vz=Math.max(b.vz,Math.min(34,closing*.055));b.lastTouch=p.side;p._hitCooldown=.18;
-   p.vx*=.91;p.vy*=.91;game.stats[p.side].hits++;
+   p.vx*=.91;p.vy*=.91;game.stats[p.side].hits++;if(p.keeper)game.stats[p.side].saves++;
    if(p===game.players[game.active])notify("BALL HIT");
    if(settings.sfx>0)tone(285+Math.min(190,closing*.35),.04,"triangle",settings.sfx/100*.035);
   }else if(closing<0&&ballAlong<0){b.vx-=1.30*ballAlong*nx;b.vy-=1.30*ballAlong*ny}
