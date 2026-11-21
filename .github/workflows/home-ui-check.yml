@@ -56,6 +56,17 @@ jobs:
           grep -q '<title>FOOTY' football.html
           grep -q 'body.in-match #root' football.html
           grep -q 'function projectWorld' football.html
+          grep -q 'function resolveBallPlayerContact' football.html
+          grep -q 'function resolvePlayerCollisions' football.html
+          grep -q 'if(closing>24' football.html
+          grep -q 'function drawPlayer(ctx,p)' football.html
+          grep -q 'r=8.4\*q.s' football.html
+          grep -q '<kbd>Q</kbd> Switch player' football.html
+          ! grep -q 'function performAction(' football.html
+          ! grep -q 'function kickBall(' football.html
+          ! grep -q 'data-action="pass"' football.html
+          ! grep -q 'data-action="shoot"' football.html
+          ! grep -q 'ball.owner' football.html
       - name: Check F1 wrapper script syntax
         run: |
           node --input-type=commonjs -e "
