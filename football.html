@@ -693,30 +693,63 @@ function drawStadium(ctx){
  ctx.globalAlpha=1;
  for(let x=90;x<1280;x+=220){ctx.fillStyle="#f9f4d5";ctx.shadowColor="#fff2c2";ctx.shadowBlur=10;ctx.fillRect(x,8,32,3)}
  ctx.shadowBlur=0;
- ctx.fillStyle="#12261c";ctx.fillRect(122,119,1036,19);ctx.fillRect(122,600,1036,19);
+ ctx.fillStyle="#12261c";ctx.fillRect(122,119,1036,19);ctx.fillRect(122,600,1036,19);ctx.fillStyle="#547060";ctx.globalAlpha=.5;for(let x=132;x<1150;x+=9){ctx.fillRect(x,120,1,17);ctx.fillRect(x,601,1,17)}ctx.globalAlpha=1;
  ctx.fillStyle="#68e4ba";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
  for(let i=0;i<8;i++){const x=185+i*130;ctx.fillText(["HOME FOOTY","PLAY THE GAME","MATCHDAY","FOOTY"][i%4],x,132);ctx.fillText(["HOME FOOTY","PLAY THE GAME","MATCHDAY","FOOTY"][i%4],x,613)}
  ctx.fillStyle="#789183";ctx.font="bold 10px sans-serif";ctx.fillText(String(game.stadium||"HOME STADIUM").toUpperCase(),640,103);
 }
+let pitchGrassTexture=null;
+function grassTexture(){
+ if(pitchGrassTexture)return pitchGrassTexture;
+ const texture=document.createElement("canvas");texture.width=texture.height=256;
+ const t=texture.getContext("2d");
+ let seed=49217;
+ const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let i=0;i<2600;i++){
+  const x=random()*256,y=random()*256,light=random();
+  t.fillStyle=light>.52?"rgba(202,244,164,.095)":"rgba(3,41,18,.09)";
+  t.fillRect(x,y,.45+random()*1.2,.7+random()*2.2);
+ }
+ t.lineWidth=.45;
+ for(let i=0;i<360;i++){
+  const x=random()*256,y=random()*256;
+  t.strokeStyle=random()>.5?"rgba(216,248,179,.12)":"rgba(0,36,15,.12)";
+  t.beginPath();t.moveTo(x,y);t.lineTo(x-1+random()*2,y-2-random()*3);t.stroke();
+ }
+ pitchGrassTexture=texture;return texture;
+}
 function drawPitch(ctx){
  const corners=[[FIELD.left,FIELD.top],[FIELD.right,FIELD.top],[FIELD.right,FIELD.bottom],[FIELD.left,FIELD.bottom]];
- ctx.save();traceWorld(ctx,corners,true);ctx.shadowColor="#020a05";ctx.shadowBlur=22;ctx.fillStyle="#0a2615";ctx.fill();ctx.restore();
+ ctx.save();traceWorld(ctx,corners,true);ctx.shadowColor="#020a05";ctx.shadowBlur=25;ctx.fillStyle="#071b0f";ctx.fill();ctx.restore();
  ctx.save();traceWorld(ctx,corners,true);ctx.clip();
- const turf=ctx.createLinearGradient(0,136,0,600);turf.addColorStop(0,"#247b3f");turf.addColorStop(.55,"#268b47");turf.addColorStop(1,"#267d3d");
+ const turf=ctx.createLinearGradient(0,130,0,610);
+ turf.addColorStop(0,"#1f7039");turf.addColorStop(.22,"#278546");turf.addColorStop(.52,"#31934c");turf.addColorStop(.78,"#278345");turf.addColorStop(1,"#1c7038");
  ctx.fillStyle=turf;ctx.fillRect(0,0,1280,720);
+ // Mowing bands with slightly varied green, as on a freshly cut professional pitch.
  for(let i=0;i<10;i++){
   const x1=FIELD.left+i*FIELD.width/10,x2=FIELD.left+(i+1)*FIELD.width/10;
   traceWorld(ctx,[[x1,FIELD.top],[x2,FIELD.top],[x2,FIELD.bottom],[x1,FIELD.bottom]],true);
-  ctx.fillStyle=i%2?"#ffffff08":"#052b100c";ctx.fill();
+  ctx.fillStyle=i%2?"rgba(215,255,211,.055)":"rgba(0,35,12,.075)";ctx.fill();
  }
- ctx.strokeStyle="#d7f7dd12";ctx.lineWidth=1;
- for(let y=FIELD.top+9;y<FIELD.bottom;y+=18){worldLine(ctx,[[FIELD.left,y],[FIELD.right,y]])}
+ // Fine grass flecks add detail without loading external textures.
+ const texture=ctx.createPattern(grassTexture(),"repeat");
+ if(texture){ctx.globalAlpha=.78;ctx.fillStyle=texture;ctx.fillRect(0,0,1280,720);ctx.globalAlpha=1}
+ ctx.strokeStyle="#e0f8d30d";ctx.lineWidth=1;
+ for(let y=FIELD.top+7;y<FIELD.bottom;y+=14)worldLine(ctx,[[FIELD.left,y],[FIELD.right,y]]);
+ // Subtle sunlight falloff across the grass.
+ const sunlight=ctx.createRadialGradient(500,245,20,640,360,650);
+ sunlight.addColorStop(0,"rgba(255,255,205,.12)");sunlight.addColorStop(1,"rgba(0,10,5,.18)");
+ ctx.fillStyle=sunlight;ctx.fillRect(0,0,1280,720);
  ctx.restore();
- ctx.strokeStyle="#f2f7ed";ctx.lineWidth=2.3;ctx.lineJoin="round";
+ // Painted pitch markings with a faint dark edge for broadcast readability.
+ ctx.strokeStyle="#092e16";ctx.globalAlpha=.23;ctx.lineWidth=4;
+ worldRect(ctx,FIELD.left,FIELD.top,FIELD.right,FIELD.bottom);
+ worldLine(ctx,[[FIELD.centreX,FIELD.top],[FIELD.centreX,FIELD.bottom]]);
+ ctx.globalAlpha=1;ctx.strokeStyle="#f4f7ec";ctx.lineWidth=2.15;ctx.lineJoin="round";
  worldRect(ctx,FIELD.left,FIELD.top,FIELD.right,FIELD.bottom);
  worldLine(ctx,[[FIELD.centreX,FIELD.top],[FIELD.centreX,FIELD.bottom]]);
  worldCircle(ctx,FIELD.centreX,FIELD.centreY,85);
- const spot=projectWorld(FIELD.centreX,FIELD.centreY);ctx.fillStyle="#f4f8ee";ctx.beginPath();ctx.arc(spot.x,spot.y,2.6,0,Math.PI*2);ctx.fill();
+ const spot=projectWorld(FIELD.centreX,FIELD.centreY);ctx.fillStyle="#f4f8ee";ctx.beginPath();ctx.arc(spot.x,spot.y,2.7,0,Math.PI*2);ctx.fill();
  const boxDepth=154,boxTop=FIELD.centreY-188,boxBottom=FIELD.centreY+188;
  const goalAreaDepth=52,goalTop=FIELD.centreY-51,goalBottom=FIELD.centreY+51;
  worldRect(ctx,FIELD.left,boxTop,FIELD.left+boxDepth,boxBottom);
@@ -744,37 +777,98 @@ function drawGoal(ctx,side){
  ctx.restore();
 }
 function drawPlayer(ctx,p){
- const q=projectWorld(p.x,p.y),scale=q.s;
- ctx.save();ctx.translate(q.x,q.y);ctx.scale(scale,scale);
- const speed=Math.hypot(p.vx,p.vy),stride=Math.sin(game.time*8+p.anim)*(speed>18?2.1:0.45);
- ctx.fillStyle="#03100877";ctx.beginPath();ctx.ellipse(1,5,8.3,3.6,0,0,Math.PI*2);ctx.fill();
+ const q=projectWorld(p.x,p.y),scale=q.s,team=p.team;
+ const speed=Math.hypot(p.vx,p.vy),active=game.players[game.active]===p&&!game.watch;
+ const stride=Math.sin(game.time*9+p.anim)*(speed>16?2.5:0.45);
+ const skin=p.skin||"#c58d68",hair=p.hair||"#211914";
+ ctx.save();ctx.translate(q.x,q.y);
+ // Contact shadow sits on the turf, then the model is lifted slightly above it.
+ ctx.fillStyle="#020a06";ctx.globalAlpha=.34;ctx.beginPath();ctx.ellipse(2*scale,5.5*scale,9.6*scale,4.1*scale,.12,0,Math.PI*2);ctx.fill();
+ const shadow=ctx.createRadialGradient(0,2,1,1,4,12*scale);
+ shadow.addColorStop(0,"rgba(0,0,0,.32)");shadow.addColorStop(1,"rgba(0,0,0,0)");
+ ctx.globalAlpha=1;ctx.fillStyle=shadow;ctx.beginPath();ctx.ellipse(1,4,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();
  ctx.rotate(Math.atan2(p.vy,p.vx||p.dir)+Math.PI/2);
- ctx.lineCap="round";ctx.strokeStyle=p.team[3];ctx.lineWidth=2.5;
- ctx.beginPath();ctx.moveTo(-2,0);ctx.lineTo(-2+stride,5.2);ctx.moveTo(2,0);ctx.lineTo(2-stride,5.2);ctx.stroke();
- ctx.strokeStyle="#111a14";ctx.lineWidth=2.2;ctx.beginPath();
- ctx.moveTo(-2+stride,5.2);ctx.lineTo(-4+stride,6.4);ctx.moveTo(2-stride,5.2);ctx.lineTo(4-stride,6.4);ctx.stroke();
- ctx.fillStyle="#151d18";ctx.beginPath();ctx.roundRect(-4.1,-1.2,8.2,4.4,1.5);ctx.fill();
- ctx.fillStyle=p.team[2];ctx.beginPath();ctx.roundRect(-4.7,-8.3,9.4,8.5,2.2);ctx.fill();
- ctx.fillStyle=p.team[3];ctx.fillRect(-4.4,-2.6,8.8,1.7);
- ctx.strokeStyle=p.team[2];ctx.lineWidth=2.1;ctx.beginPath();ctx.moveTo(-4,-6.5);ctx.lineTo(-6.1,-2.2);ctx.moveTo(4,-6.5);ctx.lineTo(6.1,-2.2);ctx.stroke();
- ctx.fillStyle=p.skin;ctx.beginPath();ctx.ellipse(0,-10.8,3.2,3.6,0,0,Math.PI*2);ctx.fill();
- ctx.fillStyle=p.hair;ctx.beginPath();ctx.arc(0,-12.2,3.2,Math.PI,Math.PI*2);ctx.fill();
- if(p.keeper){ctx.fillStyle="#f6d66f";ctx.beginPath();ctx.arc(-6,-2,1.5,0,Math.PI*2);ctx.arc(6,-2,1.5,0,Math.PI*2);ctx.fill()}
- ctx.fillStyle="#ffffff";ctx.font="bold 4.1px sans-serif";ctx.textAlign="center";ctx.fillText(String(p.number),0,-2.4);
- if(settings.stamina&&game.players[game.active]===p){ctx.fillStyle="#07120b";ctx.fillRect(-7,-19,14,2.1);ctx.fillStyle="#b8f58c";ctx.fillRect(-7,-19,14*p.stamina/100,2.1)}
+ ctx.scale(scale,scale);
+ const shirt=team[2]||"#e8e8e8",trim=team[3]||"#18251e";
+ // Legs: shaded shorts, two separate socks, knees and dark boots.
+ const shorts=ctx.createLinearGradient(-5,0,5,7);shorts.addColorStop(0,"#202a27");shorts.addColorStop(.5,"#101714");shorts.addColorStop(1,"#050a08");
+ ctx.fillStyle=shorts;ctx.beginPath();ctx.moveTo(-4.6,-1);ctx.lineTo(4.6,-1);ctx.lineTo(4.4,5.4);ctx.lineTo(1,6.1);ctx.lineTo(0,3.4);ctx.lineTo(-1,6.1);ctx.lineTo(-4.4,5.4);ctx.closePath();ctx.fill();
+ ctx.strokeStyle=trim;ctx.lineWidth=2.8;ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(-2.5,4);ctx.lineTo(-2.9+stride*.72,9);ctx.moveTo(2.5,4);ctx.lineTo(2.9-stride*.72,9);ctx.stroke();
+ const sock=ctx.createLinearGradient(-3,5,3,10);sock.addColorStop(0,trim);sock.addColorStop(.5,shirt);sock.addColorStop(1,trim);
+ ctx.strokeStyle=sock;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-2.9+stride*.72,7);ctx.lineTo(-3.1+stride*.72,10);ctx.moveTo(2.9-stride*.72,7);ctx.lineTo(3.1-stride*.72,10);ctx.stroke();
+ ctx.fillStyle="#0a1110";ctx.beginPath();ctx.ellipse(-3.1+stride*.72,10.2,2.1,1.35,-.2,0,Math.PI*2);ctx.ellipse(3.1-stride*.72,10.2,2.1,1.35,.2,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#65706a";ctx.globalAlpha=.72;ctx.fillRect(-4.5,5.1,2.6,.65);ctx.fillRect(1.9,5.1,2.6,.65);ctx.globalAlpha=1;
+ // Torso volume: layered gradients, shaped shoulders and fabric seams.
+ const jersey=ctx.createLinearGradient(-6,-10,6,-1);jersey.addColorStop(0,"#ffffff55");jersey.addColorStop(.18,shirt);jersey.addColorStop(.58,shirt);jersey.addColorStop(1,"#050b09aa");
+ ctx.fillStyle="#050b09";ctx.beginPath();ctx.moveTo(-4.1,-9.1);ctx.quadraticCurveTo(-6.1,-8.8,-6.2,-6.2);ctx.lineTo(-4.6,-.2);ctx.quadraticCurveTo(0,1.4,4.6,-.2);ctx.lineTo(6.2,-6.2);ctx.quadraticCurveTo(6.1,-8.8,4.1,-9.1);ctx.closePath();ctx.fill();
+ ctx.fillStyle=jersey;ctx.beginPath();ctx.moveTo(-3.8,-9.2);ctx.quadraticCurveTo(-5.5,-9.2,-5.6,-6.4);ctx.lineTo(-4.1,-.7);ctx.quadraticCurveTo(0,.8,4.1,-.7);ctx.lineTo(5.6,-6.4);ctx.quadraticCurveTo(5.5,-9.2,3.8,-9.2);ctx.closePath();ctx.fill();
+ // Sleeve panels and forearms are separate shapes to avoid a flat stick-figure silhouette.
+ const sleeve=ctx.createLinearGradient(0,-8,0,-2);sleeve.addColorStop(0,shirt);sleeve.addColorStop(1,trim);
+ ctx.fillStyle=sleeve;ctx.beginPath();ctx.moveTo(-4.3,-8.4);ctx.lineTo(-6.7,-7);ctx.lineTo(-7.6,-3.9);ctx.lineTo(-5.4,-2.7);ctx.lineTo(-4.2,-5.3);ctx.closePath();ctx.fill();
+ ctx.beginPath();ctx.moveTo(4.3,-8.4);ctx.lineTo(6.7,-7);ctx.lineTo(7.6,-3.9);ctx.lineTo(5.4,-2.7);ctx.lineTo(4.2,-5.3);ctx.closePath();ctx.fill();
+ ctx.strokeStyle=skin;ctx.lineWidth=1.85;ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(-6.6,-4.3);ctx.lineTo(-7.3,-1.5+stride*.25);ctx.moveTo(6.6,-4.3);ctx.lineTo(7.3,-1.5-stride*.25);ctx.stroke();
+ const hand=ctx.createRadialGradient(-7,-1,0,-7,-1,1.8);hand.addColorStop(0,"#f1c6a0");hand.addColorStop(1,skin);
+ ctx.fillStyle=hand;ctx.beginPath();ctx.arc(-7.3,-1.2+stride*.25,1.35,0,Math.PI*2);ctx.arc(7.3,-1.2-stride*.25,1.35,0,Math.PI*2);ctx.fill();
+ // Kit details: narrow seams, low-contrast fabric grain, side piping and team badge.
+ ctx.save();ctx.beginPath();ctx.moveTo(-3.8,-9.2);ctx.quadraticCurveTo(-5.5,-9.2,-5.6,-6.4);ctx.lineTo(-4.1,-.7);ctx.quadraticCurveTo(0,.8,4.1,-.7);ctx.lineTo(5.6,-6.4);ctx.quadraticCurveTo(5.5,-9.2,3.8,-9.2);ctx.closePath();ctx.clip();
+ ctx.strokeStyle=trim;ctx.globalAlpha=.24;ctx.lineWidth=1.05;
+ for(let x=-4;x<=4;x+=2.6){ctx.beginPath();ctx.moveTo(x,-9);ctx.lineTo(x*.72,.5);ctx.stroke()}
+ ctx.globalAlpha=.16;ctx.strokeStyle="#ffffff";ctx.lineWidth=.55;
+ for(let y=-8;y<0;y+=1.45){ctx.beginPath();ctx.moveTo(-5,y);ctx.lineTo(5,y+.6);ctx.stroke()}
+ ctx.globalAlpha=.85;
+ if((p.index%3)===0){ctx.fillStyle=trim;for(let x=-3;x<=3;x+=3){ctx.fillRect(x,-8.5,.9,7.2)}}
  ctx.restore();
- if(game.players[game.active]===p&&!game.watch){
-  ctx.save();ctx.translate(q.x,q.y);ctx.strokeStyle="#eaff9a";ctx.lineWidth=1.7;ctx.beginPath();ctx.arc(0,0,11*scale+Math.sin(game.time*8)*.8,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle="#eaff9a";ctx.beginPath();ctx.moveTo(0,-19*scale);ctx.lineTo(-4*scale,-24*scale);ctx.lineTo(4*scale,-24*scale);ctx.closePath();ctx.fill();ctx.restore();
+ ctx.strokeStyle="#ffffff55";ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(-3.3,-8.6);ctx.lineTo(-2,-9.25);ctx.moveTo(3.3,-8.6);ctx.lineTo(2,-9.25);ctx.stroke();
+ ctx.fillStyle=trim;ctx.beginPath();ctx.arc(-2.9,-6.5,.95,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#f6f7f1";ctx.font="bold 3.5px sans-serif";ctx.textAlign="center";ctx.fillText(String(p.number),0,-2.45);
+ // Neck and head, with shaded skin and a hairline so the player's facing direction reads clearly.
+ ctx.fillStyle=skin;ctx.fillRect(-1.4,-10.5,2.8,2.2);
+ const face=ctx.createRadialGradient(-1.2,-13.8,.5,0,-12.6,4.9);face.addColorStop(0,"#f3c5a0");face.addColorStop(.55,skin);face.addColorStop(1,"#61412f");
+ ctx.fillStyle=face;ctx.beginPath();ctx.ellipse(0,-13,3.55,4.05,.02,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=hair;ctx.beginPath();ctx.moveTo(-3.5,-13.5);ctx.quadraticCurveTo(-4.1,-18.5,0,-18.1);ctx.quadraticCurveTo(4.4,-18.5,3.3,-13.2);ctx.quadraticCurveTo(1.1,-15.2,0,-15.4);ctx.quadraticCurveTo(-1.5,-14.1,-3.5,-13.5);ctx.fill();
+ ctx.fillStyle="#171b18";ctx.globalAlpha=.76;ctx.fillRect(-1.8,-13.2,.65,.5);ctx.fillRect(1.15,-13.2,.65,.5);ctx.globalAlpha=1;
+ if(p.keeper){ctx.fillStyle="#f5d46c";ctx.beginPath();ctx.arc(-7.2,-1.1,1.8,0,Math.PI*2);ctx.arc(7.2,-1.1,1.8,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#fff4b7";ctx.lineWidth=.65;ctx.stroke()}
+ ctx.restore();
+ // Active-player marker is on the ground, never on top of the player's kit.
+ if(active){
+  const pulse=1+Math.sin(game.time*7)*.07;
+  ctx.save();ctx.translate(q.x,q.y+2*scale);ctx.strokeStyle="#dfff6c";ctx.globalAlpha=.92;ctx.lineWidth=1.55;
+  ctx.beginPath();ctx.ellipse(0,0,11*scale*pulse,6.4*scale*pulse,0,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle="#efff8e";ctx.beginPath();ctx.moveTo(0,-18*scale);ctx.lineTo(-3.7*scale,-23*scale);ctx.lineTo(3.7*scale,-23*scale);ctx.closePath();ctx.fill();ctx.restore();
  }
 }
 function drawBall(ctx,b){
- const q=projectWorld(b.x,b.y),r=2.8*q.s;
- ctx.save();ctx.fillStyle="#07110c66";ctx.beginPath();ctx.ellipse(q.x+1,q.y+2,r*1.15,r*.52,0,0,Math.PI*2);ctx.fill();
- const elevation=b.z*.45;ctx.translate(q.x,q.y-elevation);ctx.rotate(game.time*2+b.spin);
- const grad=ctx.createRadialGradient(-r*.35,-r*.4,1,0,0,r);grad.addColorStop(0,"#ffffff");grad.addColorStop(1,"#c4d0c7");
- ctx.fillStyle=grad;ctx.strokeStyle="#15251b";ctx.lineWidth=1.1;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();
- ctx.fillStyle="#27362c";ctx.beginPath();for(let i=0;i<5;i++){const a=i*Math.PI*2/5,x=Math.cos(a)*r*.48,y=Math.sin(a)*r*.48;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.closePath();ctx.fill();
+ const q=projectWorld(b.x,b.y),r=4.65*q.s,speed=Math.hypot(b.vx,b.vy);
+ const pulse=1+Math.sin(game.time*8)*.08;
+ ctx.save();
+ // High-contrast location halo makes the ball easy to pick out against striped grass.
+ const halo=ctx.createRadialGradient(q.x,q.y,1,q.x,q.y,17*pulse);
+ halo.addColorStop(0,"rgba(244,255,220,.50)");halo.addColorStop(.42,"rgba(198,255,118,.21)");halo.addColorStop(1,"rgba(198,255,118,0)");
+ ctx.fillStyle=halo;ctx.beginPath();ctx.arc(q.x,q.y,17*pulse,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle="#dfff79";ctx.globalAlpha=.88;ctx.lineWidth=1.45;ctx.beginPath();ctx.ellipse(q.x,q.y+1,9.2*pulse,6.2*pulse,0,0,Math.PI*2);ctx.stroke();
+ // Speed streaks are subtle, so the ball stays readable rather than becoming a glowing disc.
+ if(!b.owner&&speed>55){
+  const tail=projectWorld(b.x-b.vx*.06,b.y-b.vy*.06);
+  ctx.strokeStyle="#f2ffb2";ctx.globalAlpha=clamp(speed/340,.14,.48);ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(q.x,q.y);ctx.stroke();
+ }
+ ctx.globalAlpha=1;
+ ctx.fillStyle="#03080588";ctx.beginPath();ctx.ellipse(q.x+1.2,q.y+3.2,r*1.55,r*.72,0,0,Math.PI*2);ctx.fill();
+ const elevation=b.z*.45;ctx.translate(q.x,q.y-elevation);ctx.rotate(game.time*2.4+b.spin);
+ const grad=ctx.createRadialGradient(-r*.36,-r*.42,.5,0,0,r*1.15);
+ grad.addColorStop(0,"#ffffff");grad.addColorStop(.58,"#f4f5ef");grad.addColorStop(1,"#aeb9b1");
+ ctx.shadowColor="#c9f77c";ctx.shadowBlur=8;
+ ctx.fillStyle=grad;ctx.strokeStyle="#17251d";ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+ // Distinct dark panels and tiny seams remain visible even when the camera is zoomed out.
+ ctx.fillStyle="#1b2b24";
+ for(let i=0;i<5;i++){
+  const a=i*Math.PI*2/5-Math.PI/2,px=Math.cos(a)*r*.48,py=Math.sin(a)*r*.48;
+  ctx.beginPath();for(let k=0;k<5;k++){const aa=a+k*Math.PI*2/5+.18,x=px+Math.cos(aa)*r*.27,y=py+Math.sin(aa)*r*.27;if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.closePath();ctx.fill();
+ }
+ ctx.strokeStyle="#53645a";ctx.globalAlpha=.55;ctx.lineWidth=.45;
+ ctx.beginPath();ctx.moveTo(-r*.55,0);ctx.lineTo(r*.55,0);ctx.moveTo(0,-r*.55);ctx.lineTo(0,r*.55);ctx.stroke();
  ctx.restore();
 }
 function drawWeather(ctx){
