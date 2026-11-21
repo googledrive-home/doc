@@ -11,7 +11,7 @@
   "F1 Simulator":"f1-simulator",
   "APEX Formula Racing":"apex-formula-racing","Gravel Rally Stage":"gravel-rally-stage",
   "FPV Drone Simulator":"fpv-drone-simulator",
-  "8 Ball Pool":"pool-8-ball","Tennis Rally":"tennis-rally","Hockey":"hockey","Football 2D":"football-2d",
+  "8 Ball Pool":"pool-8-ball","Tennis Rally":"tennis-rally","Hockey":"hockey","Footy":"football-2d",
   "Reaction Game":"reaction-game","Click Test":"click-test","Neon Breaker":"neon-breaker",
   "Flappy Bird":"flappy-bird","Neon Snake":"neon-snake","Space Defender":"space-defender",
   "Memory Match":"memory-match","Moto X3M":"moto-x3m",
@@ -31,7 +31,7 @@
   if(isExternal)return "External Games";
   if(title==="F1 Simulator")return "Racing";
   if(["Drift Arena","Open World Drive","APEX Formula Racing","Gravel Rally Stage","F1 Simulator"].includes(title))return "Racing";
-  if(["Tennis Rally","Hockey","Football 2D","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
+  if(["Tennis Rally","Hockey","Footy","8 Ball Pool","Mini Golf 3D"].includes(title))return "Sports";
   if(["Tank Arena","FPV Drone Simulator","Cube Engine"].includes(title))return "Simulation";
   if(title==="Memory Match")return "Puzzle";
   return "Arcade";
