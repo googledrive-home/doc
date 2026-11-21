@@ -523,7 +523,7 @@ function updateAI(p,dt){
    tx=marker.x-dir*58;ty=clamp(marker.y+(p.home[1]<.5?-38:38),FIELD.top+34,FIELD.bottom-34);
   }else{
    // Rest defence holds its line and slides toward the ball as a compact unit.
-   tx=baseX+dir*clamp((progress-.5)*-55,-32,45);
+   tx=baseX+dir*clamp((progress-.5)*58,-34,48);
    ty=baseY+clamp((b.y-baseY)*.18,-48,48);
   }
  }else if(free){
@@ -910,7 +910,8 @@ function switchPlayer(){
   const keeperEmergency=nearGoal&&Math.abs(ball.y-FIELD.centreY)<FIELD.goalHalf*2;
   return{p,score:hasPossession?-10000:travel+(p===current?22:0)+(p.keeper?keeperEmergency?-50:500:0)}
  }).sort((a,b)=>a.score-b.score);
- const next=ranked.find(x=>x.p!==current)||ranked[0];
+ const currentRank=ranked.findIndex(x=>x.p===current);
+ const next=ranked[currentRank===0?1:0]||ranked[0];
  const nextIndex=game.players.indexOf(next.p);
  if(nextIndex>=0){game.active=nextIndex;game.switchCooldown=.24;notify("PLAYER "+String(next.p.number))}
 }
