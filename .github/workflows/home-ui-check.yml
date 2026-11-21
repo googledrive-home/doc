@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "arcade-portal.js"
+      - "football.html"
+      - "index.html"
       - "arcade-portal.css"
       - "f1-simulator.html"
       - "home-game-bridge.js"
@@ -36,6 +38,21 @@ jobs:
         run: node --check hockey-server/src/index.js
       - name: Check cloud-save bridge syntax
         run: node --check home-game-bridge.js
+      - name: Check Football 2D inline script syntax
+        run: |
+          node --input-type=commonjs -e "
+            const fs = require('node:fs');
+            const html = fs.readFileSync('football.html', 'utf8');
+            const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+            if (!scripts.length) throw new Error('Football 2D script not found');
+            scripts.forEach((match, index) => new Function(match[1]));
+            console.log('Football 2D inline scripts parsed successfully.');
+          "
+      - name: Check Football 2D library integration
+        run: |
+          grep -q "openStandaloneGame(.*football.html.*Football 2D" index.html
+          grep -q '"Football 2D":"football-2d"' arcade-portal.js
+          grep -q '"football-2d":"Sports"' hockey-server/src/index.js
       - name: Check F1 wrapper script syntax
         run: |
           node --input-type=commonjs -e "

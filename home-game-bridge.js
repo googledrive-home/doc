@@ -7,6 +7,7 @@
   const KEY_DENY = /(token|password|auth|session|user(name)?|profile|account|music|volume|setting|theme|cookie|presence|upload)/i;
   const GAME_SAVE_RULES = {
     "mini-golf-3d": key => key === "homeMiniGolf3D_v2" || key === "playspaceMiniGolf3D_v2",
+    "football-2d": key => key === "homeFootball2DSaveV1",
     "apex-formula-racing": key => key === "apexFormulaWorldTourV1" || /^apexFormulaTimeTrialV1:/i.test(key),
     "f1-simulator": key => /^(?=.*(?:f1|formula|championship|career|progress|save|record|time.?trial))(?!.+setting).+$/i.test(key),
     "gravel-rally-stage": key => /^gravel-(?:best-|career-|tournament-)/i.test(key),
