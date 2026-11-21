@@ -379,11 +379,74 @@ window.addEventListener("keyup",e=>{keys[e.key===" "?"space":e.key.toLowerCase()
 function setupTouch(){const joy=$("touchJoy");if(!joy)return;let origin=null;joy.addEventListener("pointerdown",e=>{origin={x:e.clientX,y:e.clientY};joy.setPointerCapture(e.pointerId)});joy.addEventListener("pointermove",e=>{if(!origin)return;const dx=clamp((e.clientX-origin.x)/30,-1,1),dy=clamp((e.clientY-origin.y)/30,-1,1);keys[settings.bindings.left]=dx<-.25;keys[settings.bindings.right]=dx>.25;keys[settings.bindings.up]=dy<-.25;keys[settings.bindings.down]=dy>.25});function reset(){origin=null;["left","right","up","down"].forEach(k=>keys[settings.bindings[k]]=false)}joy.addEventListener("pointerup",reset);joy.addEventListener("pointercancel",reset);$("touchControls").querySelectorAll("[data-action]").forEach(b=>{b.addEventListener("pointerdown",e=>{e.preventDefault();performAction(b.dataset.action,game.players[game.active])})})}
 $("startMatch").onclick=()=>startMatch({});$("pauseMatch").onclick=pauseMatch;
 function randomResult(a,b){const diff=teamOverall(byName(a))-teamOverall(byName(b));const ga=Math.max(0,Math.round(rnd(.3,2.1)+diff/55)),gb=Math.max(0,Math.round(rnd(.3,2.1)-diff/55));return[ga,gb]}
-function cupCreate(name,teamNames,size,format,kind){const names=teamNames&&teamNames.length?teamNames.slice(0,size):PL_TEAMS.map(t=>t[0]).sort(()=>Math.random()-.5).slice(0,size);while(names.length<size)names.push(pick(PL_TEAMS)[0]);const unique=[...new Set(names)].slice(0,size);while(unique.length<size)unique.push(pick(PL_TEAMS.filter(t=>!unique.includes(t[0])))[0][0]);let participants=unique.map((n,i)=>({name:n,seed:i+1}));let rounds=[];for(let i=0;i<Math.log2(size);i++){rounds.push({name:["Round of "+size,"Quarter-finals","Semi-finals","Final"][Math.max(0,4-Math.log2(size)+i)]||("Round "+(i+1)),ties:[]})}for(let i=0;i<participants.length;i+=2){rounds[0].ties.push({a:participants[i].name,b:participants[i+1].name,score:null,winner:null})}save.cup={name:name||"HOME Cup",size,format,kind:kind||"club",teams:unique,rounds:rounds,round:0,created:Date.now(),done:false};persist();renderCup()}
-function renderCup(){const cup=save.cup;if(!cup){$("cupStatus").textContent="No active tournament. Create a cup to see your bracket here.";$("cupBracket").innerHTML="";$("cupNext").disabled=true;$("deleteCup").disabled=true;return}$("cupStatus").innerHTML='<strong style="color:#eaffef">'+escapeHtml(cup.name)+'</strong><br>'+cup.size+' teams · '+escapeHtml(cup.format)+' · Round '+(cup.round+1)+' of '+cup.rounds.length+(cup.done?" · COMPLETE":"");$("cupBracket").innerHTML=cup.rounds.map((r,i)=>'<div style="margin-bottom:11px"><div class="eyebrow" style="margin-bottom:6px">'+escapeHtml(r.name||"Round "+(i+1))+'</div>'+r.ties.map(t=>'<div class="bind-row" style="margin-bottom:5px"><span>'+escapeHtml(t.a)+' <b>'+(t.score?t.score.join("–"):"vs")+'</b> '+escapeHtml(t.b)+'</span><span class="pill">'+(t.winner?escapeHtml(t.winner):"TBD")+'</span></div>').join("")+'</div>').join("");$("cupNext").disabled=cup.done;$("deleteCup").disabled=false;$("cupNext").textContent=cup.round===cup.rounds.length-1?"COMPLETE FINAL ROUND":"PLAY / SIMULATE NEXT ROUND"}
+function cupCreate(name,teamNames,size,format,kind){
+ const names=teamNames&&teamNames.length?teamNames.slice(0,size):PL_TEAMS.map(t=>t[0]).sort(()=>Math.random()-.5).slice(0,size);
+ while(names.length<size)names.push(pick(PL_TEAMS)[0]);
+ const unique=[...new Set(names)].slice(0,size);
+ while(unique.length<size)unique.push(pick(PL_TEAMS.filter(t=>!unique.includes(t[0])))[0][0]);
+ const international=kind==="international"&&size===48;
+ const groupCup=format==="groups"&&size===8;
+ let groups=null,rounds=[],stage="knockout";
+ if(international||groupCup){
+  const groupCount=international?12:2,groupSize=size/groupCount;
+  groups=[];
+  for(let g=0;g<groupCount;g++)groups.push({name:"Group "+String.fromCharCode(65+g),teams:unique.slice(g*groupSize,(g+1)*groupSize),table:unique.slice(g*groupSize,(g+1)*groupSize).map(team=>({team,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}))});
+  rounds=international?[{name:"Round of 32",ties:[]},{name:"Round of 16",ties:[]},{name:"Quarter-finals",ties:[]},{name:"Semi-finals",ties:[]},{name:"Final",ties:[]}]:[{name:"Semi-finals",ties:[]},{name:"Final",ties:[]}];
+  stage="groups";
+ }else{
+  for(let i=0;i<Math.log2(size);i++)rounds.push({name:["Round of "+size,"Quarter-finals","Semi-finals","Final"][Math.max(0,4-Math.log2(size)+i)]||("Round "+(i+1)),ties:[]});
+  for(let i=0;i<unique.length;i+=2)rounds[0].ties.push({a:unique[i],b:unique[i+1],score:null,winner:null});
+ }
+ save.cup={name:name||"HOME Cup",size,format,kind:kind||"club",teams:unique,groups,rounds,round:0,stage,created:Date.now(),done:false};
+ persist();renderCup();
+}
+function simulateCupGroups(cup){
+ cup.groups.forEach(group=>{
+  for(let i=0;i<group.teams.length;i++)for(let j=i+1;j<group.teams.length;j++){
+   const a=group.table[i],b=group.table[j],score=randomResult(a.team,b.team),ga=score[0],gb=score[1];
+   a.p++;b.p++;a.gf+=ga;a.ga+=gb;b.gf+=gb;b.ga+=ga;
+   if(ga>gb){a.w++;a.pts+=3;b.l++}else if(gb>ga){b.w++;b.pts+=3;a.l++}else{a.d++;b.d++;a.pts++;b.pts++}
+  }
+  group.table.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+ });
+ let qualifiers=[];
+ if(cup.size===48){
+  cup.groups.forEach(g=>qualifiers.push(g.table[0],g.table[1]));
+  const thirds=cup.groups.map(g=>g.table[2]).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf).slice(0,8);
+  qualifiers=qualifiers.concat(thirds);
+ }else{
+  cup.groups.forEach(g=>qualifiers.push(g.table[0],g.table[1]));
+ }
+ const teams=qualifiers.map(x=>x.team);
+ cup.rounds[0].ties=[];
+ for(let i=0;i<teams.length;i+=2)cup.rounds[0].ties.push({a:teams[i],b:teams[i+1],score:null,winner:null});
+ cup.stage="knockout";cup.round=0;
+}
+function renderCup(){
+ const cup=save.cup;
+ if(!cup){$("cupStatus").textContent="No active tournament. Create a cup to see your bracket here.";$("cupBracket").innerHTML="";$("cupNext").disabled=true;$("deleteCup").disabled=true;return}
+ const stageLabel=cup.stage==="groups"?"Group stage":"Knockout · "+(cup.rounds[cup.round]?.name||"Round");
+ $("cupStatus").innerHTML='<strong style="color:#eaffef">'+escapeHtml(cup.name)+'</strong><br>'+cup.size+' teams · '+escapeHtml(cup.format)+' · '+stageLabel+(cup.done?" · COMPLETE":"");
+ const groupHtml=(cup.groups||[]).map(g=>'<div style="margin-bottom:10px"><div class="eyebrow">'+escapeHtml(g.name)+'</div><div class="muted" style="font-size:10px">'+g.table.map(t=>escapeHtml(t.team)+" ("+t.pts+" pts)").join(" · ")+'</div></div>').join("");
+ const roundHtml=cup.rounds.map((r,i)=>'<div style="margin-bottom:11px"><div class="eyebrow" style="margin-bottom:6px">'+escapeHtml(r.name||"Round "+(i+1))+'</div>'+r.ties.map(t=>'<div class="bind-row" style="margin-bottom:5px"><span>'+escapeHtml(t.a||"TBD")+' <b>'+(t.score?t.score.join("–"):"vs")+'</b> '+escapeHtml(t.b||"TBD")+'</span><span class="pill">'+(t.winner?escapeHtml(t.winner):"TBD")+'</span></div>').join("")+'</div>').join("");
+ $("cupBracket").innerHTML=groupHtml+roundHtml;
+ $("cupNext").disabled=cup.done;$("deleteCup").disabled=false;
+ $("cupNext").textContent=cup.stage==="groups"?"SIMULATE GROUP STAGE":cup.round===cup.rounds.length-1?"SIMULATE FINAL":"PLAY / SIMULATE NEXT ROUND";
+}
 $("createCup").onclick=()=>{const names=$("cupTeams").value.split(",").map(x=>x.trim()).filter(Boolean);cupCreate($("cupName").value,names,Number($("cupSize").value),$("cupFormat").value,"club")};
-$("worldCup").onclick=()=>{const nations=["Argentina","Australia","Belgium","Brazil","Canada","Colombia","Croatia","Denmark","Ecuador","England","France","Germany","Ghana","Japan","Mexico","Morocco","Netherlands","New Zealand","Nigeria","Norway","Portugal","Scotland","Senegal","South Korea","Spain","Switzerland","United States","Uruguay","Wales","Algeria","Egypt","Cameroon","Chile","Ivory Coast","Iran","Iraq","Jamaica","Panama","Paraguay","Peru","Poland","Serbia","South Africa","Sweden","Tunisia","Turkey","Ukraine","Uzbekistan"];cupCreate("WORLD CUP 2026",nations,48,"groups","international");notify("48-NATION TOURNAMENT CREATED")};
-$("cupNext").onclick=()=>{const cup=save.cup;if(!cup||cup.done)return;const round=cup.rounds[cup.round];round.ties.forEach(t=>{if(t.winner)return;const sc=randomResult(t.a,t.b);t.score=sc;t.winner=sc[0]===sc[1]?pick([t.a,t.b]):sc[0]>sc[1]?t.a:t.b});if(cup.round===cup.rounds.length-1){cup.done=true;}else{const winners=round.ties.map(t=>t.winner);const nxt=[];for(let i=0;i<winners.length;i+=2)nxt.push({a:winners[i],b:winners[i+1],score:null,winner:null});cup.rounds[cup.round+1].ties=nxt;cup.round++}persist();renderCup()};
+$("worldCup").onclick=()=>{const nations=["Argentina","Australia","Belgium","Brazil","Canada","Colombia","Croatia","Denmark","Ecuador","England","France","Germany","Ghana","Japan","Mexico","Morocco","Netherlands","New Zealand","Nigeria","Norway","Portugal","Scotland","Senegal","South Korea","Spain","Switzerland","United States","Uruguay","Wales","Algeria","Egypt","Cameroon","Chile","Ivory Coast","Iran","Iraq","Jamaica","Panama","Paraguay","Peru","Poland","Serbia","South Africa","Sweden","Tunisia","Turkey","Ukraine","Uzbekistan"];cupCreate("HOME WORLD CUP · 48 NATIONS",nations,48,"groups","international");notify("48-NATION GROUP STAGE CREATED")};
+$("cupNext").onclick=()=>{
+ const cup=save.cup;if(!cup||cup.done)return;
+ if(cup.stage==="groups"){simulateCupGroups(cup);persist();renderCup();notify("GROUP STAGE COMPLETE · KNOCKOUTS SET");return}
+ const round=cup.rounds[cup.round];
+ round.ties.forEach(t=>{if(t.winner)return;const sc=randomResult(t.a,t.b);t.score=sc;t.winner=sc[0]===sc[1]?pick([t.a,t.b]):sc[0]>sc[1]?t.a:t.b});
+ if(cup.round===cup.rounds.length-1){cup.done=true;}else{
+  const winners=round.ties.map(t=>t.winner).filter(Boolean),nxt=[];
+  for(let i=0;i<winners.length;i+=2)if(winners[i+1])nxt.push({a:winners[i],b:winners[i+1],score:null,winner:null});
+  cup.rounds[cup.round+1].ties=nxt;cup.round++;
+ }
+ persist();renderCup();
+};
 $("deleteCup").onclick=()=>{if(confirm("Delete this tournament save?")){save.cup=null;persist();renderCup()}};
 function newSeason(league,club){const l=LEAGUES.find(x=>x.n===league)||LEAGUES[0];const teams=l.teams.slice();const table=teams.map(n=>({name:n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0,form:[]}));save.season={league:l.n,club:club||teams[0],teams,table,round:0,played:[],created:Date.now()};persist();renderLeague()}
 function simulateLeagueRound(){const s=save.season;if(!s)return;const shuffled=s.teams.slice().sort(()=>Math.random()-.5),games=[];for(let i=0;i+1<shuffled.length;i+=2)games.push([shuffled[i],shuffled[i+1],randomResult(shuffled[i],shuffled[i+1])]);games.forEach(([a,b,r])=>{const A=s.table.find(t=>t.name===a),B=s.table.find(t=>t.name===b);if(!A||!B)return;A.p++;B.p++;A.gf+=r[0];A.ga+=r[1];B.gf+=r[1];B.ga+=r[0];if(r[0]>r[1]){A.w++;A.pts+=3;B.l++;A.form.unshift("W");B.form.unshift("L")}else if(r[0]<r[1]){B.w++;B.pts+=3;A.l++;B.form.unshift("W");A.form.unshift("L")}else{A.d++;B.d++;A.pts++;B.pts++;A.form.unshift("D");B.form.unshift("D")}A.form=A.form.slice(0,5);B.form=B.form.slice(0,5);s.played.push({a,b,r})});s.round++;persist();renderLeague()}
