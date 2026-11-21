@@ -48,14 +48,14 @@ jobs:
             scripts.forEach((match, index) => new Function(match[1]));
             console.log('Footy inline scripts parsed successfully.');
           "
-      - name: Check Football 2D library integration
+      - name: Check Footy library integration
         run: |
           grep -q "openStandaloneGame(.*football.html.*Footy" index.html
           grep -q '"Footy":"football-2d"' arcade-portal.js
           grep -q '"football-2d":"Sports"' hockey-server/src/index.js
-grep -q '<title>FOOTY' football.html
-grep -q 'body.in-match #root' football.html
-grep -q 'function projectWorld' football.html
+          grep -q '<title>FOOTY' football.html
+          grep -q 'body.in-match #root' football.html
+          grep -q 'function projectWorld' football.html
       - name: Check F1 wrapper script syntax
         run: |
           node --input-type=commonjs -e "
